@@ -43,9 +43,219 @@ use App\Http\Controllers\form_elements\InputGroups;
 use App\Http\Controllers\form_layouts\VerticalForm;
 use App\Http\Controllers\form_layouts\HorizontalForm;
 use App\Http\Controllers\tables\Basic as TablesBasic;
+use App\Http\Controllers\Logistik;
+use App\Http\Controllers\Customer;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\TeknisiController;
+use App\Http\Controllers\Jaringan;
+use App\Http\Controllers\MikrotikController;
+use App\Http\Controllers\HelpdeskController;
+use App\Http\Controllers\NocController;
+use App\Http\Controllers\Payment\TripayController;
+use App\Http\Controllers\Payment\CallbackController;
+use App\Http\Controllers\KeuanganController;
+use App\Http\Controllers\SuperAdmin;
+use App\Http\Controllers\DataController;
+use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\KasController;
+use App\Http\Controllers\RabController;
+use App\Http\Controllers\PerusahaanController;
 
 // Main Page Route
-Route::get('/', [Analytics::class, 'index'])->name('dashboard-analytics');
+Route::get('/', [LoginBasic::class, 'index']);
+
+Route::post('/login', [LoginBasic::class, 'login'])->name('login');
+Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
+
+
+
+Route::middleware(['auth'])->group(function () {
+
+// Customer blocking/unblocking routes
+Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
+Route::get('/unblokir/{id}', [Analytics::class, 'unblokir'])->name('unblokir');
+Route::get('/detail-pelanggan/{id}', [Analytics::class, 'detailPelanggan'])->name('detail-pelanggan');
+Route::get('/profile-user/{id}', [UserController::class, 'profileUser'])->name('profile-user)');
+Route::post('/update-photo/{id}', [UserController::class, 'updatePhoto'])->name('update-photo');
+Route::get('/data/invoice/{name}', [Customer::class, 'dataInvoice'])->name('invoice');
+
+// SuperAdmin
+Route::get('/payment/approve', [SuperAdmin::class, 'approvalPembayaran'])->name('payment.approve');
+Route::get('/acc/{id}', [SuperAdmin::class, 'acc'])->name('acc');
+Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->name('log-aktivitas');
+Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail']);
+Route::get('/rab', [RabController::class, 'index'])->name('rab');
+
+//dashboard
+Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
+Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->name('pelanggan');
+Route::get('/data/logistik', [Analytics::class, 'logistik'])->name('logistik');
+Route::get('/data/antrian', [Analytics::class, 'antrian'])->name('antrian');
+
+// User Management
+Route::get('/user/management', [Analytics::class, 'user'])->name('user');
+Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
+// Customer
+Route::post('/customer/store', [Customer::class, 'store'])->name('customer.store');
+Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
+Route::get('/dashboard/get-customer-data/{id?}', [Analytics::class,
+'getCustomerData'])->name('dashboard.get-customer-data');
+
+// Customer
+Route::get('/customer', [Customer::class, 'index'])->name('pelanggan');
+Route::get('/customer/pengaduan', [Customer::class, 'pengaduan'])->name('pengaduan');
+Route::get('/customer/history', [Customer::class, 'history'])->name('history');
+Route::get('/customer/request', [Customer::class, 'req'])->name('request');
+Route::post('/customer/add/pengaduan', [Customer::class, 'addPengaduan'])->name('customer.addPengaduan');
+
+
+// Logistik
+Route::post('/logistik/store', [Logistik::class, 'store']);
+
+
+// Teknisi
+Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])->name('teknisi');
+Route::get('/teknisi/selesai/{id}', [TeknisiController::class, 'selesai'])->name('teknisi.selesai');
+Route::get('/teknisi/selesai/{id}/print', [TeknisiController::class, 'print'])->name('teknisi.print');
+Route::post('/teknisi/konfirmasi/{id}', [TeknisiController::class, 'konfirmasi'])->name('teknisi.konfirmasi');
+Route::get('/corp/proses/{id}', [PerusahaanController::class, 'prosesCorp']);
+Route::post('/confirm/corp/{id}', [PerusahaanController::class, 'confirm']);
+
+
+// Perusahaan
+Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
+
+// NOC
+Route::get('/noc/data-olt', [Jaringan::class, 'index'])->name('olt');
+Route::get('/noc/data-odp', [Jaringan::class, 'odp'])->name('odp');
+Route::get('/noc/data-odc', [Jaringan::class, 'odc'])->name('odc');
+Route::get('/noc/data-server', [Jaringan::class, 'server'])->name('server');
+Route::post('/olt/add', [Jaringan::class, 'addOlt'])->name('olt.store');
+Route::post('/odc/add', [Jaringan::class, 'addOdc'])->name('odc.store');
+Route::post('/odp/add', [Jaringan::class, 'addOdp'])->name('odp.store');
+Route::post('/server/add', [Jaringan::class, 'addServer'])->name('server.store');
+Route::get('/mindmap', [Jaringan::class, 'mindmap'])->name('mindmap');
+Route::get('/data/antrian-noc', [NocController::class, 'antrian'])->name('antrian-noc');
+Route::get('/noc/proses-antrian/{id}', [NocController::class, 'prosesAntrian'])->name('antrian-noc');
+Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
+Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
+Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
+
+// Keuangan
+Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->name('pendapatan');
+Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getRevenueData'])->name('pendapatan.ajax');
+Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])->name('pembayaran');
+Route::get('/dashboard/keuangan', [KeuanganController::class, 'dashboardKeuangan'])->name('dashboard-keuangan');
+Route::get('/api/dashboard/keuangan', [KeuanganController::class, 'getDashboardData'])->name('api.dashboard.keuangan');
+Route::post('/konfirmasi/pembayaran/{customerId}', [KeuanganController::class,
+'approvePayment'])->name('approve-payment');
+Route::get('/pembayaran/daily', [keuanganController::class, 'dailyPembayaran'])->name('daily-pembayaran');
+Route::post('/tambah/pendapatan', [KeuanganController::class, 'tambahPendapatan'])->name('tambah-pendapatan');
+Route::get('/pendapatan/non-langganan', [KeuanganController::class, 'nonLangganan'])->name('non-langganan');
+Route::get('/pendapatan/non-langganan/search', [KeuanganController::class,
+'searchNonLangganan'])->name('non-langganan.search');
+Route::get('/pendapatan/global', [KeuanganController::class, 'globalPendapatan'])->name('global-pendapatan');
+Route::get('/pengeluaran/global', [PengeluaranController::class, 'index'])->name('global-pengeluaran');
+Route::post('/pengeluaran/tambah', [PengeluaranController::class, 'tambahPengeluaran'])->name('pengeluaran.tambah');
+Route::get('/kas', [KasController::class, 'index'])->name('kas');
+Route::post('/tambah/kas/kecil', [KasController::class, 'tambahKas'])->name('tambah');
+Route::post('/rab/store', [RabController::class, 'store'])->name('store-rab');
+Route::get('/rab/search', [RabController::class, 'search'])->name('rab-filter');
+Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->name('kas-kecil');
+Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->name('kas-besar');
+
+
+// Mikrotik API
+Route::get('/mikrotik', [MikrotikController::class, 'index'])->name('mikrotik');
+
+// Helpdesk
+Route::get('/helpdesk/data-pengaduan', [HelpdeskController::class, 'dataPengaduan'])->name('data-pengaduan');
+Route::get('/helpdesk/get-pengaduan-data', [HelpdeskController::class, 'getPengaduanData'])->name('get-pengaduan-data');
+Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->name('antrian-helpdesk');
+Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
+Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class,
+'updateAntrian'])->name('update-antrian-helpdesk');
+Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
+Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
+
+// Payment
+Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
+Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
+Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
+Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
+Route::get('/payment/instructions/{code}', [TripayController::class,
+'getPaymentInstructions'])->name('payment.instructions');
+});
+
+// Payment callback routes (outside auth middleware and CSRF protection)
+Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
+
+// Tripay test callback route (specific for Tripay test feature)
+Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])
+->name('payment.tripay.test.callback')
+->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Payment callback tester routes (outside auth middleware for easier testing)
+Route::get('/payment/callback-tester', [TripayController::class, 'showCallbackTester'])
+->name('payment.callback.tester');
+
+Route::post('/payment/callback-test', [TripayController::class, 'processCallbackTest'])
+->name('payment.callback.test')
+->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Direct test route for easier testing (can be accessed directly from browser)
+Route::get('/payment/test/{invoice_id}', function($invoice_id) {
+// Create a request with test_mode and invoice_id
+$request = new \Illuminate\Http\Request();
+$request->merge(['test_mode' => true, 'invoice_id' => $invoice_id]);
+
+// Call the callback handler directly
+$controller = new \App\Http\Controllers\Payment\TripayController();
+return $controller->paymentCallback($request);
+})
+->name('payment.direct.test')
+->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Sandbox payment simulation routes
+Route::get('/payment/sandbox-simulate/{invoice_id}', [TripayController::class, 'simulateSandboxPayment'])
+->name('payment.sandbox.simulate')
+->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::get('/payment/simulate-by-reference/{reference}', [TripayController::class, 'simulatePaymentByReference'])
+->name('payment.simulate.reference')
+->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Check payment status from Tripay API
+Route::get('/payment/check-status/{invoice_id}', [TripayController::class, 'checkPaymentStatus'])
+->name('payment.check.status')
+->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Fallback route for Tripay callback - accepts any method (GET, POST, etc.)
+Route::any('/tripay-callback', function(\Illuminate\Http\Request $request) {
+// Log the request
+\Log::info('Tripay fallback callback received', [
+'method' => $request->method(),
+'url' => $request->url(),
+'all' => $request->all(),
+'content' => $request->getContent()
+]);
+
+// Forward to the callback handler
+$controller = new \App\Http\Controllers\Payment\TripayController();
+return $controller->paymentCallback($request);
+})
+->name('payment.fallback')
+->middleware('api')
+->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::get('/api/olt/by-server/{server}', [TeknisiController::class, 'getByServer']);
+Route::get('/api/odc/by-olt/{odc}', [TeknisiController::class, 'getByOdc']);
+Route::get('/api/odp/by-odc/{odp}', [TeknisiController::class, 'getByOdp']);
+
+// WebSocket test route
+Route::get('/test-websocket', function() {
+return view('test-websocket');
+});
 
 // layout
 Route::get('/layouts/without-menu', [WithoutMenu::class, 'index'])->name('layouts-without-menu');

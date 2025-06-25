@@ -62,4 +62,7 @@
   ],
   // Extension: npm
   "npm.packageManager": "yarn",
+  "zencoder.enableRepoIndexing": true,
+  "Codegeex.RepoIndex": true,
+  "CodeGPT.apiKey": "CodeGPT Plus Beta",
 }

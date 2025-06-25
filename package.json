@@ -28,7 +28,6 @@
     "postcss": "^8.4.40",
     "prettier": "3.2.2",
     "resolve-url-loader": "5.0.0",
-    "sass": "~1.76.0",
     "sass-loader": "14.0.0",
     "vite": "^5.3.5"
   },
@@ -84,8 +83,11 @@
     "boxicons": "~2.1.4",
     "highlight.js": "~11.9.0",
     "jquery": "~3.7.1",
+    "laravel-echo": "^1.16.0",
+    "laravel-vite-plugin": "1.0.1",
     "masonry-layout": "~4.2.2",
     "perfect-scrollbar": "~1.5.5",
-    "laravel-vite-plugin": "1.0.1"
+    "pusher-js": "^8.4.0",
+    "tailwind": "^4.0.0"
   }
 }

@@ -7,3 +7,6 @@ import.meta.glob([
   // '../assets/json/**',
   '../assets/vendor/fonts/**'
 ]);
+
+// Import Echo listener
+import './echo-listener';
