@@ -234,28 +234,38 @@
       ]
     },
     {
+      "menuHeader": "Tiket",
+      "roles": [
+        "Super Admin",
+        "NOC"
+      ]
+    },
+    {
       "url": "#",
-      "name": "Ticket",
+      "name": "Tiket",
       "slug": "ticket",
       "icon": "menu-icon tf-icons bx bx-credit-card-front",
       "roles": [
-        "NOC"
+        "NOC",
+        "Super Admin"
       ],
       "submenu": [
         {
           "url": "/ticket",
-          "name": "Ticket Open",
+          "name": "Tiket Open",
           "slug": "ticket",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin"
           ]
         },
         {
           "url": "/ticket/create",
-          "name": "Ticket Closed",
+          "name": "Tiket Closed",
           "slug": "ticket-create",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin"
           ]
         }
       ]
@@ -271,15 +281,6 @@
       "name": "User Management",
       "icon": "menu-icon tf-icons bx bx-user",
       "slug": "user",
-      "roles": [
-        "Super Admin"
-      ]
-    },
-    {
-      "url": "/log/aktivitas",
-      "name": "Log Aktivitas",
-      "icon": "menu-icon tf-icons bx bx-history",
-      "slug": "log-aktivitas",
       "roles": [
         "Super Admin"
       ]

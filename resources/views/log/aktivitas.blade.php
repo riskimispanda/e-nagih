@@ -3,6 +3,15 @@
 @section('title', 'Log Aktivitas')
 
 @section('content')
+
+<nav class="breadcrumb-nav">
+    <ul class="breadcrumb breadcrumb-transparent breadcrumb-style2 mb-3">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="/user/management">User Management</a></li>
+        <li class="breadcrumb-item active text-primary" aria-current="page">Log Users</li>
+    </ul>
+</nav>
+
 <div class="row">
     <div class="col-12">
         <div class="row mb-4">
