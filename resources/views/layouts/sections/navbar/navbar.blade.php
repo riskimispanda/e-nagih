@@ -5,6 +5,17 @@
     $navbarDetached = $navbarDetached ?? '';
 @endphp
 
+<style>
+    #layout-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  background-color: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+</style>
+
 <!-- Navbar -->
 @if (isset($navbarDetached) && $navbarDetached == 'navbar-detached')
     <nav class="layout-navbar {{ $containerNav }} navbar navbar-expand-xl {{ $navbarDetached }} align-items-center bg-navbar-theme"
