@@ -18,10 +18,10 @@ class UserController extends Controller
         $role = Roles::whereNot('name', 'Customer')->get();
         // dd($role);
         return view('user_management.management_user',[
-        'users' => auth()->user(),
-        'roles' => auth()->user()->roles,
-        'user' => $user,
-        'role' => $role
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'user' => $user,
+            'role' => $role
         ]);
     }
 
@@ -105,5 +105,13 @@ class UserController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    public function editRole(Request $request, $id)
+    {
+    // dd($request->all());
+    $user = User::find($id);
+    $user->roles_id = $request->input('roles_id');
+    $user->save();
+    return redirect('/user/management')->with('success', 'Role user berhasil diubah');
     }
 }

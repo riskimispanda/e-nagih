@@ -30,9 +30,8 @@
                         <form id="formAuthentication" class="mb-6" action="/login" method="POST">
                             @csrf
                             <div class="mb-6">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="text" class="form-control" id="email" name="email"
-                                    placeholder="Masukan Email Anda" autofocus required />
+                                <label for="email" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="email" name="name" placeholder="Masukan Email Anda" autofocus required />
                             </div>
                             <div class="mb-6 form-password-toggle">
                                 <label class="form-label" for="password">Password</label>

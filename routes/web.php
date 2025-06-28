@@ -84,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->name('user');
     Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail']);
     Route::get('/rab', [RabController::class, 'index'])->name('rab');
+    Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
 
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
