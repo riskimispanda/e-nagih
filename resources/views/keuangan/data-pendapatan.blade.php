@@ -141,7 +141,7 @@
         background-color: whitesmoke;
         border-bottom: 2px solid #dee2e6;
         font-weight: 800;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: black;
@@ -149,10 +149,10 @@
     }
     
     .table td {
-        padding: 1rem 1.5rem;
+        padding: 1rem 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #f1f3f4;
-        font-size: 13px;
+        font-size: 12px;
     }
     
     .table tbody tr:hover {
@@ -362,6 +362,7 @@
                         <th>Paket</th>
                         <th>Tagihan</th>
                         <th>Tagihan Tambahan</th>
+                        <th>Sisa Saldo</th>
                         <th>Jatuh Tempo</th>
                         <th>Status</th>
                         <th>Aksi</th>
@@ -400,6 +401,14 @@
                                     </span>
                                 </div>
                             </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bx bx-wallet text-success me-2"></i>
+                                    <span class="fw-semibold text-dark">
+                                        Rp {{ number_format($invoice->saldo, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            </td>
                             <td style="font-size: 14px;">
                                 <div class="d-flex align-items-center">
                                     <i class="bx bx-calendar text-danger me-2"></i>
@@ -418,8 +427,8 @@
                                     <i class="bx bx-x-circle"></i>
                                     {{ $invoice->status->nama_status }}
                                 </span>
-                                @else
-                                <span class="status-badge bg-secondary bg-opacity-10 text-secondary">
+                                @elseif($invoice->status->nama_status == 'Menunggu')
+                                <span class="status-badge bg-warning bg-opacity-10 text-warning">
                                     <i class="bx bx-time-five"></i>
                                     {{ $invoice->status->nama_status }}
                                 </span>
@@ -435,8 +444,7 @@
                                         <i class="bx bx-show"></i>
                                     </button>
                                     @if ($invoice->status && $invoice->status->nama_status == 'Belum Bayar')
-                                    <button onclick="processPayment({{ $invoice->id }})"
-                                        class="action-btn bg-success bg-opacity-10 text-success btn-sm">
+                                    <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}" data-bs-toggle="modal">
                                         <i class="bx bx-money"></i>
                                     </button>
                                     @endif
@@ -472,6 +480,78 @@
     </div>
 </div>
 
+
+{{-- Modal Konfirmasi --}}
+@foreach ($invoices as $invoice)
+<div class="modal fade" id="konfirmasiPembayaran{{ $invoice->id }}" tabindex="-1" style="display: none;" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title mb-6" id="modalCenterTitle"><i class="bx bx-wallet me-2 text-danger"></i>Konfirmasi Pembayaran <span class="text-danger fw-bold">{{$invoice->customer->nama_customer}}</span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/request/pembayaran/{{ $invoice->id }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body">
+                    <input type="text" name="invoice_id" value="{{ $invoice->id }}" hidden>
+                    <div class="row">
+                        <div class="col mb-4">
+                            <label for="emailWithTitle" class="form-label">Tanggal Jatuh Tempo</label>
+                            <input type="date" class="form-control" value="{{ \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') }}" readonly>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label">Tagihan</label>
+                            <input type="text" class="form-control" value="Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}" readonly>
+                        </div>
+                        <div class="col-12 mb-4 col-lg-4">
+                            <label class="form-label">Biaya Tambahan</label>
+                            <input type="text" class="form-control" value="Rp {{ number_format($invoice->tambahan ?? 0, 0, ',', '.') }}" readonly>
+                        </div>
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label">Sisa Saldo</label>
+                            <input type="text" class="form-control" value="Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12 mb-4 col-lg-12">
+                            <label class="form-label">Total</label>
+                            <input type="text" name="total" class="form-control" value="Rp {{ number_format($invoice->tagihan - $invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col mb-4 col-lg-6">
+                            <label class="form-label">Jumlah Bayar</label>
+                            <input type="text" class="form-control" id="revenueAmount{{ $invoice->id }}" name="revenueAmount" oninput="formatRupiah(this, {{ $invoice->id }})" placeholder="Masukkan jumlah bayar" required>
+                            <input type="text" hidden id="raw{{ $invoice->id }}" name="jumlah_bayar">
+                        </div>
+                        <div class="col mb-4 col-lg-6">
+                            <label class="form-label">Metode Pembayaran</label>
+                            <select name="metode_id" class="form-select">
+                                <option value="" selected disabled>Pilih Metode Pembayaran</option>
+                                @foreach ($metode as $item)
+                                <option value="{{ $item->nama_metode }}">{{$item->nama_metode}}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col mb-4 col-lg-12">
+                            <label class="form-label">Bukti Pembayaran</label>
+                            <input type="file" class="form-control" name="bukti_pembayaran">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bx bx-send me-1"></i>Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay d-none">
@@ -760,21 +840,22 @@
 
 <script>
     // Format input as Rupiah currency
-    function formatRupiah(input) {
-        let value = input.value.replace(/\D/g, '');
-        if (value) {
-            value = parseInt(value).toLocaleString('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            });
-        } else {
-            value = '';
-        }
-        input.value = value;
-        // document.getElementById('revenueAmountRaw').value = value;
-        document.getElementById('revenueAmountRaw').value = value.replace(/[^0-9]/g, '');
+    function formatRupiah(el, id) {
+        let angka = el.value.replace(/[^0-9]/g, '');
+        let number = parseInt(angka, 10) || 0;
         
+        // Format tampilan
+        el.value = number.toLocaleString('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        });
+        
+        // Simpan nilai bersih ke input hidden
+        const rawInput = document.getElementById('raw' + id);
+        if (rawInput) {
+            rawInput.value = number;
+        }
     }
     
     document.getElementById('pendapatan').addEventListener('change', function() {
@@ -793,6 +874,10 @@
             document.getElementById('revenueTable').style.display = 'none';
         }
     });
+    
+</script>
+
+<script>
     
 </script>
 @endsection

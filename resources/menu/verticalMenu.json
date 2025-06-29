@@ -280,9 +280,39 @@
       "url": "/user/management",
       "name": "User Management",
       "icon": "menu-icon tf-icons bx bx-user",
-      "slug": "user",
+      "slug": "user-management",
       "roles": [
-        "Super Admin"
+        "Super Admin",
+        "Admin Keuangan"
+      ],
+      "submenu": [
+        {
+          "url": "/user/management",
+          "name": "Management",
+          "slug": "user",
+          "roles": [
+            "Super Admin",
+            "Admin Keuangan"
+          ]
+        },
+        {
+          "url": "/log/aktivitas",
+          "name": "Log Aktivitas",
+          "slug": "log-aktivitas",
+          "roles": [
+            "Super Admin",
+            "Admin Keuangan"
+          ]
+        },
+        {
+          "url": "/setting",
+          "name": "Pengaturan",
+          "slug": "setting",
+          "roles": [
+            "Super Admin",
+            "Admin Keuangan"
+          ]
+        }
       ]
     },
     {

@@ -60,6 +60,8 @@ use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\KasController;
 use App\Http\Controllers\RabController;
 use App\Http\Controllers\PerusahaanController;
+use App\Http\Controllers\SettingController;
+
 
 // Main Page Route
 Route::get('/', [LoginBasic::class, 'index']);
@@ -70,6 +72,10 @@ Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
 
 Route::middleware(['auth'])->group(function () {
+    // Setting
+    Route::get('/setting', [SettingController::class, 'blokirSetting'])->name('setting');
+    Route::post('/sett/blokir', [SettingController::class, 'settBlokir']);
+    
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
     Route::get('/unblokir/{id}', [Analytics::class, 'unblokir'])->name('unblokir');
@@ -77,21 +83,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile-user/{id}', [UserController::class, 'profileUser'])->name('profile-user)');
     Route::post('/update-photo/{id}', [UserController::class, 'updatePhoto'])->name('update-photo');
     Route::get('/data/invoice/{name}', [Customer::class, 'dataInvoice'])->name('invoice');
-
+    
     // SuperAdmin
     Route::get('/payment/approve', [SuperAdmin::class, 'approvalPembayaran'])->name('payment.approve');
     Route::get('/acc/{id}', [SuperAdmin::class, 'acc'])->name('acc');
-    Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->name('user');
+    Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->name('log-aktivitas');
     Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail']);
     Route::get('/rab', [RabController::class, 'index'])->name('rab');
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
-
+    
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->name('pelanggan');
     Route::get('/data/logistik', [Analytics::class, 'logistik'])->name('logistik');
     Route::get('/data/antrian', [Analytics::class, 'antrian'])->name('antrian');
-
+    
     // User Management
     Route::get('/user/management', [UserController::class, 'index'])->name('user');
     Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
@@ -106,12 +112,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customer/history', [Customer::class, 'history'])->name('history');
     Route::get('/customer/request', [Customer::class, 'req'])->name('request');
     Route::post('/customer/add/pengaduan', [Customer::class, 'addPengaduan'])->name('customer.addPengaduan');
-
-
+    
+    
     // Logistik
     Route::post('/logistik/store', [Logistik::class, 'store']);
-
-
+    
+    
     // Teknisi
     Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])->name('teknisi');
     Route::get('/teknisi/selesai/{id}', [TeknisiController::class, 'selesai'])->name('teknisi.selesai');
@@ -119,11 +125,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/teknisi/konfirmasi/{id}', [TeknisiController::class, 'konfirmasi'])->name('teknisi.konfirmasi');
     Route::get('/corp/proses/{id}', [PerusahaanController::class, 'prosesCorp']);
     Route::post('/confirm/corp/{id}', [PerusahaanController::class, 'confirm']);
-
-
+    
+    
     // Perusahaan
     Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
-
+    
     // NOC
     Route::get('/noc/data-olt', [Jaringan::class, 'index'])->name('olt');
     Route::get('/noc/data-odp', [Jaringan::class, 'odp'])->name('odp');
@@ -139,7 +145,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
     Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
     Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
-
+    
     // Keuangan
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->name('pendapatan');
     Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getRevenueData'])->name('pendapatan.ajax');
@@ -163,11 +169,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rab/search', [RabController::class, 'search'])->name('rab-filter');
     Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->name('kas-kecil');
     Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->name('kas-besar');
-
-
+    Route::post('/request/pembayaran/{id}', [KeuanganController::class, 'requestPembayaran']);
+    
+    
     // Mikrotik API
     Route::get('/mikrotik', [MikrotikController::class, 'index'])->name('mikrotik');
-
+    
     // Helpdesk
     Route::get('/helpdesk/data-pengaduan', [HelpdeskController::class, 'dataPengaduan'])->name('data-pengaduan');
     Route::get('/helpdesk/get-pengaduan-data', [HelpdeskController::class,
@@ -178,7 +185,7 @@ Route::middleware(['auth'])->group(function () {
 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
-
+    
     // Payment
     Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
     Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
@@ -209,7 +216,7 @@ Route::get('/payment/test/{invoice_id}', function($invoice_id) {
     // Create a request with test_mode and invoice_id
     $request = new \Illuminate\Http\Request();
     $request->merge(['test_mode' => true, 'invoice_id' => $invoice_id]);
-
+    
     // Call the callback handler directly
     $controller = new \App\Http\Controllers\Payment\TripayController();
     return $controller->paymentCallback($request);
@@ -240,7 +247,7 @@ Route::any('/tripay-callback', function(\Illuminate\Http\Request $request) {
 'all' => $request->all(),
 'content' => $request->getContent()
     ]);
-
+    
     // Forward to the callback handler
     $controller = new \App\Http\Controllers\Payment\TripayController();
     return $controller->paymentCallback($request);

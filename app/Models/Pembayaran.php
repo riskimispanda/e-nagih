@@ -15,7 +15,8 @@ class Pembayaran extends Model
         'keterangan',
         'bukti_bayar',
         'status_id',
-        'user_id'
+        'user_id',
+        'saldo'
     ];
 
 

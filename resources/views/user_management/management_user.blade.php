@@ -43,15 +43,10 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-start align-items-center mb-4 gap-2">
+                <div class="d-flex justify-content-start align-items-center mb-5 gap-2">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBoth">
                         <i class="bx bx-user-plus me-1"></i>Add User
                     </button>
-                    <a href="/log/aktivitas" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Log Users">
-                        <button type="button" class="btn btn-outline-danger btn-sm">
-                            <i class='bx bx-clipboard me-1'></i>Log Users
-                        </button>
-                    </a>
                 </div>
                 <div class="table-responsive">
                     <table id="dataTable" class="table table-hover" style="width:100%">

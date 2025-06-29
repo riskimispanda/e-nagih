@@ -16,7 +16,9 @@ class Invoice extends Model
         'reference',
         'merchant_ref',
         'metode_bayar',
-        'tambahan'
+        'tambahan',
+        'tanggal_blokir',
+        'saldo'
     ];
 
     public function customer()

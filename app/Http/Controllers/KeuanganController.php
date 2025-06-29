@@ -93,7 +93,7 @@ class KeuanganController extends Controller
 
         // Build query for invoices with relationships
         $query = Invoice::with(['customer', 'paket', 'status'])
-            ->orderBy('created_at', 'desc')->where('status_id', 7); // Exclude 'Dibatalkan' status
+            ->orderBy('created_at', 'desc')->whereIn('status_id', [1, 7]); // Exclude 'Dibatalkan' status
 
         // Apply search filter
         if ($search) {
@@ -153,7 +153,7 @@ class KeuanganController extends Controller
         // Get all status options for filter dropdown
         $statusOptions = Status::whereIn('id', [7, 8])->get();
 
-        $metode = Metode::all();
+        $metode = Metode::whereNot('id', 3)->get();
         $pendapatan = Pendapatan::paginate(5);
 
         return view('/keuangan/data-pendapatan',[
@@ -253,7 +253,7 @@ class KeuanganController extends Controller
 
         // Calculate payment statistics
 
-        $invoicePay = Pembayaran::all();
+        $invoicePay = Pembayaran::latest()->get();
 
         $totalPayments = Pembayaran::sum('jumlah_bayar');
 
@@ -807,5 +807,40 @@ class KeuanganController extends Controller
             'totalPendapatan' => $totalPendapatan,
         ]);
     }
+
+    public function requestPembayaran(Request $request, $id)
+    {
+        $invoice = Invoice::with('customer')->findOrFail($id);
+
+        // Hitung sisa saldo (jika lebih bayar)
+        $sisa = ($request->jumlah_bayar ?? 0) - ($invoice->tagihan + $invoice->tambahan);
+
+        // Upload bukti pembayaran jika ada
+        $buktiPath = null;
+        if ($request->hasFile('bukti_pembayaran')) {
+            $file = $request->file('bukti_pembayaran');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $buktiPath = $file->storeAs('bukti_pendapatan', $fileName, 'public');
+        }
+
+        // Buat catatan pembayaran (dengan status 1 = menunggu konfirmasi)
+        Pembayaran::create([
+            'invoice_id'    => $invoice->id,
+            'jumlah_bayar'  => $request->jumlah_bayar,
+            'tanggal_bayar' => now(),
+            'metode_bayar'  => $request->metode_id,
+            'keterangan'    => 'Permintaan Pembayaran langganan ' . $invoice->customer->nama_customer . ' dari ' . auth()->user()->name,
+            'status_id'     => 1, // status menunggu konfirmasi
+            'user_id'       => auth()->id(),
+            'bukti_bayar'   => $buktiPath,
+            'saldo'         => $sisa > 0 ? $sisa : 0, // hanya simpan jika lebih bayar
+        ]);
+
+        // Update status invoice menjadi "menunggu konfirmasi"
+        $invoice->update(['status_id' => 1]);
+
+        return redirect()->back()->with('success', 'Permintaan pembayaran berhasil dikirim untuk ' . $invoice->customer->nama_customer);
+    }
+
 
 }
