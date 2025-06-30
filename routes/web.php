@@ -69,6 +69,8 @@ Route::get('/', [LoginBasic::class, 'index']);
 Route::post('/login', [LoginBasic::class, 'login'])->name('login');
 Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
+// Tripay Payment
+Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
 
 
 Route::middleware(['auth'])->group(function () {
@@ -188,7 +190,6 @@ Route::middleware(['auth'])->group(function () {
     
     // Payment
     Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
-    Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
     Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
     Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
     Route::get('/payment/instructions/{code}', [TripayController::class,

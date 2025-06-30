@@ -56,5 +56,34 @@ class ChatServices
             'pesan' => $response->body(),
         ];
     }
-    
+
+    public function kirimInvoice($to, $invoice)
+    {
+        $url = url('/payment/invoice/' . $invoice->id);
+        $tanggalLengkap = \Carbon\Carbon::createFromFormat('Y-m-d', now()->format('Y-m') . '-' . $invoice->tanggal_blokir)
+            ->format('d-m-Y');
+
+        $totalTagihan = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
+        
+        $response = Http::post("{$this->baseURL}/send-pesan",[
+            'to' => $to . '@c.us',
+            'pesan' => "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
+                        "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
+                        "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
+                        "📄 Nomor Invoice: {$invoice->merchant_ref}\n\n" .
+                        "🔗 Link Pembayaran:\n{$url}\n\n" .
+                        "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
+                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+        ]);
+        
+        if ($response->successful()) {
+            return $response->json();
+        }
+        
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'pesan' => $response->body(),
+        ];
+    }
 }

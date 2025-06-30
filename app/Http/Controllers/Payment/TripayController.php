@@ -49,9 +49,7 @@ class TripayController extends Controller
 
         return view('/pelanggan/payment/invoice', [
             'invoice' => $invoice,
-            'channels' => $filteredChannels,
-            'users' => auth()->user(),
-            'roles' => auth()->user()->roles,
+            'channels' => $filteredChannels
         ]);
     }
 
@@ -142,7 +140,7 @@ class TripayController extends Controller
             \Log::info('Payment attempt', [
                 'invoice_id' => $id,
                 'payment_method' => $paymentMethod,
-                'amount' => $invoice->tagihan
+                'amount' => $invoice->tagihan + $invoice->tambahan - $invoice->saldo
             ]);
 
             // Create transaction in Tripay

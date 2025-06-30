@@ -9,28 +9,31 @@ use Carbon\Carbon;
 use App\Services\MikrotikServices;
 use App\Events\UpdateBaru;
 use Illuminate\Support\Facades\Log;
+use App\Services\ChatServices;
 
 class CekPayment extends Command
 {
-    protected $signature = 'app:cek-payment {--force : Force check all unpaid invoices regardless of block date}';
-    protected $description = 'Blokir Otomatis Jika Belum Bayar pada Tanggal Blokir';
+    protected $signature = 'app:cek-payment {--force : Force check all unpaid invoices regardless of due date}';
+    protected $description = 'Kirim pesan WA otomatis ke pelanggan saat tanggal jatuh tempo';
 
     public function handle()
     {
         $startTime = microtime(true);
-        Log::info('Memulai proses pengecekan pembayaran invoice');
-        $jakartaTime = now()->setTimezone('Asia/Jakarta');
-        $tanggalHariIni = $jakartaTime->day;
+        Log::info('Memulai proses pengiriman pengingat pembayaran invoice');
 
-        $query = Invoice::where('status_id', 7);
+        $tanggalHariIni = now('Asia/Jakarta')->toDateString();
+
+        $query = Invoice::where('status_id', 7); // status belum bayar
+
         if (!$this->option('force')) {
-            $query->where('tanggal_blokir', $tanggalHariIni);
-            $this->info('Memeriksa invoice dengan tanggal_blokir = ' . $tanggalHariIni);
-            Log::info('Memeriksa invoice dengan tanggal_blokir = ' . $tanggalHariIni);
+            $query->whereDate('jatuh_tempo', $tanggalHariIni);
+            $this->info("Memeriksa invoice dengan jatuh_tempo = {$tanggalHariIni}");
+            Log::info("Memeriksa invoice dengan jatuh_tempo = {$tanggalHariIni}");
         } else {
             $this->info('Mode force diaktifkan: memeriksa semua invoice yang belum dibayar.');
             Log::info('Mode force diaktifkan: memeriksa semua invoice yang belum dibayar.');
         }
+
         $invoices = $query->with('customer')->get();
 
         if ($invoices->isEmpty()) {
@@ -39,71 +42,39 @@ class CekPayment extends Command
             return 0;
         }
 
-        $this->info("Ditemukan {$invoices->count()} invoice yang perlu diproses.");
-        Log::info("Ditemukan {$invoices->count()} invoice yang perlu diproses.");
+        $this->info("Ditemukan {$invoices->count()} invoice yang perlu dikirim peringatan.");
+        Log::info("Ditemukan {$invoices->count()} invoice yang perlu dikirim peringatan.");
 
-        $mikrotik = new MikrotikServices();
+        $chatService = new ChatServices();
         $successCount = 0;
         $failedCount = 0;
-        $alreadyBlockedCustomers = Customer::where('status_id', 9)->pluck('id')->toArray();
-        $this->info("Ditemukan " . count($alreadyBlockedCustomers) . " customer yang sudah berstatus blokir.");
-        Log::info("Ditemukan " . count($alreadyBlockedCustomers) . " customer yang sudah berstatus blokir.");
 
         foreach ($invoices as $inv) {
             $customer = $inv->customer;
 
-            if (!$customer) {
-                $msg = "Customer dengan ID {$inv->customer_id} tidak ditemukan.";
+            if (!$customer || empty($customer->no_hp)) {
+                $msg = "Customer ID {$inv->customer_id} tidak ditemukan atau nomor HP kosong.";
                 $this->warn($msg);
                 Log::warning($msg);
                 continue;
             }
 
-            if (empty($customer->usersecret)) {
-                $msg = "Customer ID {$customer->id} tidak memiliki usersecret untuk blokir.";
-                $this->warn($msg);
-                Log::warning($msg);
-                continue;
-            }
             try {
-                $userProfileData = $mikrotik->userProfile($customer->usersecret);
-                if (empty($userProfileData)) {
-                    $msg = "User secret {$customer->usersecret} tidak ditemukan di Mikrotik.";
-                    $this->warn($msg);
-                    Log::warning($msg);
-                    continue;
-                }
-                $currentProfile = $userProfileData[0]['profile'] ?? null;
-                $wasAlreadyBlocked = in_array($customer->id, $alreadyBlockedCustomers);
-                if ($currentProfile !== 'ISOLIREBILLING') {
-                    $mikrotik->changeUserProfile($customer->usersecret, 'ISOLIREBILLING');
-                    $mikrotik->removeActiveConnections($customer->usersecret);
-                    $msg = "Customer {$customer->nama_customer} diubah ke ISOLIREBILLING dan koneksi aktif dihapus.";
-                    $this->info($msg);
-                    Log::info($msg);
-                } else {
-                    $msg = "Customer {$customer->nama_customer} sudah dalam profile ISOLIREBILLING.";
-                    $this->info($msg);
-                    Log::info($msg);
-                }
-                $customer->update(['status_id' => 9]); // Status blokir
-                $inv->update(['paket_id' => 8]); // Paket isolir
+                $res = $chatService->kirimInvoice($customer->no_hp, $inv);
 
-                if (!$wasAlreadyBlocked) {
-                    broadcast(new UpdateBaru(
-                        $customer->toArray(),
-                        'danger',
-                        "Pelanggan {$customer->nama_customer} telah diblokir karena belum membayar tagihan."
-                    ));
-                    $msg = "Customer {$customer->id} ({$customer->nama_customer}) diblokir dan notifikasi dikirim.";
+                if (isset($res['error']) && $res['error']) {
+                    $msg = "Gagal kirim WA ke {$customer->no_hp}: {$res['pesan']}";
+                    $this->error($msg);
+                    Log::error($msg);
+                    $failedCount++;
                 } else {
-                    $msg = "Customer {$customer->id} ({$customer->nama_customer}) diblokir (tanpa notifikasi).";
+                    $msg = "Pengingat WA berhasil dikirim ke {$customer->nama_customer}";
+                    $this->info($msg);
+                    Log::info($msg);
+                    $successCount++;
                 }
-                $this->info($msg);
-                Log::info($msg);
-                $successCount++;
             } catch (\Exception $e) {
-                $msg = "Gagal blokir customer ID {$customer->id}: " . $e->getMessage();
+                $msg = "Exception saat kirim WA customer ID {$customer->id}: " . $e->getMessage();
                 $this->error($msg);
                 Log::error($msg);
                 $failedCount++;
@@ -111,7 +82,7 @@ class CekPayment extends Command
         }
 
         $executionTime = round(microtime(true) - $startTime, 2);
-        $summary = "Selesai. Berhasil: {$successCount}, Gagal: {$failedCount}, Durasi: {$executionTime} detik.";
+        $summary = "Selesai. WA terkirim: {$successCount}, Gagal: {$failedCount}, Durasi: {$executionTime} detik.";
         $this->info($summary);
         Log::info($summary);
         return 0;

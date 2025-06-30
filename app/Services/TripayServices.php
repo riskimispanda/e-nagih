@@ -141,6 +141,8 @@ class TripayServices
 
     public function createTransaction($invoice, $method)
     {
+        // dd($invoice->saldo);
+
         $apiKey = config('tripay.api_key');
         $privateKey = config('tripay.private_key');
         $merchantCode = config('tripay.merchant_code');
@@ -163,14 +165,16 @@ class TripayServices
 
         $tagihan = $invoice->tagihan;
         $tambahan = $invoice->tambahan ?? 0;
-        $totalTagihan = $tagihan + $tambahan;
+        $saldo = $invoice->saldo ?? 0;
+        $totalTagihan = $tagihan + $tambahan - $saldo;
+        // dd($totalTagihan);
         // Prepare item details
         $items = [
             [
                 'name' => 'Tagihan Internet - ' . date('F Y'),
-                'price' => $invoice->tagihan,
+                'price' => $totalTagihan,
                 'quantity' => 1,
-                'subtotal' => $invoice->tagihan,
+                'subtotal' => $totalTagihan,
             ]
         ];
         if($tambahan > 0)
