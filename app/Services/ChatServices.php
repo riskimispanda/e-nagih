@@ -70,7 +70,7 @@ class ChatServices
             'pesan' => "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
                         "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
                         "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
-                        "📄 Nomor Invoice: {$invoice->merchant_ref}\n\n" .
+                        "📄 Nomor Invoice: INV-E-NAGIH-{$invoice->customer->nama_customer}\n\n" .
                         "🔗 Link Pembayaran:\n{$url}\n\n" .
                         "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
                         "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"

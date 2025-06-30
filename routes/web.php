@@ -71,6 +71,11 @@ Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
 // Tripay Payment
 Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
+// Payment
+Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
+Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
+Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
+Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
 
 
 Route::middleware(['auth'])->group(function () {
@@ -187,13 +192,6 @@ Route::middleware(['auth'])->group(function () {
 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
-    
-    // Payment
-    Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
-    Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
-    Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
-    Route::get('/payment/instructions/{code}', [TripayController::class,
-'getPaymentInstructions'])->name('payment.instructions');
 });
 
 // Payment callback routes (outside auth middleware and CSRF protection)
