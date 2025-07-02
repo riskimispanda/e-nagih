@@ -12,42 +12,46 @@ class TripayServices
      * @param string $code Payment method code (e.g., 'BRIVA', 'MANDIRIVA')
      * @return array Payment instructions
      */
-    public function getPaymentInstructions($code)
+    public function getPaymentInstructions(string $code): array
     {
-        $apiKey = config('tripay.api_key');
-
-        // Determine if we're in production or sandbox mode
-        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
-            ? 'https://tripay.co.id/api/'
-            : 'https://tripay.co.id/api-sandbox/';
-
-        $payload = ['code' => $code];
+        $apiKey  = config('tripay.api_key');
+        $baseUrl = rtrim(config('tripay.base_url'), '/');
+        $url     = $baseUrl . '/payment/instruction?code=' . urlencode($code);
 
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_FRESH_CONNECT  => true,
-            CURLOPT_URL            => $baseUrl . 'payment/instruction?' . http_build_query($payload),
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER         => false,
-            CURLOPT_HTTPHEADER     => ['Authorization: Bearer '.$apiKey],
-            CURLOPT_FAILONERROR    => false,
-            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $apiKey
+            ],
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_TIMEOUT        => 10,
         ]);
 
         $response = curl_exec($curl);
-        $error = curl_error($curl);
-
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        // Log error if any
         if ($error) {
-            \Log::error('Error fetching payment instructions from Tripay: ' . $error);
-            return ['success' => false, 'message' => $error];
+            \Log::error("Tripay Payment Instruction Error: $error");
+            return [
+                'success' => false,
+                'message' => $error,
+                'data'    => null
+            ];
         }
 
-        return json_decode($response, true);
+        $result = json_decode($response, true);
+
+        if (!($result['success'] ?? false)) {
+            \Log::warning('Tripay Instruction Response Error: ' . $response);
+        }
+
+        return $result;
     }
+
 
     /**
      * Get transaction details by reference
@@ -55,209 +59,189 @@ class TripayServices
      * @param string $reference Merchant reference
      * @return array Transaction details
      */
-    public function getTransactionDetails($reference)
+    public function getTransactionDetails(string $reference): array
     {
-        $apiKey = config('tripay.api_key');
-
-        // Determine if we're in production or sandbox mode
-        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
-            ? 'https://tripay.co.id/api/'
-            : 'https://tripay.co.id/api-sandbox/';
-
-        $payload = ['reference' => $reference];
+        $apiKey  = config('tripay.api_key');
+        $baseUrl = rtrim(config('tripay.base_url'), '/');
+        $url     = $baseUrl . '/transaction/detail?reference=' . urlencode($reference);
 
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_FRESH_CONNECT  => true,
-            CURLOPT_URL            => $baseUrl . 'transaction/detail?' . http_build_query($payload),
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER         => false,
-            CURLOPT_HTTPHEADER     => ['Authorization: Bearer '.$apiKey],
-            CURLOPT_FAILONERROR    => false,
-            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $apiKey
+            ],
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_TIMEOUT        => 10,
         ]);
 
         $response = curl_exec($curl);
-        $error = curl_error($curl);
-
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        // Log error if any
         if ($error) {
-            \Log::error('Error fetching transaction details from Tripay: ' . $error);
-            return ['success' => false, 'message' => $error];
+            \Log::error("Tripay Transaction Detail Error: $error");
+            return [
+                'success' => false,
+                'message' => $error,
+                'data'    => null
+            ];
         }
 
-        return json_decode($response, true);
+        $result = json_decode($response, true);
+
+        if (!($result['success'] ?? false)) {
+            \Log::warning("Tripay Transaction Detail Failed: " . $response);
+        }
+
+        return $result;
     }
 
-    public function getPaymentChannels()
-    {
-        $apiKey = config('tripay.api_key');
 
-        // Determine if we're in production or sandbox mode
-        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
-            ? 'https://tripay.co.id/api/'
-            : 'https://tripay.co.id/api-sandbox/';
+    public function getPaymentChannels(): array
+    {
+        $apiKey  = config('tripay.api_key');
+        $baseUrl = config('tripay.base_url'); // ambil dari config/tripay.php
+
+        $url = rtrim($baseUrl, '/') . '/merchant/payment-channel';
 
         $curl = curl_init();
 
         curl_setopt_array($curl, [
-            CURLOPT_FRESH_CONNECT  => true,
-            CURLOPT_URL            => $baseUrl . 'merchant/payment-channel',
+            CURLOPT_URL            => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER         => false,
-            CURLOPT_HTTPHEADER     => ['Authorization: Bearer '.$apiKey],
-            CURLOPT_FAILONERROR    => false,
-            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $apiKey
+            ],
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_TIMEOUT        => 10,
         ]);
 
         $response = curl_exec($curl);
-        $error = curl_error($curl);
-
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        // Log error if any
         if ($error) {
-            \Log::error('Error fetching payment channels from Tripay: ' . $error);
+            \Log::error('Tripay Payment Channel Error: ' . $error);
+            return [];
         }
 
-        // Decode the JSON response
-        $decodedResponse = json_decode($response, true);
+        $result = json_decode($response, true);
 
-        // Check if the response was successful and contains data
-        if (isset($decodedResponse['success']) && $decodedResponse['success'] && isset($decodedResponse['data'])) {
-            return $decodedResponse['data'];
+        if ($result['success'] ?? false) {
+            return $result['data'] ?? [];
         }
 
-        // Log error if response is not as expected
-        if ($response) {
-            \Log::warning('Unexpected response from Tripay payment channels: ' . $response);
-        }
-
+        \Log::warning('Tripay Payment Channel Unexpected Response: ' . $response);
         return [];
     }
 
-    public function createTransaction($invoice, $method)
+
+    public function createTransaction($invoice, $method): array
     {
-        // dd($invoice->saldo);
-
-        $apiKey = config('tripay.api_key');
-        $privateKey = config('tripay.private_key');
+        $apiKey       = config('tripay.api_key');
+        $privateKey   = config('tripay.private_key');
         $merchantCode = config('tripay.merchant_code');
-        // Determine if we're in production or sandbox mode
-        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
-            ? 'https://tripay.co.id/api/'
-            : 'https://tripay.co.id/api-sandbox/';
+        $baseUrl      = rtrim(config('tripay.base_url'), '/');
 
-        // Include the invoice ID in the merchant reference for easier tracking
         $merchantRef = 'INV-' . $invoice->id . '-' . time();
 
-        // Calculate signature
-
-        // Prepare customer data
         $customer = [
-            'name' => $invoice->customer->nama_customer,
+            'name'  => $invoice->customer->nama_customer,
             'email' => $invoice->customer->email ?? 'customer@example.com',
             'phone' => $invoice->customer->no_hp ?? $invoice->customer->no_telp ?? '08123456789',
         ];
 
-        $tagihan = $invoice->tagihan;
-        $tambahan = $invoice->tambahan ?? 0;
-        $saldo = $invoice->saldo ?? 0;
-        $totalTagihan = $tagihan + $tambahan - $saldo;
-        // dd($totalTagihan);
-        // Prepare item details
-        $items = [
-            [
-                'name' => 'Tagihan Internet - ' . date('F Y'),
-                'price' => $totalTagihan,
-                'quantity' => 1,
-                'subtotal' => $totalTagihan,
-            ]
-        ];
-        if($tambahan > 0)
-        {
+        $tagihan     = $invoice->tagihan;
+        $tambahan    = $invoice->tambahan ?? 0;
+        $saldo       = $invoice->saldo ?? 0;
+        $totalAmount = $tagihan + $tambahan - $saldo;
+
+        // Item utama
+        $items = [[
+            'name'     => 'Tagihan Internet - ' . date('F Y'),
+            'price'    => $totalAmount,
+            'quantity' => 1,
+            'subtotal' => $totalAmount,
+        ]];
+
+        // Tambahan jika ada
+        if ($tambahan > 0) {
             $items[] = [
-                'name' => 'Tambahan Panjang Kabel',
-                'price' => $invoice->tambahan,
+                'name'     => 'Tambahan Panjang Kabel',
+                'price'    => $tambahan,
                 'quantity' => 1,
-                'subtotal' => $invoice->tambahan,
+                'subtotal' => $tambahan,
             ];
         }
-        $signature = hash_hmac('sha256', $merchantCode . $merchantRef . $totalTagihan, $privateKey);
-        
-        // Prepare payload
+
+        $signature = hash_hmac('sha256', $merchantCode . $merchantRef . $totalAmount, $privateKey);
+
         $payload = [
-            'method' => $method,
-            'merchant_ref' => $merchantRef,
-            'amount' => $totalTagihan,
-            'customer_name' => $customer['name'],
+            'method'         => $method,
+            'merchant_ref'   => $merchantRef,
+            'amount'         => $totalAmount,
+            'customer_name'  => $customer['name'],
             'customer_email' => $customer['email'],
             'customer_phone' => $customer['phone'],
-            'order_items' => $items,
-            'callback_url' => url('/payment/callback'),
-            'return_url' => url('/payment/invoice/' . $invoice->id),
-            'expired_time' => (time() + (24 * 60 * 60)), // 24 jam
-            'signature' => $signature
+            'order_items'    => $items,
+            'callback_url'   => url('/payment/callback'),
+            'return_url'     => url('/payment/invoice/' . $invoice->id),
+            'expired_time'   => time() + (24 * 60 * 60),
+            'signature'      => $signature,
         ];
 
-        // Log the payload for debugging
         \Log::info('Tripay transaction payload', ['payload' => $payload]);
 
         $curl = curl_init();
-
         curl_setopt_array($curl, [
-            CURLOPT_FRESH_CONNECT  => true,
-            CURLOPT_URL            => $baseUrl . 'transaction/create',
+            CURLOPT_URL            => $baseUrl . '/transaction/create',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HEADER         => false,
             CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $apiKey],
-            CURLOPT_FAILONERROR    => false,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => http_build_query($payload),
-            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_TIMEOUT        => 15,
         ]);
 
         $response = curl_exec($curl);
-        $error = curl_error($curl);
-
+        $error    = curl_error($curl);
         curl_close($curl);
 
-        // Log error if any
         if ($error) {
             \Log::error('Error creating Tripay transaction: ' . $error);
+            return ['success' => false, 'message' => $error];
         }
 
-        $decodedResponse = json_decode($response, true);
+        $decoded = json_decode($response, true);
+        \Log::info('Tripay transaction response', ['response' => $decoded]);
 
-        // Log the response for debugging
-        \Log::info('Tripay transaction response', ['response' => $decodedResponse]);
-
-        // If transaction was created successfully, store the reference in the invoice
-        if (isset($decodedResponse['success']) && $decodedResponse['success'] && isset($decodedResponse['data'])) {
+        // Simpan ke invoice jika berhasil
+        if ($decoded['success'] ?? false) {
             try {
-                // Update the invoice with the reference and merchant_ref
-                $invoice->reference = $decodedResponse['data']['reference'] ?? null;
-                $invoice->merchant_ref = $merchantRef;
-                $invoice->metode_bayar = $method;
-                $invoice->save();
+                $invoice->update([
+                    'reference'     => $decoded['data']['reference'] ?? null,
+                    'merchant_ref'  => $merchantRef,
+                    'metode_bayar'  => $method,
+                ]);
 
-                \Log::info('Updated invoice with Tripay reference', [
-                    'invoice_id' => $invoice->id,
-                    'reference' => $invoice->reference,
-                    'merchant_ref' => $invoice->merchant_ref,
-                    'metode_bayar' => $invoice->metode_bayar
+                \Log::info('Invoice updated with Tripay reference', [
+                    'invoice_id'    => $invoice->id,
+                    'reference'     => $invoice->reference,
+                    'merchant_ref'  => $merchantRef,
+                    'metode_bayar'  => $method,
                 ]);
             } catch (\Exception $e) {
-                \Log::error('Failed to update invoice with Tripay reference', [
+                \Log::error('Failed to update invoice', [
                     'invoice_id' => $invoice->id,
-                    'error' => $e->getMessage()
+                    'error'      => $e->getMessage(),
                 ]);
             }
         }
-        // dd($decodedResponse);
-        return $decodedResponse;
+
+        return $decoded;
     }
+
 }
