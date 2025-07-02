@@ -15,6 +15,7 @@ use App\Services\MikrotikServices;
 use Paginate;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Kas;
+use App\Models\Perusahaan;
 
 class KeuanganController extends Controller
 {
@@ -22,6 +23,13 @@ class KeuanganController extends Controller
     public function dashboardKeuangan()
     {
         // Calculate financial metrics
+        $subs = Pembayaran::sum('jumlah_bayar');
+        $corp = Perusahaan::where('status_id', 3)->sum('harga');
+        $nonSubs = Pendapatan::sum('jumlah_pendapatan');
+        // dd($corp + $subs + $nonSubs);
+        $totalFull = $subs + $corp + $nonSubs;
+        $totalSubs = $subs + $corp;
+
         $totalRevenue = Invoice::whereHas('status', function($q) {
             $q->where('nama_status', 'Sudah Bayar');
         })->sum('tagihan');
@@ -65,6 +73,28 @@ class KeuanganController extends Controller
         $pendingPercentage = $totalInvoices > 0 ? round(($pendingCount / $totalInvoices) * 100, 1) : 0;
         $overduePercentage = max(0, 100 - $paidPercentage - $pendingPercentage);
 
+        // Get revenue trends data for the last 6 months
+        $monthlyData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $month = $date->format('M');
+            $year = $date->format('Y');
+            
+            // Get subscription revenue
+            $subscriptionRevenue = Pembayaran::whereMonth('tanggal_bayar', $date->month)
+                ->whereYear('tanggal_bayar', $date->year)
+                ->sum('jumlah_bayar');
+
+            // Get non-subscription revenue
+            $nonSubscriptionRevenue = Pendapatan::whereMonth('tanggal', $date->month)
+                ->whereYear('tanggal', $date->year)
+                ->sum('jumlah_pendapatan');
+
+            $monthlyData['labels'][] = $month . ' ' . $year;
+            $monthlyData['subscription'][] = $subscriptionRevenue;
+            $monthlyData['nonSubscription'][] = $nonSubscriptionRevenue;
+        }
+
         return view('/keuangan/dashboard-keuangan/dashboard-keuangan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -77,6 +107,10 @@ class KeuanganController extends Controller
             'paidPercentage' => $paidPercentage,
             'pendingPercentage' => $pendingPercentage,
             'overduePercentage' => $overduePercentage,
+            'totalFull' => $totalFull,
+            'subs' => $totalSubs,
+            'nonSubs' => $nonSubs,
+            'monthlyData' => $monthlyData
         ]);
     }
 

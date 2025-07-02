@@ -17,7 +17,7 @@ class TripayServices
         $apiKey = config('tripay.api_key');
 
         // Determine if we're in production or sandbox mode
-        $baseUrl = env('APP_ENV') === 'production'
+        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
             ? 'https://tripay.co.id/api/'
             : 'https://tripay.co.id/api-sandbox/';
 
@@ -60,7 +60,7 @@ class TripayServices
         $apiKey = config('tripay.api_key');
 
         // Determine if we're in production or sandbox mode
-        $baseUrl = env('APP_ENV') === 'production'
+        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
             ? 'https://tripay.co.id/api/'
             : 'https://tripay.co.id/api-sandbox/';
 
@@ -97,7 +97,7 @@ class TripayServices
         $apiKey = config('tripay.api_key');
 
         // Determine if we're in production or sandbox mode
-        $baseUrl = env('APP_ENV') === 'production'
+        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
             ? 'https://tripay.co.id/api/'
             : 'https://tripay.co.id/api-sandbox/';
 
@@ -147,7 +147,7 @@ class TripayServices
         $privateKey = config('tripay.private_key');
         $merchantCode = config('tripay.merchant_code');
         // Determine if we're in production or sandbox mode
-        $baseUrl = env('APP_ENV') === 'production'
+        $baseUrl = env('TRIPAY_MODE', 'sandbox') === 'production'
             ? 'https://tripay.co.id/api/'
             : 'https://tripay.co.id/api-sandbox/';
 
@@ -198,7 +198,7 @@ class TripayServices
             'customer_phone' => $customer['phone'],
             'order_items' => $items,
             'callback_url' => url('/payment/callback'),
-            'return_url' => url('/data/invoice/' . $invoice->customer->nama_customer),
+            'return_url' => url('/payment/invoice/' . $invoice->id),
             'expired_time' => (time() + (24 * 60 * 60)), // 24 jam
             'signature' => $signature
         ];

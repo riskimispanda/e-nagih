@@ -40,17 +40,6 @@
     },
     {
       "url": "/dashboard",
-      "name": "Analisis",
-      "icon": "menu-icon tf-icons bx bx-bar-chart-square",
-      "slug": "dashboard",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik"
-      ]
-    },
-    {
-      "url": "/dashboard",
       "name": "Laporan",
       "icon": "menu-icon tf-icons bx bxs-report",
       "slug": "dashboard",

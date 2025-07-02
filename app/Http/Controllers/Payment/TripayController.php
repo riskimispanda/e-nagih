@@ -117,6 +117,7 @@ class TripayController extends Controller
      */
     public function processPayment(Request $request, $id)
     {
+        // dd('Masuk Tripay',$id , $request->all());
         // Validate the request
         $request->validate([
             'payment_method' => 'required|string',

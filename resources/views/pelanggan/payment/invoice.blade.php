@@ -71,7 +71,7 @@
                         <div class="row align-items-center">
                             <div class="col-md-6">
                                 <div class="d-flex align-items-center">
-                                    <img src="/assets/nagih.svg" alt="Logo" class="me-3" style="width: 60px">
+                                    <img src="/assets/nagih.svg" alt="Logo" class="me-2" style="width: 120px">
                                     <div>
                                         <h5 class="mb-1">Niscala Network</h5>
                                         <p class="mb-0 small">Temanggung, Jetis, Saptosari<br>

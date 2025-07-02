@@ -163,7 +163,8 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h3 class="fw-bold mb-2">Dashboard Keuangan</h3>
-                <p class="mb-0 opacity-75 text-muted">Pantau performa keuangan dan analisis pendapatan secara real-time</p>
+                <p class="mb-0 opacity-75 text-muted">Pantau performa keuangan dan analisis pendapatan secara real-time
+                </p>
             </div>
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <button onclick="refreshDashboard()" class="btn btn-light btn-sm">
@@ -184,7 +185,7 @@
                     </div>
                     <div class="metric-label">Total Pendapatan</div>
                     <div class="metric-value text-success" id="totalRevenue">Rp
-                        {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</div>
+                        {{ number_format($totalFull ?? 0, 0, ',', '.') }}</div>
                     <div class="metric-change text-success mt-auto">
                         <i class="bx bx-up-arrow-alt"></i>
                         <span>+12.5% dari bulan lalu</span>
@@ -200,9 +201,9 @@
                     <div class="stat-icon bg-info bg-opacity-10 text-primary">
                         <i class="bx bx-calendar"></i>
                     </div>
-                    <div class="metric-label">Pendapatan Bulan Ini</div>
+                    <div class="metric-label">Pendapatan Non Langganan</div>
                     <div class="metric-value text-primary" id="monthlyRevenue">Rp
-                        {{ number_format($monthlyRevenue ?? 0, 0, ',', '.') }}</div>
+                        {{ number_format($nonSubs ?? 0, 0, ',', '.') }}</div>
                     <div class="metric-change text-primary mt-auto">
                         <i class="bx bx-up-arrow-alt"></i>
                         <span>+8.2% dari target</span>
@@ -218,9 +219,9 @@
                     <div class="stat-icon bg-warning bg-opacity-10 text-warning">
                         <i class="bx bx-time"></i>
                     </div>
-                    <div class="metric-label">Pembayaran Tertunda</div>
+                    <div class="metric-label">Pendapatan Langganan</div>
                     <div class="metric-value text-warning" id="pendingPayments">Rp
-                        {{ number_format($pendingRevenue ?? 0, 0, ',', '.') }}</div>
+                        {{ number_format($subs ?? 0, 0, ',', '.') }}</div>
                     <div class="metric-change text-warning mt-auto">
                         <i class="bx bx-down-arrow-alt"></i>
                         <span>-5.1% dari minggu lalu</span>
@@ -257,7 +258,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="fw-semibold text-dark mb-1">Tren Pendapatan</h5>
-                            <p class="text-muted small mb-0">Grafik pendapatan 6 bulan terakhir</p>
+                            <p class="text-muted small mb-0">Grafik pendapatan langganan & non-langganan</p>
                         </div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
@@ -265,12 +266,9 @@
                                 6 Bulan
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="changeChartPeriod('3m')">3 Bulan</a>
-                                </li>
-                                <li><a class="dropdown-item" href="#" onclick="changeChartPeriod('6m')">6 Bulan</a>
-                                </li>
-                                <li><a class="dropdown-item" href="#" onclick="changeChartPeriod('1y')">1 Tahun</a>
-                                </li>
+                                <li><a class="dropdown-item" href="#" onclick="updateChartPeriod('3')">3 Bulan</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateChartPeriod('6')">6 Bulan</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="updateChartPeriod('12')">12 Bulan</a></li>
                             </ul>
                         </div>
                     </div>
@@ -508,241 +506,70 @@
 @endsection
 
 @section('page-script')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        let revenueChart;
-        let paymentMethodChart;
-        let refreshInterval;
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the data from PHP
+        const monthlyData = @json($monthlyData);
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeCharts();
-            loadDashboardData();
-            startAutoRefresh();
-        });
-
-        // Initialize charts
-        function initializeCharts() {
-            // Revenue Chart
-            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-            revenueChart = new Chart(revenueCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [{
-                        label: 'Pendapatan',
-                        data: [0, 0, 0, 0, 0, 0],
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#28a745',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    return 'Rp ' + value.toLocaleString('id-ID');
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    },
-                    elements: {
-                        point: {
-                            hoverRadius: 8
-                        }
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        const revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthlyData.labels,
+                datasets: [{
+                    label: 'Pendapatan Langganan',
+                    data: monthlyData.subscription,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Pendapatan Non-Langganan',
+                    data: monthlyData.nonSubscription,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
                     }
-                }
-            });
-
-            // Payment Method Chart
-            const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
-            paymentMethodChart = new Chart(paymentCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Transfer Bank', 'E-Wallet', 'Cash', 'Lainnya'],
-                    datasets: [{
-                        data: [0, 0, 0, 0],
-                        backgroundColor: [
-                            '#28a745',
-                            '#007bff',
-                            '#ffc107',
-                            '#6c757d'
-                        ],
-                        borderWidth: 0,
-                        cutout: '70%'
-                    }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                font: {
-                                    size: 12
-                                }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
                             }
                         }
                     }
                 }
-            });
-        }
-
-        // Load dashboard data
-        function loadDashboardData() {
-            // Simulate loading real data - replace with actual API calls
-            fetch('/api/dashboard/keuangan')
-                .then(response => response.json())
-                .then(data => {
-                    updateMetrics(data);
-                    updateCharts(data);
-                })
-                .catch(error => {
-                    console.log('Using demo data');
-                    // Use demo data for now
-                    const demoData = {
-                        totalRevenue: 15750000,
-                        monthlyRevenue: 2850000,
-                        pendingPayments: 1250000,
-                        totalTransactions: 156,
-                        revenueData: [1200000, 1450000, 1800000, 2100000, 2400000, 2850000],
-                        paymentMethods: [45, 30, 20, 5],
-                        monthlyPaid: 89,
-                        monthlyUnpaid: 23,
-                        paidPercentage: 79,
-                        pendingPercentage: 15,
-                        overduePercentage: 6
-                    };
-                    updateMetrics(demoData);
-                    updateCharts(demoData);
-                });
-        }
-
-        // Update metrics
-        function updateMetrics(data) {
-            document.getElementById('totalRevenue').textContent =
-                'Rp ' + data.totalRevenue.toLocaleString('id-ID');
-            document.getElementById('monthlyRevenue').textContent =
-                'Rp ' + data.monthlyRevenue.toLocaleString('id-ID');
-            document.getElementById('pendingPayments').textContent =
-                'Rp ' + data.pendingPayments.toLocaleString('id-ID');
-            document.getElementById('totalTransactions').textContent =
-                data.totalTransactions.toLocaleString('id-ID');
-
-            // Update summary cards
-            document.getElementById('monthlyPaid').textContent = data.monthlyPaid || 0;
-            document.getElementById('monthlyUnpaid').textContent = data.monthlyUnpaid || 0;
-            document.getElementById('paidPercentage').textContent = (data.paidPercentage || 0) + '%';
-            document.getElementById('pendingPercentage').textContent = (data.pendingPercentage || 0) + '%';
-            document.getElementById('overduePercentage').textContent = (data.overduePercentage || 0) + '%';
-        }
-
-        // Update charts
-        function updateCharts(data) {
-            // Update revenue chart
-            if (revenueChart && data.revenueData) {
-                revenueChart.data.datasets[0].data = data.revenueData;
-                revenueChart.update('none');
-            }
-
-            // Update payment method chart
-            if (paymentMethodChart && data.paymentMethods) {
-                paymentMethodChart.data.datasets[0].data = data.paymentMethods;
-                paymentMethodChart.update('none');
-            }
-        }
-
-        // Refresh dashboard
-        function refreshDashboard() {
-            loadDashboardData();
-
-            // Show refresh feedback
-            const refreshBtn = document.querySelector('[onclick="refreshDashboard()"]');
-            const originalText = refreshBtn.innerHTML;
-            refreshBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Memuat...';
-            refreshBtn.disabled = true;
-
-            setTimeout(() => {
-                refreshBtn.innerHTML = originalText;
-                refreshBtn.disabled = false;
-            }, 1000);
-        }
-
-        // Change chart period
-        function changeChartPeriod(period) {
-            console.log('Changing chart period to:', period);
-            // Implement period change logic here
-            loadDashboardData();
-        }
-
-        // Start auto refresh
-        function startAutoRefresh() {
-            // Refresh every 30 seconds
-            refreshInterval = setInterval(() => {
-                loadDashboardData();
-            }, 30000);
-        }
-
-        // Stop auto refresh when page is hidden
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                if (refreshInterval) {
-                    clearInterval(refreshInterval);
-                }
-            } else {
-                startAutoRefresh();
             }
         });
 
-        // Format currency
-        function formatCurrency(amount) {
-            return 'Rp ' + amount.toLocaleString('id-ID');
-        }
-
-        // Format number
-        function formatNumber(number) {
-            return number.toLocaleString('id-ID');
-        }
-
-        // Animate counter
-        function animateCounter(element, start, end, duration) {
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const current = Math.floor(progress * (end - start) + start);
-                element.textContent = formatNumber(current);
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                }
-            };
-            window.requestAnimationFrame(step);
-        }
-    </script>
+        // Function to update chart period
+        window.updateChartPeriod = async function(months) {
+            try {
+                const response = await fetch(`/dashboard-keuangan/revenue-data?months=${months}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                
+                revenueChart.data.labels = data.labels;
+                revenueChart.data.datasets[0].data = data.subscription;
+                revenueChart.data.datasets[1].data = data.nonSubscription;
+                revenueChart.update();
+            } catch (error) {
+                console.error('Error updating chart:', error);
+                alert('Gagal memperbarui data grafik');
+            }
+        };
+    });
+</script>
 @endsection
