@@ -31,7 +31,7 @@ class NocController extends Controller
 
     public function antrian()
     {
-        return view('noc.data-antrian-noc',[
+        return view('NOC.data-antrian-noc',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customer' => Customer::where('status_id', 1)->where('teknisi_id', null)->get(),
@@ -41,7 +41,7 @@ class NocController extends Controller
 
     public function prosesAntrian($id)
     {
-        return view('noc.proses-antrian',[
+        return view('NOC.proses-antrian',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customer' => Customer::findOrFail($id),
@@ -96,7 +96,7 @@ class NocController extends Controller
         $corp = Perusahaan::findOrFail($id);
         // dd($corp);
         $teknisi = User::where('roles_id', 5)->get();
-        return view('/noc/perusahaan',[
+        return view('/NOC/perusahaan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'corp' => $corp,
