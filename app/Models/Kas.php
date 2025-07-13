@@ -17,7 +17,9 @@ class Kas extends Model
         'keterangan',
         'debit',
         'kredit',
-        'user_id'
+        'user_id',
+        'pengeluaran_id',
+        'status_id'
     ];
 
     public function kas()
@@ -28,6 +30,16 @@ class Kas extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function pengeluaran()
+    {
+        return $this->belongsTo(Pengeluaran::class, 'pengeluaran_id');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status_id');
     }
 
 }

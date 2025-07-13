@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Services\TripayServices;
 use App\Models\Invoice;
+use App\Models\Pembayaran;
+use App\Models\Kas;
 
 class TripayController extends Controller
 {
@@ -42,7 +44,19 @@ class TripayController extends Controller
         $channels = $tripay->getPaymentChannels();
 
         // Filter channels to only include the ones we want to display
-        $allowedChannels = ['BRIVA', 'MANDIRIVA', 'BNIVA', 'QRIS', 'DANA', 'GOPAY', 'OVO'];
+        $allowedChannels = [
+            'BRIVA',
+            'BCAVA',
+            'ALFAMART',
+            'INDOMARET',
+            'ALFAMIDI',
+            'OVO',
+            'QRIS',
+            'QRIS2',
+            'DANA',
+            'SHOPEEPAY'
+        ];
+        
         $filteredChannels = array_filter($channels, function($channel) use ($allowedChannels) {
             return in_array($channel['code'], $allowedChannels);
         });
@@ -202,90 +216,43 @@ class TripayController extends Controller
     public function paymentCallback(Request $request)
     {
         try {
-            // Log the callback request for debugging
             \Log::info('Payment callback received', [
                 'headers' => $request->headers->all(),
                 'body' => $request->getContent(),
                 'all' => $request->all(),
-                'route' => $request->route() ? $request->route()->getName() : 'unknown',
-                'url' => $request->url(),
-                'method' => $request->method(),
-                'content_type' => $request->header('Content-Type'),
-                'user_agent' => $request->header('User-Agent')
             ]);
 
-            // Determine if we're in sandbox mode
             $isSandbox = env('APP_ENV') !== 'production';
-
-            // Get the callback signature
             $callbackSignature = $request->header('X-Callback-Signature');
-
-            // Initialize variables
             $data = null;
             $invoiceId = null;
             $reference = null;
             $merchantRef = null;
 
-            // Check if this is a test mode request first
+            // TEST MODE
             if ($request->has('test_mode')) {
-                \Log::info('Processing test mode callback');
                 $data = (object) $request->all();
                 $invoiceId = $request->input('invoice_id');
                 $reference = $request->input('reference');
                 $merchantRef = $request->input('merchant_ref');
             } else {
-                // Get the JSON data for normal Tripay callbacks
                 $json = $request->getContent();
 
-                // Check if we have JSON content
                 if (empty($json)) {
-                    \Log::info('No JSON content, trying form data (likely from Tripay test)');
-                    // Try to get data from request parameters (for form submissions or Tripay test)
                     $data = (object) $request->all();
                     $reference = $request->input('reference');
                     $merchantRef = $request->input('merchant_ref');
-
-                    // Log all available data for debugging
-                    \Log::info('Form data received', [
-                        'reference' => $reference,
-                        'merchant_ref' => $merchantRef,
-                        'status' => $request->input('status'),
-                        'amount' => $request->input('amount'),
-                        'all_data' => $request->all()
-                    ]);
                 } else {
-                    \Log::info('Processing JSON callback data');
-
-                    // Validate the callback signature if provided and not in test mode
                     if ($callbackSignature && !$isSandbox) {
                         $privateKey = config('tripay.private_key');
                         $signature = hash_hmac('sha256', $json, $privateKey);
-
-                        \Log::info('Signature validation', [
-                            'expected' => $signature,
-                            'received' => $callbackSignature,
-                            'match' => ($signature === $callbackSignature)
-                        ]);
-
                         if ($signature !== $callbackSignature) {
-                            \Log::warning('Invalid signature in production mode');
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Invalid signature',
-                            ], 400);
+                            return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
                         }
-                    } elseif ($isSandbox) {
-                        \Log::info('Sandbox mode - skipping signature validation');
                     }
 
-                    // Decode the JSON
                     $data = json_decode($json);
-
                     if (!$data) {
-                        \Log::error('Failed to decode JSON data', ['json' => $json]);
-
-                        // Fallback to form data if JSON decode fails
-                        \Log::info('JSON decode failed, falling back to form data');
                         $data = (object) $request->all();
                         $reference = $request->input('reference');
                         $merchantRef = $request->input('merchant_ref');
@@ -296,54 +263,25 @@ class TripayController extends Controller
                 }
             }
 
-            // Now find the invoice using the extracted data
-            \Log::info('Looking for invoice', [
-                'reference' => $reference,
-                'merchant_ref' => $merchantRef,
-                'invoice_id' => $invoiceId
-            ]);
-
-            // Try to find invoice by different methods
+            // Cari invoice
             $invoice = null;
-
-            // Method 1: Direct invoice_id (for test mode)
             if ($invoiceId) {
                 $invoice = Invoice::find($invoiceId);
-                if ($invoice) {
-                    \Log::info('Found invoice by direct ID', ['invoice_id' => $invoiceId]);
-                }
             }
 
-            // Method 2: Find by reference
             if (!$invoice && $reference) {
                 $invoice = Invoice::where('reference', $reference)->first();
-                if ($invoice) {
-                    \Log::info('Found invoice by reference', ['reference' => $reference, 'invoice_id' => $invoice->id]);
-                }
             }
 
-            // Method 3: Find by merchant_ref
             if (!$invoice && $merchantRef) {
                 $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
-                if ($invoice) {
-                    \Log::info('Found invoice by merchant_ref', ['merchant_ref' => $merchantRef, 'invoice_id' => $invoice->id]);
-                }
             }
 
-            // Method 4: Extract invoice ID from merchant_ref pattern
             if (!$invoice && $merchantRef) {
                 $parts = explode('-', $merchantRef);
                 if (isset($parts[1]) && is_numeric($parts[1])) {
-                    $extractedId = $parts[1];
-                    $invoice = Invoice::find($extractedId);
+                    $invoice = Invoice::find($parts[1]);
                     if ($invoice) {
-                        \Log::info('Found invoice by extracting ID from merchant_ref', [
-                            'merchant_ref' => $merchantRef,
-                            'extracted_id' => $extractedId,
-                            'invoice_id' => $invoice->id
-                        ]);
-
-                        // Update invoice with reference data if missing
                         if (!$invoice->reference && $reference) {
                             $invoice->reference = $reference;
                         }
@@ -355,172 +293,100 @@ class TripayController extends Controller
                 }
             }
 
-            // Method 5: Try to get transaction details from Tripay API
-            if (!$invoice && $reference && !$request->has('test_mode')) {
-                try {
-                    $tripay = new TripayServices();
-                    $transactionDetails = $tripay->getTransactionDetails($reference);
-
-                    if (isset($transactionDetails['success']) && $transactionDetails['success'] && isset($transactionDetails['data']['merchant_ref'])) {
-                        $apiMerchantRef = $transactionDetails['data']['merchant_ref'];
-                        $parts = explode('-', $apiMerchantRef);
-                        if (isset($parts[1]) && is_numeric($parts[1])) {
-                            $extractedId = $parts[1];
-                            $invoice = Invoice::find($extractedId);
-                            if ($invoice) {
-                                \Log::info('Found invoice via Tripay API', [
-                                    'reference' => $reference,
-                                    'api_merchant_ref' => $apiMerchantRef,
-                                    'invoice_id' => $invoice->id
-                                ]);
-
-                                // Update invoice with reference data
-                                $invoice->reference = $reference;
-                                $invoice->merchant_ref = $apiMerchantRef;
-                                $invoice->save();
-                            }
-                        }
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Error fetching transaction details from Tripay API', [
-                        'reference' => $reference,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-
-            // Final check - if no invoice found, return error
             if (!$invoice) {
-                \Log::warning('Invoice not found after all methods', [
-                    'reference' => $reference,
-                    'merchant_ref' => $merchantRef,
-                    'invoice_id' => $invoiceId,
-                    'request_data' => $request->all()
-                ]);
-
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invoice not found',
-                    'debug_info' => [
-                        'reference' => $reference,
-                        'merchant_ref' => $merchantRef,
-                        'invoice_id' => $invoiceId
-                    ]
+                    'message' => 'Invoice not found'
                 ], 404);
             }
 
-            // Get payment status from data
-            $paymentStatus = null;
-
-            // Try to get status from different possible sources
-            if (isset($data->status)) {
-                $paymentStatus = $data->status;
-            } elseif ($request->has('status')) {
-                $paymentStatus = $request->input('status');
-            }
-
-            // For test mode, always consider it as PAID
+            // Ambil status pembayaran
+            $paymentStatus = $data->status ?? $request->input('status');
             if ($request->has('test_mode')) {
                 $paymentStatus = 'PAID';
             }
 
-            \Log::info('Processing payment status', [
-                'invoice_id' => $invoice->id,
-                'current_status_id' => $invoice->status_id,
-                'payment_status' => $paymentStatus,
-                'test_mode' => $request->has('test_mode'),
-                'is_sandbox' => $isSandbox,
-                'reference' => $reference,
-                'merchant_ref' => $merchantRef
-            ]);
-
-            // Update the invoice status based on the payment status
-            if ($paymentStatus === 'PAID' || $request->has('test_mode')) {
-                // Check if invoice is already paid
+            if ($paymentStatus === 'PAID') {
                 if ($invoice->status_id == 8) {
-                    \Log::info('Invoice already marked as paid', [
-                        'invoice_id' => $invoice->id,
-                        'reference' => $reference
-                    ]);
-
-                    $responseMessage = 'Invoice already paid';
-                } else {
-                    // Update the invoice status to paid (status_id 8 is for paid)
-                    $invoice->status_id = 8;
-                    $invoice->save();
-
-                    \Log::info('Invoice successfully marked as paid', [
-                        'invoice_id' => $invoice->id,
-                        'customer' => $invoice->customer->nama_customer ?? 'Unknown',
-                        'amount' => $invoice->tagihan,
-                        'reference' => $reference,
-                        'merchant_ref' => $merchantRef,
-                        'payment_status' => $paymentStatus
-                    ]);
-
-                    $responseMessage = 'Payment processed successfully';
-
-                    // TODO: Add notification logic here
-                    // Example: event(new InvoicePaid($invoice));
-                    // Example: Mail::to($invoice->customer->email)->send(new PaymentConfirmation($invoice));
+                    return response()->json(['success' => true, 'message' => 'Invoice already paid']);
                 }
-            } else {
-                \Log::info('Payment status not PAID', [
+
+                // Tandai lunas
+                $invoice->status_id = 8;
+                $invoice->save();
+                $metodePembayaran = $data->payment_method ?? 'Tripay';
+                $namaMetode       = $data->payment_name ?? $metodePembayaran;
+                // Buat pembayaran
+                $pembayaran = Pembayaran::create([
                     'invoice_id' => $invoice->id,
-                    'status' => $paymentStatus ?? 'unknown',
-                    'reference' => $reference
+                    'user_id'    => $invoice->customer->user_id ?? null,
+                    'jumlah_bayar'     => $invoice->tagihan,
+                    'tanggal_bayar'    => now(),
+                    'metode_bayar'     => $namaMetode,
+                    'keterangan' => 'Pembayaran otomatis via ' . $namaMetode,
+                    'status_id' => 8,
                 ]);
 
-                // Handle different payment statuses
-                switch ($paymentStatus) {
-                    case 'EXPIRED':
-                        \Log::info('Payment expired', ['invoice_id' => $invoice->id, 'reference' => $reference]);
-                        $responseMessage = 'Payment expired';
-                        break;
-                    case 'FAILED':
-                        \Log::info('Payment failed', ['invoice_id' => $invoice->id, 'reference' => $reference]);
-                        $responseMessage = 'Payment failed';
-                        break;
-                    case 'UNPAID':
-                        \Log::info('Payment still unpaid', ['invoice_id' => $invoice->id, 'reference' => $reference]);
-                        $responseMessage = 'Payment still pending';
-                        break;
-                    default:
-                        \Log::info('Unknown payment status', ['invoice_id' => $invoice->id, 'status' => $paymentStatus, 'reference' => $reference]);
-                        $responseMessage = 'Payment status: ' . ($paymentStatus ?? 'unknown');
+                // Catat kas
+                Kas::create([
+                    'debit'         => $invoice->tagihan,
+                    'keterangan'    => 'Pembayaran invoice #' . $invoice->id . ' oleh ' . ($invoice->customer->nama_customer ?? 'Pelanggan'),
+                    'tanggal_kas'   => now(),
+                    'kas_id'        => 1,
+                    'user_id'       => $invoice->customer->user_id ?? null,
+                    'pembayaran_id' => $pembayaran->id,
+                    'status_id'     => 3
+                ]);
+
+                // Buat invoice baru untuk bulan depan
+                $tanggalJatuhTempoLama = \Carbon\Carbon::parse($invoice->jatuh_tempo);
+                $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
+                $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
+
+                $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                    ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
+                    ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
+                    ->exists();
+
+                if (!$sudahAda) {
+                    Invoice::create([
+                        'customer_id'     => $invoice->customer_id,
+                        'paket_id'        => $invoice->paket_id,
+                        'tagihan'         => $invoice->paket->harga,
+                        'tambahan'        => 0,
+                        'saldo'           => 0,
+                        'status_id'       => 7, // Belum bayar
+                        'created_at'      => $tanggalAwal,
+                        'updated_at'      => $tanggalAwal,
+                        'jatuh_tempo'     => $tanggalJatuhTempo,
+                        'tanggal_blokir'  => $tanggalJatuhTempo->copy()->addDays(3),
+                    ]);
                 }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pembayaran berhasil dan invoice berikutnya dibuat',
+                    'data' => [
+                        'invoice_id'     => $invoice->id,
+                        'payment_status' => $paymentStatus,
+                        'amount'         => $invoice->tagihan
+                    ]
+                ]);
             }
-
-            // Return success response
-            return response()->json([
-                'success' => true,
-                'message' => $responseMessage,
-                'data' => [
-                    'invoice_id' => $invoice->id,
-                    'reference' => $reference,
-                    'merchant_ref' => $merchantRef,
-                    'payment_status' => $paymentStatus,
-                    'invoice_status' => $invoice->status_id == 8 ? 'paid' : 'pending',
-                    'amount' => $invoice->tagihan
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error processing payment callback', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all(),
-                'reference' => $reference ?? 'unknown',
-                'merchant_ref' => $merchantRef ?? 'unknown'
-            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Internal server error: ' . $e->getMessage(),
-                'error_code' => 'CALLBACK_ERROR'
+                'message' => 'Status pembayaran bukan PAID'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error in paymentCallback', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error'
             ], 500);
         }
     }
+
 
     /**
      * Show the callback tester form

@@ -21,6 +21,11 @@ class Invoice extends Model
         'saldo'
     ];
 
+    public function pembayaran()
+    {
+        return $this->hasMany(Pembayaran::class);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');

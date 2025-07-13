@@ -6,6 +6,7 @@
             <th>Tahun</th>
             <th>Kegiatan</th>
             <th>Jumlah Anggaran</th>
+            <th>Anggaran Terealisasi</th>
             <th>Status</th>
             <th>Admin</th>
             <th>Aksi</th>
@@ -23,12 +24,19 @@
             </td>              
             <td>{{ $item->tahun_anggaran }}</td>
             <td>{{ $item->kegiatan }}</td>
-            <td>Rp. {{ number_format($item->jumlah_anggaran, 0, ',', '.') }}</td>
+            <td>
+                Rp. {{ number_format($item->jumlah_anggaran, 0, ',', '.') }}
+            </td>
+            <td>
+                Rp. {{ number_format($item->pengeluaran->jumlah_pengeluaran?? 0, 0, ',', '.') }}
+            </td>
             <td>
                 @if($item->status_id == 11)
                     <span class="badge bg-success bg-opacity-10 text-success">{{$item->status->nama_status}}</span>
                 @elseif($item->status_id == 12)
-                    <span class="badge bg-warning bg-opacity-10 text-dark">{{$item->status->nama_status}}</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger">{{$item->status->nama_status}}</span>
+                @elseif($item->status_id == 1)
+                    <span class="badge bg-warning bg-opacity-10 text-warning">{{$item->status->nama_status}}</span>
                 @endif
             </td>
             <td>
@@ -44,7 +52,7 @@
         </tr>
         @empty
         <tr>
-            <td colspan="8" class="text-center fw-bold">Tidak ada data</td>
+            <td colspan="9" class="text-center fw-bold">Tidak ada data</td>
         </tr>
         @endforelse
     </tbody>

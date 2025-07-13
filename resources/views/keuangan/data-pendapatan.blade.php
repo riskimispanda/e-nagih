@@ -271,6 +271,24 @@
             </div>
         </div>
     </div>
+    
+    {{-- Request Pembayaran Dari Agen --}}
+    <div class="col-12 col-sm-6 col-lg-3">
+        <a href="/payment/approve" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat detail request pembayaran">
+            <div class="revenue-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted small mb-1 fw-medium">Request Pembayaran by Agen</p>
+                        <h5 class="fw-bold text-dark mb-0"></h5>
+                    </div>
+                    <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
+                        <i class="bx bx-notification"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    
 </div>
 
 <!-- Search and Filter Section -->
@@ -350,6 +368,14 @@
 <div class="table-card mb-5" id="invoiceTable">
     <div class="p-6 border-bottom">
         <h5 class="fw-semibold text-dark mb-0">Daftar Invoice Customer</h5>
+    </div>
+    
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-4 border-bottom">
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <a href="/manual/invoice" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Manual Invoice Global">
+                <i class="bx bx-message"></i>
+            </a>
+        </div>
     </div>
     
     <div class="table-responsive p-3">
@@ -439,15 +465,14 @@
                             </td>
                             <td>
                                 <div class="d-flex gap-2">
-                                    <button onclick="viewInvoice({{ $invoice->id }})"
-                                        class="action-btn bg-info bg-opacity-10 text-primary btn-sm">
-                                        <i class="bx bx-show"></i>
-                                    </button>
                                     @if ($invoice->status && $invoice->status->nama_status == 'Belum Bayar')
                                     <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}" data-bs-toggle="modal">
                                         <i class="bx bx-money"></i>
                                     </button>
                                     @endif
+                                    <a href="/kirim/invoice/{{ $invoice->id }}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
+                                        <i class="bx bx-message"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -552,6 +577,92 @@
     </div>
 </div>
 @endforeach
+
+{{-- Modal Detail Invoice --}}
+@foreach ($invoices as $invoice)
+<div class="modal fade" id="detailInvoice{{ $invoice->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content shadow-sm">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center gap-2">
+                    <i class="bx bx-receipt text-primary fs-4"></i>
+                    <span>Detail Invoice - {{ $invoice->customer->nama_customer }}</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <hr>
+            <div class="modal-body mb-3">
+                <div class="row gy-3 gx-4">
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Customer</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-user text-primary"></i>
+                            <span class="text-dark" id="customerName">{{$invoice->customer->nama_customer}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Paket</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-package text-primary"></i>
+                            <span class="text-dark" id="packageName">{{$invoice->paket->nama_paket}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Tagihan</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-money text-primary"></i>
+                            <span class="text-dark" id="invoiceAmount">Rp {{ number_format($invoice->tagihan, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Tagihan Tambahan</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-plus-circle text-primary"></i>
+                            <span class="text-dark" id="additionalAmount">Rp {{ number_format($invoice->tambahan, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Sisa Saldo</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-wallet text-primary"></i>
+                            <span class="text-dark" id="balanceAmount">Rp {{ number_format($invoice->saldo, 0, ',', '.') }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-muted">Jatuh Tempo</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-calendar text-primary"></i>
+                            <span class="text-dark" id="dueDate">{{ date('d-m-Y', strtotime($invoice->jatuh_tempo)) }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label fw-semibold text-muted">Status</label>
+                        <div class="d-flex align-items-center gap-2 fs-6">
+                            <i class="bx bx-check-circle text-primary"></i>
+                            <span class="text-dark" id="invoiceStatus">{{ $invoice->status->nama_status }}</span>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            <hr>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
+
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay d-none">
@@ -757,8 +868,8 @@
     
     // View invoice details
     function viewInvoice(invoiceId) {
-        // You can implement modal or redirect to detail page
-        window.location.href = `/invoice/${invoiceId}`;
+        // Show modal with invoice details
+        $(`#detailInvoice${invoiceId}`).modal('show');
     }
     
     // Process payment

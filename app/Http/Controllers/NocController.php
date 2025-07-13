@@ -53,6 +53,7 @@ class NocController extends Controller
 
     public function assign(Request $request, $id)
     {
+        // dd($request->all());
         $customer = Customer::findOrFail($id);
         $router = Router::findOrFail($request->router_id);
         $paket = $customer->paket->nama_paket;
@@ -70,6 +71,7 @@ class NocController extends Controller
             'local_address' => $request->local_address,
             'pass_secret' => $request->password,
             'status_id' => 5,
+            'remote' => $request->remote
         ]);
 
         $d = $request->koneksi_id;

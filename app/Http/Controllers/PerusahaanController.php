@@ -8,6 +8,7 @@ use App\Models\MediaKoneksi;
 use App\Models\Perangkat;
 use App\Models\Kas;
 use App\Models\Pembayaran;
+use App\Models\User;
 
 
 class PerusahaanController extends Controller
@@ -81,6 +82,7 @@ class PerusahaanController extends Controller
     {
         $corp = Perusahaan::where('status_id', 3)->sum('harga');
         $jumlah = Perusahaan::where('status_id', 3)->count();
+        $agen = User::where('roles_id', 6)->count();
 
         $personal = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
 
@@ -90,6 +92,7 @@ class PerusahaanController extends Controller
             'corp' => $corp,
             'jumlah' => $jumlah,
             'personal' => $personal,
+            'agen' => $agen,
         ]);
     }
     

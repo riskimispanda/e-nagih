@@ -83,7 +83,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="text-center py-5">
+                                <td colspan="5" class="text-center py-5">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
                                         <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>

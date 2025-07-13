@@ -184,7 +184,9 @@
                                 <p class="card-text display-6 fw-bold mb-2">Rp.{{ number_format(0 ?: $saldo, 0, ',', '.') }}</p>
                                 <div class="d-flex align-items-center mt-3">
                                     <i class='bx bx-calendar fs-5 me-2'></i>
-                                    <p class="card-text mb-0">Last Updated: {{ date('d M Y', strtotime($tanggal->tanggal_kas)) }}</p>
+                                    <p class="card-text mb-0">
+                                        Last Updated: {{ optional($tanggal)->tanggal_kas ? \Carbon\Carbon::parse($tanggal->tanggal_kas)->format('d M Y') : 'Belum Ada' }}
+                                    </p>                                    
                                 </div>
                             </div>
                         </div>
@@ -200,7 +202,9 @@
                                     <p class="card-text display-6 fw-bold mb-2">Rp.{{ number_format(0 ?: $jumlah, 0, ',', '.') }}</p>
                                     <div class="d-flex align-items-center mt-3">
                                         <i class='bx bx-calendar fs-5 me-2'></i>
-                                        <p class="card-text mb-0">Last Updated: {{ date('d M Y', strtotime($tanggal->tanggal_kas)) }}</p>
+                                        <p class="card-text mb-0">
+                                            Last Updated: {{ optional($tanggal)->tanggal_kas ? \Carbon\Carbon::parse($tanggal->tanggal_kas)->format('d M Y') : 'Belum Ada' }}
+                                        </p>                                        
                                     </div>
                                 </div>
                             </div>
@@ -272,6 +276,7 @@
                                 <th>Keterangan</th>
                                 <th>Debit</th>
                                 <th>Kredit</th>
+                                <th>Jenis Kas</th>
                                 <th>Admin</th>
                             </tr>
                         </thead>
@@ -287,6 +292,11 @@
                                 </td>
                                 <td class="amount-cell debit-amount">{{ $item->debit ? 'Rp.' . number_format($item->debit, 0, ',', '.') : '-' }}</td>
                                 <td class="amount-cell kredit-amount">{{ $item->kredit ? 'Rp.' . number_format($item->kredit, 0, ',', '.') : '-' }}</td>
+                                <td>
+                                    <span class="badge bg-info" style="text-transform: uppercase;">
+                                        {{ $item->kas->jenis_kas }}
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="d-flex flex-column align-items-center">
                                         <span class="badge bg-danger bg-opacity-10 text-danger mb-1">

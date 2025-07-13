@@ -63,12 +63,21 @@ class HelpdeskController extends Controller
         $corp = Paket::where('nama_paket', 'Dedicated')->get();
         $perusahaan = Perusahaan::all();
         $agen = User::where('roles_id', 6)->get();
+
+        $user = auth()->user();
+        // $coba = $user->roles_id == 6;
+        // dd($coba);
+        $query = Customer::query();
+        if($user->roles_id == 6){
+            $query->where('agen_id', $user->id);
+        }
+        $customer = $query->whereIn('status_id', [1, 2, 5])->paginate(10);
+
         return view('Helpdesk.data-antrian-helpdesk', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'paket' => Paket::whereNotIn('nama_paket', ['ISOLIREBILLING', 'Dedicated'])->get(),
-            'customer' => Customer::whereIn('status_id', [1, 2, 5])
-                ->get(),
+            'customer' => $customer,
             'corp' => $corp,
             'perusahaan' => $perusahaan,
             'agen' => $agen
@@ -78,7 +87,7 @@ class HelpdeskController extends Controller
     // Store
     public function addAntrian(Request $request, ChatServices $chat)
     {
-        // dd($request->input('agen'));
+        // dd($request->all());
         $jenis = $request->input('jenis_pelanggan');
         // dd($jenis);
         $rules = [
@@ -178,12 +187,12 @@ class HelpdeskController extends Controller
             'created_at' => $request->tanggal_reg,
         ]);
 
-        User::create([
-            'name' => $request->nama_customer,
-            'email' => $request->email,
-            'password' => bcrypt('123456'),
-            'roles_id' => 8,
-        ]);
+        // User::create([
+        //     'name' => $request->nama_customer,
+        //     'email' => $request->email,
+        //     'password' => bcrypt('123456'),
+        //     'roles_id' => 8,
+        // ]);
 
         activity('customer')
             ->causedBy(auth()->user())

@@ -19,4 +19,9 @@ class Rab extends Model
         return $this->belongsTo(Status::class, 'status_id');
     }
 
+    public function pengeluaran()
+    {
+        return $this->hasOne(Pengeluaran::class, 'rab_id');
+    }
+
 }

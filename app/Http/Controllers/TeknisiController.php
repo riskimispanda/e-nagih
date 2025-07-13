@@ -16,6 +16,7 @@ use App\Models\ODP;
 use App\Models\MediaKoneksi;
 use App\Models\Invoice;
 use App\Models\Perusahaan;
+use App\Services\ChatServices;
 
 class TeknisiController extends Controller
 {
@@ -116,68 +117,78 @@ class TeknisiController extends Controller
 
     public function konfirmasi(Request $request, $id)
     {
-        // Cari customer atau tampilkan error 404 jika tidak ditemukan
+        // Cari customer berdasarkan ID
         $customer = Customer::findOrFail($id);
-        // dd($customer);
-        if($request->hasFile('foto_rumah')) {
-            $foto_rumah = $request->file('foto_rumah');
-            $fileName = time() . '_' . str_replace(' ', '_', $foto_rumah->getClientOriginalName());
-            $foto_rumah->move(public_path('uploads/foto_rumah'), $fileName);
-            $foto_rumah = 'uploads/foto_rumah/' . $fileName;
+
+        // Upload Foto Rumah
+        if ($request->hasFile('foto_rumah')) {
+            $fotoRumahFile = $request->file('foto_rumah');
+            $fotoRumahName = time() . '_' . str_replace(' ', '_', $fotoRumahFile->getClientOriginalName());
+            $fotoRumahPath = 'uploads/foto_rumah/' . $fotoRumahName;
+            $fotoRumahFile->move(public_path('uploads/foto_rumah'), $fotoRumahName);
         } else {
-            $foto_rumah = null;
+            $fotoRumahPath = null;
         }
-        if($request->hasFile('foto_perangkat')) {
-            $foto_perangkat = $request->file('foto_perangkat');
-            $fileName = time() . '_' . str_replace(' ', '_', $foto_perangkat->getClientOriginalName());
-            $foto_perangkat->move(public_path('uploads/foto_perangkat'), $fileName);
-            $foto_perangkat = 'uploads/foto_perangkat/' . $fileName;
+
+        // Upload Foto Perangkat
+        if ($request->hasFile('foto_perangkat')) {
+            $fotoPerangkatFile = $request->file('foto_perangkat');
+            $fotoPerangkatName = time() . '_' . str_replace(' ', '_', $fotoPerangkatFile->getClientOriginalName());
+            $fotoPerangkatPath = 'uploads/foto_perangkat/' . $fotoPerangkatName;
+            $fotoPerangkatFile->move(public_path('uploads/foto_perangkat'), $fotoPerangkatName);
         } else {
-            $foto_perangkat = null;
+            $fotoPerangkatPath = null;
         }
+
         // Tanggal selesai instalasi
         $tanggalSelesai = now();
 
         // Update data customer
         $customer->update([
-            'panjang_kabel' => $request->panjang_kabel,
-            'redaman' => $request->redaman,
-            'transiver' => $request->transiver,
-            'receiver' => $request->receiver,
-            'access_point' => $request->access_point,
-            'station' => $request->station,
-            'media_id' => $request->media_id,
+            'panjang_kabel'   => $request->panjang_kabel,
+            'redaman'         => $request->redaman,
+            'transiver'       => $request->transiver,
+            'receiver'        => $request->receiver,
+            'access_point'    => $request->access_point,
+            'station'         => $request->station,
+            'media_id'        => $request->media_id,
             'tanggal_selesai' => $tanggalSelesai,
-            'lokasi_id' => $request->odp,
-            'status_id' => 3,
-            'foto_rumah' => $foto_rumah,
-            'foto_perangkat' => $foto_perangkat,
-            'mac_address' => $request->mac_address,
-            'perangkat_id' => $request->modem,
-            'seri_perangkat' => $request->serial_number,
+            'lokasi_id'       => $request->odp,
+            'status_id'       => 3,
+            'foto_rumah'      => $fotoRumahPath,
+            'foto_perangkat'  => $fotoPerangkatPath,
+            'mac_address'     => $request->mac_address,
+            'perangkat_id'    => $request->modem,
+            'seri_perangkat'  => $request->serial_number,
         ]);
 
-        // Hitung jatuh tempo sampai akhir bulan
+        // Hitung jatuh tempo di akhir bulan
         $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
-        $tambahan = $request->panjang_kabel;
-        $tagihanTambahan = 0;
-        if($tambahan > 200)
-        {
-            $tagihanTambahan = ($tambahan - 200) * 1000;
-        }
 
-        // Buat invoice
-        Invoice::create([
-            'customer_id' => $id,
-            'status_id' => 7,
-            'paket_id' => $customer->paket_id,
-            'tagihan' => $this->calculateProrate($customer->paket->harga, $tanggalSelesai),
-            'jatuh_tempo' => $jatuhTempo,
-            'tambahan' => $tagihanTambahan,
+        // Hitung tagihan tambahan jika panjang kabel melebihi 200 meter
+        $panjangKabel = (int) $request->panjang_kabel;
+        $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
+
+        // Hitung tagihan prorate
+        $tagihanProrate = $this->calculateProrate($customer->paket->harga, $tanggalSelesai);
+
+        // Buat invoice dan simpan ke variabel
+        $invoice = Invoice::create([
+            'customer_id'  => $customer->id,
+            'status_id'    => 7, // Tagihan Baru
+            'paket_id'     => $customer->paket_id,
+            'tagihan'      => $tagihanProrate,
+            'jatuh_tempo'  => $jatuhTempo,
+            'tambahan'     => $tagihanTambahan,
         ]);
+
+        // Kirim pesan invoice via WhatsApp
+        $chat = new ChatServices();
+        $chat->invoiceProrate($customer->no_hp, $invoice);
 
         return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
     }
+
 
     /**
      * Show the form for creating a new resource.

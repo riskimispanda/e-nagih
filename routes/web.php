@@ -61,12 +61,14 @@ use App\Http\Controllers\KasController;
 use App\Http\Controllers\RabController;
 use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\AgenController;
+use Illuminate\Support\Facades\Http;
 
 
 // Main Page Route
-Route::get('/', [LoginBasic::class, 'index']);
+Route::get('/', [LoginBasic::class, 'index'])->name('login')->middleware('guest');
 
-Route::post('/login', [LoginBasic::class, 'login'])->name('login');
+Route::post('/login', [LoginBasic::class, 'login'])->name('login.post');
 Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
 // Tripay Payment
@@ -76,13 +78,19 @@ Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])
 Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
 Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
 Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
+Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
 
 
 Route::middleware(['auth'])->group(function () {
     // Setting
     Route::get('/setting', [SettingController::class, 'blokirSetting'])->name('setting');
     Route::post('/sett/blokir', [SettingController::class, 'settBlokir']);
+    Route::get('/visual', [SettingController::class, 'visual'])->name('setting');
     
+    // Invoice
+    Route::match(['GET', 'POST'],'/manual/invoice', [SuperAdmin::class, 'globalInvoice'])->name('global-invoice');
+    Route::get('/kirim/invoice/{id}', [SuperAdmin::class, 'kirimInvoice'])->name('kirim-invoice');
+
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
     Route::get('/unblokir/{id}', [Analytics::class, 'unblokir'])->name('unblokir');
@@ -110,7 +118,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
     // Customer
     Route::post('/customer/store', [Customer::class, 'store'])->name('customer.store');
-    Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
     Route::get('/dashboard/get-customer-data/{id?}', [Analytics::class,
     'getCustomerData'])->name('dashboard.get-customer-data');
     // Customer
@@ -177,8 +184,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->name('kas-kecil');
     Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->name('kas-besar');
     Route::post('/request/pembayaran/{id}', [KeuanganController::class, 'requestPembayaran']);
+    Route::get('/data-agen', [KeuanganController::class, 'agen']);
+    Route::get('/data-agen/search', [KeuanganController::class, 'searchAgen'])->name('data-agen-search');
+    Route::get('/agen/pelanggan/{id}', [KeuanganController::class, 'pelangganAgen'])->name('agen-pelanggan');
+    Route::post('/pengeluaran/hapus/{id}', [PengeluaranController::class, 'hapusPengeluaran'])->name('pengeluaran.hapus');
+    Route::get('/request/hapus/pengeluaran', [PengeluaranController::class, 'requestHapus'])->name('request-hapus-pengeluaran');
+    Route::get('/tolak/hapus/pengeluaran/{id}', [PengeluaranController::class, 'tolakHapus'])->name('tolak-hapus-pengeluaran');
+    Route::get('/konfirmasi/hapus/pengeluaran/{id}', [PengeluaranController::class, 'konfirmasiHapus'])->name('konfirmasi-hapus-pengeluaran');
     
-    
+    // Agen
+    Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->name('data-pembayaran');
+    Route::get('/agen/data-pelanggan/search', [AgenController::class, 'search'])->name('data-pelanggan-agen-search');
+    Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->name('data-pelanggan-agen-statistics');
+    Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name('request-pembayaran-agen');
+    Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->name('pelanggan-agen');
+    Route::get('/pelanggan-agen/statistics', [AgenController::class, 'getCustomerStatistics'])->name('pelanggan-agen-statistics');
+
+
     // Mikrotik API
     Route::get('/mikrotik', [MikrotikController::class, 'index'])->name('mikrotik');
     
@@ -188,8 +210,7 @@ Route::middleware(['auth'])->group(function () {
     'getPengaduanData'])->name('get-pengaduan-data');
     Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->name('antrian-helpdesk');
     Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
-    Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class,
-'updateAntrian'])->name('update-antrian-helpdesk');
+    Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
 });
@@ -198,9 +219,7 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
 
 // Tripay test callback route (specific for Tripay test feature)
-Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])
-->name('payment.tripay.test.callback')
-->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])->name('payment.tripay.test.callback')->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
 
 // Payment callback tester routes (outside auth middleware for easier testing)
 Route::get('/payment/callback-tester', [TripayController::class, 'showCallbackTester'])

@@ -153,6 +153,7 @@
             border-radius: 8px;
             padding: 1.5rem;
             border: 1px solid var(--gray-200);
+            width: 100%;
         }
 
         .detail-list {
@@ -191,6 +192,7 @@
             list-style: none;
             padding: 0;
             margin: 0;
+            width: 100%;
         }
 
         .payment-step {
@@ -349,7 +351,7 @@
                                 <div class="icon">
                                     <i class="fas fa-exclamation-triangle"></i>
                                 </div>
-                                <h1>Layanan Anda Terisolir</h1>
+                                <h1>Layanan Internet Anda Terisolir</h1>
                                 <p>Mohon maaf atas ketidaknyamanan ini</p>
                             </div>
 
@@ -360,84 +362,44 @@
                                         <strong>Status Layanan:</strong> Terisolir karena pembayaran tertunggak
                                     </div>
                                 </div>
-
-                                <div class="info-grid">
-                                    <!-- Billing Information -->
-                                    <div class="info-card">
-                                        <div class="section-title">
-                                            <div class="icon">
-                                                <i class="fas fa-file-invoice-dollar"></i>
-                                            </div>
-                                            Informasi Tagihan
+                                <!-- Payment Instructions -->
+                                <div class="info-card">
+                                    <div class="section-title">
+                                        <div class="icon">
+                                            <i class="fas fa-credit-card"></i>
                                         </div>
-                                        <ul class="detail-list">
-                                            <li class="detail-item">
-                                                <span class="detail-label">ID Pelanggan</span>
-                                                <span class="detail-value">{{ $customer->id ?? 'ID-XXXXX' }}</span>
-                                            </li>
-                                            <li class="detail-item">
-                                                <span class="detail-label">Nama Pelanggan</span>
-                                                <span
-                                                    class="detail-value">{{ $customer->name ?? 'Nama Pelanggan' }}</span>
-                                            </li>
-                                            <li class="detail-item">
-                                                <span class="detail-label">Total Tunggakan</span>
-                                                <span class="detail-value danger">Rp
-                                                    {{ number_format($bill->amount ?? 0, 0, ',', '.') }}</span>
-                                            </li>
-                                            <li class="detail-item">
-                                                <span class="detail-label">Jatuh Tempo</span>
-                                                <span class="detail-value">{{ $bill->due_date ?? date('d-m-Y') }}</span>
-                                            </li>
-                                        </ul>
+                                        Cara Pembayaran
                                     </div>
-
-                                    <!-- Payment Instructions -->
-                                    <div class="info-card">
-                                        <div class="section-title">
-                                            <div class="icon">
-                                                <i class="fas fa-credit-card"></i>
+                                    <ul class="payment-steps">
+                                        <li class="payment-step">
+                                            <div class="step-number">1</div>
+                                            <div>
+                                                <div>Lakukan pembayaran melalui metode berikut:</div>
+                                                <ul class="payment-methods">
+                                                    <li class="payment-method">
+                                                        <i class="fas fa-university icon"></i>
+                                                        Transfer Bank
+                                                    </li>
+                                                    <li class="payment-method">
+                                                        <i class="fas fa-store icon"></i>
+                                                        Minimarket
+                                                    </li>
+                                                    <li class="payment-method">
+                                                        <i class="fas fa-wallet icon"></i>
+                                                        E-Wallet
+                                                    </li>
+                                                </ul>
                                             </div>
-                                            Cara Pembayaran
-                                        </div>
-                                        <ul class="payment-steps">
-                                            <li class="payment-step">
-                                                <div class="step-number">1</div>
-                                                <div>
-                                                    <div>Lakukan pembayaran melalui metode berikut:</div>
-                                                    <ul class="payment-methods">
-                                                        <li class="payment-method">
-                                                            <i class="fas fa-university icon"></i>
-                                                            Transfer Bank
-                                                        </li>
-                                                        <li class="payment-method">
-                                                            <i class="fas fa-store icon"></i>
-                                                            Minimarket
-                                                        </li>
-                                                        <li class="payment-method">
-                                                            <i class="fas fa-wallet icon"></i>
-                                                            E-Wallet
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </li>
-                                            <li class="payment-step">
-                                                <div class="step-number">2</div>
-                                                <div>Konfirmasi pembayaran Anda</div>
-                                            </li>
-                                            <li class="payment-step">
-                                                <div class="step-number">3</div>
-                                                <div>Layanan akan aktif kembali dalam 1x24 jam</div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-
-                                <div class="text-center mt-4">
-                                    <a href="#" class="btn-primary">
-                                        <i class="fas fa-credit-card"></i>
-                                        Bayar Sekarang
-                                    </a>
+                                        </li>
+                                        <li class="payment-step">
+                                            <div class="step-number">2</div>
+                                            <div>Konfirmasi pembayaran Anda</div>
+                                        </li>
+                                        <li class="payment-step">
+                                            <div class="step-number">3</div>
+                                            <div>Layanan akan aktif kembali dalam 1x24 jam</div>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>

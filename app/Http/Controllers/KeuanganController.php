@@ -16,6 +16,11 @@ use Paginate;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Kas;
 use App\Models\Perusahaan;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Services\ChatServices;
+
 
 class KeuanganController extends Controller
 {
@@ -189,6 +194,8 @@ class KeuanganController extends Controller
 
         $metode = Metode::whereNot('id', 3)->get();
         $pendapatan = Pendapatan::paginate(5);
+        $agen = User::where('roles_id', 6)->count();
+        // dd($agen);
 
         return view('/keuangan/data-pendapatan',[
             'users' => auth()->user(),
@@ -205,6 +212,7 @@ class KeuanganController extends Controller
             'endDate' => $endDate,
             'metode' => $metode,
             'pendapatan' => $pendapatan,
+            'agen' => $agen,
         ]);
     }
 
@@ -283,11 +291,11 @@ class KeuanganController extends Controller
             $query->whereDate('tanggal_bayar', '<=', $endDate);
         }
 
-        $payments = $query->paginate(15);
+        $payments = $query->paginate(10);
 
         // Calculate payment statistics
 
-        $invoicePay = Pembayaran::latest()->get();
+        $invoicePay = $query->paginate(10);
 
         $totalPayments = Pembayaran::sum('jumlah_bayar');
 
@@ -605,6 +613,7 @@ class KeuanganController extends Controller
             $kas->keterangan = 'Pendapatan: ' . $request->jenis_pendapatan . ' - ' . $request->deskripsi;
             $kas->tanggal_kas = $request->tanggal;
             $kas->user_id = auth()->user()->id;
+            $kas->status_id = 3;
             $kas->save();
 
             return redirect()->back()->with('success', 'Pendapatan berhasil ditambahkan');
@@ -844,37 +853,273 @@ class KeuanganController extends Controller
 
     public function requestPembayaran(Request $request, $id)
     {
-        $invoice = Invoice::with('customer')->findOrFail($id);
+        $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
 
-        // Hitung sisa saldo (jika lebih bayar)
-        $sisa = ($request->jumlah_bayar ?? 0) - ($invoice->tagihan + $invoice->tambahan);
+        DB::beginTransaction();
 
-        // Upload bukti pembayaran jika ada
-        $buktiPath = null;
-        if ($request->hasFile('bukti_pembayaran')) {
-            $file = $request->file('bukti_pembayaran');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $buktiPath = $file->storeAs('bukti_pendapatan', $fileName, 'public');
+        try {
+            $totalTagihan = $invoice->tagihan + $invoice->tambahan;
+            $jumlahBayar = $request->jumlah_bayar ?? 0;
+
+            $sisa = $jumlahBayar - $totalTagihan;
+
+            // Upload bukti pembayaran jika ada
+            $buktiPath = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $file = $request->file('bukti_pembayaran');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $buktiPath = $file->storeAs('bukti_pendapatan', $fileName, 'public');
+            }
+
+            // Simpan pembayaran
+            $pembayaran = Pembayaran::create([
+                'invoice_id'    => $request->invoice_id,
+                'jumlah_bayar'  => $jumlahBayar,
+                'tanggal_bayar' => now(),
+                'metode_bayar'  => $request->metode_id,
+                'keterangan'    => 'Pembayaran oleh admin ' . auth()->user()->name . ' untuk ' . $invoice->customer->nama_customer,
+                'status_id'     => 8, // Langsung disetujui
+                'user_id'       => auth()->id(),
+                'bukti_bayar'   => $buktiPath,
+                'saldo'         => $sisa > 0 ? $sisa : 0,
+            ]);
+
+            // Kirim notifikasi
+            $chat = new ChatServices();
+            $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
+
+            // Update status invoice lama
+            $invoice->update(['status_id' => 8]);
+
+            // Hitung tanggal invoice bulan depan (PASTIKAN TIDAK LOMPAT 2 BULAN)
+            $tanggalJatuhTempoLama = Carbon::parse($invoice->jatuh_tempo);
+            $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
+            $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
+
+            // Cek apakah invoice bulan depan sudah ada
+            $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
+                ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
+                ->exists();
+
+            // Buat invoice baru jika belum ada
+            if (!$sudahAda) {
+                Invoice::create([
+                    'customer_id'     => $invoice->customer_id,
+                    'paket_id'        => $invoice->paket_id,
+                    'tagihan'         => $invoice->paket->harga,
+                    'tambahan'        => 0,
+                    'saldo'           => $sisa > 0 ? $sisa : 0,
+                    'status_id'       => 7, // Belum bayar
+                    'created_at'      => $tanggalAwal,
+                    'updated_at'      => $tanggalAwal,
+                    'jatuh_tempo'     => $tanggalJatuhTempo,
+                    'tanggal_blokir'  => $invoice->tanggal_blokir,
+                ]);
+            }
+
+            // Catat keuangan ke kas
+            Kas::create([
+                'debit'        => $pembayaran->jumlah_bayar,
+                'tanggal_kas'  => $pembayaran->tanggal_bayar,
+                'keterangan'   => 'Pembayaran dari ' . $pembayaran->invoice->customer->nama_customer,
+                'kas_id'       => 1,
+                'user_id'      => auth()->id(),
+                'pengeluaran_id' => null,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Pembayaran berhasil disimpan dan invoice diperbarui.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
         }
-
-        // Buat catatan pembayaran (dengan status 1 = menunggu konfirmasi)
-        Pembayaran::create([
-            'invoice_id'    => $invoice->id,
-            'jumlah_bayar'  => $request->jumlah_bayar,
-            'tanggal_bayar' => now(),
-            'metode_bayar'  => $request->metode_id,
-            'keterangan'    => 'Permintaan Pembayaran langganan ' . $invoice->customer->nama_customer . ' dari ' . auth()->user()->name,
-            'status_id'     => 1, // status menunggu konfirmasi
-            'user_id'       => auth()->id(),
-            'bukti_bayar'   => $buktiPath,
-            'saldo'         => $sisa > 0 ? $sisa : 0, // hanya simpan jika lebih bayar
-        ]);
-
-        // Update status invoice menjadi "menunggu konfirmasi"
-        $invoice->update(['status_id' => 1]);
-
-        return redirect()->back()->with('success', 'Permintaan pembayaran berhasil dikirim untuk ' . $invoice->customer->nama_customer);
     }
 
+
+
+    public function agen(Request $request)
+    {
+        $query = User::whereIn('roles_id', [6, 7])->withCount('customer');
+
+        // Apply search filter if provided
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('alamat', 'LIKE', "%{$search}%")
+                  ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $agen = $query->paginate(10);
+
+        // If this is an AJAX request, return JSON
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'data' => $agen,
+                'html' => view('keuangan.partials.agen-table-rows', compact('agen'))->render()
+            ]);
+        }
+
+        return view('/keuangan/data-agen',[
+            'users' => Auth::user(),
+            'roles' => Auth::user()->roles,
+            'agen' => $agen,
+        ]);
+    }
+
+    public function searchAgen(Request $request)
+    {
+        $query = User::where('roles_id', 6)->withCount('customer');
+
+        // Apply search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%")
+                  ->orWhere('alamat', 'LIKE', "%{$search}%")
+                  ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $agen = $query->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data' => $agen->items(),
+            'pagination' => [
+                'current_page' => $agen->currentPage(),
+                'last_page' => $agen->lastPage(),
+                'per_page' => $agen->perPage(),
+                'total' => $agen->total(),
+            ]
+        ]);
+    }
+
+    public function pelangganAgen(Request $request, $id)
+    {
+        // Get agen info
+        $agen = User::findOrFail($id);
+
+        // Dapatkan bulan saat ini dalam format angka (01-12)
+        $currentMonth = now()->format('m');
+        $filterMonth = $request->get('month', $currentMonth); // Default ke bulan sekarang
+
+        // Get all invoices from customers under this agent
+        $invoicesQuery = Invoice::with([
+            'customer.paket',
+            'status',
+            'pembayaran.user' // Tambahan
+        ])->whereHas('customer.agen', function($query) use ($id) {
+            $query->where('agen_id', $id)
+                  ->where('status_id', 3);
+        });
+        
+        
+
+        // Filter berdasarkan bulan (format sederhana: 01-12)
+        $filterMonth = $request->get('month', now()->format('m')); // Default ke bulan sekarang
+
+        if ($filterMonth !== 'all') {
+            // Filter berdasarkan bulan yang dipilih (format: 01, 02, 03, dst)
+            $invoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
+        }
+        // Jika month = 'all', tidak ada filter tambahan
+
+        // Filter berdasarkan status tagihan
+        $filterStatus = $request->get('status');
+        if ($filterStatus) {
+            // Gunakan pendekatan yang lebih fleksibel untuk filter status
+            if ($filterStatus == 'Sudah Bayar') {
+                $invoicesQuery->whereHas('status', function($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                });
+            } elseif ($filterStatus == 'Belum Bayar') {
+                $invoicesQuery->whereHas('status', function($q) {
+                    $q->where('nama_status', 'Belum Bayar');
+                });
+            }
+        }
+
+        $invoices = $invoicesQuery->orderBy('jatuh_tempo', 'desc')->paginate(10);
+
+        // Calculate totals for ALL invoices (not just paginated ones) dengan filter yang sama
+        $allInvoicesQuery = Invoice::with(['customer', 'status'])
+            ->whereHas('customer', function($q) use ($id) {
+                $q->where('agen_id', $id)->where('status_id', 3);
+            });
+
+        // Terapkan filter bulan yang sama untuk perhitungan total
+        if ($filterMonth !== 'all') {
+            $allInvoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
+        }
+
+        // Terapkan filter status yang sama untuk perhitungan total
+        if ($filterStatus) {
+            if ($filterStatus == 'Sudah Bayar') {
+                $allInvoicesQuery->whereHas('status', function($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                });
+            } elseif ($filterStatus == 'Belum Bayar') {
+                $allInvoicesQuery->whereHas('status', function($q) {
+                    $q->where('nama_status', 'Belum Bayar');
+                });
+            }
+        }
+
+        $allInvoices = $allInvoicesQuery->get();
+
+        // Calculate statistics for all data
+        $totalPaid = 0;
+        $totalUnpaid = 0;
+        $totalAmount = 0;
+
+        foreach ($allInvoices as $invoice) {
+            $tagihan = $invoice->tagihan ?? 0;
+            $totalAmount += $tagihan;
+
+            if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
+                $totalPaid += $tagihan;
+            } else {
+                $totalUnpaid += $tagihan;
+            }
+        }
+
+        if (!$agen) {
+            abort(404, 'Agen not found');
+        }
+
+        // Data untuk view
+        $monthNames = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        ];
+
+        $currentMonthNum = now()->format('m');
+        $currentMonthName = $monthNames[$currentMonthNum];
+
+        return view('keuangan.data-pelanggan-agen',[
+            'users' => Auth::user(),
+            'roles' => Auth::user()->roles,
+            'invoices' => $invoices,
+            'agen' => $agen,
+            'totalPaid' => $totalPaid,
+            'totalUnpaid' => $totalUnpaid,
+            'totalAmount' => $totalAmount,
+            'currentMonth' => $currentMonth,
+            'filterMonth' => $filterMonth,
+            'filterStatus' => $filterStatus,
+            'monthNames' => $monthNames,
+            'currentMonthNum' => $currentMonthNum,
+            'currentMonthName' => $currentMonthName,
+        ]);
+    }
 
 }

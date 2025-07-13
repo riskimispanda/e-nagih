@@ -58,6 +58,27 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-sm-6">
+                        <small class="text-light fw-medium">Pengaturan</small>
+                        <div class="accordion mt-4" id="accordionExample">
+                            <div class="card accordion-item active">
+                                <h2 class="accordion-header mb-5" id="headingTwo">
+                                    <button type="button" class="accordion-button bg-primary text-white fw-bold" data-bs-toggle="collapse" data-bs-target="#accordionTwo" aria-expanded="true" aria-controls="accordionTwo">
+                                    <i class="bx bx-bot me-1"></i>
+                                        Bot Chat Setting
+                                    </button>
+                                </h2>
+                                <div id="accordionTwo" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">
+                                        <a href="/visual" class="btn btn-warning btn-sm">
+                                            <i class="bx bx-cog me-1"></i>
+                                            Setting Bot
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

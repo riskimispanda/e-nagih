@@ -111,7 +111,7 @@ class SuperAdmin extends Controller
         $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
         
         // Tanggal awal bulan depan
-        $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonth()->startOfMonth(); // 1 bulan depan
+        $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->startOfMonth(); // 1 bulan depan
         $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth(); // Akhir bulan depan
         $tanggalBlokir = $invoice->tanggal_blokir; // Blokir H+3
         
@@ -175,6 +175,37 @@ class SuperAdmin extends Controller
             'prop' => $prop,
             'paket' => $paket
         ]);
+    }
+
+    public function globalInvoice(Request $request)
+    {
+        $invoices = Invoice::with('customer', 'paket')
+                    ->where('status_id', 7)
+                    ->get()
+                    ->groupBy('customer_id'); // Group by customer
+
+        $chat = new ChatServices();
+
+        foreach ($invoices as $customerId => $invoiceGroup) {
+            $customer = $invoiceGroup->first()->customer;
+
+            if (!$customer || !$customer->no_hp) {
+                continue; // Skip jika tidak ada customer atau no_hp
+            }
+
+            $chat->kirimInvoiceMassal($customer, $invoiceGroup); // Kirim ke satu customer
+        }
+
+        return redirect()->back()->with('success', 'Invoice massal berhasil dikirim.');
+    }
+
+    public function kirimInvoice($id)
+    {
+        $invoice = Invoice::find($id);
+        $customer = $invoice->customer->nama_customer;
+        $chat = new ChatServices();
+        $chat->kirimInvoice($invoice->customer->no_hp, $invoice);
+        return redirect()->back()->with('success', "Invoice berhasil dikirim ke {$customer}.");
     }
     
 }

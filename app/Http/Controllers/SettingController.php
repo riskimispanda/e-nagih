@@ -24,4 +24,12 @@ class SettingController extends Controller
         return redirect()->back()->with('toast_success', 'Berhasil mengubah tanggal blokir');
     }
 
+    public function visual()
+    {
+        return view('setting.visual-bot.visual',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles
+        ]);
+    }
+
 }

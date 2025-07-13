@@ -254,12 +254,11 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item">
-                <a href="{{ route('dashboard') }}" class="text-decoration-none">
-                    <i class="bx bx-home-alt me-1"></i>Dashboard
+                <a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard
                 </a>
             </li>
             <li class="breadcrumb-item">
-                <a href="/data/pelanggan" class="text-decoration-none">Data Pelanggan</a>
+                <a href="/data/pendapatan" class="text-decoration-none">Personal</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Konfirmasi Pembayaran</li>
         </ol>

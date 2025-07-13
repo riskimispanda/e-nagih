@@ -16,20 +16,20 @@ class KasController extends Controller
     public function index()
     {
         // Logic to display the list of kas entries
-        $kas = Kas::latest()->paginate(10);
+        $kas = Kas::latest()->where('status_id', 3)->paginate(10);
 
-        $tt = Kas::sum('debit');
-        $tt2 = Kas::sum('kredit');
+        $tt = Kas::where('status_id', 3)->sum('debit');
+        $tt2 = Kas::where('status_id', 3)->sum('kredit');
         $saldo = $tt - $tt2;
 
         // Kas Besar
-        $debitBesar = Kas::where('kas_id', 1)->sum('debit');
-        $kreditBesar = Kas::where('kas_id', 1)->sum('kredit');
+        $debitBesar = Kas::where('kas_id', 1)->where('status_id', 3)->sum('debit');
+        $kreditBesar = Kas::where('kas_id', 1)->where('status_id', 3)->sum('kredit');
         $jumlah = $debitBesar - $kreditBesar;
 
         // Kas Kecil
-        $debitKecil = Kas::where('kas_id', 2)->sum('debit');
-        $kreditKecil = Kas::where('kas_id', 2)->sum('kredit');
+        $debitKecil = Kas::where('kas_id', 2)->where('status_id', 3)->sum('debit');
+        $kreditKecil = Kas::where('kas_id', 2)->where('status_id', 3)->sum('kredit');
         $totalKasKecil = $debitKecil - $kreditKecil;
 
         $tanggal = Kas::latest()->first('tanggal_kas');
@@ -52,8 +52,11 @@ class KasController extends Controller
 
         $kasBesar = DB::table('kas')
             ->where('kas_id', 1)
-            ->selectRaw('SUM(debit) - SUM(kredit) as saldo')
+            ->selectRaw('COALESCE(SUM(debit), 0) - COALESCE(SUM(kredit), 0) as saldo')
             ->value('saldo');
+
+
+        // dd($kasBesar);
 
         // Cek apakah cukup
         if ($request->jumlah > $kasBesar) {
@@ -71,7 +74,7 @@ class KasController extends Controller
         $kasBesar = new Kas();
         $kasBesar->kredit = $request->jumlah;
         $kasBesar->tanggal_kas = $request->tanggal;
-        $kasBesar->keterangan = 'Debosit Kas Kecil';
+        $kasBesar->keterangan = 'Pindah ke Kas Kecil';
         $kasBesar->kas_id = 1;
         $kasBesar->user_id = auth()->user()->id;
         $kasBesar->save();

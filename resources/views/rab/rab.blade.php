@@ -459,6 +459,28 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-sm-4">
+                    <div class="card bg-success text-white shadow rounded-3">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class='bx bx-check-circle fs-1 me-2'></i>
+                                <h5 class="card-title text-white mb-0 fw-bold">Anggaran Terealisasi</h5>
+                            </div>
+                            <p id="anggaran-terealisasi" class="card-text display-6 fw-bold mb-2">Rp.0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card bg-info text-white shadow rounded-3">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class='bx bx-calculator fs-1 me-2'></i>
+                                <h5 class="card-title text-white mb-0 fw-bold">Sisa Anggaran</h5>
+                            </div>
+                            <p id="sisa-anggaran" class="card-text display-6 fw-bold mb-2">Rp.0</p>
+                        </div>
+                    </div>
+                </div>
             </div>
             <hr>
             <div class="d-flex justify-content-start">
@@ -597,34 +619,65 @@
     }
 </script>
 <script>
-    $('#filter-bulan, #filter-tahun').on('change', function () {
-    let bulan = $('#filter-bulan').val();
-    let tahun = $('#filter-tahun').val();
+    // Function to format currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(amount || 0);
+    }
 
-    $.ajax({
-        url: '{{ route("rab-filter") }}',
-        type: 'GET',
-        data: {
-            bulan: bulan,
-            tahun: tahun
-        },
-        success: function (response) {
-            // response harus mengandung 'html' (tabel) dan 'total'
-            $('#result-container').html(response.html);
+    // Initialize cards with data from server
+    $(document).ready(function() {
+        // Set initial values from server data
+        $('#pagu-tahun').text(formatCurrency({{ $totalAnggaran ?? 0 }}));
+        $('#anggaran-terealisasi').text(formatCurrency({{ $totalTerealisasi ?? 0 }}));
+        $('#sisa-anggaran').text(formatCurrency({{ $sisaAnggaran ?? 0 }}));
 
-            const totalFormatted = new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0
-            }).format(response.total || 0);
-
-            $('#pagu-tahun').text(totalFormatted);
-        },
-        error: function () {
-            alert('Gagal mengambil data');
-        }
+        console.log('Initial data loaded:', {
+            total: {{ $totalAnggaran ?? 0 }},
+            terealisasi: {{ $totalTerealisasi ?? 0 }},
+            sisa: {{ $sisaAnggaran ?? 0 }}
+        });
     });
-});
+
+    $('#filter-bulan, #filter-tahun').on('change', function () {
+        let bulan = $('#filter-bulan').val();
+        let tahun = $('#filter-tahun').val();
+
+        console.log('Filter changed:', { bulan, tahun });
+
+        $.ajax({
+            url: '{{ route("rab-filter") }}',
+            type: 'GET',
+            data: {
+                bulan: bulan,
+                tahun: tahun
+            },
+            success: function (response) {
+                console.log('Response received:', response);
+
+                // Update table
+                $('#result-container').html(response.html);
+
+                // Update cards with formatted currency
+                $('#pagu-tahun').text(formatCurrency(response.total));
+                $('#anggaran-terealisasi').text(formatCurrency(response.terealisasi));
+                $('#sisa-anggaran').text(formatCurrency(response.sisa));
+
+                console.log('Cards updated:', {
+                    total: response.total,
+                    terealisasi: response.terealisasi,
+                    sisa: response.sisa
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error('AJAX Error:', { xhr, status, error });
+                alert('Gagal mengambil data');
+            }
+        });
+    });
 
 </script>
 

@@ -1,6 +1,6 @@
 @extends('layouts/blankLayout')
 
-@section('title', 'Login Basic - Pages')
+@section('title', 'Halaman Login - E-Nagih')
 
 @section('page-style')
     @vite(['resources/assets/vendor/scss/pages/page-auth.scss'])

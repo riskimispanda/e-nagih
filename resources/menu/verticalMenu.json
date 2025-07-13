@@ -9,7 +9,8 @@
         "Sales",
         "NOC",
         "Helpdesk",
-        "Teknisi"
+        "Teknisi",
+        "Agen"
       ]
     },
     {
@@ -24,7 +25,8 @@
         "Admin Logistik",
         "Sales",
         "NOC",
-        "Helpdesk"
+        "Helpdesk",
+        "Agen"
       ]
     },
     {
@@ -90,7 +92,8 @@
             "Super Admin",
             "Teknisi",
             "Admin Keuangan",
-            "Admin Logistik"
+            "Admin Logistik",
+            "NOC"
           ]
         },
         {
@@ -262,7 +265,8 @@
     {
       "menuHeader": "Management",
       "roles": [
-        "Super Admin"
+        "Super Admin",
+        "Admin Keuangan"
       ]
     },
     {
@@ -289,8 +293,7 @@
           "name": "Log Aktivitas",
           "slug": "log-aktivitas",
           "roles": [
-            "Super Admin",
-            "Admin Keuangan"
+            "Super Admin"
           ]
         },
         {
@@ -433,7 +436,8 @@
       "_comment": "Menu untuk helpdesk",
       "menuHeader": "Data",
       "roles": [
-        "Helpdesk"
+        "Helpdesk",
+        "Agen"
       ]
     },
     {
@@ -442,7 +446,8 @@
       "icon": "menu-icon tf-icons bx bx-list-plus",
       "slug": "antrian-helpdesk",
       "roles": [
-        "Helpdesk"
+        "Helpdesk",
+        "Agen"
       ]
     },
     {
@@ -459,6 +464,31 @@
       "slug": "data-pengaduan",
       "roles": [
         "Helpdesk"
+      ]
+    },
+    {
+      "_comment": "Menu untuk Agen",
+      "menuHeader": "Data Pelanggan",
+      "roles": [
+        "Agen"
+      ]
+    },
+    {
+      "url": "/pelanggan-agen",
+      "name": "Data Pelanggan",
+      "icon": "menu-icon tf-icons bx bxs-user",
+      "slug": "pelanggan-agen",
+      "roles": [
+        "Agen"
+      ]
+    },
+    {
+      "url": "/agen/data-pelanggan",
+      "name": "Data Pembayaran",
+      "icon": "menu-icon tf-icons bx bx-money",
+      "slug": "data-pembayaran",
+      "roles": [
+        "Agen"
       ]
     }
   ]

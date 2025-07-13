@@ -67,6 +67,22 @@
                     </div>
                 </a>
             </div>
+            <div class="col-sm-4 mb-4">
+                <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Detail Data Agen">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="card-title d-flex align-items-start justify-content-between mb-4">
+                                <h5 class="card-title fw-bold mb-0">
+                                    <span class="badge bg-success bg-opacity-10 text-success"><i class="bx bx-hard-hat"></i></span>
+                                    Data Agen
+                                </h5>
+                            </div>
+                            <h4 class="card-title fw-bold mb-3">{{$agen}}</h4>
+                            <p class="text-muted mb-1">Table Data Agen</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 </div>

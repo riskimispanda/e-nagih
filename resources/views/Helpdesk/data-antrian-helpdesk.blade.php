@@ -482,7 +482,7 @@
                     </div>
                 </div>
             </div>
-
+            @if(auth()->user()->roles_id == 7)
             {{-- Perusahaan --}}
             <div class="card">
                 <div class="card-header mb-5">
@@ -571,7 +571,7 @@
                     </div>
                 </div>
             </div>
-
+            @endif
             {{-- Pelanggan --}}
             <div class="card">
                 <div class="card-header mb-5">
@@ -651,7 +651,7 @@
                                     </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
+                                    <td colspan="9" class="text-center py-5">
                                         <div class="d-flex flex-column align-items-center">
                                             <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
                                             <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
@@ -662,6 +662,9 @@
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-flex mt-5">
+                        {{ $customer->links() }}
                     </div>
                 </div>
             </div>
@@ -684,7 +687,9 @@
                             <label class="form-label">Jenis Pelanggan</label>
                             <select name="jenis_pelanggan" id="jenis" class="form-select" onchange="tampilForm()">
                                 <option selected disabled value="">Pilih Jenis</option>
+                                @if(auth()->user()->roles_id == 7)
                                 <option value="Perusahaan">Perusahaan</option>
+                                @endif
                                 <option value="Personal">Personal</option>
                             </select>
                         </div>
@@ -776,6 +781,7 @@
                                 </div>
                                 <small class="form-text">Tanggal Registrasi</small>
                             </div>
+                            @if(auth()->user()->roles_id == 7)
                             <div class="col-md-6 form-group">
                                 <label class="form-label">Agen</label>
                                 <div class="input-group">
@@ -789,6 +795,7 @@
                                 </div>
                                 <small class="form-text">Boleh kosong</small>
                             </div>
+                            @endif
                         </div>
                     </div>
 
@@ -1021,61 +1028,61 @@
         });
     </script>
     <script>
-        function tampilForm() {
-        const jenis = document.getElementById('jenis').value;
-        const personalForm = document.getElementById('pelanggan');
-        const perusahaanForm = document.getElementById('perusahaan');
+            function tampilForm() {
+            const jenis = document.getElementById('jenis').value;
+            const personalForm = document.getElementById('pelanggan');
+            const perusahaanForm = document.getElementById('perusahaan');
 
-        if (jenis === 'Perusahaan') {
-            // Tampilkan form perusahaan
-            perusahaanForm.style.display = 'block';
-            personalForm.style.display = 'none';
+            if (jenis === 'Perusahaan') {
+                // Tampilkan form perusahaan
+                perusahaanForm.style.display = 'block';
+                personalForm.style.display = 'none';
 
-            // Nonaktifkan input personal
-            [...personalForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = true);
+                // Nonaktifkan input personal
+                [...personalForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = true);
 
-            // Aktifkan input perusahaan
-            [...perusahaanForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = false);
+                // Aktifkan input perusahaan
+                [...perusahaanForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = false);
 
-            // Sembunyikan pemilihan jenis
-            document.getElementById('tipe').style.display = 'none';
+                // Sembunyikan pemilihan jenis
+                document.getElementById('tipe').style.display = 'none';
 
-        } else if (jenis === 'Personal') {
-            // Tampilkan form personal
-            personalForm.style.display = 'block';
-            perusahaanForm.style.display = 'none';
+            } else if (jenis === 'Personal') {
+                // Tampilkan form personal
+                personalForm.style.display = 'block';
+                perusahaanForm.style.display = 'none';
 
-            // Aktifkan input personal
-            [...personalForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = false);
+                // Aktifkan input personal
+                [...personalForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = false);
 
-            // Nonaktifkan input perusahaan
-            [...perusahaanForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = true);
+                // Nonaktifkan input perusahaan
+                [...perusahaanForm.querySelectorAll("input, select, textarea")].forEach(el => el.disabled = true);
 
-            // Sembunyikan pemilihan jenis
-            document.getElementById('tipe').style.display = 'none';
+                // Sembunyikan pemilihan jenis
+                document.getElementById('tipe').style.display = 'none';
+            }
         }
-    }
 
-    function batalForm() {
-        document.getElementById('tipe').style.display = 'block';
-        document.getElementById('pelanggan').style.display = 'none';
-        document.getElementById('perusahaan').style.display = 'none';
+        function batalForm() {
+            document.getElementById('tipe').style.display = 'block';
+            document.getElementById('pelanggan').style.display = 'none';
+            document.getElementById('perusahaan').style.display = 'none';
 
-        // Kosongkan pilihan jenis pelanggan
-        document.getElementById('jenis').value = "";
+            // Kosongkan pilihan jenis pelanggan
+            document.getElementById('jenis').value = "";
 
-        // Nonaktifkan semua input di bawah
-        [...document.querySelectorAll("#pelanggan input, #pelanggan select, #pelanggan textarea")].forEach(el => el.disabled = true);
-        [...document.querySelectorAll("#perusahaan input, #perusahaan select, #perusahaan textarea")].forEach(el => el.disabled = true);
-    }
+            // Nonaktifkan semua input di bawah
+            [...document.querySelectorAll("#pelanggan input, #pelanggan select, #pelanggan textarea")].forEach(el => el.disabled = true);
+            [...document.querySelectorAll("#perusahaan input, #perusahaan select, #perusahaan textarea")].forEach(el => el.disabled = true);
+        }
 
-    // Saat modal ditutup, reset form
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalAdd = document.getElementById('modalAdd');
-        modalAdd.addEventListener('hidden.bs.modal', function () {
-            batalForm();
+        // Saat modal ditutup, reset form
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalAdd = document.getElementById('modalAdd');
+            modalAdd.addEventListener('hidden.bs.modal', function () {
+                batalForm();
+            });
         });
-    });
 
         // Format Rupiah
         function formatRupiah(el) {

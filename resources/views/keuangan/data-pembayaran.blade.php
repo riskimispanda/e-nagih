@@ -77,6 +77,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
+            text-transform: uppercase;
         }
 
         .action-btn {
@@ -548,6 +549,7 @@
                             <th>Tanggal Bayar</th>
                             <th>Metode Bayar</th>
                             <th>Status</th>
+                            <th>Admin / Agen</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" style="font-size: 14px">
@@ -601,6 +603,15 @@
                                         @endif
                                     @else
                                         <span class="status-badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($payment->user)
+                                        <span class="status-badge bg-danger bg-opacity-10 text-danger fw-bold">
+                                            {{ $payment->user->name }}
+                                        </span>
+                                    @else
+                                        <span class="status-badge bg-secondary bg-opacity-10 text-secondary fw-bold">N/A</span>
                                     @endif
                                 </td>
                             </tr>

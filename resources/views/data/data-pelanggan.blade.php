@@ -904,6 +904,7 @@
                                 <th hidden>BTS Server</th>
                                 <th>Paket</th>
                                 <th>Status</th>
+                                <th>Remote IP</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -936,13 +937,11 @@
                                 </span>
                                 @endif
                             </td>
+                            <td>
+                                <a href="http://{{ $item->remote ?? '#' }}">{{ $item->remote ?? '-' }}</a>
+                            </td>
                             <td class="text-center">
                                 @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
-                                <a href="#" class="btn btn-success action-btn add-customer-btn mb-2"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Konfirmasi Pembayaran">
-                                <i class="bx bx-money"></i>
-                            </a>
                             <a href="/blokir/{{ $item->id }}"
                                 class="btn btn-danger action-btn blokir-customer-btn mb-2"
                                 data-bs-toggle="tooltip" data-bs-placement="top"

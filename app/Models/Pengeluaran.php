@@ -16,7 +16,9 @@ class Pengeluaran extends Model
         'bukti_pengeluaran',
         'user_id',
         'status_id',
-        'metode_bayar'
+        'metode_bayar',
+        'alasan',
+        'rab_id'
     ];
 
     public function user()
@@ -27,4 +29,10 @@ class Pengeluaran extends Model
     {
         return $this->belongsTo(Status::class);
     }
+
+    public function rab()
+    {
+        return $this->belongsTo(Rab::class);
+    }
+
 }

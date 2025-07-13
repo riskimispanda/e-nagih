@@ -83,7 +83,7 @@
                                     <h4 class="mb-1">Invoice #{{ $invoice->id }}</h4>
                                     <p class="mb-1">Tanggal: {{ date('d M Y') }}</p>
                                     <p class="mb-2">Jatuh Tempo: {{ date('d M Y', strtotime($invoice->jatuh_tempo)) }}</p>
-                                    <span class="badge {{ $invoice->status->id == 8 ? 'bg-success' : 'bg-warning' }}">
+                                    <span class="badge {{ $invoice->status->id == 8 ? 'bg-success' : 'bg-danger' }}">
                                         {{ $invoice->status->nama_status }}
                                     </span>
                                 </div>
@@ -92,26 +92,25 @@
                         
                         <div class="card-body">
                             <!-- Customer Details -->
-                            <div class="row mb-4">
+                            <div class="row mb-4 border-bottom">
                                 <div class="col-md-6">
                                     <h6 class="text-muted">Tagihan Kepada:</h6>
                                     <p class="mb-1">{{ $invoice->customer->nama_customer }}</p>
                                     <p class="mb-1">{{ $invoice->customer->alamat }}</p>
                                     <p class="mb-1">{{ $invoice->customer->email }}</p>
-                                    <p class="mb-0">{{ $invoice->customer->no_hp }}</p>
+                                    <p class="mb-3">{{ $invoice->customer->no_hp }}</p>
                                 </div>
                                 <div class="col-md-6 text-md-end">
                                     <h6 class="text-muted">Detail Tagihan:</h6>
                                     <p class="mb-1">Paket: {{ $invoice->paket->nama_paket }}</p>
                                     <p class="mb-1">Lokasi: {{ $invoice->customer->lokasi->nama_lokasi ?? 'N/A' }}</p>
-                                    <p class="mb-0">Periode: {{ date('M Y', strtotime($invoice->created_at)) }}</p>
+                                    <p class="mb-3">Periode: {{ date('M Y', strtotime($invoice->created_at)) }}</p>
                                 </div>
                             </div>
-                            
                             <!-- Table -->
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover">
-                                    <thead class="table-light">
+                            <div class="table-responsive border-bottom mb-3">
+                                <table class="table table-bordered mb-4">
+                                    <thead class="table-dark">
                                         <tr>
                                             <th>Deskripsi</th>
                                             <th class="text-end">Harga</th>
@@ -136,7 +135,7 @@
                                     <div class="row">
                                         <div class="col-md-8 col-12 mb-md-0 mb-3">
                                             <div class="invoice-text mb-1">
-                                                <span class="fw-medium">Admin:</span> Admin
+                                                <span class="fw-bold">Admin:</span> Admin
                                             </div>
                                             <div class="invoice-text">
                                                 Terima kasih atas kepercayaan Anda menggunakan layanan kami.
@@ -145,22 +144,22 @@
                                         <div class="col-md-4 col-12">
                                             <div class="bg-lighter p-3 rounded">
                                                 <div class="d-flex justify-content-between mb-1">
-                                                    <span class="invoice-text">Subtotal:</span>
+                                                    <span class="invoice-text fw-bold">Subtotal:</span>
                                                     <span class="invoice-value">Rp
                                                         {{ number_format($invoice->tagihan, 0, ',', '.') }}</span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-1">
-                                                        <span class="invoice-text">Biaya Tambahan:</span>
+                                                        <span class="invoice-text fw-bold">Biaya Tambahan:</span>
                                                         <span class="invoice-value">Rp {{ number_format($invoice->tambahan, 0, ',', '.') }}</span>
                                                     </div>
                                                     <div class="d-flex justify-content-between mb-1">
-                                                        <span class="invoice-text">Sisa Saldo:</span>
+                                                        <span class="invoice-text fw-bold">Sisa Saldo:</span>
                                                         <span class="invoice-value">- Rp
                                                             {{ number_format($invoice->saldo, 0, ',', '.') }}</span>
                                                         </div>
                                                         <hr class="my-2">
                                                         <div class="d-flex justify-content-between">
-                                                            <span class="invoice-text fw-medium">Total:</span>
+                                                            <span class="invoice-text fw-bold">Total:</span>
                                                             <span class="invoice-value fw-semibold">Rp
                                                                 {{ number_format($invoice->tagihan + $invoice->tambahan - $invoice->saldo, 0, ',', '.') }}</span>
                                                             </div>
@@ -171,7 +170,7 @@
                                                 <!-- Invoice Footer -->
                                                 <div class="invoice-footer">
                                                     <div class="invoice-text">
-                                                        <span class="fw-medium">Catatan:</span>
+                                                        <span class="fw-bold">Catatan:</span>
                                                         Mohon lakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan.
                                                     </div>
                                                 </div>
