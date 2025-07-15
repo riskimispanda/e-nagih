@@ -21,21 +21,21 @@ class NocController extends Controller
      public function interface($id)
      {
          $router = Router::findOrFail($id);
-         return view('noc.interface-mikrotik', [
+         return view('NOC.interface-mikrotik', [
              'router_id' => $router->id,
              'users' => auth()->user(),
              'roles' => auth()->user()->roles,
          ]);
      }
-     
+
      public function realtime($id)
      {
          $router = Router::findOrFail($id);
          $client = MikrotikServices::connect($router);
-         
+
          // Ganti "ether1" sesuai nama interface aktif kamu
          $traffic = MikrotikServices::getInterfaceTraffic($client, 'sfp-sfpplus1');
-         
+
          return response()->json($traffic);
      }
 
@@ -117,7 +117,7 @@ class NocController extends Controller
         $corp = Perusahaan::findOrFail($id);
         // dd($corp);
         $teknisi = User::where('roles_id', 5)->get();
-        return view('/NOC/perusahaan',[
+        return view('NOC.perusahaan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'corp' => $corp,
