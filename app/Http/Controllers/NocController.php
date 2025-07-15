@@ -173,7 +173,7 @@ class NocController extends Controller
                      ->orderBy('nama_paket', 'asc')
                      ->paginate(10);
 
-        return view('noc.profile-paket',[
+        return view('/noc/profile-paket',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'paket' => $paket,
