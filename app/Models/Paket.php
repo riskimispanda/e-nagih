@@ -10,6 +10,7 @@ class Paket extends Model
     protected $fillable = [
         'nama_paket',
         'harga',
+        'router_id'
     ];
 
     public function invoice()
@@ -17,4 +18,13 @@ class Paket extends Model
         return $this->hasMany(Invoice::class, 'paket_id');
     }
 
+    public function customer()
+    {
+        return $this->hasMany(Customer::class, 'paket_id');
+    }
+
+    public function router()
+    {
+        return $this->belongsTo(Router::class, 'router_id');
+    }
 }

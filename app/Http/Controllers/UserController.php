@@ -71,6 +71,8 @@ class UserController extends Controller
         $user->email = $email;
         $user->roles_id = $roles_id;
         $user->password = $password;
+        $user->no_hp = $request->input('no_hp');
+        $user->alamat = $request->input('alamat');
         $user->save();
         return redirect()->back()->with('success', 'User created successfully');
     }

@@ -41,10 +41,10 @@
       ]
     },
     {
-      "url": "/dashboard",
+      "url": "/laporan",
       "name": "Laporan",
       "icon": "menu-icon tf-icons bx bxs-report",
-      "slug": "dashboard",
+      "slug": "laporan",
       "roles": [
         "Super Admin",
         "Admin Keuangan",
@@ -70,6 +70,15 @@
         "Super Admin",
         "Admin Keuangan",
         "Admin Logistik"
+      ]
+    },
+    {
+      "url": "/profile/paket",
+      "name": "Router & Profile",
+      "icon": "menu-icon tf-icons bx bx-wifi-2",
+      "slug": "profile-paket",
+      "roles": [
+        "Super Admin"
       ]
     },
     {
@@ -428,6 +437,15 @@
       "name": "Mind Mapping",
       "icon": "menu-icon tf-icons bx bx-broadcast",
       "slug": "broadcast",
+      "roles": [
+        "NOC"
+      ]
+    },
+    {
+      "url": "/profile/paket",
+      "name": "Router & Profile",
+      "icon": "menu-icon tf-icons bx bx-broadcast",
+      "slug": "profile-paket",
       "roles": [
         "NOC"
       ]

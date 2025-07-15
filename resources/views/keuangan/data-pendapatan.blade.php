@@ -279,7 +279,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted small mb-1 fw-medium">Request Pembayaran by Agen</p>
-                        <h5 class="fw-bold text-dark mb-0"></h5>
+                        <h5 class="fw-bold text-dark mb-0">{{$totalPembayaran}}</h5>
                     </div>
                     <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
                         <i class="bx bx-notification"></i>

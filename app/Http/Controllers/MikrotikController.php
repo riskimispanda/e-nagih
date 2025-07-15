@@ -4,20 +4,56 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\MikrotikServices;
+use App\Models\Router;
+use RouterOS\Query;
 
 class MikrotikController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    
+public function index()
+{
+    $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
+    $client = MikrotikServices::connect($router);
+
+    $profiles = MikrotikServices::getUserProfiles($client);
+    $user = MikrotikServices::getPPPSecret($client);
+    $logs = MikrotikServices::detectMainInterface($client);
+    // $koneksi = MikrotikServices::getActiveConnections($client);
+
+    dd($user);
+}
+
+    public function testKoneksi($id)
     {
-        $mikrotikServices = new MikrotikServices();
-        $profiles = $mikrotikServices->getUserProfiles();
-        $user = $mikrotikServices->getPPPSecret();
-        $koneksi = $mikrotikServices->getActiveConnections();
-        dd($user);
+        $router = Router::findOrFail($id);
+
+        try {
+            $client = MikrotikServices::connect($router);
+            $info = MikrotikServices::testConnection($client);
+
+            return response()->json([
+                'status' => 'success',
+                'info' => $info
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ]);
+        }
     }
+
+    public function traffic($id)
+    {
+        $router = Router::findOrFail($id);
+        $client = MikrotikServices::connect($router);
+        $traffic = MikrotikServices::getInterfaceTraffic($client, 'ether1');
+        return response()->json($traffic);
+    }
+
 
     /**
      * Show the form for creating a new resource.

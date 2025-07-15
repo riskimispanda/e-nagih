@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
@@ -170,5 +171,42 @@ class ChatServices
         ];
     }
 
+    public function kirimNotifikasiBlokir($to, $inv)
+    {
+        if (!$inv->customer) {
+            Log::error('❌ Customer tidak ditemukan pada invoice ID: ' . $inv->id);
+            return [
+                'error' => true,
+                'pesan' => 'Customer tidak ditemukan',
+            ];
+        }
+    
+        $url = url('/payment/invoice/' . $inv->id);
+    
+        $response = Http::post("{$this->baseURL}/send-pesan", [
+            'to' => $to . '@c.us',
+            'pesan' => "⚠️ Halo {$inv->customer->nama_customer}, layanan internet Anda telah *diblokir* karena tagihan belum dibayar.\n\n" .
+                        "📅 Tanggal Blokir: " . now()->format('d-m-Y') . "\n" .
+                       "Silakan segera lakukan pembayaran untuk menghindari pemutusan permanen.\n" .
+                       "🔗 Link Pembayaran:\n{$url}\n\n" .
+                       "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+        ]);
+    
+        Log::info("📩 Kirim Notifikasi Blokir ke {$to}", [
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+    
+        if ($response->successful()) {
+            return $response->json();
+        }
+    
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'pesan' => $response->body(),
+        ];
+    }
+    
 
 }

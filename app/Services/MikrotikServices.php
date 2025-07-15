@@ -4,37 +4,108 @@ namespace App\Services;
 use RouterOS\Client;
 use RouterOS\Query;
 use RouterOS\Exception;
+use App\Models\Router;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use App\Models\Customer;
 
 class MikrotikServices
 {
-    protected $client;
-    
-    public function __construct()
+    protected static array $klien = [];
+
+    public static function connect(Router $router): Client
     {
-        $this->client = new Client([
-            'host' => env('MIKROTIK_HOST'),
-            'user' => env('MIKROTIK_USER'),
-            'pass' => env('MIKROTIK_PASS'),
-            'port' => (int)env('MIKROTIK_PORT', 5000)
-        ]);
+        if (!isset(self::$klien[$router->id])) {
+            Log::info("🔌 Login pertama ke router: {$router->nama_router}");
+
+            self::$klien[$router->id] = new Client([
+                'host' => $router->ip_address,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int) $router->port,
+                'timeout' => 5,
+            ]);
+        } else {
+            Log::info("♻️ Pakai koneksi cache untuk router: {$router->nama_router}");
+        }
+
+        return self::$klien[$router->id];
     }
 
-    public function getProfile()
+    public static function detectMainInterface(Client $client)
+    {
+        $query = new Query('/interface/print');
+        $interfaces = $client->query($query)->read();
+    
+        $filtered = collect($interfaces)->filter(function ($intf) {
+            return isset($intf['running']) && $intf['running'] === 'true'
+                && isset($intf['rx-byte']) && isset($intf['tx-byte'])
+                && (!isset($intf['type']) || !str_contains($intf['type'], 'pppoe'))
+                && (!isset($intf['name']) || !str_contains($intf['name'], '<'));
+        });
+    
+        $sorted = $filtered->sortByDesc(function ($intf) {
+            return ($intf['rx-byte'] ?? 0) + ($intf['tx-byte'] ?? 0);
+        });
+    
+        return $sorted->first()['name'] ?? null;
+    }
+    
+
+    public static function listInterfaces(Client $client)
+    {
+        $query = new Query('/interface/print');
+        return $client->query($query)->read();
+    }
+
+    public static function testConnection(Client $client)
+    {
+        try {
+            $query = new Query('/system/resource/print');
+            return $client->query($query)->read();
+        } catch (\Exception $e) {
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public static function getProfile(Client $client)
     {
         $query = new Query('/system/identity/print');
-        $response = $this->client->query($query)->read();
-        
-        $services = [
+        $response = $client->query($query)->read();
+
+        return [
             'router_name' => $response[0]['name'] ?? 'Unknown'
         ];
-        return $services;
     }
 
-    public function getProfiles()
+    public static function changeUserProfile(Client $client, $usersecret)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) return false;
+
+            foreach ($users as $user) {
+                $setQuery = new Query('/ppp/secret/set');
+                $setQuery->equal('.id', $user['.id']);
+                $setQuery->equal('profile', 'ISOLIREBILLING');
+                $client->query($setQuery)->read();
+            }
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public static function getProfiles(Client $client)
     {
         $query = new Query('/ppp/profile/print');
-        $response = $this->client->query($query)->read();
-        
+        $response = $client->query($query)->read();
+
         $profiles = [];
         foreach ($response as $profile) {
             $profiles[] = [
@@ -44,37 +115,34 @@ class MikrotikServices
                 'rate_limit' => $profile['rate-limit'] ?? 'N/A'
             ];
         }
-        
+
         return $profiles;
     }
 
-    public function getUserProfiles()
+    public static function getUserProfiles(Client $client)
     {
         $query = new Query('/ppp/secret/print');
-        $response = $this->client->query($query)->read();
-        return $response;
+        return $client->query($query)->read();
     }
 
-    public function getRouterDetailsByName($routerName)
+    public static function getRouterDetailsByName(Client $client, $routerName)
     {
         $query = new Query('/system/identity/print');
-        $response = $this->client->query($query)->read();
-        
-        $routerDetails = [];
+        $response = $client->query($query)->read();
+
         foreach ($response as $router) {
             if ($router['name'] == $routerName) {
-                $routerDetails = [
+                return [
                     'name' => $router['name'] ?? 'Unknown',
                 ];
             }
         }
-        
-        return $routerDetails;
+
+        return [];
     }
 
-    public function addPPPSecret($data)
+    public static function addPPPSecret(Client $client, $data)
     {
-        // dd($data);
         $query = new Query('/ppp/secret/add');
         $query->equal('name', $data['name']);
         $query->equal('password', $data['password']);
@@ -87,339 +155,156 @@ class MikrotikServices
             $query->equal('remote-address', $data['remoteAddress']);
         }
         $query->equal('comment','Created by E-Nagih');
-        
+
         try {
-            $this->client->query($query)->read();
+            $client->query($query)->read();
             return true;
         } catch (Exception $e) {
-            // Handle the exception (e.g., log it)
             return false;
         }
     }
 
-    /**
-     * Get PPP secrets with a specific profile
-     * 
-     * @param string $profile The profile to filter by (default: 'profile-test-aplikasi')
-     * @return array The list of PPP secrets
-     */
-    public function getPPPSecret()
+    public static function getPPPSecret(Client $client)
     {
         try {
-            $query = new \RouterOS\Query('/ppp/secret/print');
+            $query = new Query('/ppp/secret/print');
             $query->where('comment', 'Created by E-Nagih');
-            $response = $this->client->query($query)->read();
-
-            return $response;
+            return $client->query($query)->read();
         } catch (\Exception $e) {
-            \Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
+            Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
             return null;
         }
     }
-    
-    public function userProfile($usersecret)
-    {
-        $query = new Query('/ppp/secret/print');
-        $query->where('name', $usersecret);
-        $response = $this->client->query($query)->read();
-        
-        return $response;
-    }
-    /**
-     * Get PPP secret by username/secret name
-     * 
-     * @param string $usersecret The username/secret to search for
-     * @return array|null The PPP secret details or null if not found
-     */
-    public function getPPPSecretByName($usersecret)
+
+    public static function getPPPSecretByName(Client $client, $usersecret)
     {
         try {
             $query = new Query('/ppp/secret/print');
             $query->where('name', $usersecret);
-            $response = $this->client->query($query)->read();
-            
-            if (empty($response)) {
-                return null;
-            }
-            
-            return $response;
+            $response = $client->query($query)->read();
+
+            return $response ?: null;
         } catch (Exception $e) {
-            \Log::error('MikrotikServices::getPPPSecretByName error: ' . $e->getMessage());
+            Log::error('MikrotikServices::getPPPSecretByName error: ' . $e->getMessage());
             return null;
         }
     }
 
-    public function getActiveConnections()
-    {
-        try {
-            $query = new Query('/ppp/active/print');
-            $connections = $this->client->query($query)->read();
-
-            return $connections ?? [];
-        } catch (Exception $e) {
-            Log::error('Gagal mengambil koneksi aktif Mikrotik: ' . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Block a PPP user by setting disabled=yes
-     * 
-     * @param string $usersecret The username/secret of the PPP user
-     * @param string|null $id The ID of the specific user (optional)
-     * @return bool|array Returns true on success, array of blocked users if multiple, or false on failure
-     */
-    public function blokUser($usersecret, $id = null)
+    public static function blokUser(Client $client, $usersecret, $id = null)
     {
         try {
             if ($id) {
                 $query = new Query("/ppp/secret/set");
                 $query->equal(".id", $id);
                 $query->equal("disabled", "yes");
-                $this->client->query($query)->read();
+                $client->query($query)->read();
                 return true;
             }
+
             $findQuery = new Query('/ppp/secret/print');
             $findQuery->where('name', $usersecret);
-            $users = $this->client->query($findQuery)->read();
-            if (empty($users)) {
-                return false;
-            }
-            
-            if (count($users) === 1) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $users[0]['.id']);
-                $query->equal("disabled", "yes");
-                $this->client->query($query)->read();
-                return true;
-            }
-            $blockedUsers = [];
+            $users = $client->query($findQuery)->read();
+            if (empty($users)) return false;
+
             foreach ($users as $user) {
                 $query = new Query("/ppp/secret/set");
                 $query->equal(".id", $user['.id']);
                 $query->equal("disabled", "yes");
-                $this->client->query($query)->read();
-                $blockedUsers[] = [
-                    'id' => $user['.id'],
-                    'name' => $user['name']
-                ];
+                $client->query($query)->read();
             }
-            
-            return $blockedUsers;
+
+            return true;
         } catch (Exception $e) {
-            // Log the error for debugging
-            \Log::error('MikrotikServices::blokUser error: ' . $e->getMessage());
+            Log::error('MikrotikServices::blokUser error: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Change the profile of a PPP user
-     * 
-     * @param string $usersecret The username/secret of the PPP user
-     * @param string $profile The new profile to assign
-     * @param string|null $id The ID of the specific user (optional)
-     * @return bool|array Returns true on success, array of changed users if multiple, or false on failure
-     */
-    public function changeUserProfile($usersecret, $profile, $id = null)
+    public static function unblokUser(Client $client, $usersecret, $originalProfile = null, $id = null)
     {
         try {
-            // If ID is provided, use it to target the specific user
-            if ($id) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $id);
-                $query->equal("profile", $profile);
-                $this->client->query($query)->read();
-                return true;
-            }
-            
-            // If no ID, first find all matching users with the given usersecret
-            $findQuery = new Query('/ppp/secret/print');
-            $findQuery->where('name', $usersecret);
-            $users = $this->client->query($findQuery)->read();
-            
-            // If no users found, return false
-            if (empty($users)) {
-                return false;
-            }
-            
-            // If only one user found, update directly
-            if (count($users) === 1) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $users[0]['.id']);
-                $query->equal("profile", $profile);
-                $this->client->query($query)->read();
-                return true;
-            }
-            
-            // If multiple users found with the same usersecret, update all of them
-            $updatedUsers = [];
-            foreach ($users as $user) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $user['.id']);
-                $query->equal("profile", $profile);
-                $this->client->query($query)->read();
-                $updatedUsers[] = [
-                    'id' => $user['.id'],
-                    'name' => $user['name'],
-                    'profile' => $profile
-                ];
-            }
-            
-            return $updatedUsers;
-        } catch (Exception $e) {
-            // Log the error for debugging
-            \Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
-            return false;
-        }
-    }
-            
-
-    /**
-     * Unblock a PPP user by setting disabled=no
-     * 
-     * @param string $usersecret The username/secret of the PPP user
-     * @param string|null $id The ID of the specific user (optional)
-     * @return bool|array Returns true on success, array of unblocked users if multiple, or false on failure
-     */
-    public function unblokUser($usersecret, $id = null)
-    {
-        try {
-            // If ID is provided, use it to target the specific user
             if ($id) {
                 $query = new Query("/ppp/secret/set");
                 $query->equal(".id", $id);
                 $query->equal("disabled", "no");
-                $this->client->query($query)->read();
+                if ($originalProfile) {
+                    $query->equal("profile", $originalProfile);
+                }
+                $client->query($query)->read();
                 return true;
             }
-            
-            // If no ID, first find all matching users with the given usersecret
+
             $findQuery = new Query('/ppp/secret/print');
             $findQuery->where('name', $usersecret);
-            $users = $this->client->query($findQuery)->read();
-            
-            // If no users found, return false
-            if (empty($users)) {
-                return false;
-            }
-            
-            // If only one user found, update directly
-            if (count($users) === 1) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $users[0]['.id']);
-                $query->equal("disabled", "no");
-                $this->client->query($query)->read();
-                return true;
-            }
-            
-            // If multiple users found with the same usersecret, unblock all of them
-            $unblockedUsers = [];
+            $users = $client->query($findQuery)->read();
+            if (empty($users)) return false;
+
             foreach ($users as $user) {
                 $query = new Query("/ppp/secret/set");
                 $query->equal(".id", $user['.id']);
                 $query->equal("disabled", "no");
-                $this->client->query($query)->read();
-                $unblockedUsers[] = [
-                    'id' => $user['.id'],
-                    'name' => $user['name']
-                ];
+                if ($originalProfile) {
+                    $query->equal("profile", $originalProfile);
+                }
+                $client->query($query)->read();
             }
-            
-            return $unblockedUsers;
+
+            return true;
         } catch (Exception $e) {
-            // Log the error for debugging
-            \Log::error('MikrotikServices::unblokUser error: ' . $e->getMessage());
+            Log::error('MikrotikServices::unblokUser error: ' . $e->getMessage());
             return false;
         }
     }
 
-    /**
-     * Get traffic information for a specific PPP user
-     * 
-     * @param string $usersecret The username/secret of the PPP user
-     * @return array|null Returns traffic information or null if user not found/not active
-     */
-    public function getUserTraffic($usersecret)
+
+    public static function getUserTraffic(Client $client, $usersecret)
     {
         try {
-            // First, check if the user is active
             $activeQuery = new Query('/ppp/active/print');
             $activeQuery->where('name', $usersecret);
-            $activeUsers = $this->client->query($activeQuery)->read();
-            
+            $activeUsers = $client->query($activeQuery)->read();
+
             if (empty($activeUsers)) {
-                return [
-                    'status' => 'inactive',
-                    'message' => 'User is not currently active'
-                ];
+                return ['status' => 'inactive', 'message' => 'User is not currently active'];
             }
-            
+
             $trafficData = [];
-            
             foreach ($activeUsers as $activeUser) {
-                // Get the interface name for this active connection
                 $interface = $activeUser['interface'] ?? null;
-                
-                if (!$interface) {
-                    continue;
-                }
-                
-                // Get traffic statistics for this interface
+                if (!$interface) continue;
+
                 $trafficQuery = new Query('/interface/monitor-traffic');
                 $trafficQuery->equal('interface', $interface);
                 $trafficQuery->equal('once', '');
-                $trafficStats = $this->client->query($trafficQuery)->read();
-                
-                // Get additional connection details
-                $uptime = $activeUser['uptime'] ?? 'Unknown';
-                $address = $activeUser['address'] ?? 'Unknown';
-                $service = $activeUser['service'] ?? 'Unknown';
-                $caller_id = $activeUser['caller-id'] ?? 'Unknown';
-                $encoding = $activeUser['encoding'] ?? 'Unknown';
-                
-                // Calculate traffic rates
-                $rxBytesPerSecond = $trafficStats[0]['rx-bits-per-second'] ?? 0;
-                $txBytesPerSecond = $trafficStats[0]['tx-bits-per-second'] ?? 0;
-                
-                // Convert to more readable format (Kbps, Mbps)
-                $rxRate = $this->formatBitRate($rxBytesPerSecond);
-                $txRate = $this->formatBitRate($txBytesPerSecond);
-                
+                $trafficStats = $client->query($trafficQuery)->read();
+
+                $rx = $trafficStats[0]['rx-bits-per-second'] ?? 0;
+                $tx = $trafficStats[0]['tx-bits-per-second'] ?? 0;
+
                 $trafficData[] = [
                     'name' => $usersecret,
                     'status' => 'active',
                     'interface' => $interface,
-                    'uptime' => $uptime,
-                    'address' => $address,
-                    'service' => $service,
-                    'caller_id' => $caller_id,
-                    'encoding' => $encoding,
-                    'download_rate' => $rxRate,
-                    'upload_rate' => $txRate,
-                    'download_rate_raw' => $rxBytesPerSecond,
-                    'upload_rate_raw' => $txBytesPerSecond
+                    'uptime' => $activeUser['uptime'] ?? 'Unknown',
+                    'address' => $activeUser['address'] ?? 'Unknown',
+                    'service' => $activeUser['service'] ?? 'Unknown',
+                    'caller_id' => $activeUser['caller-id'] ?? 'Unknown',
+                    'encoding' => $activeUser['encoding'] ?? 'Unknown',
+                    'download_rate' => self::formatBitRate($rx),
+                    'upload_rate' => self::formatBitRate($tx),
+                    'download_rate_raw' => $rx,
+                    'upload_rate_raw' => $tx
                 ];
             }
-            
+
             return $trafficData;
-            
         } catch (Exception $e) {
-            \Log::error('MikrotikServices::getUserTraffic error: ' . $e->getMessage());
-            return [
-                'status' => 'error',
-                'message' => 'Failed to retrieve traffic information: ' . $e->getMessage()
-            ];
+            Log::error('MikrotikServices::getUserTraffic error: ' . $e->getMessage());
+            return ['status' => 'error', 'message' => 'Failed to retrieve traffic information: ' . $e->getMessage()];
         }
     }
-    
-    /**
-     * Format bit rate to human-readable format
-     * 
-     * @param int $bitsPerSecond Bits per second
-     * @return string Formatted bit rate (bps, Kbps, Mbps, Gbps)
-     */
-    public function formatBitRate($bitsPerSecond)
+
+    public static function formatBitRate($bitsPerSecond)
     {
         if ($bitsPerSecond < 1000) {
             return round($bitsPerSecond, 2) . ' bps';
@@ -432,30 +317,87 @@ class MikrotikServices
         }
     }
 
-    public function removeActiveConnections($usersecret)
+    public static function removeActiveConnections(Client $client, $usersecret)
     {
         try {
-            // Find active connections for the user
             $findQuery = new Query('/ppp/active/print');
             $findQuery->where('name', $usersecret);
-            $activeConnections = $this->client->query($findQuery)->read();
-            
-            if (empty($activeConnections)) {
-                return false;
-            }
+            $activeConnections = $client->query($findQuery)->read();
 
-            // Remove each active connection found
+            if (empty($activeConnections)) return false;
+
             foreach ($activeConnections as $connection) {
                 $removeQuery = new Query('/ppp/active/remove');
                 $removeQuery->equal('.id', $connection['.id']);
-                $this->client->query($removeQuery)->read();
+                $client->query($removeQuery)->read();
             }
-            
+
             return true;
         } catch (Exception $e) {
-            \Log::error('MikrotikServices::removeActiveConnections error: ' . $e->getMessage());
+            Log::error('MikrotikServices::removeActiveConnections error: ' . $e->getMessage());
             return false;
         }
     }
+
+    public static function getRouterLoginLogs(Client $client, $limit = 20)
+    {
+        try {
+            $query = new Query('/log/print');
+            $query->where('topics', 'system,info');
+            $logs = $client->query($query)->read();
+
+            if (empty($logs)) {
+                return collect([]);
+            }
+
+            $filteredLogs = collect($logs)
+                ->filter(function ($log) {
+                    return isset($log['topics'], $log['message']) &&
+                        Str::contains($log['topics'], 'system,info') &&
+                        (
+                            Str::contains(Str::lower($log['message']), 'logged in') ||
+                            Str::contains(Str::lower($log['message']), 'login failure') ||
+                            Str::contains(Str::lower($log['message']), 'logged out')
+                        );
+                })
+                ->sortByDesc(function ($log) {
+                    return strtotime($log['time'] ?? now());
+                })
+                ->take($limit)
+                ->values()
+                ->map(function ($log) {
+                    return [
+                        'time' => $log['time'] ?? '-',
+                        'message' => $log['message'] ?? '-',
+                        'topics' => $log['topics'] ?? '-',
+                    ];
+                });
+
+            return $filteredLogs;
+        } catch (Exception $e) {
+            \Log::error('MikrotikServices::getRouterLoginLogs error: ' . $e->getMessage());
+            return collect([]);
+        }
+    }
+
+    public static function getInterfaceTraffic(Client $client, $interface)
+    {
+        try {
+            $query = new Query('/interface/monitor-traffic');
+            $query->equal('interface', $interface);
+            $query->equal('once', '');
+            $stats = $client->query($query)->read();
+
+            return [
+                'rx' => (int) ($stats[0]['rx-bits-per-second'] ?? 0),
+                'tx' => (int) ($stats[0]['tx-bits-per-second'] ?? 0),
+            ];
+        } catch (Exception $e) {
+            \Log::error("Gagal ambil traffic: " . $e->getMessage());
+            return ['rx' => 0, 'tx' => 0];
+        }
+    }
+
+
 
 }

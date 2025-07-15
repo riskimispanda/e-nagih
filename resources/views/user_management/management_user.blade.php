@@ -141,9 +141,19 @@
                     <i class='bx bx-envelope me-1 text-muted'></i>Email
                 </label>
                 <input type="email" class="form-control" id="user_email" name="email" placeholder="contoh@email.com" required>
-                <div class="form-text">Email akan digunakan untuk login ke sistem</div>
             </div>
-            
+            <div class="mb-4">
+                <label class="form-label fw-medium" for="user_email">
+                    <i class='bx bx-phone me-1 text-muted'></i>No HP
+                </label>
+                <input type="text" class="form-control" id="user_email" name="no_hp" placeholder="0192873879482" required>
+            </div>
+            <div class="mb-4">
+                <label class="form-label fw-medium" for="user_email">
+                    <i class='bx bx-map me-1 text-muted'></i>Alamat
+                </label>
+                <input type="text" class="form-control" id="user_email" name="alamat" placeholder="Temanggung" required>
+            </div>
             <div class="mb-4">
                 <label class="form-label fw-medium" for="user_role">
                     <i class='bx bx-shield me-1 text-muted'></i>Role Pengguna
@@ -171,10 +181,10 @@
             </div>
             
             <div class="d-flex gap-2 mt-4">
-                <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="offcanvas">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">
                     <i class='bx bx-x me-1'></i>Batal
                 </button>
-                <button type="submit" class="btn btn-primary flex-fill">
+                <button type="submit" class="btn btn-primary btn-sm">
                     <i class="bx bx-plus me-1"></i>Tambah User
                 </button>
             </div>
@@ -212,6 +222,24 @@
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text text-primary"><i class="bx bx-envelope"></i></span>
                                 <input type="text" class="form-control" value="{{ $u->email }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 mb-4">
+                            <label class="form-label">No HP</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text text-primary"><i class="bx bx-phone"></i></span>
+                                <input type="text" class="form-control" value="{{ $u->no_hp ?? '-' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 mb-4">
+                            <label class="form-label">Alamat</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text text-primary"><i class="bx bx-map"></i></span>
+                                <input type="text" class="form-control" value="{{ $u->alamat ?? '-' }}" readonly>
                             </div>
                         </div>
                     </div>
