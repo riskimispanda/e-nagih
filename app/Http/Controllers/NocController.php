@@ -117,7 +117,7 @@ class NocController extends Controller
         $corp = Perusahaan::findOrFail($id);
         // dd($corp);
         $teknisi = User::where('roles_id', 5)->get();
-        return view('NOC.perusahaan',[
+        return view('/NOC/perusahaan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'corp' => $corp,
