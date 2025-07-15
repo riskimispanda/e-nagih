@@ -15,11 +15,14 @@ use App\Services\MikrotikServices;
 use Paginate;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Kas;
+use App\Models\Pengeluaran;
+use App\Models\Rab;
 use App\Models\Perusahaan;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\ChatServices;
+
 
 
 class KeuanganController extends Controller
@@ -195,6 +198,7 @@ class KeuanganController extends Controller
         $metode = Metode::whereNot('id', 3)->get();
         $pendapatan = Pendapatan::paginate(5);
         $agen = User::where('roles_id', 6)->count();
+        $totalPembayaran = Pembayaran::where('status_id', 1)->count();
         // dd($agen);
 
         return view('/keuangan/data-pendapatan',[
@@ -213,6 +217,7 @@ class KeuanganController extends Controller
             'metode' => $metode,
             'pendapatan' => $pendapatan,
             'agen' => $agen,
+            'totalPembayaran' => $totalPembayaran
         ]);
     }
 
@@ -1121,5 +1126,360 @@ class KeuanganController extends Controller
             'currentMonthName' => $currentMonthName,
         ]);
     }
+
+    public function laporan(Request $request)
+    {
+        return view('keuangan.laporan.laporan', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+        ]);
+    }
+
+    public function getLaporanData(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+        $month = $request->get('month', 'all');
+
+        // Get monthly data for the year
+        $monthlyData = $this->getMonthlyFinancialData($year);
+
+        // Get summary data
+        $summary = $this->getFinancialSummary($year, $month);
+
+        // Get chart data
+        $chartData = $this->getChartData($year, $month);
+
+        // Get table data
+        $tableData = $this->getTableData($year, $month);
+
+        return response()->json([
+            'summary' => $summary,
+            'charts' => $chartData,
+            'tables' => $tableData
+        ]);
+    }
+
+    private function getMonthlyFinancialData($year)
+    {
+        $monthlyData = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            // Subscription revenue (Pembayaran)
+            $subscriptionRevenue = Pembayaran::whereYear('tanggal_bayar', $year)
+                ->whereMonth('tanggal_bayar', $month)
+                ->sum('jumlah_bayar');
+
+            // Non-subscription revenue (Pendapatan)
+            $nonSubscriptionRevenue = Pendapatan::whereYear('tanggal', $year)
+                ->whereMonth('tanggal', $month)
+                ->sum('jumlah_pendapatan');
+
+            // Expenses (Pengeluaran)
+            $expenses = Pengeluaran::whereYear('tanggal_pengeluaran', $year)
+                ->whereMonth('tanggal_pengeluaran', $month)
+                ->sum('jumlah_pengeluaran');
+
+            $monthlyData[] = [
+                'subscription' => (float) $subscriptionRevenue,
+                'nonSubscription' => (float) $nonSubscriptionRevenue,
+                'expenses' => (float) $expenses,
+                'profitLoss' => (float) ($subscriptionRevenue + $nonSubscriptionRevenue - $expenses)
+            ];
+        }
+
+        return $monthlyData;
+    }
+
+    private function getFinancialSummary($year, $month = 'all')
+    {
+        // Build queries with year filter
+        $subscriptionQuery = Pembayaran::whereYear('tanggal_bayar', $year);
+        $nonSubscriptionQuery = Pendapatan::whereYear('tanggal', $year);
+        $expensesQuery = Pengeluaran::whereYear('tanggal_pengeluaran', $year);
+
+        // Add month filter if specified
+        if ($month !== 'all') {
+            $subscriptionQuery->whereMonth('tanggal_bayar', $month);
+            $nonSubscriptionQuery->whereMonth('tanggal', $month);
+            $expensesQuery->whereMonth('tanggal_pengeluaran', $month);
+        }
+
+        // Current period totals
+        $totalSubscription = $subscriptionQuery->sum('jumlah_bayar');
+        $totalNonSubscription = $nonSubscriptionQuery->sum('jumlah_pendapatan');
+        $totalExpenses = $expensesQuery->sum('jumlah_pengeluaran');
+
+        // Previous year totals for growth calculation
+        $prevYear = $year - 1;
+        $prevTotalSubscription = Pembayaran::whereYear('tanggal_bayar', $prevYear)->sum('jumlah_bayar');
+        $prevTotalNonSubscription = Pendapatan::whereYear('tanggal', $prevYear)->sum('jumlah_pendapatan');
+        $prevTotalExpenses = Pengeluaran::whereYear('tanggal_pengeluaran', $prevYear)->sum('jumlah_pengeluaran');
+
+        // Calculate growth percentages
+        $subscriptionGrowth = $prevTotalSubscription > 0 ?
+            round((($totalSubscription - $prevTotalSubscription) / $prevTotalSubscription) * 100, 1) : 0;
+        $nonSubscriptionGrowth = $prevTotalNonSubscription > 0 ?
+            round((($totalNonSubscription - $prevTotalNonSubscription) / $prevTotalNonSubscription) * 100, 1) : 0;
+        $expensesGrowth = $prevTotalExpenses > 0 ?
+            round((($totalExpenses - $prevTotalExpenses) / $prevTotalExpenses) * 100, 1) : 0;
+
+        // Calculate monthly revenue differences for current year
+        $currentMonth = date('n'); // Current month number
+        $currentMonthRevenue = Pembayaran::whereYear('tanggal_bayar', $year)
+            ->whereMonth('tanggal_bayar', $currentMonth)
+            ->sum('jumlah_bayar') +
+            Pendapatan::whereYear('tanggal', $year)
+            ->whereMonth('tanggal', $currentMonth)
+            ->sum('jumlah_pendapatan');
+
+        $prevMonth = $currentMonth > 1 ? $currentMonth - 1 : 12;
+        $prevMonthYear = $currentMonth > 1 ? $year : $year - 1;
+        $prevMonthRevenue = Pembayaran::whereYear('tanggal_bayar', $prevMonthYear)
+            ->whereMonth('tanggal_bayar', $prevMonth)
+            ->sum('jumlah_bayar') +
+            Pendapatan::whereYear('tanggal', $prevMonthYear)
+            ->whereMonth('tanggal', $prevMonth)
+            ->sum('jumlah_pendapatan');
+
+        // Calculate yearly revenue differences
+        $currentYearRevenue = $totalSubscription + $totalNonSubscription;
+        $prevYearRevenue = $prevTotalSubscription + $prevTotalNonSubscription;
+
+        // Calculate profit/loss
+        $currentProfit = $currentYearRevenue - $totalExpenses;
+        $prevYearProfit = $prevYearRevenue - $prevTotalExpenses;
+
+        // Calculate cash balance
+        $totalKasDebit = Kas::whereYear('tanggal_kas', $year)->sum('debit');
+        $totalKasKredit = Kas::whereYear('tanggal_kas', $year)->sum('kredit');
+        $totalKasSaldo = $totalKasDebit - $totalKasKredit;
+
+        // Calculate customer statistics
+        $totalCustomers = Customer::where('status_id', 3)->count(); // Active customers
+
+        // Determine month for customer statistics
+        $customerMonth = $month !== 'all' ? $month : date('m');
+        $customerYear = $year;
+
+        // Paid customers for specified month
+        $paidCustomers = Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Sudah Bayar');
+        })
+        ->whereMonth('jatuh_tempo', $customerMonth)
+        ->whereYear('jatuh_tempo', $customerYear)
+        ->distinct('customer_id')
+        ->count();
+
+        // Unpaid customers for specified month
+        $unpaidCustomers = Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Belum Bayar');
+        })
+        ->whereMonth('jatuh_tempo', $customerMonth)
+        ->whereYear('jatuh_tempo', $customerYear)
+        ->distinct('customer_id')
+        ->count();
+
+        return [
+            'totalSubscription' => (float) $totalSubscription,
+            'totalNonSubscription' => (float) $totalNonSubscription,
+            'totalExpenses' => (float) $totalExpenses,
+            'totalRevenue' => (float) $currentYearRevenue,
+            'profitLoss' => (float) $currentProfit,
+            'totalKasSaldo' => (float) $totalKasSaldo,
+            'totalCustomers' => (int) $totalCustomers,
+            'paidCustomers' => (int) $paidCustomers,
+            'unpaidCustomers' => (int) $unpaidCustomers,
+            'monthlyRevenueDifference' => (float) ($currentMonthRevenue - $prevMonthRevenue),
+            'yearlyRevenueDifference' => (float) ($currentYearRevenue - $prevYearRevenue),
+            'currentMonthRevenue' => (float) $currentMonthRevenue,
+            'prevMonthRevenue' => (float) $prevMonthRevenue,
+            'growth' => [
+                'subscription' => $subscriptionGrowth,
+                'nonSubscription' => $nonSubscriptionGrowth,
+                'expenses' => $expensesGrowth,
+                'profit' => $prevYearProfit > 0 ? round((($currentProfit - $prevYearProfit) / $prevYearProfit) * 100, 1) : 0
+            ]
+        ];
+    }
+
+    private function getChartData($year, $month = 'all')
+    {
+        $monthlyData = $this->getMonthlyFinancialData($year);
+
+        // Extract data for charts
+        $subscription = array_column($monthlyData, 'subscription');
+        $nonSubscription = array_column($monthlyData, 'nonSubscription');
+        $expenses = array_column($monthlyData, 'expenses');
+        $profitLoss = array_column($monthlyData, 'profitLoss');
+
+        // Cash flow data
+        $kasQuery = Kas::whereYear('tanggal_kas', $year);
+        $kreditQuery = Kas::whereYear('tanggal_kas', $year);
+
+        if ($month !== 'all') {
+            $kasQuery->whereMonth('tanggal_kas', $month);
+            $kreditQuery->whereMonth('tanggal_kas', $month);
+        }
+
+        $totalDebit = $kasQuery->sum('debit');
+        $totalKredit = $kreditQuery->sum('kredit');
+
+        // RAB data
+        $rabQuery = Rab::whereYear('created_at', $year);
+        if ($month !== 'all') {
+            $rabQuery->whereMonth('created_at', $month);
+        }
+
+        $rabData = $rabQuery->get();
+        $rabCategories = [];
+        $rabBudget = [];
+        $rabRealization = [];
+
+        foreach ($rabData as $rab) {
+            $realizationQuery = Pengeluaran::where('rab_id', $rab->id);
+            if ($month !== 'all') {
+                $realizationQuery->whereMonth('tanggal_pengeluaran', $month);
+            }
+            $realization = $realizationQuery->sum('jumlah_pengeluaran');
+
+            $rabCategories[] = substr($rab->keterangan, 0, 20) . '...';
+            $rabBudget[] = (float) $rab->jumlah_anggaran;
+            $rabRealization[] = (float) $realization;
+        }
+
+        return [
+            'monthly' => [
+                'subscription' => $subscription,
+                'nonSubscription' => $nonSubscription,
+                'expenses' => $expenses,
+                'profitLoss' => $profitLoss
+            ],
+            'cashFlow' => [
+                'debit' => (float) $totalDebit,
+                'kredit' => (float) $totalKredit
+            ],
+            'rab' => [
+                'categories' => $rabCategories,
+                'budget' => $rabBudget,
+                'realization' => $rabRealization
+            ]
+        ];
+    }
+
+    private function getTableData($year, $month = 'all')
+    {
+        // Monthly report data
+        $monthlyData = $this->getMonthlyFinancialData($year);
+
+        // Subscription revenue details (Pembayaran)
+        $subscriptionQuery = Pembayaran::with(['invoice.customer', 'invoice.paket', 'user'])
+            ->whereYear('tanggal_bayar', $year);
+
+        if ($month !== 'all') {
+            $subscriptionQuery->whereMonth('tanggal_bayar', $month);
+        }
+
+        $subscriptionData = $subscriptionQuery->orderBy('tanggal_bayar', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Non-subscription revenue details
+        $nonSubscriptionQuery = Pendapatan::with('user')
+            ->whereYear('tanggal', $year);
+
+        if ($month !== 'all') {
+            $nonSubscriptionQuery->whereMonth('tanggal', $month);
+        }
+
+        $nonSubscriptionData = $nonSubscriptionQuery->orderBy('tanggal', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Expenses details
+        $expensesQuery = Pengeluaran::with(['user', 'status'])
+            ->whereYear('tanggal_pengeluaran', $year);
+
+        if ($month !== 'all') {
+            $expensesQuery->whereMonth('tanggal_pengeluaran', $month);
+        }
+
+        $expensesData = $expensesQuery->orderBy('tanggal_pengeluaran', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Cash flow details
+        $kasQuery = Kas::with(['user', 'kas'])
+            ->whereYear('tanggal_kas', $year);
+
+        if ($month !== 'all') {
+            $kasQuery->whereMonth('tanggal_kas', $month);
+        }
+
+        $kasData = $kasQuery->orderBy('tanggal_kas', 'desc')
+            ->limit(100)
+            ->get();
+
+        // RAB details with realization
+        $rabData = Rab::whereYear('created_at', $year)->get()->map(function ($rab) {
+            $realization = Pengeluaran::where('rab_id', $rab->id)->sum('jumlah_pengeluaran');
+            $rab->realization = $realization;
+            return $rab;
+        });
+
+        return [
+            'monthly' => $monthlyData,
+            'subscription' => $subscriptionData,
+            'nonSubscription' => $nonSubscriptionData,
+            'expenses' => $expensesData,
+            'kas' => $kasData,
+            'rab' => $rabData
+        ];
+    }
+
+    private function buildMonthlyReport($pembayaran, $pendapatan, $pengeluaran)
+    {
+        $bulanNama = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $laporan = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $pendapatanLangganan = $pembayaran->get($bulan, 0);
+            $pendapatanLain = $pendapatan->get($bulan, 0);
+            $pengeluaranBulan = $pengeluaran->get($bulan, 0);
+            $pendapatanTotal = $pendapatanLangganan + $pendapatanLain;
+            $labaRugi = $pendapatanTotal - $pengeluaranBulan;
+
+            $laporan[] = [
+                'bulan' => $bulanNama[$bulan],
+                'pendapatan_langganan' => $pendapatanLangganan,
+                'pendapatan_nonlangganan' => $pendapatanLain,
+                'pendapatan' => $pendapatanTotal,
+                'pendapatan_total' => $pendapatanTotal,
+                'pengeluaran' => $pengeluaranBulan,
+                'laba_rugi' => $labaRugi,
+                'status' => $labaRugi >= 0 ? 'Laba' : 'Rugi',
+            ];
+        }
+
+        return $laporan;
+    }
+
+    private function getRabData($year)
+    {
+        return Rab::whereYear('created_at', $year)->get()->map(function ($rab) {
+            $expenses = Pengeluaran::where('rab_id', $rab->id)->sum('jumlah_pengeluaran');
+            return [
+                'nama' => $rab->keterangan,
+                'anggaran' => $rab->jumlah_anggaran,
+                'realisasi' => $expenses,
+                'sisa' => $rab->jumlah_anggaran - $expenses,
+            ];
+        })->toArray();
+    }
+
+
 
 }

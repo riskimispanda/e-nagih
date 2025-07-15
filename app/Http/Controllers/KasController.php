@@ -69,6 +69,7 @@ class KasController extends Controller
         $kas->keterangan = 'Deposit dari Kas Besar';
         $kas->kas_id = 2;
         $kas->user_id = auth()->user()->id;
+        $kas->status_id = 3;
         $kas->save();
 
         $kasBesar = new Kas();
@@ -77,6 +78,7 @@ class KasController extends Controller
         $kasBesar->keterangan = 'Pindah ke Kas Kecil';
         $kasBesar->kas_id = 1;
         $kasBesar->user_id = auth()->user()->id;
+        $kasBesar->status_id = 3;
         $kasBesar->save();
 
         activity('kas')

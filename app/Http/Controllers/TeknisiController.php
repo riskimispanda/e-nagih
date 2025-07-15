@@ -17,6 +17,7 @@ use App\Models\MediaKoneksi;
 use App\Models\Invoice;
 use App\Models\Perusahaan;
 use App\Services\ChatServices;
+use App\Models\Router;
 
 class TeknisiController extends Controller
 {
@@ -64,28 +65,36 @@ class TeknisiController extends Controller
 
     public function selesai($id)
     {
-        $customer = Customer::find($id);
+        $customer = Customer::with('router')->findOrFail($id);
         $customer->status_id = 2;
         $customer->teknisi_id = auth()->user()->id;
         $customer->save();
+
+        // Connect ke router
+        $router = $customer->router; // pastikan relasi 'router' sudah didefinisikan di model Customer
+        $client = MikrotikServices::connect($router);
+
+        // Dapatkan profil router
+        $profile = MikrotikServices::getProfile($client);
+        \Log::info('Router Info Saat Selesai:', $profile);
 
         return redirect()->back()->with('toast_success', 'Antrian dipilih');
     }
 
     public function print($id)
     {
-        $customer = Customer::find($id);
+        $customer = Customer::with('router')->findOrFail($id);
         $customer->status_id = 2;
         $customer->save();
 
-        $server = ServerModels::all();
+        $client = MikrotikServices::connect($customer->router);
 
         return view('/teknisi/detail-antrian', [
             'customer' => $customer,
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'mikrotik' => (new MikrotikServices())->getProfile(),
-            'paket' => (new MikrotikServices())->getProfiles(),
+            'mikrotik' => MikrotikServices::getProfile($client), // ✅ benar
+            'paket' => MikrotikServices::getProfiles($client),   // ✅ benar
             'koneksi' => Koneksi::all(),
             'modem' => Perangkat::all(),
             'server' => ServerModels::all(),
@@ -95,6 +104,7 @@ class TeknisiController extends Controller
             'media' => MediaKoneksi::all(),
         ]);
     }
+
 
     public function getByServer($serverId)
     {

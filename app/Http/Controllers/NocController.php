@@ -9,6 +9,7 @@ use App\Models\Koneksi;
 use App\Models\Router;
 use App\Services\MikrotikServices;
 use App\Models\Perusahaan;
+use App\Models\Paket;
 
 
 class NocController extends Controller
@@ -16,6 +17,29 @@ class NocController extends Controller
     /**
      * Display a listing of the resource.
      */
+
+     public function interface($id)
+     {
+         $router = Router::findOrFail($id);
+         return view('noc.interface-mikrotik', [
+             'router_id' => $router->id,
+             'users' => auth()->user(),
+             'roles' => auth()->user()->roles,
+         ]);
+     }
+     
+     public function realtime($id)
+     {
+         $router = Router::findOrFail($id);
+         $client = MikrotikServices::connect($router);
+         
+         // Ganti "ether1" sesuai nama interface aktif kamu
+         $traffic = MikrotikServices::getInterfaceTraffic($client, 'sfp-sfpplus1');
+         
+         return response()->json($traffic);
+     }
+
+
     public function index()
     {
         //
@@ -53,17 +77,15 @@ class NocController extends Controller
 
     public function assign(Request $request, $id)
     {
-        // dd($request->all());
         $customer = Customer::findOrFail($id);
         $router = Router::findOrFail($request->router_id);
-        $paket = $customer->paket->nama_paket;
-        // $koneksi = Koneksi::where('customer_id', $id)->first();
-        // dd($koneksi);
 
-        // $mikrotik = new MikrotikServices();
-        // $routerDetails = $mikrotik->getRouterDetailsByName($router->nama_router);
-        
-        $updated = $customer->update([
+        $paket = $customer->paket->nama_paket;
+        $koneksi = Koneksi::findOrFail($request->koneksi_id);
+        $konek = strtolower($koneksi->nama_koneksi);
+
+        // Update data customer
+        $customer->update([
             'koneksi_id' => $request->koneksi_id,
             'usersecret' => $request->usersecret,
             'remote_address' => $request->remote_address,
@@ -71,15 +93,14 @@ class NocController extends Controller
             'local_address' => $request->local_address,
             'pass_secret' => $request->password,
             'status_id' => 5,
-            'remote' => $request->remote
+            'remote' => $request->remote,
         ]);
 
-        $d = $request->koneksi_id;
-        $koneksi = Koneksi::findOrFail($d);
-        $konek = strtolower($koneksi->nama_koneksi);
+        // 🔌 Connect ke router sekali saja
+        $client = MikrotikServices::connect($router);
 
-        $mikrotik = new MikrotikServices();
-        $mikrotik->addPPPSecret([
+        // ➕ Tambahkan PPP Secret
+        MikrotikServices::addPPPSecret($client, [
             'name' => $request->usersecret,
             'password' => $request->password,
             'remoteAddress' => $request->remote_address,
@@ -143,4 +164,53 @@ class NocController extends Controller
     {
         //
     }
+
+    public function profilePaket()
+    {
+        $router = Router::paginate(10);
+        $paket = Paket::with('customer', 'router')
+                     ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+                     ->orderBy('nama_paket', 'asc')
+                     ->paginate(10);
+
+        return view('noc.profile-paket',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'paket' => $paket,
+            'router' => $router
+        ]);
+    }
+
+    public function tambahPaket(Request $request)
+    {
+        $paket = new Paket();
+        $paket->router_id = $request->router_id;
+        $paket->nama_paket = $request->nama_paket;
+        $paket->harga = $request->hargaRaw;
+        $paket->save();
+
+        return redirect()->back()->with('success', 'Paket berhasil ditambahkan');
+    }
+
+    public function hapusPaket($id)
+    {
+        $paket = Paket::findOrFail($id);
+        $paket->delete();
+
+        return redirect()->back()->with('success', 'Paket berhasil dihapus');
+    }
+
+    public function tambahRouter(Request $request)
+    {
+        $router = new Router();
+        $router->nama_router = $request->nama_router;
+        $router->ip_address = $request->ip_address;
+        $router->port = $request->port;
+        $router->username = $request->username;
+        $router->password = $request->password;
+        $router->save();
+
+        return redirect()->back()->with('success', 'Router berhasil ditambahkan');
+    }
+
 }

@@ -62,7 +62,9 @@ use App\Http\Controllers\RabController;
 use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AgenController;
+use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\Http;
+use App\Models\Router;
 
 
 // Main Page Route
@@ -79,6 +81,18 @@ Route::get('/payment/detail/{reference}', [TripayController::class, 'showPayment
 Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
 Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
 Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
+
+// Debug
+Route::get('/router/{id}/test', [MikrotikController::class, 'testKoneksi']);
+Route::get('/test-router/{id}', function ($id) {
+    $router = Router::findOrFail($id);
+
+    for ($i = 0; $i < 3; $i++) {
+        MikrotikServices::connect($router);
+    }
+
+    return 'Tes selesai. Cek storage/logs/laravel.log';
+});
 
 
 Route::middleware(['auth'])->group(function () {
@@ -159,7 +173,18 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
     Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
     Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
-    
+    Route::get('/profile/paket', [NocController::class, 'profilePaket'])->name('profile-paket');
+    Route::post('/tambah/paket', [NocController::class, 'tambahPaket']);
+    Route::get('/hapus/paket/{id}', [NocController::class, 'hapusPaket']);
+    Route::get('/laporan', [KeuanganController::class, 'laporan'])->name('laporan');
+    Route::get('/laporan/data', [KeuanganController::class, 'getLaporanData'])->name('laporan.data');
+    Route::post('/tambah/router', [NocController::class, 'tambahRouter']);    
+    Route::get('/interface/{id}', [NocController::class, 'interface'])->name('profile-paket');
+    Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
+
+
+
+
     // Keuangan
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->name('pendapatan');
     Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getRevenueData'])->name('pendapatan.ajax');
@@ -198,7 +223,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->name('data-pelanggan-agen-statistics');
     Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name('request-pembayaran-agen');
     Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->name('pelanggan-agen');
-    Route::get('/pelanggan-agen/statistics', [AgenController::class, 'getCustomerStatistics'])->name('pelanggan-agen-statistics');
 
 
     // Mikrotik API
