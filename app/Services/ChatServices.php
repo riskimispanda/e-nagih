@@ -60,14 +60,25 @@ class ChatServices
 
     public function kirimInvoice($to, $invoice)
     {
-        // dd($to, $invoice);
         $url = url('/payment/invoice/' . $invoice->id);
-        $tanggalLengkap = \Carbon\Carbon::createFromFormat('Y-m-d', now()->format('Y-m') . '-' . $invoice->tanggal_blokir)
+
+        // Ambil hari blokir dari kolom (misalnya: "10")
+        $hariBlokir = (int) $invoice->tanggal_blokir;
+
+        // Buat tanggal lengkap: tanggal 10 bulan depan
+        $tanggalLengkap = now()
+            ->addMonthNoOverflow()
+            ->setDay($hariBlokir)
             ->format('d-m-Y');
 
+        // Hitung total tagihan
         $totalTagihan = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
+
+        // Buat kode invoice unik berdasarkan tanggal
         $time = now()->format('dmY');
-        $response = Http::post("{$this->baseURL}/send-pesan",[
+
+        // Kirim pesan ke API WhatsApp bot
+        $response = Http::post("{$this->baseURL}/send-pesan", [
             'to' => $to . '@c.us',
             'pesan' => "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
                         "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
@@ -77,17 +88,20 @@ class ChatServices
                         "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
                         "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
         ]);
-        
+
+        // Cek apakah berhasil
         if ($response->successful()) {
             return $response->json();
         }
-        
+
+        // Jika gagal
         return [
             'error' => true,
             'status' => $response->status(),
             'pesan' => $response->body(),
         ];
     }
+
 
     public function kirimInvoiceMassal($customer, $invoices)
     {
