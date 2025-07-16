@@ -19,17 +19,12 @@ class CekPayment extends Command
         $startTime = microtime(true);
         Log::info('🚀 Memulai pengecekan invoice');
 
-        $tanggalHariIni = now('Asia/Jakarta')->toDateString();
+        $tanggalHariIni = now('Asia/Jakarta');
         $query = Invoice::where('status_id', 7); // status_id 7 = Belum Bayar
 
         if (!$this->option('force')) {
-            $query->where(function ($q) use ($tanggalHariIni) {
-                $q->whereDate('jatuh_tempo', $tanggalHariIni)
-                  ->orWhereDate('tanggal_blokir', '<=', $tanggalHariIni);
-            });
-
-            $this->info("🔍 Mode normal: cek jatuh_tempo = {$tanggalHariIni} atau >= tanggal_blokir");
-            Log::info("🔍 Mode normal: jatuh_tempo = {$tanggalHariIni} atau >= tanggal_blokir");
+            $this->info("🔍 Mode normal: proses semua invoice belum bayar.");
+            Log::info("🔍 Mode normal: proses semua invoice belum bayar.");
         } else {
             $this->info('⚠️ Mode force aktif: proses semua invoice belum bayar.');
             Log::info('⚠️ Mode force aktif.');
@@ -74,14 +69,18 @@ class CekPayment extends Command
                 continue;
             }
 
-            // 🔒 Blokir otomatis jika hari ini >= tanggal_blokir
-            $tanggalBlokir = \Carbon\Carbon::parse($invoice->jatuh_tempo)
-                ->addMonth() // bulan setelah jatuh tempo
-                ->day((int) ($invoice->tanggal_blokir)); // default 10 jika null
+            // ========================= 🔒 BLOKIR OTOMATIS ========================= //
+            $tanggalBlokir = Carbon::parse($invoice->jatuh_tempo)
+                ->addMonth()
+                ->day((int) ($invoice->tanggal_blokir ?? 10)) // fallback ke tanggal 10
+                ->setTime(23, 59);
 
-            if ($tanggalHariIni >= $tanggalBlokir) {
+            Log::info("🕒 Cek Blokir - Invoice #{$invoice->id} | Sekarang: {$tanggalHariIni} | Blokir pada: {$tanggalBlokir}");
+
+            if ($tanggalHariIni > $tanggalBlokir) {
                 if ($customer->status_id == 9) {
                     $this->info("⚠️ Customer sudah diblokir: {$customer->nama_customer}");
+                    Log::info("⏭ Lewat: {$customer->nama_customer} sudah status diblokir.");
                     continue;
                 }
 
@@ -90,15 +89,16 @@ class CekPayment extends Command
                 if ($blok) {
                     $customer->status_id = 9;
                     $customer->save();
+
                     $chatService->kirimNotifikasiBlokir($customer->no_hp, $invoice);
 
                     $removed = MikrotikServices::removeActiveConnections($client, $customer->usersecret);
                     if ($removed) {
-                        $this->info("🔒 Blokir sukses, koneksi aktif dihapus: {$customer->nama_customer}");
-                        Log::info("🔒 Blokir sukses & koneksi dihapus: {$customer->nama_customer}");
+                        $this->info("🔒 Blokir sukses & koneksi dihapus: {$customer->nama_customer}");
+                        Log::info("🔒 Blokir & hapus koneksi: {$customer->nama_customer}");
                     } else {
-                        $this->warn("⚠️ Blokir sukses, tapi gagal hapus koneksi aktif: {$customer->nama_customer}");
-                        Log::warning("⚠️ Blokir sukses, tapi koneksi aktif gagal dihapus: {$customer->nama_customer}");
+                        $this->warn("⚠️ Blokir sukses, tapi gagal hapus koneksi: {$customer->nama_customer}");
+                        Log::warning("⚠️ Blokir sukses, koneksi gagal dihapus: {$customer->nama_customer}");
                     }
 
                     $this->info("✅ Status customer diupdate ke 9 (Diblokir)");
@@ -107,12 +107,12 @@ class CekPayment extends Command
                     $this->error("❌ Gagal ubah profil PPP / blokir: {$customer->nama_customer}");
                     Log::error("❌ Gagal ubah profil PPP: {$customer->nama_customer}");
                 }
+
                 continue;
             }
 
-
-            // 📩 Kirim WA jika hari ini jatuh tempo
-            if ($tanggalHariIni == $invoice->jatuh_tempo) {
+            // ========================= 📩 KIRIM WA JIKA JATUH TEMPO ========================= //
+            if ($tanggalHariIni->toDateString() == $invoice->jatuh_tempo) {
                 try {
                     $res = $chatService->kirimInvoice($customer->no_hp, $invoice);
 
