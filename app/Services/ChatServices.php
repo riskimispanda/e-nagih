@@ -221,6 +221,4 @@ class ChatServices
             'pesan' => $response->body(),
         ];
     }
-    
-
 }
