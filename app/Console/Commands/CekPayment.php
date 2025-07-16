@@ -75,10 +75,14 @@ class CekPayment extends Command
             }
 
             // 🔒 Blokir otomatis jika hari ini >= tanggal_blokir
-            if ($tanggalHariIni >= $invoice->tanggal_blokir) {
+            $tanggalBlokir = \Carbon\Carbon::parse($invoice->jatuh_tempo)
+                ->addMonth() // bulan setelah jatuh tempo
+                ->day((int) ($invoice->tanggal_blokir)); // default 10 jika null
+
+            if ($tanggalHariIni >= $tanggalBlokir) {
                 if ($customer->status_id == 9) {
                     $this->info("⚠️ Customer sudah diblokir: {$customer->nama_customer}");
-                    continue; // sudah diblokir, skip blokir
+                    continue;
                 }
 
                 $blok = MikrotikServices::changeUserProfile($client, $customer->usersecret, 'ISOLIREBILLING');
@@ -87,6 +91,7 @@ class CekPayment extends Command
                     $customer->status_id = 9;
                     $customer->save();
                     $chatService->kirimNotifikasiBlokir($customer->no_hp, $invoice);
+
                     $removed = MikrotikServices::removeActiveConnections($client, $customer->usersecret);
                     if ($removed) {
                         $this->info("🔒 Blokir sukses, koneksi aktif dihapus: {$customer->nama_customer}");
@@ -102,8 +107,9 @@ class CekPayment extends Command
                     $this->error("❌ Gagal ubah profil PPP / blokir: {$customer->nama_customer}");
                     Log::error("❌ Gagal ubah profil PPP: {$customer->nama_customer}");
                 }
-                continue; // lanjut ke invoice berikutnya
+                continue;
             }
+
 
             // 📩 Kirim WA jika hari ini jatuh tempo
             if ($tanggalHariIni == $invoice->jatuh_tempo) {
