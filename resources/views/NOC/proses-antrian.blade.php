@@ -158,21 +158,21 @@
                                 <div class="input-group">
                                     <span class="input-group-text" id="basic-addon11"><i class="bx bx-lock"></i></span>
                                     <input type="text" class="form-control" name="usersecret"
-                                        placeholder="coba@niscala.com">
+                                        placeholder="coba@niscala.com" required>
                                 </div>
                             </div>
                             <div class="col-sm-6 mb-4">
                                 <label class="form-label">Password</label>
                                 <div class="input-group">
                                     <span class="input-group-text" id="basic-addon11"><i class="bx bx-key"></i></span>
-                                    <input type="text" class="form-control" name="password" placeholder="coba123">
+                                    <input type="text" class="form-control" name="password" placeholder="coba123" required>
                                 </div>
                             </div>
                             <div class="col-sm-12 mb-4">
                                 <label class="form-label">Remote IP</label>
                                 <div class="input-group">
                                     <span class="input-group-text" id="basic-addon11"><i class="bx bx-math"></i></span>
-                                    <input type="text" class="form-control" name="remote" placeholder="192.168.1.1">
+                                    <input type="text" class="form-control" name="remote" placeholder="192.168.1.1" required>
                                 </div>
                             </div>
                             <hr class="my-1 mb-3 mt-5">
