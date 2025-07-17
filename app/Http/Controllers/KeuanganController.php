@@ -893,6 +893,20 @@ class KeuanganController extends Controller
             $chat = new ChatServices();
             $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
 
+            $customer = Customer::find($invoice->customer_id);
+            
+            // Cek apakah customer sedang diblokir
+            if($customer->status_id == 9){
+                $mikrotik = new MikrotikServices();
+                $client = MikrotikServices::connect($customer->router);
+                $mikrotik->removeActiveConnections($client, $customer->usersecret); // Hapus koneksi aktif
+                $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+                // Update status customer
+                $customer->status_id = 3;
+                $customer->save();
+            }
+
+            
             // Update status invoice lama
             $invoice->update(['status_id' => 8]);
 
@@ -911,8 +925,8 @@ class KeuanganController extends Controller
             if (!$sudahAda) {
                 Invoice::create([
                     'customer_id'     => $invoice->customer_id,
-                    'paket_id'        => $invoice->paket_id,
-                    'tagihan'         => $invoice->paket->harga,
+                    'paket_id'        => $customer->paket_id,
+                    'tagihan'         => $customer->paket->harga,
                     'tambahan'        => 0,
                     'saldo'           => $sisa > 0 ? $sisa : 0,
                     'status_id'       => 7, // Belum bayar
@@ -930,6 +944,7 @@ class KeuanganController extends Controller
                 'keterangan'   => 'Pembayaran dari ' . $pembayaran->invoice->customer->nama_customer,
                 'kas_id'       => 1,
                 'user_id'      => auth()->id(),
+                'status_id'     => 3,
                 'pengeluaran_id' => null,
             ]);
 

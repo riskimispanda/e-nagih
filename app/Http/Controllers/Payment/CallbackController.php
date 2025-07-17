@@ -8,96 +8,134 @@ use App\Models\Invoice;
 use Illuminate\Support\Facades\Response;
 use App\Models\Pembayaran;
 use App\Models\Kas;
+use App\Models\Customer;
+use App\Services\MikrotikServices;
 
 class CallbackController extends Controller
 {
     protected $privateKey = 'GrR9L-z2mOp-GHxjb-CNkbU-d3bO0';
     public function handle(Request $request)
     {
-        $callbackSignature = $request->server('HTTP_X_CALLBACK_SIGNATURE');
         $json = $request->getContent();
-        
+        $callbackSignature = $request->server('HTTP_X_CALLBACK_SIGNATURE');
+        $event = $request->server('HTTP_X_CALLBACK_EVENT');
 
+        // Validasi Signature
         $signature = hash_hmac('sha256', $json, $this->privateKey);
-
         if ($signature !== (string) $callbackSignature) {
-            return Response::json([
-                'success' => false,
-                'message' => 'Invalid signature',
-            ]);
+            return $this->jsonError('Invalid signature');
         }
 
-        if ('payment_status' !== (string) $request->server('HTTP_X_CALLBACK_EVENT')) {
-            return Response::json([
-                'success' => false,
-                'message' => 'Unrecognized callback event, no action was taken',
-            ]);
+        // Validasi Event
+        if ($event !== 'payment_status') {
+            return $this->jsonError('Unrecognized callback event, no action was taken');
         }
 
+        // Decode JSON
         $data = json_decode($json);
-        if (JSON_ERROR_NONE !== json_last_error()) {
-            return Response::json([
-                'success' => false,
-                'message' => 'Invalid data sent by tripay',
-            ]);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->jsonError('Invalid JSON data sent by Tripay');
         }
 
-        $tripayReference = $data->reference;
-        $status = strtoupper((string) $data->status);
+        // Ambil invoice berdasarkan reference Tripay
+        $invoice = Invoice::where('reference', $data->reference)->first();
+        if (! $invoice || empty($data->is_closed_payment)) {
+            return $this->jsonError('No invoice found or already paid: ' . $data->reference);
+        }
 
-        if (!empty($data->is_closed_payment)) {
-            $invoice = Invoice::where('reference', '=', $tripayReference)
-                ->where('status_id', '=', 7)->first();
+        // Proses berdasarkan status pembayaran
+        switch (strtoupper((string) $data->status)) {
+            case 'PAID':
+                $this->handlePaid($invoice);
+                break;
 
-            if (! $invoice) {
-                return Response::json([
-                    'success' => false,
-                    'message' => 'No invoice found or already paid: ' . $tripayReference,
-                ]);
-            }
+            case 'EXPIRED':
+                $invoice->update(['status_id' => 7]);
+                break;
 
-            switch ($status) {
-                case 'PAID':
-                    $invoice->update(['status_id' => 8]);
-                    $jumlahTagihan = $invoice->tagihan + $invoice->tambahan;
-                    // Ambil Value Jumlah Kas
-                    $jumlahKas = Kas::where('kas_id', 1)->latest('updated_at')->value('jumlah_kas') ?? 0;
-                    $kasBesar = $jumlahTagihan + $jumlahKas;
-                    // Simpan pembayaran
-                    $pembayaran = new Pembayaran();
-                    $pembayaran->invoice_id = $invoice->id;
-                    $pembayaran->jumlah_bayar = $invoice->tagihan + $invoice->tambahan;
-                    $pembayaran->tanggal_bayar = now();
-                    $pembayaran->metode_bayar = $invoice->metode_bayar;
-                    $pembayaran->status_id = 8;
-                    $pembayaran->save();
-                    // Tambah Kas
-                    $kas = new Kas();
-                    $kas->tanggal_kas = now();
-                    $kas->jumlah_kas = $kasBesar;
-                    $kas->debit = $invoice->tagihan + $invoice->tambahan;
-                    $kas->kas_id = 1;
-                    $kas->keterangan = 'Pembayaran langganan dari ' . $invoice->customer->nama_customer . ' By ' . $invoice->metode_bayar;
-                    $kas->save();
-                    break;
+            case 'FAILED':
+                $invoice->update(['status_id' => 10]);
+                break;
 
-                case 'EXPIRED':
-                    $invoice->update(['status_id' => 7]);
-                    break;
+            default:
+                return $this->jsonError('Unrecognized payment status');
+        }
 
-                case 'FAILED':
-                    $invoice->update(['status_id' => 10]);
-                    break;
+        \Log::info('Tripay Callback Success', (array) $data);
+        return Response::json(['success' => true]);
+    }
 
-                default:
-                    return Response::json([
-                        'success' => false,
-                        'message' => 'Unrecognized payment status',
-                    ]);
-            }
+    protected function jsonError(string $message)
+    {
+        return Response::json([
+            'success' => false,
+            'message' => $message,
+        ]);
+    }
+    
+    protected function handlePaid($invoice)
+    {
+        $totalBayar = $invoice->tagihan + $invoice->tambahan;
 
-            return Response::json(['success' => true]);
-            \Log::info('Tripay Callback Success', (array) $data);
+        // Update status invoice menjadi lunas
+        $invoice->update(['status_id' => 8]);
+
+        // Ambil data customer
+        $customer = Customer::find($invoice->customer_id);
+
+        // Cek apakah customer sedang diblokir, lalu buka blokir
+        if ($customer->status_id == 9) {
+            $mikrotik = new MikrotikServices();
+            $client = MikrotikServices::connect($customer->router);
+            $mikrotik->removeActiveConnections($client, $customer->usersecret);
+            $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+
+            // Update status customer menjadi aktif
+            $customer->update(['status_id' => 3]);
+        }
+
+        // Simpan data pembayaran
+        Pembayaran::create([
+            'invoice_id' => $invoice->id,
+            'jumlah_bayar' => $totalBayar,
+            'tanggal_bayar' => now(),
+            'metode_bayar' => $invoice->metode_bayar,
+            'status_id' => 8,
+            'invoice_id' => $invoice->id,
+        ]);
+
+        // Simpan ke kas
+        Kas::create([
+            'tanggal_kas' => now(),
+            'debit' => $totalBayar,
+            'kas_id' => 1,
+            'status_id' => 3,
+            'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $invoice->metode_bayar,
+        ]);
+
+        // Hitung bulan depan
+        $bulanDepan = \Carbon\Carbon::parse($invoice->jatuh_tempo)->addMonth();
+        
+        // Cek apakah invoice bulan depan sudah ada
+        $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+            ->whereMonth('jatuh_tempo', $bulanDepan->month)
+            ->whereYear('jatuh_tempo', $bulanDepan->year)
+            ->exists();
+
+        if (! $sudahAda) {
+            Invoice::create([
+                'customer_id' => $invoice->customer_id,
+                'tagihan' => $customer->paket->harga,
+                'paket_id' => $customer->paket_id,
+                'tambahan' => 0,
+                'status_id' => 7, // Belum bayar
+                'tanggal_invoice' => $bulanDepan->copy()->startOfMonth(),
+                'tanggal_jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
+                'tanggal_blokir' => $invoice->tanggal_blokir, // contoh: blokir akhir bulan
+                'metode_bayar' => $invoice->metode_bayar,
+            ]);
         }
     }
+
+
 }

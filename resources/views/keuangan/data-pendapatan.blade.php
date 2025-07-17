@@ -570,7 +570,7 @@
                 </div>
                 <div class="modal-footer gap-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bx bx-send me-1"></i>Request</button>
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bx bx-send me-1"></i>Confirm</button>
                 </div>
             </form>
         </div>
