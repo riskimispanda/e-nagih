@@ -109,7 +109,7 @@ class NocController extends Controller
             'service' => $konek,
         ]);
 
-        return redirect()->back()->with('success', 'Antrian assigned successfully');
+        return redirect('/data/antrian-noc')->with('success', 'Antrian assigned successfully');
     }
 
     public function antrianPerusahaan($id)
