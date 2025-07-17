@@ -122,10 +122,10 @@
                                         <tr>
                                             <td>{{ $invoice->paket->nama_paket }} - Layanan Internet</td>
                                             <td class="text-end">Rp
-                                                {{ number_format($invoice->paket->harga, 0, ',', '.') }}</td>
+                                                {{ number_format($invoice->tagihan, 0, ',', '.') }}</td>
                                                 <td class="text-center">1</td>
                                                 <td class="text-end">Rp
-                                                    {{ number_format($invoice->paket->harga, 0, ',', '.') }}</td>
+                                                    {{ number_format($invoice->tagihan, 0, ',', '.') }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>

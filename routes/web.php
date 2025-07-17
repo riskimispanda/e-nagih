@@ -153,7 +153,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/teknisi/konfirmasi/{id}', [TeknisiController::class, 'konfirmasi'])->name('teknisi.konfirmasi');
     Route::get('/corp/proses/{id}', [PerusahaanController::class, 'prosesCorp']);
     Route::post('/confirm/corp/{id}', [PerusahaanController::class, 'confirm']);
-
+    Route::get('/teknisi/detail-antrian/{id}', [DataController::class, 'detailAntrianPelanggan']);
 
     // Perusahaan
     Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
