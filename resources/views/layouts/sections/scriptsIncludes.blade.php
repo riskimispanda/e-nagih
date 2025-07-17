@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Vite;
     document.addEventListener('DOMContentLoaded', function() {
         const statusEl = document.getElementById('status');
         const messagesEl = document.getElementById('messages');
-        
+
         // Log function
         function log(message) {
             const div = document.createElement('div');
@@ -40,36 +40,36 @@ use Illuminate\Support\Facades\Vite;
             messagesEl.appendChild(div);
             console.log(message);
         }
-        
+
         try {
             // Initialize Pusher
             window.Pusher = Pusher;
-            
+
             // Configure Echo
             window.Echo = new Echo({
                 broadcaster: 'reverb',
                 key: '{{ env('REVERB_APP_KEY') }}',
-                wsHost: '{{ env('REVERB_HOST', 'localhost') }}',
+                wsHost: '{{ env('REVERB_HOST') }}',
                 wsPort: {{ env('REVERB_PORT', 8080) }},
                 forceTLS: false,
                 disableStats: true,
                 enabledTransports: ['ws', 'wss'],
             });
-            
+
             log('Echo initialized');
-            
+
             // Subscribe to the channel
             const channel = window.Echo.channel('updates-data');
-            
+
             log('Subscribed to channel: updates-data');
-            
+
             // Listen for events
             channel.listen('.data.updated', function(event) {
                 log('Received event: ' + JSON.stringify(event));
                 statusEl.textContent = 'Connected and received event!';
                 statusEl.style.color = 'green';
             });
-            
+
             // Check connection status
             setTimeout(function() {
                 if (window.Echo.connector.pusher.connection.state === 'connected') {
@@ -83,24 +83,24 @@ use Illuminate\Support\Facades\Vite;
                     log('Connection state: ' + window.Echo.connector.pusher.connection.state);
                 }
             }, 3000);
-            
+
             // Log connection events
             window.Echo.connector.pusher.connection.bind('connected', function() {
                 log('Connection event: connected');
             });
-            
+
             window.Echo.connector.pusher.connection.bind('connecting', function() {
                 log('Connection event: connecting');
             });
-            
+
             window.Echo.connector.pusher.connection.bind('disconnected', function() {
                 log('Connection event: disconnected');
             });
-            
+
             window.Echo.connector.pusher.connection.bind('failed', function() {
                 log('Connection event: failed');
             });
-            
+
             window.Echo.connector.pusher.connection.bind('error', function(error) {
                 log('Connection event: error - ' + JSON.stringify(error));
             });
@@ -124,7 +124,7 @@ use Illuminate\Support\Facades\Vite;
         animation: true
     });
     @endif
-    
+
     @if (session('toast_success'))
     Swal.fire({
         icon: 'success',
@@ -145,7 +145,7 @@ use Illuminate\Support\Facades\Vite;
         animation: true
     });
     @endif
-    
+
     @if (session('error'))
     Swal.fire({
         icon: 'error',
@@ -158,7 +158,7 @@ use Illuminate\Support\Facades\Vite;
         animation: true
     });
     @endif
-    
+
     @if (session('toast_error'))
     Swal.fire({
         icon: 'error',
@@ -185,7 +185,7 @@ use Illuminate\Support\Facades\Vite;
         }
         return '0' + nomor;
     }
-    
+
     // Format semua sel dengan class "nomor-hp"
     document.querySelectorAll('.nomor-hp').forEach(function(cell) {
         const original = cell.textContent.trim();

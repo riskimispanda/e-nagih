@@ -11,29 +11,29 @@ use Illuminate\Support\Facades\Validator;
 class ChatServices
 {
     protected $baseURL;
-    
+
     public function __construct(){
-        $this->baseURL = env('WHATSAPP_BOT_CHAT', 'http://202.10.40.180:3000');
+        $this->baseURL = env('WHATSAPP_BOT_CHAT', 'https://enagih-chat.niscala.net:3000');
     }
-    
+
     public function CustomerBaru($to, $customer)
     {
         $response = Http::post("{$this->baseURL}/send-pesan",[
             'to' => $to . '@c.us',
             'pesan' => "Halo {$customer->nama_customer}, pendaftaran Anda berhasil. Kami akan menghubungi Anda segera untuk proses pemasangan."
         ]);
-        
+
         if ($response->successful()) {
             return $response->json();
         }
-        
+
         return [
             'error' => true,
             'status' => $response->status(),
             'pesan' => $response->body(),
         ];
     }
-    
+
     public function pembayaranBerhasil($to, $pembayaran)
     {
         $response = Http::post("{$this->baseURL}/send-pesan",[
@@ -46,11 +46,11 @@ class ChatServices
                         "Terima kasih telah menggunakan layanan kami 🙏\n" .
                         "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
         ]);
-        
+
         if ($response->successful()) {
             return $response->json();
         }
-        
+
         return [
             'error' => true,
             'status' => $response->status(),
@@ -194,9 +194,9 @@ class ChatServices
                 'pesan' => 'Customer tidak ditemukan',
             ];
         }
-    
+
         $url = url('/payment/invoice/' . $inv->id);
-    
+
         $response = Http::post("{$this->baseURL}/send-pesan", [
             'to' => $to . '@c.us',
             'pesan' => "⚠️ Halo {$inv->customer->nama_customer}, layanan internet Anda telah *diblokir* karena tagihan belum dibayar.\n\n" .
@@ -205,16 +205,16 @@ class ChatServices
                        "🔗 Link Pembayaran:\n{$url}\n\n" .
                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
         ]);
-    
+
         Log::info("📩 Kirim Notifikasi Blokir ke {$to}", [
             'status' => $response->status(),
             'body' => $response->body(),
         ]);
-    
+
         if ($response->successful()) {
             return $response->json();
         }
-    
+
         return [
             'error' => true,
             'status' => $response->status(),

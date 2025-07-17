@@ -14,7 +14,7 @@
             <i class="bx bx-plus me-1"></i> Tambah Bot
         </button>
     </div>
-    
+
     <div class="card mb-4">
         <h5 class="card-header card-title">
             <i class="bx bx-bot text-warning fw-bold me-2"></i> Daftar Bot Tersedia
@@ -36,9 +36,9 @@
             </table>
         </div>
     </div>
-    
+
     <div id="botList" class="row gy-4 mb-4"></div>
-    
+
     <div class="card">
         <h5 class="card-header"><i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan</h5>
         <div class="table-responsive">
@@ -61,15 +61,15 @@
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-    const socket = io("http://202.10.40.180:3000", { transports: ["websocket"] });
+    const socket = io("https://enagih-chat.niscala.net:3000", { transports: ["websocket"] });
     const botTable = document.getElementById("botTableBody");
     const botList = document.getElementById("botList");
     const logTable = document.getElementById("logTableBody");
     const botInfo = document.getElementById("botTerpilihInfo");
-    
+
     let botTerpilih = null;
-    
-    fetch("http://202.10.40.180:3000/get-selected-bot")
+
+    fetch("https://enagih-chat.niscala.net:3000/get-selected-bot")
         .then(res => res.json())
         .then(data => {
             botTerpilih = data.selectedBot;
@@ -80,7 +80,7 @@
             botTerpilih = null;
             tampilkanBotTerpilih();
         });
-        
+
         function tampilkanBotTerpilih() {
             if (!botTerpilih || botTerpilih === "null") {
                 botInfo.innerHTML = `<span class="text-danger">❌ Belum ada bot yang terhubung</span>`;
@@ -88,17 +88,17 @@
                 botInfo.innerHTML = `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>`;
             }
         }
-    
-    
+
+
     socket.on("connect", () => console.log("✅ Socket terhubung"));
-    
+
     socket.on("bot-list", (bots) => {
         botTable.innerHTML = "";
         if (bots.length === 0) {
             botTable.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada bot tersedia</td></tr>`;
             return;
         }
-        
+
         bots.forEach(({ session, count }, index) => {
             const row = document.createElement("tr");
             row.innerHTML = `
@@ -114,11 +114,11 @@
             `;
             botTable.appendChild(row);
         });
-        
+
         setPilihBotListener();
         tampilkanBotTerpilih();
     });
-    
+
     socket.on("qr", ({ session, qr }) => {
         if (!qr.startsWith("data:image/")) return;
         const existing = document.getElementById("bot-" + session);
@@ -139,25 +139,25 @@
             document.querySelector(`#bot-${session} img`).src = qr;
         }
     });
-    
+
     socket.on("status", ({ session, status }) => {
         const el = document.getElementById("status-" + session);
         if (el) el.innerText = status;
     });
-    
+
     socket.on("connected", ({ session }) => {
         const el = document.getElementById("status-" + session);
         if (el) el.innerText = "✅ Terhubung";
-        
+
         // Hapus QR card
         const botCard = document.getElementById("bot-" + session);
         if (botCard) botCard.remove();
-        
+
         // Cegah duplikat
         if (!document.querySelector(`button[data-bot="${session}"]`)) {
             const row = document.createElement("tr");
             const index = botTable.children.length + 1;
-            
+
             row.innerHTML = `
                 <td>${index}</td>
                 <td>${session}</td>
@@ -174,7 +174,7 @@
             updateTombolAksi();
         }
     });
-    
+
     socket.on("log", ({ waktu, session, to, pesan, status }) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -190,13 +190,13 @@
             tr.children[0].innerText = i + 1;
         });
     });
-    
+
     function setPilihBotListener() {
         document.querySelectorAll(".pilih-bot").forEach(button => {
             button.addEventListener("click", function () {
                 const selected = this.dataset.bot;
-                
-                fetch("http://202.10.40.180:3000/set-selected-bot", {
+
+                fetch("https://enagih-chat.niscala.net:3000/set-selected-bot", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ sessionName: selected }),
@@ -218,7 +218,7 @@
             });
         });
     }
-    
+
     function updateTombolAksi() {
         document.querySelectorAll(".pilih-bot").forEach(btn => {
             if (btn.dataset.bot === botTerpilih) {
@@ -232,16 +232,16 @@
             }
         });
     }
-    
+
     function tampilkanBotTerpilih() {
         botInfo.innerHTML = botTerpilih ? `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>` : "❌ Belum ada bot terpilih";
     }
-    
+
     document.getElementById("tambahBotBtn").addEventListener("click", () => {
         const sessionName = prompt("Masukkan nama session bot:");
         if (!sessionName) return;
-        
-        fetch("http://202.10.40.180:3000/tambah-bot", {
+
+        fetch("https://enagih-chat.niscala.net:3000/tambah-bot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sessionName }),
