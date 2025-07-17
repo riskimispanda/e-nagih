@@ -768,7 +768,7 @@
                                     <select name="paket_id" id="add_paket" class="form-select" required>
                                         <option value="" selected disabled>Pilih Paket</option>
                                         @foreach ($paket as $p)
-                                            <option value="{{ $p->id }}">{{ $p->paket_name }}</option>
+                                            <option value="{{ $p->id }}">{{ $p->nama_paket }}</option>
                                         @endforeach
                                     </select>
                                 </div>
