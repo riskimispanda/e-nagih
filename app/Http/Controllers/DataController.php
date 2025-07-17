@@ -87,4 +87,15 @@ class DataController extends Controller
         ]);
     }
 
+    public function detailAntrianPelanggan($id)
+    {
+        $customer = Customer::with('router')->findOrFail($id);
+        // dd($customer);
+        return view('/teknisi/detail-antrian-pelanggan', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'data' => $customer,
+        ]);
+    }
+
 }
