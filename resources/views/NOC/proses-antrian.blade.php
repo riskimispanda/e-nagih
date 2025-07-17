@@ -81,7 +81,7 @@
                             <div class="input-group">
                                 <span class="input-group-text" id="basic-addon11"><i class="bx bx-package"></i></span>
                                 <input type="text" class="form-control" readonly
-                                    value="{{ $customer->paket->nama_paket }}" name="paket_id">
+                                    value="{{ $customer->paket->paket_name }}" name="paket_id">
                             </div>
                         </div>
                         <div class="col-sm-6 mb-4">

@@ -787,7 +787,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-danger bg-opacity-10 text-danger">
-                                        {{ $item->paket->nama_paket ?? 'Belum ada paket' }}
+                                        {{ $item->paket->paket_name ?? 'Belum ada paket' }}
                                     </span>
                                 </td>
                                 <td>
@@ -879,7 +879,7 @@
                                 <td>{{ $item->alamat }}</td>
                                 <td>
                                     <span class="badge bg-info bg-opacity-10 text-info">
-                                        {{ $item->paket->nama_paket ?? 'Belum ada paket' }}
+                                        {{ $item->paket->paket_name ?? 'Belum ada paket' }}
                                     </span>
                                 </td>
                                 <td>
@@ -920,7 +920,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="9" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class='bx bx-calendar-check text-secondary mb-2'
                                         style="font-size: 2rem;"></i>
