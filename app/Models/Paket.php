@@ -10,7 +10,8 @@ class Paket extends Model
     protected $fillable = [
         'nama_paket',
         'harga',
-        'router_id'
+        'router_id',
+        'paket_name'
     ];
 
     public function invoice()

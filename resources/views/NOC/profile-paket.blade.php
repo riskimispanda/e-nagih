@@ -129,6 +129,7 @@
                         <thead class="table-dark">
                             <tr class="text-center">
                                 <th>No</th>
+                                <th>Nama Paket</th>
                                 <th>Nama Profile</th>
                                 <th>Nama Router</th>
                                 <th>Harga</th>
@@ -145,6 +146,7 @@
                                         {{ $item->nama_paket ?? '' }}
                                     </span>
                                 </td>
+                                <td class="fw-semibold">{{ $item->profile_name ?? '-'}}</td>
                                 <td class="fw-semibold">{{ $item->router->nama_router ?? '-'}}</td>
                                 <td>Rp {{number_format((int)$item->harga ?? 0, 0, ',', '.')}}</td>
                                 <td>
@@ -219,6 +221,10 @@
                     <div class="mb-3">
                         <label class="form-label mb-2">*Nama Paket</label>
                         <input type="text" class="form-control" id="nama_paket" name="nama_paket" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Nama Profile</label>
+                        <input type="text" class="form-control" id="nama_paket" name="profile_name" required>
                         <span>
                             <small class="text-danger fw-bold">*Harus sesuai dengan nama profile paket di Mikrotik</small>
                         </span>
@@ -398,6 +404,7 @@
                                     ${item.nama_paket || ''}
                                 </span>
                             </td>
+                            <td>${item.paket_name || '-'}</td>
                             <td>${item.router.nama_router || '-'}</td>
                             <td>Rp ${formattedPrice}</td>
                             <td>

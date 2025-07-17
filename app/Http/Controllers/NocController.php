@@ -187,6 +187,7 @@ class NocController extends Controller
         $paket->router_id = $request->router_id;
         $paket->nama_paket = $request->nama_paket;
         $paket->harga = $request->hargaRaw;
+        $paket->paket_name = $request->profile_name;
         $paket->save();
 
         return redirect()->back()->with('success', 'Paket berhasil ditambahkan');
