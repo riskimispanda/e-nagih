@@ -79,8 +79,9 @@ class NocController extends Controller
     {
         $customer = Customer::findOrFail($id);
         $router = Router::findOrFail($request->router_id);
-
-        $paket = $customer->paket->nama_paket;
+        // dd($router);
+        $paket = $customer->paket->paket_name;
+        // dd($paket);
         $koneksi = Koneksi::findOrFail($request->koneksi_id);
         $konek = strtolower($koneksi->nama_koneksi);
 

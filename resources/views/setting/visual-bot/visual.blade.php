@@ -61,7 +61,7 @@
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-    const socket = io("http://202.10.40.180:3000", { transports: ["websocket"] });
+    const socket = io("https://enagih-chat.niscala.net:3000", { transports: ["websocket"] });
     const botTable = document.getElementById("botTableBody");
     const botList = document.getElementById("botList");
     const logTable = document.getElementById("logTableBody");
@@ -69,7 +69,7 @@
     
     let botTerpilih = null;
     
-    fetch("http://202.10.40.180:3000/get-selected-bot")
+    fetch("https://enagih-chat.niscala.net:3000/get-selected-bot")
         .then(res => res.json())
         .then(data => {
             botTerpilih = data.selectedBot;
@@ -196,7 +196,7 @@
             button.addEventListener("click", function () {
                 const selected = this.dataset.bot;
                 
-                fetch("http://202.10.40.180:3000/set-selected-bot", {
+                fetch("https://enagih-chat.niscala.net:3000/set-selected-bot", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ sessionName: selected }),
@@ -241,7 +241,7 @@
         const sessionName = prompt("Masukkan nama session bot:");
         if (!sessionName) return;
         
-        fetch("http://202.10.40.180:3000/tambah-bot", {
+        fetch("https://enagih-chat.niscala.net:3000/tambah-bot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ sessionName }),

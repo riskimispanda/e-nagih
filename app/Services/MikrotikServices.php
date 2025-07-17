@@ -143,6 +143,7 @@ class MikrotikServices
 
     public static function addPPPSecret(Client $client, $data)
     {
+        // dd($client);
         $query = new Query('/ppp/secret/add');
         $query->equal('name', $data['name']);
         $query->equal('password', $data['password']);

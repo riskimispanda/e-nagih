@@ -13,7 +13,7 @@ class ChatServices
     protected $baseURL;
     
     public function __construct(){
-        $this->baseURL = env('WHATSAPP_BOT_CHAT', 'http://202.10.40.180:3000');
+        $this->baseURL = env('WHATSAPP_BOT_CHAT', 'https://enagih-chat.niscala.net:3000');
     }
     
     public function CustomerBaru($to, $customer)
