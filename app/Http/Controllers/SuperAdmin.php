@@ -117,9 +117,14 @@ class SuperAdmin extends Controller
         $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth(); // Akhir bulan depan
         $tanggalBlokir = $invoice->tanggal_blokir; // Blokir H+3
         
-        $mikrotik = new MikrotikServices();
-        $client = MikrotikServices::connect($invoice->customer->router);
-        $mikrotik->removeActiveConnections($client, $invoice->customer->usersecret);
+         // Koneksi ke Mikrotik
+         $client = MikrotikServices::connect($invoice->customer->router);
+
+         // Ambil nama profile sesuai paket
+         $originalProfile = $invoice->customer->paket->nama_paket ?? 'default';
+
+         // Unblok user dan kembalikan profil
+         $unblockResult = MikrotikServices::unblokUser($client, $invoice->customer->usersecret, $originalProfile);
 
         // Cek apakah sudah ada invoice untuk bulan berikutnya
         $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
