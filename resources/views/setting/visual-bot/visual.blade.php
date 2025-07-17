@@ -195,7 +195,6 @@
         document.querySelectorAll(".pilih-bot").forEach(button => {
             button.addEventListener("click", function () {
                 const selected = this.dataset.bot;
-
                 fetch("https://enagih-chat.niscala.net:3000/set-selected-bot", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -240,7 +239,6 @@
     document.getElementById("tambahBotBtn").addEventListener("click", () => {
         const sessionName = prompt("Masukkan nama session bot:");
         if (!sessionName) return;
-
         fetch("https://enagih-chat.niscala.net:3000/tambah-bot", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
