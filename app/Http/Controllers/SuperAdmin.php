@@ -11,6 +11,8 @@ use Spatie\Activitylog\Models\Activity;
 use App\Models\Paket;
 use App\Models\Kas;
 use App\Services\ChatServices;
+use App\Services\MikrotikServices;
+
 
 class SuperAdmin extends Controller
 {
@@ -115,6 +117,10 @@ class SuperAdmin extends Controller
         $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth(); // Akhir bulan depan
         $tanggalBlokir = $invoice->tanggal_blokir; // Blokir H+3
         
+        $mikrotik = new MikrotikServices();
+        $client = MikrotikServices::connect($invoice->customer->router);
+        $mikrotik->removeActiveConnections($client, $invoice->customer->usersecret);
+
         // Cek apakah sudah ada invoice untuk bulan berikutnya
         $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
             ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
