@@ -45,7 +45,7 @@ class CallbackController extends Controller
         $tripayReference = $data->reference;
         $status = strtoupper((string) $data->status);
 
-        if ($data->is_closed_payment === 1) {
+        if (!empty($data->is_closed_payment)) {
             $invoice = Invoice::where('reference', '=', $tripayReference)
                 ->where('status_id', '=', 7)->first();
 
@@ -97,6 +97,7 @@ class CallbackController extends Controller
             }
 
             return Response::json(['success' => true]);
+            \Log::info('Tripay Callback Success', (array) $data);
         }
     }
 }
