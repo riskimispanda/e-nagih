@@ -9,6 +9,7 @@ use App\Services\TripayServices;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
 use App\Models\Kas;
+use App\Services\ChatServices;
 
 class TripayController extends Controller
 {
@@ -314,6 +315,11 @@ class TripayController extends Controller
                 // Tandai lunas
                 $invoice->status_id = 8;
                 $invoice->save();
+                LOG::info('Invoice marked as paid via Tripay callback', [
+                    'invoice_id' => $invoice->id,
+                    'payment_status' => $paymentStatus,
+                    'amount' => $invoice->tagihan
+                ]);
                 $metodePembayaran = $data->payment_method ?? 'Tripay';
                 $namaMetode       = $data->payment_name ?? $metodePembayaran;
                 // Buat pembayaran
@@ -326,7 +332,12 @@ class TripayController extends Controller
                     'keterangan' => 'Pembayaran otomatis via ' . $namaMetode,
                     'status_id' => 8,
                 ]);
-
+                
+                LOG::info('Payment record created', [
+                    'payment_id' => $pembayaran->id,
+                    'invoice_id' => $invoice->id,
+                    'amount' => $invoice->tagihan
+                ]);
                 // Catat kas
                 Kas::create([
                     'debit'         => $invoice->tagihan,
@@ -336,6 +347,12 @@ class TripayController extends Controller
                     'user_id'       => $invoice->customer->user_id ?? null,
                     'pembayaran_id' => $pembayaran->id,
                     'status_id'     => 3
+                ]);
+
+                LOG::info('Invoice marked as paid via Tripay callback', [
+                    'invoice_id' => $invoice->id,
+                    'payment_status' => $paymentStatus,
+                    'amount' => $invoice->tagihan
                 ]);
 
                 // Buat invoice baru untuk bulan depan
