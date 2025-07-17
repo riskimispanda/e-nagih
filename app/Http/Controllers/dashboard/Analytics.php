@@ -252,7 +252,7 @@ class Analytics extends Controller
           $client = MikrotikServices::connect($customer->router);
 
           // Ambil nama profile sesuai paket
-          $originalProfile = $customer->paket->nama_paket ?? 'default';
+          $originalProfile = $customer->paket->paket_name ?? 'default';
 
           // Unblok user dan kembalikan profil
           $unblockResult = MikrotikServices::unblokUser($client, $customer->usersecret, $originalProfile);

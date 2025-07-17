@@ -221,7 +221,26 @@ class MikrotikServices
         }
     }
 
-    public static function unblokUser(Client $client, $usersecret, $originalProfile = null, $id = null)
+    public static function activeConnections($router)
+    {
+        try {
+            $client = MikrotikServices::connect($router);
+
+            $query = new \RouterOS\Query('/ppp/active/print');
+            $query->where('comment', 'Created by E-Nagih');
+
+            $response = $client->query($query)->read();
+
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('Gagal ambil koneksi aktif: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+
+
+    public static function unblokUser(Client $client, $usersecret, $originalProfile , $id = null)
     {
         try {
             if ($id) {

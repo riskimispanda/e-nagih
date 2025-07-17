@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Spatie\Activitylog\Models\Activity;
 use App\Models\Paket;
 use App\Models\Kas;
+use App\Models\Customer;
 use App\Services\ChatServices;
 use App\Services\MikrotikServices;
 
@@ -112,19 +113,19 @@ class SuperAdmin extends Controller
         $chat = new ChatServices();
         $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
         
+        $customer = Customer::find($invoice->customer_id);
+        $customer->status_id = 3;
+        $customer->save();
+        
+        $mikrotik = new MikrotikServices();
+        $client = MikrotikServices::connect($customer->router);
+        $mikrotik->removeActiveConnections($client, $customer->usersecret); // Hapus koneksi aktif
+        $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name); // Unblok user & kembalikan profil
+
         // Tanggal awal bulan depan
         $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->startOfMonth(); // 1 bulan depan
         $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth(); // Akhir bulan depan
         $tanggalBlokir = $invoice->tanggal_blokir; // Blokir H+3
-        
-         // Koneksi ke Mikrotik
-         $client = MikrotikServices::connect($invoice->customer->router);
-
-         // Ambil nama profile sesuai paket
-         $originalProfile = $invoice->customer->paket->nama_paket ?? 'default';
-
-         // Unblok user dan kembalikan profil
-         $unblockResult = MikrotikServices::unblokUser($client, $invoice->customer->usersecret, $originalProfile);
 
         // Cek apakah sudah ada invoice untuk bulan berikutnya
         $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
