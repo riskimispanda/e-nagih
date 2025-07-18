@@ -293,8 +293,7 @@
           "name": "Management",
           "slug": "user",
           "roles": [
-            "Super Admin",
-            "Admin Keuangan"
+            "Super Admin"
           ]
         },
         {
