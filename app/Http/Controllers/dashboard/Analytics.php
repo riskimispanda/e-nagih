@@ -178,7 +178,7 @@ class Analytics extends Controller
           $customer->status_id = 9;
           $customer->save();
 
-          $invoice->paket_id = 12; // asumsikan paket 8 = paket isolir
+          $invoice->paket_id = 2; // ISOLIREBILLING
           $invoice->save();
 
           // Ambil router berdasarkan customer
