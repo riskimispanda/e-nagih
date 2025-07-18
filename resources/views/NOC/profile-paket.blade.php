@@ -165,7 +165,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="7" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
                                         <span class="text-muted">Tidak ada data paket yang ditemukan</span>
@@ -426,7 +426,7 @@
             } else {
                 html = `
                     <tr>
-                        <td colspan="5" class="text-center py-4">
+                        <td colspan="7" class="text-center py-4">
                             <div class="d-flex flex-column align-items-center">
                                 <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
                                 <span class="text-muted">Tidak ada data paket yang ditemukan</span>
