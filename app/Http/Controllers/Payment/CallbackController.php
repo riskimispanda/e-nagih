@@ -196,7 +196,7 @@ class CallbackController extends Controller
             // Kirim notifikasi WhatsApp (di luar transaction untuk menghindari rollback jika gagal)
             try {
                 $chat = new ChatServices();
-                $chat->pembayaranBerhasil($customer->no_hp, $invoice);
+                $chat->pembayaranBerhasil($customer->no_hp, $pembayaran);
             } catch (Exception $e) {
                 Log::error('Failed to send WhatsApp notification', [
                     'customer_id' => $customer->id,
