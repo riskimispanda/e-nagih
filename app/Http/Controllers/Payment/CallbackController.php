@@ -43,7 +43,7 @@ class CallbackController extends Controller
 
             // Validasi Signature
             $signature = hash_hmac('sha256', $json, $this->privateKey);
-            
+
             if (!hash_equals($signature, (string) $callbackSignature)) {
                 Log::warning('Invalid callback signature', [
                     'expected' => $signature,
@@ -223,19 +223,19 @@ class CallbackController extends Controller
 
     protected function generateNextMonthInvoice($invoice, $customer)
     {
-        // Hitung bulan depan - gunakan kolom yang konsisten
-        $jatuhTempo = $invoice->jatuh_tempo ?? $invoice->tanggal_jatuh_tempo;
+        // Hitung bulan depan
+        $jatuhTempo = $invoice->jatuh_tempo;
         if (!$jatuhTempo) {
             Log::warning('No due date found in invoice', ['invoice_id' => $invoice->id]);
             return;
         }
 
-        $bulanDepan = \Carbon\Carbon::parse($jatuhTempo)->addMonth();
+        $bulanDepan = \Carbon\Carbon::parse($jatuhTempo)->addMonthsNoOverflow(1);
         
         // Cek apakah invoice bulan depan sudah ada
         $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
-            ->whereMonth('tanggal_jatuh_tempo', $bulanDepan->month)
-            ->whereYear('tanggal_jatuh_tempo', $bulanDepan->year)
+            ->whereMonth('jatuh_tempo', $bulanDepan->month)
+            ->whereYear('jatuh_tempo', $bulanDepan->year)
             ->exists();
 
         if (!$sudahAda) {
@@ -245,8 +245,7 @@ class CallbackController extends Controller
                 'paket_id' => $customer->paket_id,
                 'tambahan' => 0,
                 'status_id' => 7, // Belum bayar
-                'tanggal_invoice' => $bulanDepan->copy()->startOfMonth(),
-                'tanggal_jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
+                'jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
                 'tanggal_blokir' => $invoice->tanggal_blokir,
                 'metode_bayar' => $invoice->metode_bayar,
             ]);
