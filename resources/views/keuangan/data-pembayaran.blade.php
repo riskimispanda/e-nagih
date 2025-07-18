@@ -611,7 +611,7 @@
                                             {{ $payment->user->name }}
                                         </span>
                                     @else
-                                        <span class="status-badge bg-danger bg-opacity-10 text-danger fw-bold">Tripay</span>
+                                        <span class="status-badge bg-info bg-opacity-10 text-primary fw-bold">Tripay</span>
                                     @endif
                                 </td>
                             </tr>
