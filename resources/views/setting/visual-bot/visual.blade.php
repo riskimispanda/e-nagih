@@ -3,12 +3,17 @@
 @section('title', 'Setting Bot WhatsApp')
 
 @section('content')
-<div class="container-xxl flex-grow-1 container-p-y">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold">Bot WhatsApp Aktif</h4>
-            <span class="text-muted">Kelola dan pantau semua bot WhatsApp yang aktif.</span>
-            <div id="botTerpilihInfo" class="text-success fw-bold mt-2"></div>
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="card-header">
+                <h4 class="fw-bold">Bot WhatsApp Aktif</h4>
+                <span class="text-muted">Kelola dan pantau semua bot WhatsApp yang aktif.</span>
+                <div id="botTerpilihInfo" class="text-success fw-bold mt-2"></div>
+            </div>
+            <button id="tambahBotBtn" class="btn btn-success btn-sm">
+                <i class="bx bx-plus me-1"></i> Tambah Bot
+            </button>
         </div>
         <button id="tambahBotBtn" class="btn btn-success btn-sm">
             <i class="bx bx-plus me-1"></i> Tambah Bot
@@ -55,6 +60,48 @@
                 </thead>
                 <tbody id="logTableBody"></tbody>
             </table>
+
+        <div class="card mb-4">
+            <h5 class="card-header card-title">
+                <i class="bx bx-bot text-warning fw-bold me-2"></i> Daftar Bot Tersedia
+            </h5>
+            <div class="table-responsive text-nowrap">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark text-center">
+                        <tr>
+                            <th>#</th>
+                            <th>Session</th>
+                            <th>Pesan Terkirim</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="botTableBody" class="text-center">
+                        <tr><td colspan="5">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="botList" class="row gy-4 mb-4"></div>
+
+        <div class="card">
+            <h5 class="card-header"><i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan</h5>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Waktu</th>
+                            <th>Bot</th>
+                            <th>Tujuan</th>
+                            <th>Pesan</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -88,6 +135,25 @@
                 botInfo.innerHTML = `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>`;
             }
         }
+
+    .then(res => res.json())
+    .then(data => {
+        botTerpilih = data.selectedBot;
+        tampilkanBotTerpilih();
+        updateTombolAksi();
+    })
+    .catch(() => {
+        botTerpilih = null;
+        tampilkanBotTerpilih();
+    });
+
+    function tampilkanBotTerpilih() {
+        if (!botTerpilih || botTerpilih === "null") {
+            botInfo.innerHTML = `<span class="text-danger">❌ Belum ada bot yang terhubung</span>`;
+        } else {
+            botInfo.innerHTML = `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>`;
+        }
+    }
 
 
     socket.on("connect", () => console.log("✅ Socket terhubung"));
