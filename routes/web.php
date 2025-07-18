@@ -71,6 +71,8 @@ use App\Models\Router;
 Route::get('/', [LoginBasic::class, 'index'])->name('login')->middleware('guest');
 
 Route::post('/login', [LoginBasic::class, 'login'])->name('login.post');
+Route::get('/login', fn () => redirect()->route('login'));
+
 Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
 // Tripay Payment
@@ -79,6 +81,7 @@ Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage']
 Route::get('/payment/channels', [TripayController::class, 'getPaymentChannels'])->name('payment.channels');
 Route::get('/payment/detail/{reference}', [TripayController::class, 'showPaymentDetail'])->name('payment.detail');
 Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])->name('tripay.payment');
+Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
 Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
 Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
 
@@ -86,25 +89,25 @@ Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
 Route::get('/router/{id}/test', [MikrotikController::class, 'testKoneksi']);
 Route::get('/test-router/{id}', function ($id) {
     $router = Router::findOrFail($id);
-
+    
     for ($i = 0; $i < 3; $i++) {
         MikrotikServices::connect($router);
     }
-
+    
     return 'Tes selesai. Cek storage/logs/laravel.log';
 });
 
 
 Route::middleware(['auth'])->group(function () {
     // Setting
-    Route::get('/setting', [SettingController::class, 'blokirSetting'])->name('setting');
+    Route::get('/setting', [SettingController::class, 'blokirSetting'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('setting');
     Route::post('/sett/blokir', [SettingController::class, 'settBlokir']);
-    Route::get('/visual', [SettingController::class, 'visual'])->name('setting');
+    Route::get('/visual', [SettingController::class, 'visual'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('setting');
     
     // Invoice
     Route::match(['GET', 'POST'],'/manual/invoice', [SuperAdmin::class, 'globalInvoice'])->name('global-invoice');
     Route::get('/kirim/invoice/{id}', [SuperAdmin::class, 'kirimInvoice'])->name('kirim-invoice');
-
+    
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
     Route::get('/unblokir/{id}', [Analytics::class, 'unblokir'])->name('unblokir');
@@ -116,24 +119,23 @@ Route::middleware(['auth'])->group(function () {
     // SuperAdmin
     Route::get('/payment/approve', [SuperAdmin::class, 'approvalPembayaran'])->name('payment.approve');
     Route::get('/acc/{id}', [SuperAdmin::class, 'acc'])->name('acc');
-    Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->name('log-aktivitas');
-    Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail']);
-    Route::get('/rab', [RabController::class, 'index'])->name('rab');
+    Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->middleware('auth', 'roles:Super Admin')->name('log-aktivitas');
+    Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail'])->middleware('auth', 'roles:Super Admin')->name('logs-detail');
+    Route::get('/rab', [RabController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('rab');
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
     
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
-    Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->name('pelanggan');
-    Route::get('/data/logistik', [Analytics::class, 'logistik'])->name('logistik');
+    Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
+    Route::get('/data/logistik', [Analytics::class, 'logistik'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('logistik');
     Route::get('/data/antrian', [Analytics::class, 'antrian'])->name('antrian');
     
     // User Management
-    Route::get('/user/management', [UserController::class, 'index'])->name('user');
+    Route::get('/user/management', [UserController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('user');
     Route::post('/user/store', [UserController::class, 'store'])->name('user.store');
     // Customer
     Route::post('/customer/store', [Customer::class, 'store'])->name('customer.store');
-    Route::get('/dashboard/get-customer-data/{id?}', [Analytics::class,
-    'getCustomerData'])->name('dashboard.get-customer-data');
+    Route::get('/dashboard/get-customer-data/{id?}', [Analytics::class, 'getCustomerData'])->name('dashboard.get-customer-data');
     // Customer
     Route::get('/customer', [Customer::class, 'index'])->name('pelanggan');
     Route::get('/customer/pengaduan', [Customer::class, 'pengaduan'])->name('pengaduan');
@@ -147,7 +149,7 @@ Route::middleware(['auth'])->group(function () {
     
     
     // Teknisi
-    Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])->name('teknisi');
+    Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])->middleware('auth', 'roles:Super Admin,Teknisi,NOC')->name('teknisi');
     Route::get('/teknisi/selesai/{id}', [TeknisiController::class, 'selesai'])->name('teknisi.selesai');
     Route::get('/teknisi/selesai/{id}/print', [TeknisiController::class, 'print'])->name('teknisi.print');
     Route::post('/teknisi/konfirmasi/{id}', [TeknisiController::class, 'konfirmasi'])->name('teknisi.konfirmasi');
@@ -157,7 +159,7 @@ Route::middleware(['auth'])->group(function () {
     
     
     // Perusahaan
-    Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
+    Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
     
     // NOC
     Route::get('/noc/data-olt', [Jaringan::class, 'index'])->name('olt');
@@ -174,43 +176,40 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
     Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
     Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
-    Route::get('/profile/paket', [NocController::class, 'profilePaket'])->name('profile-paket');
+    Route::get('/profile/paket', [NocController::class, 'profilePaket'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
     Route::post('/tambah/paket', [NocController::class, 'tambahPaket']);
     Route::get('/hapus/paket/{id}', [NocController::class, 'hapusPaket']);
-    Route::get('/laporan', [KeuanganController::class, 'laporan'])->name('laporan');
+    Route::get('/laporan', [KeuanganController::class, 'laporan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('laporan');
     Route::get('/laporan/data', [KeuanganController::class, 'getLaporanData'])->name('laporan.data');
     Route::post('/tambah/router', [NocController::class, 'tambahRouter']);    
-    Route::get('/interface/{id}', [NocController::class, 'interface'])->name('profile-paket');
+    Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
-
-
-
-
+    
+    
+    
+    
     // Keuangan
-    Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->name('pendapatan');
+    Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
     Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getRevenueData'])->name('pendapatan.ajax');
-    Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])->name('pembayaran');
-    Route::get('/dashboard/keuangan', [KeuanganController::class, 'dashboardKeuangan'])->name('dashboard-keuangan');
-    Route::get('/api/dashboard/keuangan', [KeuanganController::class,
-    'getDashboardData'])->name('api.dashboard.keuangan');
-    Route::post('/konfirmasi/pembayaran/{customerId}', [KeuanganController::class,
-    'approvePayment'])->name('approve-payment');
+    Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pembayaran');
+    Route::get('/dashboard/keuangan', [KeuanganController::class, 'dashboardKeuangan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('dashboard-keuangan');
+    Route::get('/api/dashboard/keuangan', [KeuanganController::class, 'getDashboardData'])->name('api.dashboard.keuangan');
+    Route::post('/konfirmasi/pembayaran/{customerId}', [KeuanganController::class, 'approvePayment'])->name('approve-payment');
     Route::get('/pembayaran/daily', [keuanganController::class, 'dailyPembayaran'])->name('daily-pembayaran');
     Route::post('/tambah/pendapatan', [KeuanganController::class, 'tambahPendapatan'])->name('tambah-pendapatan');
-    Route::get('/pendapatan/non-langganan', [KeuanganController::class, 'nonLangganan'])->name('non-langganan');
-    Route::get('/pendapatan/non-langganan/search', [KeuanganController::class,
-    'searchNonLangganan'])->name('non-langganan.search');
-    Route::get('/pendapatan/global', [KeuanganController::class, 'globalPendapatan'])->name('global-pendapatan');
-    Route::get('/pengeluaran/global', [PengeluaranController::class, 'index'])->name('global-pengeluaran');
+    Route::get('/pendapatan/non-langganan', [KeuanganController::class, 'nonLangganan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('non-langganan');
+    Route::get('/pendapatan/non-langganan/search', [KeuanganController::class, 'searchNonLangganan'])->name('non-langganan.search');
+    Route::get('/pendapatan/global', [KeuanganController::class, 'globalPendapatan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('global-pendapatan');
+    Route::get('/pengeluaran/global', [PengeluaranController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('global-pengeluaran');
     Route::post('/pengeluaran/tambah', [PengeluaranController::class, 'tambahPengeluaran'])->name('pengeluaran.tambah');
-    Route::get('/kas', [KasController::class, 'index'])->name('kas');
+    Route::get('/kas', [KasController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('kas');
     Route::post('/tambah/kas/kecil', [KasController::class, 'tambahKas'])->name('tambah');
     Route::post('/rab/store', [RabController::class, 'store'])->name('store-rab');
     Route::get('/rab/search', [RabController::class, 'search'])->name('rab-filter');
-    Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->name('kas-kecil');
-    Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->name('kas-besar');
+    Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('kas-kecil');
+    Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('kas-besar');
     Route::post('/request/pembayaran/{id}', [KeuanganController::class, 'requestPembayaran']);
-    Route::get('/data-agen', [KeuanganController::class, 'agen']);
+    Route::get('/data-agen', [KeuanganController::class, 'agen'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
     Route::get('/data-agen/search', [KeuanganController::class, 'searchAgen'])->name('data-agen-search');
     Route::get('/agen/pelanggan/{id}', [KeuanganController::class, 'pelangganAgen'])->name('agen-pelanggan');
     Route::post('/pengeluaran/hapus/{id}', [PengeluaranController::class, 'hapusPengeluaran'])->name('pengeluaran.hapus');
@@ -219,21 +218,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/konfirmasi/hapus/pengeluaran/{id}', [PengeluaranController::class, 'konfirmasiHapus'])->name('konfirmasi-hapus-pengeluaran');
     
     // Agen
-    Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->name('data-pembayaran');
-    Route::get('/agen/data-pelanggan/search', [AgenController::class, 'search'])->name('data-pelanggan-agen-search');
-    Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->name('data-pelanggan-agen-statistics');
+    Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');
+    Route::get('/agen/data-pelanggan/search', [AgenController::class, 'search'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-search');
+    Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-statistics');
     Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name('request-pembayaran-agen');
-    Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->name('pelanggan-agen');
-
-
+    Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Agen')->name('pelanggan-agen');
+    
+    
     // Mikrotik API
     Route::get('/mikrotik', [MikrotikController::class, 'index'])->name('mikrotik');
     
     // Helpdesk
-    Route::get('/helpdesk/data-pengaduan', [HelpdeskController::class, 'dataPengaduan'])->name('data-pengaduan');
-    Route::get('/helpdesk/get-pengaduan-data', [HelpdeskController::class,
-    'getPengaduanData'])->name('get-pengaduan-data');
-    Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->name('antrian-helpdesk');
+    Route::get('/helpdesk/data-pengaduan', [HelpdeskController::class, 'dataPengaduan'])->middleware('auth', 'roles:Helpdesk')->name('data-pengaduan');
+    Route::get('/helpdesk/get-pengaduan-data', [HelpdeskController::class, 'getPengaduanData'])->name('get-pengaduan-data');
+    Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->middleware('auth', 'roles:Helpdesk')->name('antrian-helpdesk');
     Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
     Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
@@ -241,7 +239,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Payment callback routes (outside auth middleware and CSRF protection)
-Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
 
 // Tripay test callback route (specific for Tripay test feature)
 Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])->name('payment.tripay.test.callback')->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
@@ -285,10 +282,10 @@ Route::get('/payment/check-status/{invoice_id}', [TripayController::class, 'chec
 Route::any('/tripay-callback', function(\Illuminate\Http\Request $request) {
     // Log the request
     \Log::info('Tripay fallback callback received', [
-'method' => $request->method(),
-'url' => $request->url(),
-'all' => $request->all(),
-'content' => $request->getContent()
+        'method' => $request->method(),
+        'url' => $request->url(),
+        'all' => $request->all(),
+        'content' => $request->getContent()
     ]);
     
     // Forward to the callback handler

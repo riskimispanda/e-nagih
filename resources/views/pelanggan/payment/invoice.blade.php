@@ -73,7 +73,7 @@
                                 <div class="d-flex align-items-center">
                                     <img src="/assets/nagih.svg" alt="Logo" class="me-2" style="width: 120px">
                                     <div>
-                                        <h5 class="mb-1">Niscala Network</h5>
+                                        <h5 class="mb-1">Niscala Network Media</h5>
                                         <p class="mb-0 small">Temanggung, Jetis, Saptosari<br>
                                             Gunungkidul, DIYogyakarta</p>
                                         </div>
@@ -103,8 +103,7 @@
                                 <div class="col-md-6 text-md-end">
                                     <h6 class="text-muted">Detail Tagihan:</h6>
                                     <p class="mb-1">Paket: {{ $invoice->paket->nama_paket }}</p>
-                                    <p class="mb-1">Lokasi: {{ $invoice->customer->lokasi->nama_lokasi ?? 'N/A' }}</p>
-                                    <p class="mb-3">Periode: {{ date('M Y', strtotime($invoice->created_at)) }}</p>
+                                    <p class="mb-3">Periode: {{ date('d-M-Y', strtotime($invoice->created_at)) }}</p>
                                 </div>
                             </div>
                             <!-- Table -->

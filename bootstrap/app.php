@@ -16,6 +16,11 @@ return Application::configure(basePath: dirname(__DIR__))
       '/payment/callback',
       '/tripay-callback',
     ]);
+
+    $middleware->alias([
+      'roles' => \App\Http\Middleware\RolesMiddleware::class,
+    ]);
+
   })
   ->withExceptions(function (Exceptions $exceptions) {
     //
