@@ -1,3 +1,4 @@
+
 @extends('layouts.contentNavbarLayout')
 
 @section('title', 'Setting Bot WhatsApp')
@@ -15,11 +16,9 @@
                 <i class="bx bx-plus me-1"></i> Tambah Bot
             </button>
         </div>
-        <button id="tambahBotBtn" class="btn btn-success btn-sm">
-            <i class="bx bx-plus me-1"></i> Tambah Bot
-        </button>
     </div>
 
+    <!-- Daftar Bot -->
     <div class="card mb-4">
         <h5 class="card-header card-title">
             <i class="bx bx-bot text-warning fw-bold me-2"></i> Daftar Bot Tersedia
@@ -42,10 +41,14 @@
         </div>
     </div>
 
+    <!-- QR Bot (jika ada) -->
     <div id="botList" class="row gy-4 mb-4"></div>
 
+    <!-- Log Pengiriman -->
     <div class="card">
-        <h5 class="card-header"><i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan</h5>
+        <h5 class="card-header">
+            <i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan
+        </h5>
         <div class="table-responsive">
             <table class="table table-hover table-striped">
                 <thead class="table-dark">
@@ -60,48 +63,6 @@
                 </thead>
                 <tbody id="logTableBody"></tbody>
             </table>
-
-        <div class="card mb-4">
-            <h5 class="card-header card-title">
-                <i class="bx bx-bot text-warning fw-bold me-2"></i> Daftar Bot Tersedia
-            </h5>
-            <div class="table-responsive text-nowrap">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-dark text-center">
-                        <tr>
-                            <th>#</th>
-                            <th>Session</th>
-                            <th>Pesan Terkirim</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="botTableBody" class="text-center">
-                        <tr><td colspan="5">Memuat data...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="botList" class="row gy-4 mb-4"></div>
-
-        <div class="card">
-            <h5 class="card-header"><i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan</h5>
-            <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Waktu</th>
-                            <th>Bot</th>
-                            <th>Tujuan</th>
-                            <th>Pesan</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logTableBody"></tbody>
-                </table>
-            </div>
         </div>
     </div>
 </div>
@@ -128,25 +89,6 @@
             tampilkanBotTerpilih();
         });
 
-        function tampilkanBotTerpilih() {
-            if (!botTerpilih || botTerpilih === "null") {
-                botInfo.innerHTML = `<span class="text-danger">❌ Belum ada bot yang terhubung</span>`;
-            } else {
-                botInfo.innerHTML = `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>`;
-            }
-        }
-
-    .then(res => res.json())
-    .then(data => {
-        botTerpilih = data.selectedBot;
-        tampilkanBotTerpilih();
-        updateTombolAksi();
-    })
-    .catch(() => {
-        botTerpilih = null;
-        tampilkanBotTerpilih();
-    });
-
     function tampilkanBotTerpilih() {
         if (!botTerpilih || botTerpilih === "null") {
             botInfo.innerHTML = `<span class="text-danger">❌ Belum ada bot yang terhubung</span>`;
@@ -154,7 +96,6 @@
             botInfo.innerHTML = `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>`;
         }
     }
-
 
     socket.on("connect", () => console.log("✅ Socket terhubung"));
 
@@ -215,11 +156,9 @@
         const el = document.getElementById("status-" + session);
         if (el) el.innerText = "✅ Terhubung";
 
-        // Hapus QR card
         const botCard = document.getElementById("bot-" + session);
         if (botCard) botCard.remove();
 
-        // Cegah duplikat
         if (!document.querySelector(`button[data-bot="${session}"]`)) {
             const row = document.createElement("tr");
             const index = botTable.children.length + 1;
@@ -298,10 +237,6 @@
         });
     }
 
-    function tampilkanBotTerpilih() {
-        botInfo.innerHTML = botTerpilih ? `🔘 Bot terpilih saat ini: <strong>${botTerpilih}</strong>` : "❌ Belum ada bot terpilih";
-    }
-
     document.getElementById("tambahBotBtn").addEventListener("click", () => {
         const sessionName = prompt("Masukkan nama session bot:");
         if (!sessionName) return;
@@ -321,3 +256,4 @@
     });
 </script>
 @endsection
+
