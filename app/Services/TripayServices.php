@@ -154,18 +154,19 @@ class TripayServices
             'phone' => $invoice->customer->no_hp ?? $invoice->customer->no_telp ?? '08123456789',
         ];
 
-        $tagihan     = $invoice->tagihan;
-        $tambahan    = $invoice->tambahan ?? 0;
-        $saldo       = $invoice->saldo ?? 0;
-        $totalAmount = $tagihan + $tambahan - $saldo;
+        $tagihan  = $invoice->tagihan;
+        $tambahan = $invoice->tambahan ?? 0;
+        $saldo    = $invoice->saldo ?? 0;
+
+        $items = [];
 
         // Item utama
-        $items = [[
+        $items[] = [
             'name'     => 'Tagihan Internet - ' . date('F Y'),
-            'price'    => $totalAmount,
+            'price'    => $tagihan,
             'quantity' => 1,
-            'subtotal' => $totalAmount,
-        ]];
+            'subtotal' => $tagihan,
+        ];
 
         // Tambahan jika ada
         if ($tambahan > 0) {
@@ -176,6 +177,10 @@ class TripayServices
                 'subtotal' => $tambahan,
             ];
         }
+
+        // Hitung total dari item, lalu dikurangi saldo
+        $itemsTotal = array_sum(array_column($items, 'subtotal'));
+        $totalAmount = max($itemsTotal - $saldo, 0);
 
         $signature = hash_hmac('sha256', $merchantCode . $merchantRef . $totalAmount, $privateKey);
 
@@ -218,7 +223,6 @@ class TripayServices
         $decoded = json_decode($response, true);
         \Log::info('Tripay transaction response', ['response' => $decoded]);
 
-        // Simpan ke invoice jika berhasil
         if ($decoded['success'] ?? false) {
             try {
                 $invoice->update([
@@ -243,5 +247,6 @@ class TripayServices
 
         return $decoded;
     }
+
 
 }
