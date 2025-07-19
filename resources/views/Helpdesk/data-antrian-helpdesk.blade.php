@@ -642,12 +642,22 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <a href="/helpdesk/detail-antrian/{{ $c->id }}">
-                                                <button type="button" class="btn btn-action btn-edit"
-                                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Detail">
-                                                    <i class="bx bx-info-circle"></i>
-                                                </button>
-                                            </a>
+                                            <div class="row">
+                                                <div class="d-flex">
+                                                    <a href="/helpdesk/detail-antrian/{{ $c->id }}">
+                                                        <button type="button" class="btn btn-action btn-edit"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Detail">
+                                                            <i class="bx bx-info-circle"></i>
+                                                        </button>
+                                                    </a>
+                                                    <a href="/helpdesk/hapus-antrian/{{ $c->id }}">
+                                                        <button type="button" class="btn btn-action btn-delete"
+                                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Hapus">
+                                                        <i class="bx bx-trash"></i>
+                                                        </button>
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
                                             <span class="badge bg-danger text-white">

@@ -248,6 +248,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
+    Route::get('/helpdesk/hapus-antrian/{id}', [HelpdeskController::class, 'hapusAntrian'])->name('hapus-antrian-helpdesk');
 });
 
 // Payment callback routes (outside auth middleware and CSRF protection)

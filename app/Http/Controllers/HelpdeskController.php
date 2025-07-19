@@ -253,7 +253,6 @@ class HelpdeskController extends Controller
             'gps' => $request->gps,
             'no_identitas' => $request->no_identitas,
             'paket_id' => $request->paket_id,
-            'status_id' => $request->status_id,
         ]);
 
         // Update the associated user if email has changed
@@ -267,8 +266,7 @@ class HelpdeskController extends Controller
             }
         }
 
-        return redirect()->route('detail-antrian-helpdesk', $id)
-            ->with('success', 'Data pelanggan berhasil diperbarui');
+        return redirect('/helpdesk/detail-antrian/'.$id)->with('success', 'Data pelanggan berhasil diperbarui');
     }
 
     public function corpDetail($id)
@@ -279,6 +277,13 @@ class HelpdeskController extends Controller
             'roles' => auth()->user()->roles,
             'corp' => $perusahaan,
         ]);
+    }
+
+    public function hapusAntrian($id)
+    {
+        $customer = Customer::find($id);
+        $customer->delete();
+        return redirect()->back()->with('success', 'Antrian berhasil dihapus');
     }
 
 }
