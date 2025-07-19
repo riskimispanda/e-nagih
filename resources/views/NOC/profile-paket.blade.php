@@ -38,6 +38,9 @@
                                 <th>No</th>
                                 <th>Nama Router</th>
                                 <th>IP Address</th>
+                                <th>Port</th>
+                                <th>Status</th>
+                                <th>CPU Load</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -50,16 +53,38 @@
                                         {{ $r->nama_router }}
                                     </span>
                                 </td>
-                                <td>{{ $r->ip_address }}</td>
+                                <td><span class="badge bg-warning bg-opacity-10 text-dark">{{ $r->ip_address }}</span></td>
+                                <td><span class="badge bg-info bg-opacity-10 text-info">{{ $r->port }}</span></td>
                                 <td>
-                                    <a href="/interface/{{ $r->id }}" data-bs-toggle="tooltip" title="Interface" data-bs-placement="bottom" class="btn btn-outline-warning btn-sm">
-                                        <i class="bx bx-server"></i>
-                                    </a>
+                                    <span class="badge bg-success bg-opacity-10 text-success">{{$r->status_koneksi}}</span>
+                                </td>
+                                <td>
+                                    @if ($r->cpu_load !== null)
+                                        <div class="progress" style="height: 15px;">
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ $r->cpu_load }}%;">
+                                                {{ $r->cpu_load }}%
+                                            </div>
+                                        </div>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="row">
+                                        <div class="d-flex gap-2 justify-content-center">
+                                            <a href="/interface/{{ $r->id }}" data-bs-toggle="tooltip" title="Interface" data-bs-placement="bottom">
+                                                <i class="bx bx-server text-primary"></i>
+                                            </a>|
+                                            <a href="#" onclick="editRouter({{ $r->id }})" data-bs-toggle="tooltip" title="Edit" data-bs-placement="bottom">
+                                                <i class="bx bx-edit text-warning"></i>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="3" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
                                         <span class="text-muted">Tidak ada data paket yang ditemukan</span>
@@ -294,6 +319,52 @@
     </div>
 </div>
 
+{{-- Modal Edit Router --}}
+<div class="modal fade" id="modalEditRouter" tabindex="-1" aria-labelledby="modalEditRouterLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditRouterLabel"><i class="bx bx-edit me-1"></i>Edit Router</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <hr class="mb-0">
+            <form id="editRouterForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Nama Router</label>
+                        <input type="text" class="form-control" id="edit_nama_router" name="nama_router" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*IP Address Router</label>
+                        <input type="text" class="form-control" id="edit_ip_address" name="ip_address" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Port</label>
+                        <input type="text" class="form-control" id="edit_port" name="port" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Username</label>
+                        <input type="text" class="form-control" id="edit_username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Password</label>
+                        <input type="password" class="form-control" id="edit_password" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-outline-warning btn-sm">
+                        <i class="bx bx-save me-1"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 <script>
     const harga = document.getElementById('harga');
@@ -460,6 +531,32 @@
         // Initial load with sorted data
         updateTable(originalData);
     });
+
+    // Function to handle router edit
+    function editRouter(id) {
+        // Fetch router data
+        fetch(`/edit/router/${id}`)
+            .then(response => response.json())
+            .then(data => {
+                // Populate modal fields
+                document.getElementById('edit_nama_router').value = data.nama_router;
+                document.getElementById('edit_ip_address').value = data.ip_address;
+                document.getElementById('edit_port').value = data.port;
+                document.getElementById('edit_username').value = data.username;
+                document.getElementById('edit_password').value = data.password;
+
+                // Set form action
+                document.getElementById('editRouterForm').action = `/update/router/${id}`;
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('modalEditRouter'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat mengambil data router');
+            });
+    }
 </script>
 
 @endsection

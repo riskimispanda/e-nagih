@@ -190,9 +190,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/laporan', [KeuanganController::class, 'laporan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('laporan');
     Route::get('/laporan/data', [KeuanganController::class, 'getLaporanData'])->name('laporan.data');
     Route::post('/tambah/router', [NocController::class, 'tambahRouter']);
-    Route::get('/interface/{id}', [NocController::class, 'interface'])->name('profile-paket');
-
-    Route::post('/tambah/router', [NocController::class, 'tambahRouter']);
+    Route::get('/edit/router/{id}', [NocController::class, 'editRouter']);
+    Route::post('/update/router/{id}', [NocController::class, 'updateRouter']);
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
 
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);

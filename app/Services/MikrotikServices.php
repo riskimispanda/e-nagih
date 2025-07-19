@@ -45,6 +45,36 @@ class MikrotikServices
     }
 
 
+    public static function status(Router $router): array
+    {
+        try {
+            $client = new Client([
+                'host' => $router->ip_address,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int)$router->port ?? 8728,
+                'timeout' => 5,
+            ]);
+
+            $query = new Query('/system/resource/print');
+            $response = $client->query($query)->read();
+
+            return [
+                'connected' => true,
+                'uptime' => $response[0]['uptime'] ?? null,
+                'version' => $response[0]['version'] ?? null,
+                'cpu_load' => $response[0]['cpu-load'] ?? null,
+                'platform' => $response[0]['platform'] ?? null,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'connected' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+
     public static function detectMainInterface(Client $client)
     {
         $query = new Query('/interface/print');

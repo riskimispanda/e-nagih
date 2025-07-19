@@ -21,10 +21,13 @@ class NocController extends Controller
      public function interface($id)
      {
          $router = Router::findOrFail($id);
+         $client = MikrotikServices::connect($router);
+         $status = MikrotikServices::status($router);
          return view('NOC.interface-mikrotik', [
              'router_id' => $router->id,
              'users' => auth()->user(),
              'roles' => auth()->user()->roles,
+             'status' => $status,
          ]);
      }
 
@@ -169,18 +172,30 @@ class NocController extends Controller
     public function profilePaket()
     {
         $router = Router::paginate(10);
-        $paket = Paket::with('customer', 'router')
-                     ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
-                     ->orderBy('nama_paket', 'asc')
-                     ->paginate(10);
 
-        return view('NOC.profile-paket',[
+        // Transformasi untuk menambahkan status koneksi
+        $router->getCollection()->transform(function ($r) {
+            $status = app(MikrotikServices::class)->status($r);
+            $r->status_koneksi = $status['connected'] ? '🟢 Online' : '🔴 Offline';
+            $r->uptime = $status['uptime'] ?? null;
+            $r->platform = $status['platform'] ?? null;
+            $r->cpu_load = $status['cpu_load'] ?? null;
+            return $r;
+        });
+
+        $paket = Paket::with('customer', 'router')
+            ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+            ->orderBy('nama_paket', 'asc')
+            ->paginate(10);
+
+        return view('NOC.profile-paket', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'paket' => $paket,
-            'router' => $router
+            'router' => $router,
         ]);
     }
+
 
     public function tambahPaket(Request $request)
     {
@@ -213,6 +228,25 @@ class NocController extends Controller
         $router->save();
 
         return redirect()->back()->with('success', 'Router berhasil ditambahkan');
+    }
+
+    public function editRouter($id)
+    {
+        $router = Router::findOrFail($id);
+        return response()->json($router);
+    }
+
+    public function updateRouter(Request $request, $id)
+    {
+        $router = Router::findOrFail($id);
+        $router->nama_router = $request->nama_router;
+        $router->ip_address = $request->ip_address;
+        $router->port = $request->port;
+        $router->username = $request->username;
+        $router->password = $request->password;
+        $router->save();
+
+        return redirect()->back()->with('success', 'Router berhasil diperbarui');
     }
 
 }
