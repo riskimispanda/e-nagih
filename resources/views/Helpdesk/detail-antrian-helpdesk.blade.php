@@ -574,6 +574,18 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Agen</label>
+                            <select id="edit_status" name="agen_id" class="form-select">
+                                <option value="">Pilih Agen</option>
+                                @foreach ($agen ?? [] as $a)
+                                <option value="{{ $a->id }}"
+                                    {{ $customer->agen_id == $a->id ? 'selected' : '' }}>
+                                    {{ $a->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer gap-2">

@@ -219,15 +219,15 @@ class HelpdeskController extends Controller
      */
     public function detailAntrian($id)
     {
-        $customer = Customer::with(['paket', 'status', 'agen', 'teknisi', 'lokasi'])
-            ->findOrFail($id);
-
+        $customer = Customer::with(['paket', 'status', 'agen', 'teknisi', 'lokasi'])->findOrFail($id);
+        $agen = User::where('roles_id', 6)->get();
         return view('Helpdesk.detail-antrian-helpdesk', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customer' => $customer,
             'status' => Status::all(),
             'paket' => Paket::all(),
+            'agen' => $agen,
         ]);
     }
 
@@ -253,6 +253,7 @@ class HelpdeskController extends Controller
             'gps' => $request->gps,
             'no_identitas' => $request->no_identitas,
             'paket_id' => $request->paket_id,
+            'agen_id' => $request->agen_id,
         ]);
 
         // Update the associated user if email has changed
