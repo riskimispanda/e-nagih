@@ -15,22 +15,35 @@ class MikrotikServices
 
     public static function connect(Router $router): Client
     {
-        if (!isset(self::$klien[$router->id])) {
-            Log::info("🔌 Login pertama ke router: {$router->nama_router}");
+        // Buat key unik berdasarkan ID atau kombinasi IP+Port
+        $key = $router->id;
 
-            self::$klien[$router->id] = new Client([
-                'host' => $router->ip_address,
-                'user' => $router->username,
-                'pass' => $router->password,
-                'port' => (int) $router->port,
-                'timeout' => 5,
-            ]);
+        if (!isset(self::$klien[$key])) {
+            try {
+                Log::info("🔌 Login pertama ke router: {$router->nama_router} ({$router->ip_address}:{$router->port})");
+
+                self::$klien[$key] = new Client([
+                    'host' => $router->ip_address,
+                    'user' => $router->username,
+                    'pass' => $router->password,
+                    'port' => (int) $router->port,
+                    'timeout' => 5,
+                ]);
+
+                // Cek koneksi langsung setelah connect
+                self::$klien[$key]->connect();
+
+            } catch (\Throwable $e) {
+                Log::error("❌ Gagal konek ke router {$router->nama_router} ({$router->ip_address}): " . $e->getMessage());
+                throw new \Exception("Tidak bisa konek ke router {$router->nama_router}");
+            }
         } else {
             Log::info("♻️ Pakai koneksi cache untuk router: {$router->nama_router}");
         }
 
-        return self::$klien[$router->id];
+        return self::$klien[$key];
     }
+
 
     public static function detectMainInterface(Client $client)
     {
@@ -169,7 +182,7 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('comment', 'Created by E-Nagih');
+            $query->where('name', 'profile-UpTo-10');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
