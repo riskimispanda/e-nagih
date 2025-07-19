@@ -12,11 +12,13 @@ class MikrotikController extends Controller
     /**
      * Display a listing of the resource.
      */
-    
+
 public function index()
 {
     $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
     $client = MikrotikServices::connect($router);
+
+    $inter = MikrotikServices::listInterfaces($client);
 
     $profiles = MikrotikServices::trafficPelanggan($router, 'Rizky-I107@niscala.net.id');
     $user = MikrotikServices::getPPPSecret($client);

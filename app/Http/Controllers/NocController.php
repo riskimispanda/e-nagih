@@ -31,7 +31,7 @@ class NocController extends Controller
          ]);
      }
 
-     public function realtime($id)
+   public function realtime($id)
      {
          $router = Router::findOrFail($id);
          $client = MikrotikServices::connect($router);
