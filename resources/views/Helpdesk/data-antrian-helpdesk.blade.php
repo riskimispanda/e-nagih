@@ -623,12 +623,18 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <a href="{{ $c->gps }}" target="_blank" class="btn btn-action btn-maps"
+                                            @php
+                                                $gps = $c->gps;
+                                                $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                                                $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                                            @endphp
+                                        
+                                            <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps"
                                                 data-bs-toggle="tooltip" data-bs-placement="top"
                                                 title="Lihat di Google Maps">
                                                 <i class="bx bx-map"></i>
                                             </a>
-                                        </td>
+                                        </td>                                        
                                         <td>{{ \Carbon\Carbon::parse($c->created_at)->translatedFormat('d F Y') }}</td>
                                         <td>
                                             <span class="badge badge-status badge-waiting">
