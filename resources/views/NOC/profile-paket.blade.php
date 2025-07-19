@@ -180,12 +180,16 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
-                                        <i class="bx bx-edit text-warning"></i>
-                                    </a> |
-                                    <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
-                                        <i class="bx bx-trash text-danger"></i>
-                                    </a>
+                                    <div class="row">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
+                                                <i class="bx bx-edit text-warning"></i>
+                                            </a>|
+                                            <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
+                                                <i class="bx bx-trash text-danger"></i>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
@@ -484,12 +488,16 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
-                                    <i class="bx bx-edit text-warning"></i>
-                                </a> |
-                                <a href="/hapus/paket/${item.id}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
-                                    <i class="bx bx-trash text-danger"></i>
-                                </a>
+                                <div class="row">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
+                                                <i class="bx bx-edit text-warning"></i>
+                                            </a>|
+                                            <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
+                                                <i class="bx bx-trash text-danger"></i>
+                                            </a>
+                                        </div>
+                                    </div>
                             </td>
                         </tr>
                     `;
