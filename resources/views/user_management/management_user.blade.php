@@ -90,6 +90,9 @@
                                     <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCenter{{ $u->id }}">
                                         <i class="bx bx-pencil"></i>
                                     </button>
+                                    <a href="/hapus/user/{{ $u->id }}" class="btn btn-outline-danger btn-sm">
+                                        <i class="bx bx-trash"></i>
+                                    </a>
                                 </td>
                             </tr>
                             @endforeach

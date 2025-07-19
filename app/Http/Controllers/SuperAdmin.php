@@ -13,6 +13,7 @@ use App\Models\Kas;
 use App\Models\Customer;
 use App\Services\ChatServices;
 use App\Services\MikrotikServices;
+use App\Models\User;
 
 
 class SuperAdmin extends Controller
@@ -220,4 +221,11 @@ class SuperAdmin extends Controller
         return redirect()->back()->with('success', "Invoice berhasil dikirim ke {$customer}.");
     }
     
+    public function hapusUser($id)
+    {
+        $user = User::find($id);
+        $user->delete();
+        return redirect()->back()->with('success', 'User berhasil dihapus');
+    }
+
 }

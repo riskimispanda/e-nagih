@@ -112,6 +112,7 @@ Route::middleware(['auth'])->group(function () {
     // Invoice
     Route::match(['GET', 'POST'],'/manual/invoice', [SuperAdmin::class, 'globalInvoice'])->name('global-invoice');
     Route::get('/kirim/invoice/{id}', [SuperAdmin::class, 'kirimInvoice'])->name('kirim-invoice');
+    Route::get('/hapus/user/{id}', [SuperAdmin::class, 'hapusUser'])->name('hapus-user');
 
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
