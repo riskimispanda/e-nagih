@@ -192,6 +192,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tambah/router', [NocController::class, 'tambahRouter']);
     Route::get('/edit/router/{id}', [NocController::class, 'editRouter']);
     Route::post('/update/router/{id}', [NocController::class, 'updateRouter']);
+    Route::get('/edit/paket/{id}', [NocController::class, 'editPaket']);
+    Route::post('/update/paket/{id}', [NocController::class, 'updatePaket']);
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
 
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
