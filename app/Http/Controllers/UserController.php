@@ -111,9 +111,18 @@ class UserController extends Controller
     public function editRole(Request $request, $id)
     {
     // dd($request->all());
-    $user = User::find($id);
-    $user->roles_id = $request->input('roles_id');
-    $user->save();
-    return redirect('/user/management')->with('success', 'Role user berhasil diubah');
+        $user = User::find($id);
+        $user->roles_id = $request->input('roles_id');
+        $user->save();
+        return redirect('/user/management')->with('success', 'Role user berhasil diubah');
     }
+
+    public function updatePassword(Request $request, $id)
+    {
+        $user = User::find($id);
+        $user->password = bcrypt($request->input('password'));
+        $user->save();
+        return redirect()->back()->with('success', 'Password berhasil diubah');
+    }
+
 }

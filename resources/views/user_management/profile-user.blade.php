@@ -289,10 +289,8 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form id="formChangePassword" action="#" method="POST">
+                    <form id="formChangePassword" action="/update/password/{{ auth()->user()->id }}" method="POST">
                         @csrf
-                        @method('PUT')
-
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="d-flex justify-content-center align-items-center me-3 rounded-circle bg-label-warning"

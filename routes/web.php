@@ -113,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
     Route::match(['GET', 'POST'],'/manual/invoice', [SuperAdmin::class, 'globalInvoice'])->name('global-invoice');
     Route::get('/kirim/invoice/{id}', [SuperAdmin::class, 'kirimInvoice'])->name('kirim-invoice');
     Route::get('/hapus/user/{id}', [SuperAdmin::class, 'hapusUser'])->name('hapus-user');
+    Route::post('/update/password/{id}', [UserController::class, 'updatePassword'])->name('update-password');
 
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
