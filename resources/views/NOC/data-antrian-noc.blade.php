@@ -883,59 +883,65 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ $item->gps }}" target="_blank" class="btn btn-action btn-maps"
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Lihat di Google Maps">
-                                        <i class="bx bx-map"></i>
-                                    </a>
-                                </td>
-                                <td>{{ $item->created_at->format('d M Y') }}</td>
-                                <td>
-                                    @if ($item->status_id == 1)
-                                    <span class="badge badge-status badge-waiting"
-                                    data-status-id="1">Menunggu</span>
-                                    @elseif ($item->status_id == 2)
-                                    <span class="badge badge-status badge-progress"
-                                    data-status-id="2">Proses</span>
-                                    @elseif ($item->status_id == 3)
-                                    <span class="badge badge-status badge-completed"
-                                    data-status-id="3">Selesai</span>
-                                    @elseif ($item->status_id == 4)
-                                    <span class="badge badge-status badge-maintenance"
-                                    data-status-id="4">Maintenance</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <a href="/noc/proses-antrian/{{ $item->id }}"
-                                        class="btn btn-action btn-info me-1" data-bs-toggle="tooltip"
-                                        data-bs-placement="top" title="Proses">
-                                        <i class="bx bx-info-circle"></i>
-                                    </a>
-                                </td>
-                                <td>
-                                    <span class="badge bg-danger bg-opacity-10 text-danger">
-                                        {{ $item->agen->name }}
-                                    </span>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="9" class="text-center py-4">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class='bx bx-calendar-check text-secondary mb-2'
-                                        style="font-size: 2rem;"></i>
-                                        <h6 class="mb-1">Tidak ada data antrian</h6>
-                                        <p class="text-muted mb-0">Belum ada pelanggan personal yang terdaftar</p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    @php
+                                    $gps = $item->gps;
+                                    $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                                    $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                                    @endphp
+                                    
+                                    <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps"
+                                    data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Lihat di Google Maps">
+                                    <i class="bx bx-map"></i>
+                                </a>
+                            </td>
+                            <td>{{ $item->created_at->format('d M Y') }}</td>
+                            <td>
+                                @if ($item->status_id == 1)
+                                <span class="badge badge-status badge-waiting"
+                                data-status-id="1">Menunggu</span>
+                                @elseif ($item->status_id == 2)
+                                <span class="badge badge-status badge-progress"
+                                data-status-id="2">Proses</span>
+                                @elseif ($item->status_id == 3)
+                                <span class="badge badge-status badge-completed"
+                                data-status-id="3">Selesai</span>
+                                @elseif ($item->status_id == 4)
+                                <span class="badge badge-status badge-maintenance"
+                                data-status-id="4">Maintenance</span>
+                                @endif
+                            </td>
+                            <td>
+                                <a href="/noc/proses-antrian/{{ $item->id }}"
+                                    class="btn btn-action btn-info me-1" data-bs-toggle="tooltip"
+                                    data-bs-placement="top" title="Proses">
+                                    <i class="bx bx-info-circle"></i>
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-danger bg-opacity-10 text-danger">
+                                    {{ $item->agen->name }}
+                                </span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class='bx bx-calendar-check text-secondary mb-2'
+                                    style="font-size: 2rem;"></i>
+                                    <h6 class="mb-1">Tidak ada data antrian</h6>
+                                    <p class="text-muted mb-0">Belum ada pelanggan personal yang terdaftar</p>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 

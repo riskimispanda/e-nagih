@@ -242,7 +242,7 @@ Route::middleware(['auth'])->group(function () {
     // Helpdesk
     Route::get('/helpdesk/data-pengaduan', [HelpdeskController::class, 'dataPengaduan'])->middleware('auth', 'roles:Helpdesk')->name('data-pengaduan');
     Route::get('/helpdesk/get-pengaduan-data', [HelpdeskController::class, 'getPengaduanData'])->name('get-pengaduan-data');
-    Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->middleware('auth', 'roles:Helpdesk')->name('antrian-helpdesk');
+    Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])->middleware('auth', 'roles:Helpdesk,Agen')->name('antrian-helpdesk');
     Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
     Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name('update-antrian-helpdesk');
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');

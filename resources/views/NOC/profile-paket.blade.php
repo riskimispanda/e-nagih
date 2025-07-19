@@ -60,13 +60,23 @@
                                 </td>
                                 <td>
                                     @if ($r->cpu_load !== null)
-                                        <div class="progress" style="height: 15px;">
-                                            <div class="progress-bar bg-info" role="progressbar" style="width: {{ $r->cpu_load }}%;">
+                                        <div class="progress" style="height: 16px;">
+                                            <div class="progress-bar
+                                                @if($r->cpu_load >= 80) bg-danger
+                                                @elseif($r->cpu_load >= 60) bg-warning
+                                                @elseif($r->cpu_load >= 40) bg-info
+                                                @else bg-success
+                                                @endif"
+                                                role="progressbar"
+                                                style="width: {{ $r->cpu_load }}%;"
+                                                aria-valuenow="{{ $r->cpu_load }}"
+                                                aria-valuemin="0"
+                                                aria-valuemax="100">
                                                 {{ $r->cpu_load }}%
                                             </div>
                                         </div>
                                     @else
-                                        -
+                                        <span class="text-muted">-</span>
                                     @endif
                                 </td>
                                 <td>

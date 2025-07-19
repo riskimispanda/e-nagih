@@ -94,6 +94,38 @@ class MikrotikServices
         return $sorted->first()['name'] ?? null;
     }
     
+    public static function testKoneksi($ip, $port, $username, $password)
+    {
+        try {
+            $client = new Client([
+                'host'    => $ip,
+                'user'    => $username,
+                'pass'    => $password,
+                'port'    => (int) $port,
+                'timeout' => 5,
+            ]);
+
+            // Coba ambil data identitas router
+            $query = new Query('/system/identity/print');
+            $response = $client->query($query)->read();
+
+            return [
+                'success' => true,
+                'message' => '✅ Berhasil konek ke router',
+                'identity' => $response[0]['name'] ?? 'Tidak diketahui'
+            ];
+        } catch (ConnectException $e) {
+            return [
+                'success' => false,
+                'message' => '❌ Tidak bisa konek ke router: ' . $e->getMessage()
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => '❌ Error lain: ' . $e->getMessage()
+            ];
+        }
+    }
 
     public static function listInterfaces(Client $client)
     {
@@ -212,13 +244,119 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('name', 'profile-UpTo-10');
+            // $query->where('name', 'profile-UpTo-5');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
             return null;
         }
     }
+
+    public static function trafficPelanggan(Router $router, $usersecret)
+    {
+        try {
+            $client = MikrotikServices::connect($router);
+
+            $active = $client->query(
+                (new Query('/ppp/active/print'))->where('name', $usersecret)
+            )->read();
+
+            if (count($active) === 0) {
+                return response()->json([
+                    'message' => 'PPP tidak ditemukan untuk user: ' . $usersecret,
+                    'rx' => 0,
+                    'tx' => 0,
+                ]);
+            }
+
+            $interfaceNamePart = strtolower($usersecret);
+
+            // Ambil semua interface
+            $interfaces = $client->query(
+                new Query('/interface/print')
+            )->read();
+
+            \Log::info('🔍 Interface List:', $interfaces);
+
+            // Cari interface dengan nama yang mengandung nama PPP user
+            $interface = collect($interfaces)->first(function ($iface) use ($interfaceNamePart) {
+                return isset($iface['name']) && str_contains(strtolower($iface['name']), strtolower($interfaceNamePart));
+            });
+
+            if (!$interface) {
+                return response()->json([
+                    'message' => 'Interface tidak ditemukan untuk user: ' . $usersecret,
+                    'rx' => 0,
+                    'tx' => 0,
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Berhasil mendapatkan trafik',
+                'rx' => (int) $interface['rx-byte'],
+                'tx' => (int) $interface['tx-byte'],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal ambil trafik pelanggan: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal ambil trafik pelanggan',
+                'rx' => 0,
+                'tx' => 0,
+            ]);
+        }
+    }
+
+
+
+    public static function getInterfacePelanggan(Client $client, $usersecret)
+    {
+        try {
+            $active = $client->query(
+                (new Query('/ppp/active/print'))->where('name', $usersecret)
+            )->read();
+
+            if (empty($active)) {
+                return [
+                    'status' => 'offline',
+                    'message' => 'User tidak aktif',
+                ];
+            }
+
+            // Coba ambil langsung
+            $interface = $active[0]['interface'] ?? null;
+
+            // Jika kosong, coba cocokkan berdasarkan nama PPPoE
+            if (!$interface) {
+                $interfaces = $client->query(
+                    (new Query('/interface/print'))->where('running', 'true')
+                )->read();
+
+                foreach ($interfaces as $iface) {
+                    if (
+                        isset($iface['name']) &&
+                        str_contains($iface['name'], str_replace('@', '-', explode('@', $usersecret)[0]))
+                    ) {
+                        $interface = $iface['name'];
+                        break;
+                    }
+                }
+            }
+
+            return [
+                'status' => 'online',
+                'interface' => $interface ?? null,
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+
+
 
     public static function getPPPSecretByName(Client $client, $usersecret)
     {

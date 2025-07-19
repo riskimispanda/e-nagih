@@ -15,14 +15,14 @@ class MikrotikController extends Controller
     
 public function index()
 {
-    $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
+    $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
     $client = MikrotikServices::connect($router);
 
-    $profiles = MikrotikServices::status($router);
+    $profiles = MikrotikServices::trafficPelanggan($router, 'Rizky-I107@niscala.net.id');
     $user = MikrotikServices::getPPPSecret($client);
     $logs = MikrotikServices::activeConnections($router);
-
-    dd($logs, $user, $profiles);
+    $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
+    dd($tes);
 }
 
     public function testKoneksi($id)
