@@ -138,8 +138,8 @@ class SuperAdmin extends Controller
         if (!$sudahAda) {
             Invoice::create([
                 'customer_id'     => $invoice->customer_id,
-                'paket_id'        => $invoice->paket_id,
-                'tagihan'         => $invoice->paket->harga,
+                'paket_id'        => $customer->paket_id,
+                'tagihan'         => $customer->paket->harga,
                 'tambahan'        => 0,
                 'saldo'           => $pembayaran->saldo,
                 'status_id'       => 7, // Belum bayar
