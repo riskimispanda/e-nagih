@@ -249,4 +249,22 @@ class NocController extends Controller
         return redirect()->back()->with('success', 'Router berhasil diperbarui');
     }
 
+    public function editPaket($id)
+    {
+        $paket = Paket::with('router')->findOrFail($id);
+        return response()->json($paket);
+    }
+
+    public function updatePaket(Request $request, $id)
+    {
+        $paket = Paket::findOrFail($id);
+        $paket->nama_paket = $request->nama_paket;
+        $paket->paket_name = $request->profile_name;
+        $paket->router_id = $request->router_id;
+        $paket->harga = $request->hargaRaw;
+        $paket->save();
+
+        return redirect()->back()->with('success', 'Paket berhasil diperbarui');
+    }
+
 }

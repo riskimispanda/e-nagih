@@ -20,7 +20,10 @@ use Illuminate\Support\Facades\Vite;
 
 <script>
     $(document).ready(function() {
-        $('.select2').select2();
+        // Only initialize Select2 if elements with select2 class exist
+        if ($('.select2').length > 0) {
+            $('.select2').select2();
+        }
     });
 </script>
 

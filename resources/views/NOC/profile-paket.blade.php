@@ -181,7 +181,7 @@
                                         {{ $item->nama_paket ?? '' }}
                                     </span>
                                 </td>
-                                <td class="fw-semibold">{{ $item->profile_name ?? '-'}}</td>
+                                <td class="fw-semibold">{{ $item->paket_name ?? '-'}}</td>
                                 <td class="fw-semibold">{{ $item->router->nama_router ?? '-'}}</td>
                                 <td>Rp {{number_format((int)$item->harga ?? 0, 0, ',', '.')}}</td>
                                 <td>
@@ -192,7 +192,7 @@
                                 <td>
                                     <div class="row">
                                         <div class="d-flex justify-content-center gap-2">
-                                            <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
+                                            <a href="#" onclick="event.preventDefault(); editPaket({{ $item->id }}); return false;" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
                                                 <i class="bx bx-edit text-warning"></i>
                                             </a>|
                                             <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
@@ -379,11 +379,65 @@
     </div>
 </div>
 
+{{-- Modal Edit Paket --}}
+<div class="modal fade" id="modalEditPaket" tabindex="-1" aria-labelledby="modalEditPaketLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditPaketLabel"><i class="bx bx-edit me-1"></i>Edit Paket Langganan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <hr class="mb-0">
+            <form id="editPaketForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Router</label>
+                        <select name="router_id" id="edit_router_id" class="form-select" required>
+                            <option value="" selected disabled>Pilih Router</option>
+                            @foreach ($router as $r)
+                                <option value="{{ $r->id }}">{{ $r->nama_router }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Nama Paket</label>
+                        <input type="text" class="form-control" id="edit_nama_paket" name="nama_paket" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Nama Profile</label>
+                        <input type="text" class="form-control" id="edit_profile_name" name="profile_name" required>
+                        <span>
+                            <small class="text-danger fw-bold">*Harus sesuai dengan nama profile paket di Mikrotik</small>
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label mb-2">*Harga Paket Langganan</label>
+                        <input type="text" class="form-control" id="edit_harga" name="harga" required>
+                        <input hidden type="text" class="form-control" id="edit_hargaRaw" name="hargaRaw">
+                    </div>
+                </div>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-outline-warning btn-sm">
+                        <i class="bx bx-save me-1"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 
 <script>
     const harga = document.getElementById('harga');
     const hargaRaw = document.getElementById('hargaRaw');
+    const editHarga = document.getElementById('edit_harga');
+    const editHargaRaw = document.getElementById('edit_hargaRaw');
 
+    // Price formatting for add modal
     harga.addEventListener('input', function(e) {
         let value = this.value.replace(/[^,\d]/g, '').toString();
         let cleanValue = value.replace(/[^0-9]/g, '');
@@ -400,6 +454,94 @@
 
         this.value = formatted;
     });
+
+    // Price formatting for edit modal
+    editHarga.addEventListener('input', function(e) {
+        let value = this.value.replace(/[^,\d]/g, '').toString();
+        let cleanValue = value.replace(/[^0-9]/g, '');
+
+        // Simpan angka mentah ke input hidden
+        editHargaRaw.value = cleanValue;
+
+        // Format ke Rupiah
+        let formatted = new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(cleanValue);
+
+        this.value = formatted;
+    });
+
+    // Function to handle paket edit - define it globally first
+    function editPaket(id) {
+        console.log('editPaket called with id:', id);
+
+        try {
+            // Show loading
+            if ($('#loading-overlay').length > 0) {
+                $('#loading-overlay').removeClass('d-none');
+            }
+
+            // Fetch paket data
+            $.ajax({
+                url: `/edit/paket/${id}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    console.log('Received data:', data);
+
+                    try {
+                        // Populate modal fields
+                        $('#edit_nama_paket').val(data.nama_paket || '');
+                        $('#edit_profile_name').val(data.paket_name || '');
+                        $('#edit_router_id').val(data.router_id || '');
+
+                        // Format and set price
+                        const harga = data.harga || 0;
+                        const formattedPrice = new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0
+                        }).format(harga);
+                        $('#edit_harga').val(formattedPrice);
+                        $('#edit_hargaRaw').val(harga);
+
+                        // Set form action
+                        $('#editPaketForm').attr('action', `/update/paket/${id}`);
+
+                        // Hide loading
+                        if ($('#loading-overlay').length > 0) {
+                            $('#loading-overlay').addClass('d-none');
+                        }
+
+                        // Show modal using jQuery
+                        $('#modalEditPaket').modal('show');
+                        console.log('Modal should be shown');
+                    } catch (e) {
+                        console.error('Error populating modal:', e);
+                        if ($('#loading-overlay').length > 0) {
+                            $('#loading-overlay').addClass('d-none');
+                        }
+                        alert('Terjadi kesalahan saat mengisi form: ' + e.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('AJAX Error:', xhr, status, error);
+                    if ($('#loading-overlay').length > 0) {
+                        $('#loading-overlay').addClass('d-none');
+                    }
+                    alert('Terjadi kesalahan saat mengambil data paket: ' + error);
+                }
+            });
+        } catch (e) {
+            console.error('Function error:', e);
+            alert('Terjadi kesalahan: ' + e.message);
+        }
+    }
+
+    // Make editPaket function globally available
+    window.editPaket = editPaket;
 
     // Filter functionality
     $(document).ready(function() {
@@ -500,10 +642,10 @@
                             <td>
                                 <div class="row">
                                         <div class="d-flex justify-content-center gap-2">
-                                            <a href="#" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
+                                            <a href="#" onclick="editPaket(${item.id})" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
                                                 <i class="bx bx-edit text-warning"></i>
                                             </a>|
-                                            <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
+                                            <a href="/hapus/paket/${item.id}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
                                                 <i class="bx bx-trash text-danger"></i>
                                             </a>
                                         </div>
@@ -575,6 +717,8 @@
                 alert('Terjadi kesalahan saat mengambil data router');
             });
     }
+
+
 </script>
 
 @endsection
