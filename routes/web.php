@@ -65,6 +65,7 @@ use App\Http\Controllers\AgenController;
 use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\Http;
 use App\Models\Router;
+use App\Http\Controllers\TiketController;
 
 
 // Main Page Route
@@ -250,6 +251,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
     Route::get('/helpdesk/hapus-antrian/{id}', [HelpdeskController::class, 'hapusAntrian'])->name('hapus-antrian-helpdesk');
+    Route::get('/tiket-open', [TiketController::class, 'TiketOpen'])->name('tiket-open');
+    Route::get('/open-tiket/{id}', [TiketController::class, 'formOpenTiket'])->name('open-tiket');
 });
 
 // Payment callback routes (outside auth middleware and CSRF protection)

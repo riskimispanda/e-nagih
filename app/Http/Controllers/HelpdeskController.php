@@ -87,132 +87,128 @@ class HelpdeskController extends Controller
     // Store
     public function addAntrian(Request $request, ChatServices $chat)
     {
-        // dd($request->all());
-        $jenis = $request->input('jenis_pelanggan');
-        // dd($jenis);
-        $rules = [
-            'jenis_pelanggan' => 'required',
-        ];
-    
-        if ($jenis == 'Personal') {
-            $rules = array_merge($rules, [
-                'nama_customer' => 'required',
-                'no_hp' => 'required',
-                'email' => 'required|email',
-                'no_identitas' => 'required',
-                'alamat' => 'required',
-                'gps' => 'required',
-                'paket_id' => 'required',
-                'tanggal_reg' => 'required|date',
-            ]);
-        } elseif ($jenis == 'Perusahaan') {
-            $rules = array_merge($rules, [
-                'nama_perusahaan' => 'required',
-                'nama_pic' => 'required',
-                'no_hp' => 'required',
-                'alamat' => 'required',
-                'gps' => 'required',
-                'paket' => 'required',
-                'harga' => 'required',
-                'tanggal' => 'required|date',
-            ]);
-        }
+        try {
+            $jenis = $request->input('jenis_pelanggan');
 
-        $nomor = preg_replace('/^0/', '62', $request->no_hp);
+            $rules = ['jenis_pelanggan' => 'required'];
 
-        // Perusahaan
-        if ($jenis == 'Perusahaan') {
-            // Perusahaan
-            if ($request->hasFile('foto')) {
-                $foto = $request->file('foto');
-                $fileName = time() . '_' . str_replace(' ', '_', $foto->getClientOriginalName());
-                $foto->move(public_path('uploads/identitas'), $fileName);
-                $img = 'uploads/identitas/' . $fileName;
-            } else {
-                $img = null;
+            if ($jenis == 'Personal') {
+                $rules = array_merge($rules, [
+                    'nama_customer' => 'required',
+                    'no_hp' => 'required',
+                    'email' => 'required|email',
+                    'no_identitas' => 'required',
+                    'alamat' => 'required',
+                    'gps' => 'required',
+                    'paket_id' => 'required',
+                    'tanggal_reg' => 'required|date',
+                ]);
+            } elseif ($jenis == 'Perusahaan') {
+                $rules = array_merge($rules, [
+                    'nama_perusahaan' => 'required',
+                    'nama_pic' => 'required',
+                    'no_hp' => 'required',
+                    'alamat' => 'required',
+                    'gps' => 'required',
+                    'paket_id' => 'required',
+                    'harga' => 'required',
+                    'tanggal' => 'required|date',
+                ]);
             }
-            // dd($request->all());
-            $perusahaan = Perusahaan::create([
-                'nama_perusahaan' => $request->nama_perusahaan,
-                'nama_pic' => $request->nama_pic,
+
+            $request->validate($rules);
+            $nomor = preg_replace('/^0/', '62', $request->no_hp);
+
+            // PERUSAHAAN
+            if ($jenis == 'Perusahaan') {
+                $img = null;
+                if ($request->hasFile('foto')) {
+                    $foto = $request->file('foto');
+                    $fileName = uniqid() . '_' . str_replace(' ', '_', $foto->getClientOriginalName());
+                    $foto->move(public_path('uploads/identitas'), $fileName);
+                    $img = 'uploads/identitas/' . $fileName;
+                }
+
+                $perusahaan = Perusahaan::create([
+                    'nama_perusahaan' => $request->nama_perusahaan,
+                    'nama_pic' => $request->nama_pic,
+                    'no_hp' => $nomor,
+                    'alamat' => $request->alamat,
+                    'gps' => $request->gps,
+                    'paket_id' => $request->paket_id,
+                    'user_id' => auth()->id(),
+                    'status_id' => 5,
+                    'harga' => $request->harga,
+                    'speed' => $request->speed,
+                    'tanggal' => $request->tanggal,
+                    'foto' => $img,
+                ]);
+
+                activity('perusahaan')
+                    ->causedBy(auth()->user())
+                    ->performedOn($perusahaan)
+                    ->withProperties([
+                        'nama_perusahaan' => $perusahaan->nama_perusahaan,
+                        'nama_pic' => $perusahaan->nama_pic,
+                        'paket_id' => $perusahaan->paket_id,
+                        'harga' => $perusahaan->harga,
+                    ])
+                    ->log('Menambahkan data perusahaan baru');
+
+                return redirect()->back()->with('success', 'Perusahaan berhasil didaftarkan');
+            }
+
+            // PERSONAL
+            $identitas_file = null;
+            if ($request->hasFile('identitas_file')) {
+                $ktp = $request->file('identitas_file');
+                $fileName = uniqid() . '_' . str_replace(' ', '_', $ktp->getClientOriginalName());
+                $ktp->move(public_path('uploads/identitas'), $fileName);
+                $identitas_file = 'uploads/identitas/' . $fileName;
+            }
+
+            $data = Customer::create([
+                'nama_customer' => $request->nama_customer,
                 'no_hp' => $nomor,
                 'alamat' => $request->alamat,
                 'gps' => $request->gps,
-                'paket_id' => $request->paket,
-                'user_id' => auth()->user()->id,
-                'status_id' => 5,
-                'harga' => $request->harga,
-                'speed' => $request->speed,
-                'tanggal' => $request->tanggal,
-                'foto' => $img,
+                'paket_id' => $request->paket_id,
+                'status_id' => 1,
+                'agen_id' => $request->agen ?? auth()->id() ?? 1,
+                'no_identitas' => $request->no_identitas,
+                'email' => $request->email,
+                'teknisi_id' => null,
+                'identitas' => $identitas_file,
+                'created_at' => $request->tanggal_reg,
             ]);
-    
-            activity('perusahaan')
+
+            activity('customer')
                 ->causedBy(auth()->user())
-                ->performedOn($perusahaan)
+                ->performedOn($data)
                 ->withProperties([
-                    'nama_perusahaan' => $perusahaan->nama_perusahaan,
-                    'nama_pic' => $perusahaan->nama_pic,
-                    'paket_id' => $perusahaan->paket_id,
-                    'harga' => $perusahaan->harga,
+                    'nama' => $data->nama_customer,
+                    'no_hp' => $data->no_hp,
+                    'email' => $data->email,
+                    'paket_id' => $data->paket_id,
+                    'agen_id' => $data->agen_id,
                 ])
-                ->log('Menambahkan data perusahaan baru');
+                ->log('Menambahkan data pelanggan baru');
 
-            return redirect()->back()->with('success', 'Perusahaan berhasil didaftarkan');
-        }
-        
+            try {
+                $chat->CustomerBaru($nomor, $data);
+            } catch (\Throwable $e) {
+                \Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
+            }
 
-        // Personal
-        if ($request->hasFile('identitas_file')) {
-            $ktp = $request->file('identitas_file');
-            $fileName = time() . '_' . str_replace(' ', '_', $ktp->getClientOriginalName());
-            $ktp->move(public_path('uploads/identitas'), $fileName);
-            $identitas_file = 'uploads/identitas/' . $fileName;
-        } else {
-            $identitas_file = null;
-        }
-        $nomor = preg_replace('/^0/', '62', $request->no_hp);
-        $data = Customer::create([
-            'nama_customer' => $request->nama_customer,
-            'no_hp' => $nomor,
-            'alamat' => $request->alamat,
-            'gps' => $request->gps,
-            'paket_id' => $request->paket_id,
-            'status_id' => 1,
-            'agen_id' => $request->agen ?? auth()->user()->id,
-            'no_identitas' => $request->no_identitas,
-            'email' => $request->email,
-            'teknisi_id' => null,
-            'identitas' => $identitas_file,
-            'created_at' => $request->tanggal_reg,
-        ]);
-
-        // User::create([
-        //     'name' => $request->nama_customer,
-        //     'email' => $request->email,
-        //     'password' => bcrypt('123456'),
-        //     'roles_id' => 8,
-        // ]);
-
-        activity('customer')
-            ->causedBy(auth()->user())
-            ->performedOn($data)
-            ->withProperties([
-                'nama' => $data->nama_customer,
-                'no_hp' => $data->no_hp,
-                'email' => $data->email,
-                'paket_id' => $data->paket_id,
-                'agen_id' => $data->agen_id,
-            ])
-            ->log('Menambahkan data pelanggan baru');
-
-        if ($data) {
-            $chat->CustomerBaru($nomor, $data);
-            return redirect()->back()->with('success', 'Antrian created successfully');
-        } else {
-            return redirect()->back()->with('error', 'Failed to create antrian');
+            return redirect()->back()->with('success', 'Antrian berhasil ditambahkan');
+        } catch (\Throwable $e) {
+            \Log::error('Gagal tambah antrian: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()->with('error', 'Gagal menambahkan antrian. Cek log server.');
         }
     }
+
 
     /**
      * Display the details of a specific queue item

@@ -252,9 +252,9 @@
       ],
       "submenu": [
         {
-          "url": "/ticket",
+          "url": "/tiket-open",
           "name": "Tiket Open",
-          "slug": "ticket",
+          "slug": "tiket-open",
           "roles": [
             "NOC",
             "Super Admin"
