@@ -82,7 +82,7 @@
                                 <td>
                                     <div class="row">
                                         <div class="d-flex gap-2 justify-content-center">
-                                            <a href="/interface/{{ $r->id }}" data-bs-toggle="tooltip" title="Interface" data-bs-placement="bottom">
+                                            <a href="/interface/{{ $r->id }}" data-bs-toggle="tooltip" title="Server" data-bs-placement="bottom">
                                                 <i class="bx bx-server text-primary"></i>
                                             </a>|
                                             <a href="#" onclick="editRouter({{ $r->id }})" data-bs-toggle="tooltip" title="Edit" data-bs-placement="bottom">

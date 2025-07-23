@@ -84,7 +84,7 @@
         <li class="breadcrumb-item">
             <a href="/profile/paket">Router & Profile</a>
         </li>
-        <li class="breadcrumb-item active">Interface Mikrotik</li>
+        <li class="breadcrumb-item active">Server Mikrotik</li>
     </ol>
 </nav>
 

@@ -446,7 +446,9 @@
       "icon": "menu-icon tf-icons bx bx-broadcast",
       "slug": "profile-paket",
       "roles": [
-        "NOC"
+        "Super Admin",
+        "NOC",
+        "Admin Keuangan"
       ]
     },
     {

@@ -24,7 +24,7 @@ public function index()
     $user = MikrotikServices::getPPPSecret($client);
     $logs = MikrotikServices::activeConnections($router);
     $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-    dd($logs, $user);
+    dd($inter);
 }
 
     public function testKoneksi($id)

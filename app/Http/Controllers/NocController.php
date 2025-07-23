@@ -31,16 +31,30 @@ class NocController extends Controller
          ]);
      }
 
-   public function realtime($id)
+     public function realtime($id)
      {
          $router = Router::findOrFail($id);
          $client = MikrotikServices::connect($router);
-
-         // Ganti "ether1" sesuai nama interface aktif kamu
-         $traffic = MikrotikServices::getInterfaceTraffic($client, 'sfp-sfpplus1');
-
+     
+         // Pastikan koneksi berhasil
+         if (!$client) {
+             return response()->json(['error' => 'Gagal koneksi ke router'], 500);
+         }
+     
+         // Pilih interface berdasarkan ID router
+         if ($router->id === 2) {
+             $interface = 'vlan-5Mbps';
+         } elseif ($router->id === 3) {
+             $interface = 'sfp+2';
+         } else {
+             $interface = 'vlan-5Mbps'; // Default interface
+         }
+     
+         $traffic = MikrotikServices::getInterfaceTraffic($client, $interface);
+     
          return response()->json($traffic);
      }
+     
 
 
     public function index()
