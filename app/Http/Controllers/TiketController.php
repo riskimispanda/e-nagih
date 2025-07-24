@@ -10,7 +10,7 @@ class TiketController extends Controller
 {
     public function TiketOpen()
     {
-        $customer = Customer::with('status')->paginate(10);
+        $customer = Customer::with('status')->where('status_id', 3)->paginate(10);
         return view('Helpdesk.tiket-open-pelanggan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
