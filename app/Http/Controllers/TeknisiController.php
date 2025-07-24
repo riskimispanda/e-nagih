@@ -18,7 +18,9 @@ use App\Models\Invoice;
 use App\Models\Perusahaan;
 use App\Services\ChatServices;
 use App\Models\Router;
-use Intervention\Image\Facades\Image;
+use Intervention\Image\ImageManager as Image;
+use Intervention\Image\Drivers\Gd\Driver;
+// use Intervention\Image\Facades\Image;
 
 
 class TeknisiController extends Controller
@@ -138,12 +140,14 @@ class TeknisiController extends Controller
             $fotoRumahName = time() . '_' . str_replace(' ', '_', $fotoRumahFile->getClientOriginalName());
             $fotoRumahPath = 'uploads/foto_rumah/' . $fotoRumahName;
 
-            $img = Image::make($fotoRumahFile)
+            $image = new Image(new Driver());
+
+            $img = $image->read($fotoRumahFile)
                 ->resize(1024, null, function ($constraint) {
                     $constraint->aspectRatio();
                     $constraint->upsize();
                 })
-                ->encode('jpg', 75); // Kompres 75%
+                ->toJpeg(75); // Kompres 75%
 
             $img->save(public_path($fotoRumahPath));
         } else {
@@ -156,12 +160,12 @@ class TeknisiController extends Controller
             $fotoPerangkatName = time() . '_' . str_replace(' ', '_', $fotoPerangkatFile->getClientOriginalName());
             $fotoPerangkatPath = 'uploads/foto_perangkat/' . $fotoPerangkatName;
 
-            $img = Image::make($fotoPerangkatFile)
+            $img = $image->read($fotoPerangkatFile)
                 ->resize(1024, null, function ($constraint) {
                     $constraint->aspectRatio();
                     $constraint->upsize();
                 })
-                ->encode('jpg', 75); // Kompres 75%
+                ->toJpeg(75); // Kompres 75%
 
             $img->save(public_path($fotoPerangkatPath));
         } else {
@@ -211,8 +215,8 @@ class TeknisiController extends Controller
         ]);
 
         // Kirim pesan invoice via WhatsApp
-        $chat = new ChatServices();
-        $chat->invoiceProrate($customer->no_hp, $invoice);
+        // $chat = new ChatServices();
+        // $chat->invoiceProrate($customer->no_hp, $invoice);
 
         return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
     }
