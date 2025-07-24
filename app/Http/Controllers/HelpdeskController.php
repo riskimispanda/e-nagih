@@ -10,6 +10,9 @@ use App\Models\User;
 use App\Models\Status;
 use App\Services\ChatServices;
 use App\Models\Perusahaan;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
 
 // Log
 use Spatie\Activitylog\Models\Activity;
@@ -87,9 +90,9 @@ class HelpdeskController extends Controller
     // Store
     public function addAntrian(Request $request, ChatServices $chat)
     {
+        // dd($request->all());
         try {
             $jenis = $request->input('jenis_pelanggan');
-
             $rules = ['jenis_pelanggan' => 'required'];
 
             if ($jenis == 'Personal') {
@@ -102,6 +105,7 @@ class HelpdeskController extends Controller
                     'gps' => 'required',
                     'paket_id' => 'required',
                     'tanggal_reg' => 'required|date',
+                    'identitas_file' => 'image|max:5120'
                 ]);
             } elseif ($jenis == 'Perusahaan') {
                 $rules = array_merge($rules, [
@@ -119,15 +123,22 @@ class HelpdeskController extends Controller
             $request->validate($rules);
             $nomor = preg_replace('/^0/', '62', $request->no_hp);
 
-            // PERUSAHAAN
+            // ==== PERUSAHAAN ====
             if ($jenis == 'Perusahaan') {
                 $img = null;
                 if ($request->hasFile('foto')) {
                     $foto = $request->file('foto');
                     $fileName = uniqid() . '_' . str_replace(' ', '_', $foto->getClientOriginalName());
-                    $foto->move(public_path('uploads/identitas'), $fileName);
+                    $savePath = public_path('uploads/identitas/' . $fileName);
+                
+                    $imageManager = new ImageManager(Driver::class);
+                    $image = $imageManager->read($foto->getRealPath());
+                    $image = $image->scale(width: 1024); // Resize
+                    $image->toJpeg(75)->save($savePath);
+                
                     $img = 'uploads/identitas/' . $fileName;
                 }
+                
 
                 $perusahaan = Perusahaan::create([
                     'nama_perusahaan' => $request->nama_perusahaan,
@@ -158,14 +169,23 @@ class HelpdeskController extends Controller
                 return redirect()->back()->with('success', 'Perusahaan berhasil didaftarkan');
             }
 
-            // PERSONAL
+            // ==== PERSONAL ====
             $identitas_file = null;
+
             if ($request->hasFile('identitas_file')) {
                 $ktp = $request->file('identitas_file');
                 $fileName = uniqid() . '_' . str_replace(' ', '_', $ktp->getClientOriginalName());
-                $ktp->move(public_path('uploads/identitas'), $fileName);
+                $savePath = public_path('uploads/identitas/' . $fileName);
+            
+                $imageManager = new ImageManager(Driver::class);
+                $image = $imageManager->read($ktp->getRealPath());
+                $image = $image->scale(width: 1024); // Resize
+                $image->toJpeg(75)->save($savePath);
+            
                 $identitas_file = 'uploads/identitas/' . $fileName;
             }
+            
+
 
             $data = Customer::create([
                 'nama_customer' => $request->nama_customer,

@@ -215,8 +215,8 @@ class TeknisiController extends Controller
         ]);
 
         // Kirim pesan invoice via WhatsApp
-        // $chat = new ChatServices();
-        // $chat->invoiceProrate($customer->no_hp, $invoice);
+        $chat = new ChatServices();
+        $chat->invoiceProrate($customer->no_hp, $invoice);
 
         return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
     }
