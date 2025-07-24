@@ -561,7 +561,7 @@
                                         </div>
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups">
-                                                <label class="form-label"><i class="bx bx-network-chart me-2"></i>Remote
+                                                <label class="form-label"><i class="bx bx-plug me-2"></i>Remote
                                                     IP Management</label>
                                                 <input type="text" class="form-control"
                                                     value="{{ $customer->remote ?? 'Tidak Tersedia' }}" readonly>

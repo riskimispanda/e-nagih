@@ -12,6 +12,7 @@
     "doctrine/dbal": "^4.2",
     "evilfreelancer/routeros-api-php": "^1.5",
     "guzzlehttp/guzzle": "^7.9",
+    "intervention/image": "^3.11",
     "laravel/framework": "^11.0",
     "laravel/reverb": "^1.0",
     "laravel/tinker": "^2.9",

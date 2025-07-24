@@ -18,6 +18,8 @@ use App\Models\Invoice;
 use App\Models\Perusahaan;
 use App\Services\ChatServices;
 use App\Models\Router;
+use Intervention\Image\Facades\Image;
+
 
 class TeknisiController extends Controller
 {
@@ -130,22 +132,38 @@ class TeknisiController extends Controller
         // Cari customer berdasarkan ID
         $customer = Customer::findOrFail($id);
 
-        // Upload Foto Rumah
+        // Upload & Kompres Foto Rumah
         if ($request->hasFile('foto_rumah')) {
             $fotoRumahFile = $request->file('foto_rumah');
             $fotoRumahName = time() . '_' . str_replace(' ', '_', $fotoRumahFile->getClientOriginalName());
             $fotoRumahPath = 'uploads/foto_rumah/' . $fotoRumahName;
-            $fotoRumahFile->move(public_path('uploads/foto_rumah'), $fotoRumahName);
+
+            $img = Image::make($fotoRumahFile)
+                ->resize(1024, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })
+                ->encode('jpg', 75); // Kompres 75%
+
+            $img->save(public_path($fotoRumahPath));
         } else {
             $fotoRumahPath = null;
         }
 
-        // Upload Foto Perangkat
+        // Upload & Kompres Foto Perangkat
         if ($request->hasFile('foto_perangkat')) {
             $fotoPerangkatFile = $request->file('foto_perangkat');
             $fotoPerangkatName = time() . '_' . str_replace(' ', '_', $fotoPerangkatFile->getClientOriginalName());
             $fotoPerangkatPath = 'uploads/foto_perangkat/' . $fotoPerangkatName;
-            $fotoPerangkatFile->move(public_path('uploads/foto_perangkat'), $fotoPerangkatName);
+
+            $img = Image::make($fotoPerangkatFile)
+                ->resize(1024, null, function ($constraint) {
+                    $constraint->aspectRatio();
+                    $constraint->upsize();
+                })
+                ->encode('jpg', 75); // Kompres 75%
+
+            $img->save(public_path($fotoPerangkatPath));
         } else {
             $fotoPerangkatPath = null;
         }
@@ -182,7 +200,7 @@ class TeknisiController extends Controller
         // Hitung tagihan prorate
         $tagihanProrate = $this->calculateProrate($customer->paket->harga, $tanggalSelesai);
 
-        // Buat invoice dan simpan ke variabel
+        // Buat invoice
         $invoice = Invoice::create([
             'customer_id'  => $customer->id,
             'status_id'    => 7, // Tagihan Baru
