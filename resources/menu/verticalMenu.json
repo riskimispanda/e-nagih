@@ -238,7 +238,8 @@
       "menuHeader": "Tiket",
       "roles": [
         "Super Admin",
-        "NOC"
+        "NOC",
+        "Helpdesk"
       ]
     },
     {
@@ -248,7 +249,8 @@
       "icon": "menu-icon tf-icons bx bx-credit-card-front",
       "roles": [
         "NOC",
-        "Super Admin"
+        "Super Admin",
+        "Helpdesk"
       ],
       "submenu": [
         {
@@ -257,7 +259,8 @@
           "slug": "tiket-open",
           "roles": [
             "NOC",
-            "Super Admin"
+            "Super Admin",
+            "Helpdesk"
           ]
         },
         {
@@ -266,7 +269,8 @@
           "slug": "ticket-create",
           "roles": [
             "NOC",
-            "Super Admin"
+            "Super Admin",
+            "Helpdesk"
           ]
         }
       ]

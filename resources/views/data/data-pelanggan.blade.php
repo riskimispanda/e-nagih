@@ -938,29 +938,35 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="http://{{ $item->remote ?? '#' }}">{{ $item->remote ?? '-' }}</a>
+                                <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
+                                    <i class="bx bx-cloud"></i>
+                                </a>
                             </td>
                             <td class="text-center">
-                                @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
-                            <a href="/blokir/{{ $item->id }}"
-                                class="btn btn-danger action-btn blokir-customer-btn mb-2"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Blokir Pelanggan">
-                                <i class="bx bx-block"></i>
-                            </a>
-                            <a href="/unblokir/{{ $item->id }}"
-                                class="btn btn-warning action-btn unblokir-customer-btn mb-2"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Aktifkan Pelanggan">
-                                <i class="bx bx-check-circle"></i>
-                            </a>
-                            @endif
-                            <a href="/detail-pelanggan/{{ $item->id }}"
-                                class="btn btn-info action-btn detail-customer-btn mb-2"
-                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                title="Detail Pelanggan">
-                                <i class="bx bx-show"></i>
-                            </a>
+                                <div class="row">
+                                    <div class="d-flex justify-content-center">
+                                        @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
+                                        <a href="/blokir/{{ $item->id }}"
+                                            class="btn btn-danger action-btn blokir-customer-btn mb-2"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Blokir Pelanggan">
+                                            <i class="bx bx-block"></i>
+                                        </a>
+                                        <a href="/unblokir/{{ $item->id }}"
+                                            class="btn btn-warning action-btn unblokir-customer-btn mb-2"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Aktifkan Pelanggan">
+                                            <i class="bx bx-check-circle"></i>
+                                        </a>
+                                    @endif
+                                    <a href="/detail-pelanggan/{{ $item->id }}"
+                                        class="btn btn-info action-btn detail-customer-btn mb-2"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Detail Pelanggan">
+                                        <i class="bx bx-show"></i>
+                                    </a>
+                                    </div>
+                                </div>
                         </td>
                     </tr>
                     @endforeach
