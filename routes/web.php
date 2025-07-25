@@ -185,7 +185,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
     Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
     Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
-    Route::get('/profile/paket', [NocController::class, 'profilePaket'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('profile-paket');
+    Route::get('/profile/paket', [NocController::class, 'profilePaket'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('profile.paket');
     Route::post('/tambah/paket', [NocController::class, 'tambahPaket']);
     Route::get('/hapus/paket/{id}', [NocController::class, 'hapusPaket']);
     Route::get('/laporan', [KeuanganController::class, 'laporan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('laporan');
@@ -196,6 +196,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/edit/paket/{id}', [NocController::class, 'editPaket']);
     Route::post('/update/paket/{id}', [NocController::class, 'updatePaket']);
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
+// routes/web.php
+Route::get('/ajax/paket', [NocController::class, 'ajaxPaket'])->name('ajax.paket');
 
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
 

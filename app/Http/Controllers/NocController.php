@@ -281,4 +281,15 @@ class NocController extends Controller
         return redirect()->back()->with('success', 'Paket berhasil diperbarui');
     }
 
+    // PaketController.php
+public function ajaxPaket(Request $request)
+{
+    $paket = Paket::with('customer', 'router')->get();
+
+    return response()->json([
+        'data' => $paket,
+    ]);
+}
+
+
 }

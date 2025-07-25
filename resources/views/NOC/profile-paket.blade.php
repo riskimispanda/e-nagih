@@ -6,6 +6,20 @@
     .form-label{
         font-weight: 600;
     }
+    .pagination .page-item .page-link {
+        color: #5a5c69;
+        border: 1px solid #dee2e6;
+        margin: 0 2px;
+        transition: 0.2s ease;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #4e73df;
+        border-color: #4e73df;
+        color: #fff;
+    }
+    .pagination .page-item .page-link:hover {
+        background-color: #f1f1f1;
+    }
 </style>
 
 @section('content')
@@ -108,6 +122,7 @@
 
                 <!-- Result Count -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="text-muted">Total: {{ $router->total() }}</span>
                     <div class="text-muted">
                         Menampilkan {{ $router->count() }} dari {{ $router->total() }} data
                     </div>
@@ -131,20 +146,6 @@
                             <input type="text" class="form-control" id="search-input" placeholder="Cari nama paket..." value="">
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Harga Minimum</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" class="form-control" id="min-price" placeholder="0" min="0">
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Harga Maksimum</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" class="form-control" id="max-price" placeholder="1000000" min="0">
-                        </div>
-                    </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="button" class="btn btn-outline-secondary w-100" id="reset-filters">
                             <i class="bx bx-refresh me-1"></i>Reset
@@ -152,6 +153,7 @@
                     </div>
                 </div>
             </div>
+
             {{-- Table Profile Paket --}}
             <div class="card-body">
                 <div class="d-flex justify-content-start mb-5">
@@ -171,57 +173,18 @@
                                 <th>Jumlah Pelanggan</th>
                                 <th>Aksi</th>
                             </tr>
-                        </thead>
-                        <tbody class="text-center" id="paket-table-body">
-                            @forelse ($paket as $item)
-                            <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>
-                                    <span class="badge {{ $item->nama_paket == 'ISOLIREBILLING' ? 'bg-danger text-danger' : 'bg-info text-primary' }} bg-opacity-10">
-                                        {{ $item->nama_paket ?? '' }}
-                                    </span>
-                                </td>
-                                <td class="fw-semibold">{{ $item->paket_name ?? '-'}}</td>
-                                <td class="fw-semibold">{{ $item->router->nama_router ?? '-'}}</td>
-                                <td>Rp {{number_format((int)$item->harga ?? 0, 0, ',', '.')}}</td>
-                                <td>
-                                    <span class="fw-bold badge bg-warning bg-opacity-10 text-warning">
-                                        {{ $item->customer->count() ?? 0 }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <div class="row">
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="#" onclick="event.preventDefault(); editPaket({{ $item->id }}); return false;" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
-                                                <i class="bx bx-edit text-warning"></i>
-                                            </a>|
-                                            <a href="/hapus/paket/{{ $item->id }}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
-                                                <i class="bx bx-trash text-danger"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-4">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
-                                        <span class="text-muted">Tidak ada data paket yang ditemukan</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
+                        </thead>                     
+                        <tbody id="paket-table-body">
+                            <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
                 <!-- Result Count -->
                 <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="text-muted">
-                        Menampilkan {{ $paket->count() }} dari {{ $paket->total() }} data
-                    </div>
-                </div>
+                    <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
+                    <div class="text-muted ms-3" id="data-info"></div>
+                </div>                
             </div>
         </div>
     </div>
@@ -720,5 +683,178 @@
 
 
 </script>
+
+<script>
+    let paketData = [];
+    let filteredData = [];
+    const itemsPerPage = 10;
+    let currentPage = 1;
+
+    // Fetch initial data
+    function fetchPaket() {
+        fetch("{{ route('ajax.paket') }}")
+            .then(res => res.json())
+            .then(res => {
+                paketData = res.data;
+                filteredData = paketData; // default filter = semua
+                renderTablePage(1);
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("paket-table-body").innerHTML = `
+                    <tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>
+                `;
+            });
+    }
+
+    function renderTablePage(page) {
+        currentPage = page;
+        const tbody = document.getElementById("paket-table-body");
+        tbody.innerHTML = "";
+
+        const start = (page - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const pageItems = filteredData.slice(start, end);
+
+        if (pageItems.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
+                            <span class="text-muted">Tidak ada data paket yang ditemukan</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            renderPagination();
+            updateResultCount();
+            return;
+        }
+
+        pageItems.forEach((item, index) => {
+            const row = `
+                <tr class="text-center">
+                    <td>${start + index + 1}</td>
+                    <td>
+                        <span class="badge ${item.nama_paket === 'ISOLIREBILLING' ? 'bg-danger text-danger' : 'bg-info text-primary'} bg-opacity-10">
+                            ${item.nama_paket ?? ''}
+                        </span>
+                    </td>
+                    <td class="fw-semibold">${item.paket_name ?? '-'}</td>
+                    <td class="fw-semibold">${item.router?.nama_router ?? '-'}</td>
+                    <td>Rp ${parseInt(item.harga ?? 0).toLocaleString('id-ID')}</td>
+                    <td>
+                        <span class="fw-bold badge bg-warning bg-opacity-10 text-warning">
+                            ${item.customer?.length ?? 0}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="#" onclick="event.preventDefault(); editPaket(${item.id});" data-bs-toggle="tooltip" title="Edit Profile"><i class="bx bx-edit text-warning"></i></a> |
+                            <a href="/hapus/paket/${item.id}" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')" data-bs-toggle="tooltip" title="Hapus Profile"><i class="bx bx-trash text-danger"></i></a>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += row;
+        });
+
+        renderPagination();
+        updateResultCount();
+    }
+
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+
+        if (totalPages <= 1) return;
+
+        const pageLimit = 5; // Jumlah halaman maksimum yg ditampilkan
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, startPage + pageLimit - 1);
+
+        // Previous button
+        if (currentPage > 1) {
+            pagination.innerHTML += `
+                <li class="page-item">
+                    <a href="#" class="page-link" onclick="changePage(${currentPage - 1})">&laquo;</a>
+                </li>`;
+        }
+
+        // Page numbers
+        if (startPage > 1) {
+            pagination.innerHTML += `<li class="page-item"><a href="#" class="page-link" onclick="changePage(1)">1</a></li>`;
+            if (startPage > 2) pagination.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pagination.innerHTML += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a href="#" class="page-link" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) pagination.innerHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            pagination.innerHTML += `<li class="page-item"><a href="#" class="page-link" onclick="changePage(${totalPages})">${totalPages}</a></li>`;
+        }
+
+        // Next button
+        if (currentPage < totalPages) {
+            pagination.innerHTML += `
+                <li class="page-item">
+                    <a href="#" class="page-link" onclick="changePage(${currentPage + 1})">&raquo;</a>
+                </li>`;
+        }
+    }
+
+    function changePage(page) {
+        renderTablePage(page);
+    }
+
+    function updateResultCount() {
+        const totalFiltered = filteredData.length;
+        const totalAll = paketData.length;
+        const text = totalFiltered === totalAll
+            ? `Menampilkan ${totalFiltered} dari ${totalAll} data`
+            : `Menampilkan ${totalFiltered} dari ${totalAll} data (difilter)`;
+        document.querySelector('.text-muted').innerText = text;
+    }
+
+    function applyFilter() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+        filteredData = paketData.filter(item => {
+            return (
+                !searchTerm ||
+                item.nama_paket?.toLowerCase().includes(searchTerm) ||
+                item.paket_name?.toLowerCase().includes(searchTerm) ||
+                item.router?.nama_router?.toLowerCase().includes(searchTerm)
+            );
+        });
+
+        renderTablePage(1);
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchPaket();
+
+        document.getElementById('search-input').addEventListener('input', () => {
+            clearTimeout(window.searchTimeout);
+            window.searchTimeout = setTimeout(() => {
+                applyFilter();
+            }, 300);
+        });
+
+        document.getElementById('reset-filters').addEventListener('click', () => {
+            document.getElementById('search-input').value = '';
+            applyFilter();
+        });
+    });
+</script>
+
 
 @endsection
