@@ -183,32 +183,39 @@ class NocController extends Controller
         //
     }
 
-    public function profilePaket()
-    {
-        $router = Router::paginate(10);
+    public function profilePaket(Request $request)
+{
+    $search = $request->input('search'); // Tangkap search query
 
-        // Transformasi untuk menambahkan status koneksi
-        $router->getCollection()->transform(function ($r) {
-            $status = app(MikrotikServices::class)->status($r);
-            $r->status_koneksi = $status['connected'] ? '🟢 Online' : '🔴 Offline';
-            $r->uptime = $status['uptime'] ?? null;
-            $r->platform = $status['platform'] ?? null;
-            $r->cpu_load = $status['cpu_load'] ?? null;
-            return $r;
-        });
+    $router = Router::paginate(10);
 
-        $paket = Paket::with('customer', 'router')
-            ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
-            ->orderBy('nama_paket', 'asc')
-            ->paginate(10);
+    // Transformasi status koneksi
+    $router->getCollection()->transform(function ($r) {
+        $status = app(MikrotikServices::class)->status($r);
+        $r->status_koneksi = $status['connected'] ? '🟢 Online' : '🔴 Offline';
+        $r->uptime = $status['uptime'] ?? null;
+        $r->platform = $status['platform'] ?? null;
+        $r->cpu_load = $status['cpu_load'] ?? null;
+        return $r;
+    });
 
-        return view('NOC.profile-paket', [
-            'users' => auth()->user(),
-            'roles' => auth()->user()->roles,
-            'paket' => $paket,
-            'router' => $router,
-        ]);
-    }
+    $paket = Paket::with('customer', 'router')
+        ->when($search, function ($query) use ($search) {
+            $query->where('nama_paket', 'like', '%' . $search . '%');
+        })
+        ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+        ->orderBy('nama_paket', 'asc')
+        ->paginate(10)
+        ->withQueryString();
+
+    return view('NOC.profile-paket', [
+        'users' => auth()->user(),
+        'roles' => auth()->user()->roles,
+        'paket' => $paket,
+        'router' => $router,
+    ]);
+}
+
 
 
     public function tambahPaket(Request $request)

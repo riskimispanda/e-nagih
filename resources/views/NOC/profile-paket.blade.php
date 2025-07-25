@@ -125,17 +125,16 @@
             {{-- Filter --}}
             <div class="card-body border-bottom">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Pencarian Paket</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bx bx-search"></i></span>
-                            <input type="text" class="form-control" id="search-input" placeholder="Cari nama paket..." value="">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <form method="GET" action="{{ route('profile.paket') }}" class="d-flex gap-2">
+                                    <input type="text" class="form-control" name="search" value="{{ request('search') }}" placeholder="Cari nama paket...">
+                                    <button type="submit" class="btn btn-secondary btn-sm">Cari</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-secondary w-100" id="reset-filters">
-                            <i class="bx bx-refresh me-1"></i>Reset
-                        </button>
                     </div>
                 </div>
             </div>
@@ -163,20 +162,15 @@
                         <tbody id="paket-table-body">
                             <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
                         </tbody>
+                        <ul class="pagination justify-content-center mt-4" id="pagination"></ul>                        
                     </table>
                 </div>
 
                 <!-- Result Count -->
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
-                    <!-- Paginate Buttons -->
-                    <nav aria-label="Pagination">
-                        <ul class="pagination mb-0" id="pagination">
-                            <!-- Tombol paginasi akan diisi lewat JavaScript -->
-                        </ul>
-                    </nav>
-                
-                    <!-- Info jumlah data -->
-                    <div class="text-muted small text-center text-md-end" id="pagination-info">
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <span class="text-muted">Total Data: {{ $paket->count() }}</span>
+                    {{ $paket->appends(['search' => request('search')])->links() }}
+                    <div class="text-muted">
                         Menampilkan {{ $paket->count() }} dari {{ $paket->total() }} data
                     </div>
                 </div>
@@ -583,7 +577,7 @@
                     const customerCount = item.customer ? item.customer.length : 0;
 
                     html += `
-                        <tr>
+                        <tr class="text-center">
                             <td>${index + 1}</td>
                             <td>
                                 <span class="badge ${badgeClass} bg-opacity-10">
@@ -680,99 +674,4 @@
 
 </script>
 
-<script>
-    let paketData = [];
-    const itemsPerPage = 10;
-    let currentPage = 1;
-
-    function fetchPaket() {
-        fetch("{{ route('ajax.paket') }}")
-            .then(res => res.json())
-            .then(res => {
-                paketData = res.data;
-                renderTablePage(1);
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById("paket-table-body").innerHTML = `
-                    <tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>
-                `;
-            });
-    }
-
-    function renderTablePage(page) {
-        currentPage = page;
-        const tbody = document.getElementById("paket-table-body");
-        tbody.innerHTML = "";
-
-        const start = (page - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const pageItems = paketData.slice(start, end);
-
-        if (pageItems.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-4">
-                        <div class="d-flex flex-column align-items-center">
-                            <i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i>
-                            <span class="text-muted">Tidak ada data paket yang ditemukan</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        pageItems.forEach((item, index) => {
-            const row = `
-                <tr class="text-center">
-                    <td>${start + index + 1}</td>
-                    <td>
-                        <span class="badge ${item.nama_paket === 'ISOLIREBILLING' ? 'bg-danger text-danger' : 'bg-info text-primary'} bg-opacity-10">
-                            ${item.nama_paket ?? ''}
-                        </span>
-                    </td>
-                    <td class="fw-semibold">${item.paket_name ?? '-'}</td>
-                    <td class="fw-semibold">${item.router?.nama_router ?? '-'}</td>
-                    <td>Rp ${parseInt(item.harga ?? 0).toLocaleString('id-ID')}</td>
-                    <td>
-                        <span class="fw-bold badge bg-warning bg-opacity-10 text-warning">
-                            ${item.customer?.length ?? 0}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="d-flex justify-content-center gap-2">
-                            <a href="#" onclick="event.preventDefault(); editPaket(${item.id});" data-bs-toggle="tooltip" title="Edit Profile"><i class="bx bx-edit text-warning"></i></a> |
-                            <a href="/hapus/paket/${item.id}" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')" data-bs-toggle="tooltip" title="Hapus Profile"><i class="bx bx-trash text-danger"></i></a>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            tbody.innerHTML += row;
-        });
-
-        renderPagination();
-    }
-
-    function renderPagination() {
-        const totalPages = Math.ceil(paketData.length / itemsPerPage);
-        const pagination = document.getElementById("pagination");
-        pagination.innerHTML = "";
-
-        for (let i = 1; i <= totalPages; i++) {
-            pagination.innerHTML += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a href="#" class="page-link" onclick="changePage(${i})">${i}</a>
-                </li>
-            `;
-        }
-    }
-
-    function changePage(page) {
-        renderTablePage(page);
-    }
-
-    // Panggil saat halaman siap
-    document.addEventListener("DOMContentLoaded", fetchPaket);
-</script>
 @endsection
