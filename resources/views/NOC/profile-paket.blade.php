@@ -132,7 +132,7 @@
                         <div class="col-sm-6">
                             <div class="d-flex gap-2">
                                 <input type="text" class="form-control" id="paket-search-input" placeholder="Cari nama paket...">
-                                <button type="button" class="btn btn-secondary btn-sm" id="paket-search-btn">Cari</button>
+                                {{-- <button type="button" class="btn btn-secondary btn-sm" id="paket-search-btn">Cari</button> --}}
                             </div>
                         </div>
                     </div>
