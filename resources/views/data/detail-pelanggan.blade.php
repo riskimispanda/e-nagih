@@ -799,23 +799,12 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
-                                                @if ($customer->remote)
-                                                    <a href="http://{{ $customer->remote }}" target="_blank">
-                                                        <div class="info-group">
-                                                            <span class="info-label">
-                                                                <i class="bx bx-globe text-primary me-1"></i> Remote Address
-                                                            </span>
-                                                            <div class="info-value">{{ $customer->remote_address }}</div>
-                                                        </div>
-                                                    </a>
-                                                @else
-                                                    <div class="info-group">
-                                                        <span class="info-label">
-                                                            <i class="bx bx-globe text-primary me-1"></i> Remote Address
-                                                        </span>
-                                                        <div class="info-value">Tidak ada</div>
-                                                    </div>
-                                                @endif
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-globe text-primary me-1"></i> Remote Address
+                                                    </span>
+                                                    <div class="info-value">{{ $customer->remote_address ?? 'Tidak ada' }}</div>
+                                                </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="info-group">
