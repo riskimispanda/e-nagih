@@ -584,6 +584,17 @@
         }
     });
     
+    // Debounce for input event
+    let paketSearchTimeout;
+    $('#paket-search-input').on('input', function() {
+        clearTimeout(paketSearchTimeout);
+        paketSearchTerm = $(this).val();
+        paketCurrentPage = 1;
+        paketSearchTimeout = setTimeout(function() {
+            fetchPaketData(1, paketSearchTerm);
+        }, 300);
+    });
+    
     // Initial load
     $(document).ready(function() {
         fetchPaketData(1, '');
