@@ -185,7 +185,7 @@ class TeknisiController extends Controller
             'station'         => $request->station,
             'media_id'        => $request->media_id,
             'tanggal_selesai' => $tanggalSelesai,
-            'lokasi_id'       => $request->odp,
+            'lokasi_id'       => $request->lokasi_id,
             'status_id'       => 3,
             'foto_rumah'      => $fotoRumahPath,
             'foto_perangkat'  => $fotoPerangkatPath,

@@ -682,7 +682,7 @@
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-server me-2"></i>Server
                                                     BTS</label>
-                                                <select id="server" name="server" class="form-select" required>
+                                                <select id="server" name="lokasi_id" class="form-select" required>
                                                     <option value="" selected disabled>Pilih Server BTS
                                                     </option>
                                                     @foreach ($server as $item)
