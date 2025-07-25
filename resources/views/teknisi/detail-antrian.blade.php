@@ -682,7 +682,7 @@
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-server me-2"></i>Server
                                                     BTS</label>
-                                                <select id="server" name="server" class="form-select">
+                                                <select id="server" name="server" class="form-select" required>
                                                     <option value="" selected disabled>Pilih Server BTS
                                                     </option>
                                                     @foreach ($server as $item)
@@ -694,7 +694,7 @@
 
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-devices me-2"></i>Modem</label>
-                                                <select name="modem" class="form-select">
+                                                <select name="modem" class="form-select" required>
                                                     <option value="" selected disabled>Pilih Modem
                                                     </option>
                                                     @foreach ($modem as $item)
@@ -711,14 +711,14 @@
                                                 <label class="form-label"><i class="bx bx-laptop me-2"></i>Serial Number
                                                     Modem</label>
                                                 <input type="text" name="serial_number" class="form-control"
-                                                    placeholder="Masukkan S/N">
+                                                    placeholder="Masukkan S/N" required>
                                             </div>
 
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-phone me-2"></i>Mac Address
                                                     Modem</label>
                                                 <input type="text" name="mac_address" class="form-control"
-                                                    placeholder="XX:XX:XX:XX:XX:XX">
+                                                    placeholder="XX:XX:XX:XX:XX:XX" required>
                                             </div>
                                             <hr class="my-2">
                                             <div class="col-sm-12">
@@ -726,7 +726,7 @@
                                                     <label class="form-label"><i class="bx bx-disc me-2"></i>Pilih
                                                         Media</label>
                                                     <select name="media_id" id="media" class="form-select"
-                                                        onchange="showMedia()">
+                                                        onchange="showMedia()" required>
                                                         <option value="" selected disabled>Pilih Media</option>
                                                         @foreach ($media as $item)
                                                             <option value="{{ $item->id }}">
@@ -740,21 +740,21 @@
                                         <div class="row g-3 mt-2 mb-2" id="olt_id" style="display: none;">
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>OLT</label>
-                                                <select id="olt" name="olt" class="form-select">
+                                                <select id="olt" name="olt" class="form-select" required>
                                                     <option value="" selected disabled>Pilih OLT</option>
                                                 </select>
                                             </div>
 
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>ODC</label>
-                                                <select id="odc" name="odc" class="form-select">
+                                                <select id="odc" name="odc" class="form-select" required>
                                                     <option value="" selected disabled>Pilih ODC</option>
                                                 </select>
                                             </div>
 
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>ODP</label>
-                                                <select id="odp" name="odp" class="form-select">
+                                                <select id="odp" name="odp" class="form-select" required>
                                                     <option value="" selected disabled>Pilih ODP</option>
                                                 </select>
                                             </div>
