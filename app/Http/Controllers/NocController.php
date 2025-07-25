@@ -184,36 +184,36 @@ class NocController extends Controller
     }
 
     public function profilePaket(Request $request)
-{
-    $search = $request->input('search'); // Tangkap search query
+    {
+        $search = $request->input('search'); // Tangkap search query
 
-    $router = Router::paginate(10);
+        $router = Router::paginate(10, ['*'], 'router_page');
 
-    // Transformasi status koneksi
-    $router->getCollection()->transform(function ($r) {
-        $status = app(MikrotikServices::class)->status($r);
-        $r->status_koneksi = $status['connected'] ? '🟢 Online' : '🔴 Offline';
-        $r->uptime = $status['uptime'] ?? null;
-        $r->platform = $status['platform'] ?? null;
-        $r->cpu_load = $status['cpu_load'] ?? null;
-        return $r;
-    });
+        // Transformasi status koneksi
+        $router->getCollection()->transform(function ($r) {
+            $status = app(MikrotikServices::class)->status($r);
+            $r->status_koneksi = $status['connected'] ? '🟢 Online' : '🔴 Offline';
+            $r->uptime = $status['uptime'] ?? null;
+            $r->platform = $status['platform'] ?? null;
+            $r->cpu_load = $status['cpu_load'] ?? null;
+            return $r;
+        });
 
-    $paket = Paket::with('customer', 'router')
-        ->when($search, function ($query) use ($search) {
-            $query->where('nama_paket', 'like', '%' . $search . '%');
-        })
-        ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
-        ->orderBy('nama_paket', 'asc')
-        ->paginate(10)
-        ->withQueryString();
+        $paket = Paket::with('customer', 'router')
+            ->when($search, function ($query) use ($search) {
+                $query->where('nama_paket', 'like', '%' . $search . '%');
+            })
+            ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+            ->orderBy('nama_paket', 'asc')
+            ->paginate(10, ['*'], 'paket_page')
+            ->withQueryString();
 
-    return view('NOC.profile-paket', [
-        'users' => auth()->user(),
-        'roles' => auth()->user()->roles,
-        'paket' => $paket,
-        'router' => $router,
-    ]);
+        return view('NOC.profile-paket', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'paket' => $paket,
+            'router' => $router,
+        ]);
 }
 
 
@@ -291,11 +291,20 @@ class NocController extends Controller
     // PaketController.php
     public function ajaxPaket(Request $request)
     {
-        $paket = Paket::with('customer', 'router')->get();
+        $search = $request->input('search');
+        $perPage = (int) $request->input('per_page', 10);
+        $page = (int) $request->input('page', 1);
 
-        return response()->json([
-            'data' => $paket,
-        ]);
+        $query = Paket::with('customer', 'router')
+            ->when($search, function ($q) use ($search) {
+                $q->where('nama_paket', 'like', '%' . $search . '%');
+            })
+            ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+            ->orderBy('nama_paket', 'asc');
+
+        $paket = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return response()->json($paket);
     }
 
 
