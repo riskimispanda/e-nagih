@@ -164,8 +164,8 @@
                         <tr><td colspan="7" class="text-center">Memuat data...</td></tr>
                     </tbody>
                 </table>
-                <ul class="pagination justify-content-center mt-4" id="paket-pagination"></ul>
             </div>
+            <ul class="pagination justify-content-center mt-4" id="paket-pagination"></ul>
             
             <!-- Result Count -->
             <div class="d-flex justify-content-between align-items-center mt-3">
