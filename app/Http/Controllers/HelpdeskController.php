@@ -90,7 +90,7 @@ class HelpdeskController extends Controller
     // Store
     public function addAntrian(Request $request, ChatServices $chat)
     {
-        // dd($request->all());
+        // dd($request->file('identitas_file'));
         try {
             $jenis = $request->input('jenis_pelanggan');
             $rules = ['jenis_pelanggan' => 'required'];
@@ -104,8 +104,7 @@ class HelpdeskController extends Controller
                     'alamat' => 'required',
                     'gps' => 'required',
                     'paket_id' => 'required',
-                    'tanggal_reg' => 'required|date',
-                    'identitas_file' => 'image|max:5120'
+                    'tanggal_reg' => 'required|date'
                 ]);
             } elseif ($jenis == 'Perusahaan') {
                 $rules = array_merge($rules, [
@@ -184,9 +183,7 @@ class HelpdeskController extends Controller
             
                 $identitas_file = 'uploads/identitas/' . $fileName;
             }
-            
-
-
+            // dd($identitas_file);
             $data = Customer::create([
                 'nama_customer' => $request->nama_customer,
                 'no_hp' => $nomor,

@@ -20,7 +20,9 @@ class DataController extends Controller
             'invoice.status',
             'invoice',
             'getServer'
-        ])->whereIn('status_id', [3, 9])->get();
+        ])->whereIn('status_id', [3, 9])
+        ->orderBy('created_at', 'desc')
+        ->get();
         
         // $coba = Customer::where('status_id', [3, 9])->get();
 
