@@ -809,6 +809,22 @@
                                             <div class="col-md-6">
                                                 <div class="info-group">
                                                     <span class="info-label">
+                                                        <i class="bx bx-user text-primary me-1"></i> User Secret
+                                                    </span>
+                                                    <div class="info-value">{{ $customer->usersecret ?? 'Tidak ada' }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-lock-alt text-primary me-1"></i> Pass Secret
+                                                    </span>
+                                                    <div class="info-value">{{ $customer->pass_secret ?? 'Tidak ada' }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
                                                         <i class="bx bx-map-pin text-primary me-1"></i> Lokasi Perangkat
                                                     </span>
                                                     <div class="info-value">

@@ -198,7 +198,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
 // routes/web.php
     Route::get('/paket/data', [NocController::class, 'ajaxPaket'])->name('ajax.paket');
-
+    Route::get('/edit/server/{id}', [NocController::class, 'editServer']);
+    Route::post('/update/server/{id}', [NocController::class, 'updateServer']);
+    Route::get('/hapus/server/{id}', [NocController::class, 'hapusServer']);
+    Route::get('/edit/olt/{id}', [NocController::class, 'editOlt']);
+    Route::post('/update/olt/{id}', [NocController::class, 'updateOlt']);
+    Route::get('/hapus/olt/{id}', [NocController::class, 'hapusOlt']);
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
 
 

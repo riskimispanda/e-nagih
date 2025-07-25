@@ -10,6 +10,9 @@ use App\Models\Router;
 use App\Services\MikrotikServices;
 use App\Models\Perusahaan;
 use App\Models\Paket;
+use App\Models\Server;
+use App\Models\Lokasi;
+
 
 
 class NocController extends Controller
@@ -307,5 +310,50 @@ class NocController extends Controller
         return response()->json($paket);
     }
 
+    public function editServer($id)
+    {
+        $server = Server::findOrFail($id);
+        return response()->json($server);
+    }
+
+    public function updateServer(Request $request, $id)
+    {
+        $server = Server::findOrFail($id);
+        $server->lokasi_server = $request->lokasi_server;
+        $server->ip_address = $request->ip_address;
+        $server->save();
+
+        return redirect()->back()->with('toast_success', 'Server berhasil diperbarui');
+    }
+
+    public function hapusServer($id)
+    {
+        $s = Server::findOrFail($id);
+        $s->delete();
+        return redirect()->back()->with('toast_success', 'Server berhasil dihapus');
+    }
+
+
+    public function editOlt($id)
+    {
+        $olt = Lokasi::findOrFail($id);
+        return response()->json($olt);
+    }
+
+    public function updateOlt(Request $request, $id)
+    {
+        $olt = Lokasi::findOrFail($id);
+        $olt->nama_lokasi = $request->nama_lokasi;
+        $olt->id_server = $request->id_server;
+        $olt->save();
+        return redirect()->back()->with('toast_success', 'OLT berhasil diperbarui');
+    }
+
+    public function hapusOlt($id)
+    {
+        $olt = Lokasi::findOrFail($id);
+        $olt->delete();
+        return redirect()->back()->with('toast_success', 'OLT berhasil dihapus');
+    }
 
 }

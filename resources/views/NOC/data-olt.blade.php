@@ -21,39 +21,47 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive text-nowrap">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
+                        <table class="table table-hover">
+                            <thead class="table-dark text-center">
                                 <tr>
-                                    <th width="5%">No</th>
+                                    <th>No</th>
                                     <th>Data OLT</th>
-                                    <th width="5%">Total ODC</th>
-                                    <th width="5%">Total ODP</th>
-                                    <th width="20%" class="text-center">Aksi</th>
+                                    <th>Total ODC</th>
+                                    <th>Total ODP</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody class="table-border-bottom-0">
+                            <tbody class="text-center">
                                 @forelse ($lokasi as $index => $olt)
                                     <tr class="text-uppercase">
                                         <td class="text-center">{{ $index + 1 }}</td>
-                                        <td><strong>{{ $olt->nama_lokasi }}</strong></td>
-                                        <td class="text-center">
-                                            {{ $odc->where('lokasi_id', $olt->id)->count() }}
+                                        <td class="fw-semibold">
+                                            <i class="bx bx-server me-1 text-primary"></i>{{ $olt->nama_lokasi }}
                                         </td>
                                         <td class="text-center">
-                                            {{ $odp->where('odc_id', $olt->id)->count() }}
+                                            <span class="badge bg-warning">
+                                                {{ $odc->where('lokasi_id', $olt->id)->count() }}
+                                            </span>
                                         </td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-warning btn-sm">
-                                                <i class="bx bx-edit-alt"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
+                                            <span class="badge bg-warning">
+                                                {{ $odp->where('odc_id', $olt->id)->count() }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="#" class="edit-olt-btn" data-id="{{ $olt->id }}" data-bs-toggle="tooltip" title="Edit OLT" data-bs-placement="bottom">
+                                                    <i class="bx bx-edit text-warning"></i>
+                                                </a>|
+                                                <a href="/hapus/olt/{{ $olt->id }}" data-bs-toggle="tooltip" title="Hapus OLT" data-bs-placement="bottom">
+                                                    <i class="bx bx-trash text-danger"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center">Tidak ada data</td>
+                                        <td colspan="5" class="text-center">Tidak ada data</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -100,4 +108,60 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Edit --}}
+    <div class="modal fade" id="modalEditOlt" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="bx bxs-terminal me-2"></i>
+                    <h5 class="modal-title">Edit OLT</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editOltForm" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="form-label">Nama Lokasi OLT</label>
+                                <input type="text" class="form-control mb-3" name="nama_lokasi" id="edit_nama_lokasi" required>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Lokasi Server</label>
+                                <select name="id_server" id="edit_id_server" class="form-select" required>
+                                    <option value="" selected disabled>Lokasi Server</option>
+                                    @foreach ($server as $s)
+                                        <option value="{{ $s->id }}">{{ $s->lokasi_server }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.edit-olt-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const id = this.getAttribute('data-id');
+                    fetch(`/edit/olt/${id}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            document.getElementById('edit_nama_lokasi').value = data.nama_lokasi || '';
+                            document.getElementById('edit_id_server').value = data.id_server || '';
+                            document.getElementById('editOltForm').action = `/update/olt/${id}`;
+                            var modal = new bootstrap.Modal(document.getElementById('modalEditOlt'));
+                            modal.show();
+                        });
+                });
+            });
+        });
+        </script>
 @endsection

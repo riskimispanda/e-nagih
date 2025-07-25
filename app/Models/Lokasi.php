@@ -24,7 +24,7 @@ class Lokasi extends Model
     }
     public function olt()
     {
-        return $this->hasMany(OLT::class, 'lokasi_id');
+        return $this->hasMany(ODC::class);
     }
     public function server()
     {

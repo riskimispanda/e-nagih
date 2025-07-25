@@ -50,7 +50,7 @@ class Customer extends Model
 
     public function lokasi()
     {
-        return $this->belongsTo(Lokasi::class, 'lokasi_id');
+        return $this->belongsTo(ODP::class, 'lokasi_id');
     }
     public function teknisi()
     {
