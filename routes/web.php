@@ -197,7 +197,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update/paket/{id}', [NocController::class, 'updatePaket']);
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
 // routes/web.php
-Route::get('/ajax/paket', [NocController::class, 'ajaxPaket'])->name('ajax.paket');
+    Route::get('/paket/data', [NocController::class, 'ajaxPaket'])->name('ajax.paket');
 
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
 

@@ -6,20 +6,6 @@
     .form-label{
         font-weight: 600;
     }
-    .pagination .page-item .page-link {
-        color: #5a5c69;
-        border: 1px solid #dee2e6;
-        margin: 0 2px;
-        transition: 0.2s ease;
-    }
-    .pagination .page-item.active .page-link {
-        background-color: #4e73df;
-        border-color: #4e73df;
-        color: #fff;
-    }
-    .pagination .page-item .page-link:hover {
-        background-color: #f1f1f1;
-    }
 </style>
 
 @section('content')
@@ -181,11 +167,21 @@
                 </div>
 
                 <!-- Result Count -->
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <ul class="pagination justify-content-center mb-0" id="pagination"></ul>
-                    <div class="text-muted ms-3" id="data-info"></div>
-                </div>                
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-4 gap-3">
+                    <!-- Paginate Buttons -->
+                    <nav aria-label="Pagination">
+                        <ul class="pagination mb-0" id="pagination">
+                            <!-- Tombol paginasi akan diisi lewat JavaScript -->
+                        </ul>
+                    </nav>
+                
+                    <!-- Info jumlah data -->
+                    <div class="text-muted small text-center text-md-end" id="pagination-info">
+                        Menampilkan {{ $paket->count() }} dari {{ $paket->total() }} data
+                    </div>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -226,7 +222,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label mb-2">*Nama Profile</label>
-                        <input type="text" class="form-control" id="nama_paket" name="profile_name" required>
+                        <input type="text" class="form-control" id="paket_nama" name="profile_name" required>
                         <span>
                             <small class="text-danger fw-bold">*Harus sesuai dengan nama profile paket di Mikrotik</small>
                         </span>
@@ -693,8 +689,8 @@
         fetch("{{ route('ajax.paket') }}")
             .then(res => res.json())
             .then(res => {
-                paketData = sortPaket(res.data);
-                renderTablePage(1, paketData);
+                paketData = res.data;
+                renderTablePage(1);
             })
             .catch(err => {
                 console.error(err);
@@ -704,35 +700,14 @@
             });
     }
 
-    function sortPaket(data) {
-        return data.sort((a, b) => {
-            const isA = a.nama_paket === 'ISOLIREBILLING' ? 1 : 0;
-            const isB = b.nama_paket === 'ISOLIREBILLING' ? 1 : 0;
-
-            if (isA !== isB) return isA - isB;
-
-            const namaA = a.nama_paket?.toUpperCase() ?? '';
-            const namaB = b.nama_paket?.toUpperCase() ?? '';
-            return namaA.localeCompare(namaB);
-        });
-    }
-
-    function filterPaket(keyword) {
-        return sortPaket(paketData.filter(item =>
-            item.nama_paket?.toLowerCase().includes(keyword.toLowerCase()) ||
-            item.paket_name?.toLowerCase().includes(keyword.toLowerCase()) ||
-            item.router?.nama_router?.toLowerCase().includes(keyword.toLowerCase())
-        ));
-    }
-
-    function renderTablePage(page, data) {
+    function renderTablePage(page) {
         currentPage = page;
         const tbody = document.getElementById("paket-table-body");
         tbody.innerHTML = "";
 
         const start = (page - 1) * itemsPerPage;
         const end = start + itemsPerPage;
-        const pageItems = data.slice(start, end);
+        const pageItems = paketData.slice(start, end);
 
         if (pageItems.length === 0) {
             tbody.innerHTML = `
@@ -745,7 +720,6 @@
                     </td>
                 </tr>
             `;
-            document.getElementById("pagination").innerHTML = "";
             return;
         }
 
@@ -768,8 +742,8 @@
                     </td>
                     <td>
                         <div class="d-flex justify-content-center gap-2">
-                            <a href="#" onclick="event.preventDefault(); editPaket(${item.id});" data-bs-toggle="tooltip" title="Edit"><i class="bx bx-edit text-warning"></i></a> |
-                            <a href="/hapus/paket/${item.id}" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')" data-bs-toggle="tooltip" title="Hapus"><i class="bx bx-trash text-danger"></i></a>
+                            <a href="#" onclick="event.preventDefault(); editPaket(${item.id});" data-bs-toggle="tooltip" title="Edit Profile"><i class="bx bx-edit text-warning"></i></a> |
+                            <a href="/hapus/paket/${item.id}" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')" data-bs-toggle="tooltip" title="Hapus Profile"><i class="bx bx-trash text-danger"></i></a>
                         </div>
                     </td>
                 </tr>
@@ -777,79 +751,28 @@
             tbody.innerHTML += row;
         });
 
-        renderPagination(data.length);
+        renderPagination();
     }
 
-    function renderPagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
+    function renderPagination() {
+        const totalPages = Math.ceil(paketData.length / itemsPerPage);
         const pagination = document.getElementById("pagination");
         pagination.innerHTML = "";
 
-        if (totalPages <= 1) return;
-
-        // Tombol prev
-        pagination.innerHTML += `
-            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                <a href="#" class="page-link" onclick="changePage(${currentPage - 1})">«</a>
-            </li>
-        `;
-
-        const visiblePages = getVisiblePages(totalPages);
-
-        visiblePages.forEach(p => {
-            if (p === "...") {
-                pagination.innerHTML += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
-            } else {
-                pagination.innerHTML += `
-                    <li class="page-item ${p === currentPage ? 'active' : ''}">
-                        <a href="#" class="page-link" onclick="changePage(${p})">${p}</a>
-                    </li>
-                `;
-            }
-        });
-
-        // Tombol next
-        pagination.innerHTML += `
-            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                <a href="#" class="page-link" onclick="changePage(${currentPage + 1})">»</a>
-            </li>
-        `;
-    }
-
-    function getVisiblePages(totalPages) {
-        const pages = [];
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i);
-        } else {
-            if (currentPage <= 3) {
-                pages.push(1, 2, 3, "...", totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                pages.push(1, "...", totalPages - 2, totalPages - 1, totalPages);
-            } else {
-                pages.push(1, "...", currentPage, "...", totalPages);
-            }
+        for (let i = 1; i <= totalPages; i++) {
+            pagination.innerHTML += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a href="#" class="page-link" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
         }
-        return pages;
     }
 
     function changePage(page) {
-        const keyword = document.getElementById("search-paket").value.trim();
-        const data = keyword ? filterPaket(keyword) : paketData;
-        renderTablePage(page, data);
+        renderTablePage(page);
     }
 
-    // Search listener
-    document.addEventListener("DOMContentLoaded", () => {
-        fetchPaket();
-
-        document.getElementById("search-paket").addEventListener("input", function () {
-            const keyword = this.value.trim();
-            const data = keyword ? filterPaket(keyword) : paketData;
-            renderTablePage(1, data);
-        });
-    });
+    // Panggil saat halaman siap
+    document.addEventListener("DOMContentLoaded", fetchPaket);
 </script>
-
-
-
 @endsection

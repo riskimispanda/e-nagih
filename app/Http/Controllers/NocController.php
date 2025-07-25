@@ -282,14 +282,14 @@ class NocController extends Controller
     }
 
     // PaketController.php
-public function ajaxPaket(Request $request)
-{
-    $paket = Paket::with('customer', 'router')->get();
+    public function ajaxPaket(Request $request)
+    {
+        $paket = Paket::with('customer', 'router')->get();
 
-    return response()->json([
-        'data' => $paket,
-    ]);
-}
+        return response()->json([
+            'data' => $paket,
+        ]);
+    }
 
 
 }
