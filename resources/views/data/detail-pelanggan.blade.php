@@ -805,7 +805,7 @@
                                                             <span class="info-label">
                                                                 <i class="bx bx-globe text-primary me-1"></i> Remote Address
                                                             </span>
-                                                            <div class="info-value">{{ $customer->remote }}</div>
+                                                            <div class="info-value">{{ $customer->remote_address }}</div>
                                                         </div>
                                                     </a>
                                                 @else
