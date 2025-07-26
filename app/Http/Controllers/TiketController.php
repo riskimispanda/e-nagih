@@ -21,7 +21,7 @@ class TiketController extends Controller
     public function formOpenTiket($id)
     {
         $customer = Customer::with('router', 'paket', 'odp.odc.olt.server')->findOrFail($id);
-        // dd($customer->odp->odc->nama_odc);
+        dd($customer->odp->odc->nama_odc, $customer->odp->odc->olt->nama_lokasi, $customer->odp->odc->olt->server->lokasi_server);
         $kategori = KategoriTiket::all();
 
         return view('Helpdesk.tiket.open-tiket',[
