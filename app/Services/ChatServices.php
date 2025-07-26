@@ -44,7 +44,7 @@ class ChatServices
             'pesan' => "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
                         "📅 Tanggal Pembayaran: " . now()->format('d-m-Y') . "\n" .
                         "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
-                        "💵 Tunggakan: Rp ". number_format($pembayaran->invoice->tunggakan, 0,',','.' ?? 0) . "\n".
+                        "💵 Tunggakan: Rp ". number_format($pembayaran->invoice->tunggakan ?? 0, 0,',','.') . "\n".
                         "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
                         "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
                         "Terima kasih telah menggunakan layanan kami 🙏\n" .
@@ -88,7 +88,7 @@ class ChatServices
             'pesan' => "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
                         "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
                         "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
-                        "💵 Tunggakan: Rp " . number_format($invoice->tunggakan, 0, ',', '.') . "\n" .
+                        "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n" .
                         "📄 Nomor Invoice: INV-E-NAGIH-{$invoice->customer->nama_customer}-{$time}\n\n" .
                         "🔗 Link Pembayaran:\n{$url}\n\n" .
                         "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
@@ -118,7 +118,7 @@ class ChatServices
             $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
             $pesan .= "📅 Tanggal: " . now()->format('d-m-Y') . "\n";
             $pesan .= "💰 Jumlah: Rp " . number_format($invoice->tagihan, 0, ',', '.') . "\n";
-            $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan, 0, ',', '.') . "\n\n";
+            $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n\n";
             $pesan .= "🔔 Jatuh Tempo: {$invoice->jatuh_tempo}\n";
             $pesan .= "--------------------------\n";
         }

@@ -935,7 +935,7 @@ class KeuanganController extends Controller
                     'updated_at'      => $tanggalAwal,
                     'jatuh_tempo'     => $tanggalJatuhTempo,
                     'tanggal_blokir'  => $invoice->tanggal_blokir,
-                    'tunggakan' => $tunggakan ?? 0
+                    'tunggakan' => max($tunggakan ?? 0)
                 ]);
             }
 
