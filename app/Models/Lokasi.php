@@ -16,7 +16,7 @@ class Lokasi extends Model
     }
     public function odc()
     {
-        return $this->hasMany(ODC::class, 'lokasi_id');
+        return $this->hasMany(ODC::class);
     }
     public function odp()
     {

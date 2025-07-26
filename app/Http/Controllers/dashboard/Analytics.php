@@ -18,6 +18,7 @@ use App\Models\Pembayaran;
 use App\Models\Metode;
 use App\Services\MikrotikServices;
 use App\Events\UpdateBaru;
+use App\Models\ODC;
 
 class Analytics extends Controller
 {
@@ -33,15 +34,17 @@ class Analytics extends Controller
   {
     // Ambil semua data invoice lengkap dengan relasinya
     $customers = Customer::with([
-      "status",
-      "paket",
-      "lokasi",
-      "invoice.status",
-      "invoice",
-      "getServer",
+        "status",
+        "paket",
+        "lokasi",
+        "invoice.status",
+        "invoice",
+        "getServer",
+        "odp.odc.olt"
       ])
       ->whereIn("status_id", [3, 9])
       ->get();
+
       $metode = Metode::all();
       $pembayaran = Pembayaran::where("status_id", 6)->get();
       
@@ -279,7 +282,8 @@ class Analytics extends Controller
     
     public function detailPelanggan($id)
     {
-      $customer = Customer::find($id);
+      $customer = Customer::with('odp.odc.olt.server')->find($id);
+      // dd($customer->odp->odc->olt->server->lokasi_server);
       $invoice = Invoice::where("customer_id", $id)->first();
       $profile = User::where("name", $customer->nama_customer)->first();
       // dd($profile);

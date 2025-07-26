@@ -48,7 +48,7 @@ class Customer extends Model
         return $this->belongsTo(Paket::class, 'paket_id');
     }
 
-    public function lokasi()
+    public function odp()
     {
         return $this->belongsTo(ODP::class, 'lokasi_id');
     }

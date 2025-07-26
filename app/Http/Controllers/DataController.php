@@ -16,10 +16,10 @@ class DataController extends Controller
         $customers = Customer::with([
             'status',
             'paket',
-            'lokasi',
             'invoice.status',
             'invoice',
-            'getServer'
+            'getServer',
+            'odp.odc.olt'
         ])->whereIn('status_id', [3, 9])
         ->orderBy('created_at', 'desc')
         ->get();

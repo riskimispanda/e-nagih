@@ -11,7 +11,7 @@ class ODP extends Model
 
     public function odc()
     {
-        return $this->belongsTo(ODC::class);
+        return $this->belongsTo(ODC::class, 'odc_id');
     }
     
     public function customer()

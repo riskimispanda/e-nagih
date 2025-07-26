@@ -775,7 +775,7 @@
                                                         <i class="bx bx-broadcast text-primary me-1"></i> BTS Server
                                                     </span>
                                                     <div class="info-value">
-                                                        {{ $customer->getServer->lokasi_server ?? 'Tidak ada' }}
+                                                        {{ $customer->odp->odc->olt->server->lokasi_server ?? 'Tidak ada' }}
                                                     </div>
                                                 </div>
                                             </div>

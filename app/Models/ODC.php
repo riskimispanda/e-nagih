@@ -13,9 +13,9 @@ class ODC extends Model
         'lokasi_id',
     ];
 
-    public function lokasi()
+    public function olt()
     {
-        return $this->belongsTo(Lokasi::class, 'lokasi_id');
+        return $this->belongsTo(Lokasi::class,'lokasi_id');
     }
 
     public function odp()
