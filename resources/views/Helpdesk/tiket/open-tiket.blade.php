@@ -81,7 +81,7 @@
                             <div class="mb-6 col-sm-6">
                                 <label class="form-label" for="basic-icon-default-phone">Server</label>
                                 <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->getServer->lokasi_server }}" readonly>
+                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->server->lokasi_server }}" readonly>
                                     <span class="input-group-text">
                                         <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
                                             <i class='bx bx-map text-danger'></i>
@@ -92,7 +92,7 @@
                             <div class="mb-6 col-sm-6">
                                 <label class="form-label" for="basic-icon-default-phone">OLT</label>
                                 <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->lokasi->nama_lokasi }}" readonly>
+                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->nama_lokasi }}" readonly>
                                     <span class="input-group-text">
                                         <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
                                             <i class='bx bx-map text-danger'></i>
@@ -103,7 +103,7 @@
                             <div class="mb-6 col-sm-6">
                                 <label class="form-label" for="basic-icon-default-phone">ODC</label>
                                 <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ optional($customer->lokasi->odc->first())->nama_odc ?? '-' }}" readonly>
+                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->nama_odc ?? '-' }}" readonly>
                                     <span class="input-group-text">
                                         <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
                                             <i class='bx bx-map text-danger'></i>
@@ -114,7 +114,7 @@
                             <div class="mb-6 col-sm-6">
                                 <label class="form-label" for="basic-icon-default-phone">ODP</label>
                                 <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ optional(optional($customer->lokasi->odc->first())->odp->first())->nama_odp ?? '-' }}" readonly>
+                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->nama_odp ?? '-' }}" readonly>
                                     <span class="input-group-text">
                                         <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
                                             <i class='bx bx-map text-danger'></i>

@@ -20,9 +20,7 @@ class TiketController extends Controller
 
     public function formOpenTiket($id)
     {
-        $customer = Customer::with('router', 'paket', 'lokasi', 'lokasi.odc')->findOrFail($id);
-        $nama_odc = optional($customer->lokasi->odc->first())->nama_odc ?? '-';
-        $nama_odp = optional(optional($customer->lokasi->odc->first())->odp->first())->nama_odp ?? '-';
+        $customer = Customer::with('router', 'paket', 'odp.odc.olt.server')->findOrFail($id);
 
         $kategori = KategoriTiket::all();
 
@@ -30,8 +28,6 @@ class TiketController extends Controller
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customer' => $customer,
-            'nama_odc' => $nama_odc,
-            'nama_odp' => $nama_odp,
             'kategori' => $kategori,
         ]);
     }
