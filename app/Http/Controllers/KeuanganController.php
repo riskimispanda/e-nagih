@@ -567,7 +567,7 @@ class KeuanganController extends Controller
         $daily = Pembayaran::selectRaw('DATE(tanggal_bayar) as date, 
             SUM(jumlah_bayar) as total,
             SUM(CASE WHEN metode_bayar LIKE "%cash%" OR metode_bayar LIKE "%tunai%" THEN jumlah_bayar ELSE 0 END) as cash_total,
-            SUM(CASE WHEN metode_bayar LIKE "%transfer%" OR metode_bayar LIKE "%bniva%" OR metode_bayar LIKE "%briva%" THEN jumlah_bayar ELSE 0 END) as transfer_total,
+            SUM(CASE WHEN metode_bayar LIKE "%transfer%" OR metode_bayar LIKE "%bniva%" OR metode_bayar LIKE "%briva%" or metode_bayar LIKE %bcava% THEN jumlah_bayar ELSE 0 END) as transfer_total,
             SUM(CASE WHEN metode_bayar LIKE "%tripay%" OR metode_bayar LIKE "%DANA%" OR metode_bayar LIKE "%ewallet%" OR metode_bayar LIKE "%e-wallet%" OR metode_bayar LIKE "%gopay%" OR metode_bayar LIKE "%ovo%" OR metode_bayar LIKE "%qris%" THEN jumlah_bayar ELSE 0 END) as ewallet_total')
             ->groupBy('date')
             ->orderBy('date', 'asc')
