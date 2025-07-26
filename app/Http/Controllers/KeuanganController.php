@@ -864,10 +864,16 @@ class KeuanganController extends Controller
         DB::beginTransaction();
 
         try {
-            $totalTagihan = $invoice->tagihan + $invoice->tambahan;
             $jumlahBayar = $request->jumlah_bayar ?? 0;
 
+            // Total yang harus dibayar termasuk tunggakan
+            $tunggakanLama = $invoice->tunggakan ?? 0;
+            $totalTagihan = $invoice->tagihan + $invoice->tambahan + $tunggakanLama;
+
+            // Hitung selisih antara bayar dan tagihan
             $sisa = $jumlahBayar - $totalTagihan;
+            $tunggakanBaru = max($totalTagihan - $jumlahBayar, 0);
+            $saldoBaru = $sisa > 0 ? $sisa : 0;
 
             // Upload bukti pembayaran jika ada
             $buktiPath = null;
@@ -887,78 +893,77 @@ class KeuanganController extends Controller
                 'status_id'     => 8, // Langsung disetujui
                 'user_id'       => auth()->id(),
                 'bukti_bayar'   => $buktiPath,
-                'saldo'         => $sisa > 0 ? $sisa : 0,
+                'saldo'         => $saldoBaru,
             ]);
 
-            // Kirim notifikasi
+            // Kirim notifikasi ke customer
             $chat = new ChatServices();
             $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
 
+            // Unblock user jika sebelumnya diblokir
             $customer = Customer::find($invoice->customer_id);
-            
-            // Cek apakah customer sedang diblokir
-            if($customer->status_id == 9){
+            if ($customer->status_id == 9) {
                 $mikrotik = new MikrotikServices();
                 $client = MikrotikServices::connect($customer->router);
-                $mikrotik->removeActiveConnections($client, $customer->usersecret); // Hapus koneksi aktif
+                $mikrotik->removeActiveConnections($client, $customer->usersecret);
                 $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
-                // Update status customer
+
                 $customer->status_id = 3;
                 $customer->save();
             }
 
-            $tunggakan = $totalTagihan - $jumlahBayar;
-            // Update status invoice lama
-            $invoice->update(['status_id' => 8]);
+            // Update invoice lama jadi lunas
+            $invoice->update([
+                'status_id' => 8,
+                'saldo'     => 0,
+            ]);
 
-            // Hitung tanggal invoice bulan depan (PASTIKAN TIDAK LOMPAT 2 BULAN)
+            // Buat invoice bulan depan
             $tanggalJatuhTempoLama = Carbon::parse($invoice->jatuh_tempo);
             $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
             $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
 
-            // Cek apakah invoice bulan depan sudah ada
             $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
                 ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
                 ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
                 ->exists();
 
-            // Buat invoice baru jika belum ada
             if (!$sudahAda) {
                 Invoice::create([
                     'customer_id'     => $invoice->customer_id,
                     'paket_id'        => $customer->paket_id,
                     'tagihan'         => $customer->paket->harga,
                     'tambahan'        => 0,
-                    'saldo'           => $sisa > 0 ? $sisa : 0,
+                    'saldo'           => $saldoBaru,
                     'status_id'       => 7, // Belum bayar
                     'created_at'      => $tanggalAwal,
                     'updated_at'      => $tanggalAwal,
                     'jatuh_tempo'     => $tanggalJatuhTempo,
                     'tanggal_blokir'  => $invoice->tanggal_blokir,
-                    'tunggakan' => max($tunggakan ?? 0)
+                    'tunggakan'       => $tunggakanBaru,
                 ]);
             }
 
-            // Catat keuangan ke kas
+            // Tambahkan ke kas
             Kas::create([
-                'debit'        => $pembayaran->jumlah_bayar,
-                'tanggal_kas'  => $pembayaran->tanggal_bayar,
-                'keterangan'   => 'Pembayaran dari ' . $pembayaran->invoice->customer->nama_customer,
-                'kas_id'       => 1,
-                'user_id'      => auth()->id(),
+                'debit'         => $pembayaran->jumlah_bayar,
+                'tanggal_kas'   => $pembayaran->tanggal_bayar,
+                'keterangan'    => 'Pembayaran dari ' . $pembayaran->invoice->customer->nama_customer,
+                'kas_id'        => 1,
+                'user_id'       => auth()->id(),
                 'status_id'     => 3,
-                'pengeluaran_id' => null,
+                'pengeluaran_id'=> null,
             ]);
 
             DB::commit();
 
             return redirect()->back()->with('success', 'Pembayaran berhasil disimpan dan invoice diperbarui.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
         }
     }
+
 
 
 

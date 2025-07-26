@@ -38,13 +38,24 @@ class ChatServices
     {
         $namaCustomer = optional($pembayaran->invoice->customer)->nama_customer ?? '-';
         $adminKeuangan = optional($pembayaran->user)->name ?? 'Tripay';
+        $tagihan = $pembayaran->invoice->tagihan ?? 0;
+        $tambahan = $pembayaran->invoice->tambahan ?? 0;
+        $saldo = $pembayaran->invoice->saldo ?? 0;
+        $tunggakanLama = $pembayaran->invoice->tunggakan ?? 0;
+        $jumlahBayar = $pembayaran->jumlah_bayar ?? 0;
+
+        $totalTagihan = $tagihan + $tambahan + $tunggakanLama;
+        $sisaTagihan = $totalTagihan - $jumlahBayar - $saldo;
+
+        $tunggakan = max($sisaTagihan, 0);
+
 
         $response = Http::post("{$this->baseURL}/send-pesan", [
             'to' => $to . '@c.us',
             'pesan' => "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
                         "📅 Tanggal Pembayaran: " . now()->format('d-m-Y') . "\n" .
                         "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
-                        "💵 Tunggakan: Rp ". number_format($pembayaran->invoice->tunggakan ?? 0, 0,',','.') . "\n".
+                        "💵 Tunggakan: Rp ". number_format($tunggakan ?? 0, 0,',','.') . "\n".
                         "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
                         "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
                         "Terima kasih telah menggunakan layanan kami 🙏\n" .

@@ -108,7 +108,10 @@ class SuperAdmin extends Controller
         $pembayaran->save();
         
         $invoice = Invoice::find($pembayaran->invoice_id);
-        $tunggakan = $invoice->tunggakan ?? 0;
+        
+        $tagihanTotal = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
+        $tunggakan = max($tagihanTotal - $pembayaran->jumlah_bayar, 0);
+
         $invoice->status_id = 8;
         $invoice->save();
 
@@ -148,7 +151,7 @@ class SuperAdmin extends Controller
                 'updated_at'      => $tanggalAwal,
                 'jatuh_tempo'     => $tanggalJatuhTempo,
                 'tanggal_blokir'  => $tanggalBlokir,
-                'tunggakan' => max($tunggakan),
+                'tunggakan' => $tunggakan,
             ]);
         }
         
