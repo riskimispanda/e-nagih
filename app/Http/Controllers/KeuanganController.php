@@ -329,6 +329,7 @@ class KeuanganController extends Controller
               ->orWhere('metode_bayar', 'like', '%bank%')
               ->orWhere('metode_bayar', 'like', '%briva%')
               ->orWhere('metode_bayar', 'like', '%bniva%')
+              ->orWhere('metode_bayar', 'like', '%bcava%')
               ->orWhere('metode_bayar', 'like', '%transfer bank%');
         })->count();
 
