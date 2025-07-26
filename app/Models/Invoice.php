@@ -18,7 +18,8 @@ class Invoice extends Model
         'metode_bayar',
         'tambahan',
         'tanggal_blokir',
-        'saldo'
+        'saldo',
+        'tunggakan'
     ];
 
     public function pembayaran()

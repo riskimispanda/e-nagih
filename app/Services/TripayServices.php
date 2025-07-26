@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use App\Models\Pembayaran;
 
 class TripayServices
 {
@@ -154,9 +155,11 @@ class TripayServices
             'phone' => $invoice->customer->no_hp ?? $invoice->customer->no_telp ?? '08123456789',
         ];
 
+        // Jika Ada Saldo
         $tagihan  = $invoice->tagihan;
         $tambahan = $invoice->tambahan ?? 0;
         $saldo    = $invoice->saldo ?? 0;
+        $tunggakan = $invoice->tunggakan ?? 0;
 
         $items = [];
 
@@ -175,6 +178,16 @@ class TripayServices
                 'price'    => $tambahan,
                 'quantity' => 1,
                 'subtotal' => $tambahan,
+            ];
+        }
+
+        // Tunggakan jika ada
+        if ($tunggakan > 0) {
+            $items[] = [
+                'name'     => 'Tunggakan Bulan Sebelumnya',
+                'price'    => $tunggakan,
+                'quantity' => 1,
+                'subtotal' => $tunggakan,
             ];
         }
 

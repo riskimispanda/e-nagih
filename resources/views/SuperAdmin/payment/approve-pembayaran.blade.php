@@ -468,30 +468,15 @@
                                 <input type="checkbox" id="selectAllCheckbox" class="form-check-input">
                             </th>
                             <th>No</th>
-                            <th>
-                                <i class="bx bx-calendar me-1"></i>Tanggal Request
-                            </th>
-                            <th>
-                                <i class="bx bx-user me-1"></i>Customer
-                            </th>
-                            <th>
-                                <i class="bx bx-package me-1"></i>Paket
-                            </th>
-                            <th>
-                                <i class="bx bx-money me-1"></i>Jumlah Bayar
-                            </th>
-                            <th>
-                                <i class="bx bx-credit-card me-1"></i>Metode
-                            </th>
-                            <th>
-                                <i class="bx bx-user-check me-1"></i>Diajukan Oleh
-                            </th>
-                            <th>
-                                <i class="bx bx-info-circle me-1"></i>Status
-                            </th>
-                            <th>
-                                <i class="bx bx-cog me-1"></i>Aksi
-                            </th>
+                            <th>Tanggal Request</th>
+                            <th>Customer</th>
+                            <th>Paket</th>
+                            <th>Jumlah Bayar</th>
+                            <th>Tunggakan</th>
+                            <th>Metode</th>
+                            <th>Diajukan Oleh</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -532,6 +517,11 @@
                                     <small class="text-muted">
                                         {{ \Carbon\Carbon::parse($request->tanggal_bayar)->format('d/m/Y') }}
                                     </small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">
+                                        Rp {{ number_format($request->invoice->tunggakan, 0, ',', '.') }}
+                                    </div>
                                 </td>
                                 <td>
                                     @php
@@ -614,7 +604,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="no-data">
+                                <td colspan="11" class="no-data">
                                     <i class="bx bx-inbox"></i>
                                     <h6 class="mt-2 mb-1">Tidak ada request konfirmasi</h6>
                                     <p class="mb-0">Belum ada request pembayaran yang perlu dikonfirmasi</p>

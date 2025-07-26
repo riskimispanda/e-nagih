@@ -524,7 +524,7 @@
                             @endif
                         </td>
                         <td>
-                            Rp {{ number_format($invoice->tagihan + $invoice->tambahan - $invoice->saldo?? 0, 0, ',', '.') }}
+                            Rp {{ number_format($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo?? 0, 0, ',', '.') }}
                         </td>
                         <td class="text-center">
                             @if ($invoice->status)
@@ -658,7 +658,6 @@
                             @csrf
                             <div class="modal-body">
                                 <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
-
                                 <!-- Customer Info -->
                                 <div class="row mb-3">
                                     <div class="col-12">
@@ -701,6 +700,12 @@
                                                readonly>
                                     </div>
                                     <div class="col-12 col-lg-4">
+                                        <label class="form-label">Tunggakan</label>
+                                        <input type="text" class="form-control"
+                                               value="Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}"
+                                               readonly>
+                                    </div>
+                                    <div class="col-12 col-lg-4">
                                         <label class="form-label">Sisa Saldo</label>
                                         <input type="text" class="form-control"
                                                value="Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}"
@@ -714,7 +719,7 @@
                                         <label class="form-label fw-bold text-success">Total yang Harus Dibayar</label>
                                         <div class="total-payment">
                                             <input type="text" name="total" class="form-control fw-bold text-success border-0 bg-transparent fs-5"
-                                                   value="Rp {{ number_format(($invoice->tagihan + $invoice->tambahan - $invoice->saldo) ?? 0, 0, ',', '.') }}"
+                                                   value="Rp {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo) ?? 0, 0, ',', '.') }}"
                                                    readonly>
                                         </div>
                                     </div>

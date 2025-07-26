@@ -154,20 +154,26 @@
                                                     <div class="d-flex justify-content-between mb-1">
                                                         <span class="invoice-text fw-bold">Sisa Saldo:</span>
                                                         <span class="invoice-value">- Rp
-                                                            {{ number_format($invoice->saldo, 0, ',', '.') }}</span>
-                                                        </div>
+                                                            {{ number_format($invoice->saldo, 0, ',', '.') }}
+                                                        </span>
+                                                    </div>
+                                                        <span class="invoice-text fw-bold">Tunggakan:</span>
+                                                        <span class="invoice-value">+ Rp
+                                                            {{ number_format($invoice->tunggakan, 0, ',', '.') }}
+                                                        </span>
+                                                </div>
                                                         <hr class="my-2">
                                                         <div class="d-flex justify-content-between">
                                                             <span class="invoice-text fw-bold">Total:</span>
                                                             <span class="invoice-value fw-semibold">Rp
-                                                                {{ number_format($invoice->tagihan + $invoice->tambahan - $invoice->saldo, 0, ',', '.') }}</span>
+                                                                {{ number_format($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo, 0, ',', '.') }}</span>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 
                                                 <!-- Invoice Footer -->
-                                                <div class="invoice-footer">
+                                                <div class="invoice-footer py-3 px-3">
                                                     <div class="invoice-text">
                                                         <span class="fw-bold">Catatan:</span>
                                                         Mohon lakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan.
@@ -178,7 +184,7 @@
                                     </div>
                                     
                                     <!-- Payment Methods Column -->
-                                    <div class="col-lg-4 no-print">
+                                    <div class="col-lg-4 no-print mt-3">
                                         @if ($invoice->status->id != 8)
                                         <div class="sticky-top">
                                             

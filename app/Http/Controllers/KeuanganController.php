@@ -907,7 +907,7 @@ class KeuanganController extends Controller
                 $customer->save();
             }
 
-            
+            $tunggakan = $totalTagihan - $jumlahBayar;
             // Update status invoice lama
             $invoice->update(['status_id' => 8]);
 
@@ -935,6 +935,7 @@ class KeuanganController extends Controller
                     'updated_at'      => $tanggalAwal,
                     'jatuh_tempo'     => $tanggalJatuhTempo,
                     'tanggal_blokir'  => $invoice->tanggal_blokir,
+                    'tunggakan' => $tunggakan ?? 0
                 ]);
             }
 

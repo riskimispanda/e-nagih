@@ -388,6 +388,7 @@
                         <th>Paket</th>
                         <th>Tagihan</th>
                         <th>Tagihan Tambahan</th>
+                        <th>Tunggakan</th>
                         <th>Sisa Saldo</th>
                         <th>Jatuh Tempo</th>
                         <th>Status</th>
@@ -424,6 +425,14 @@
                                     <i class="bx bx-plus-circle text-warning me-2"></i>
                                     <span class="fw-semibold text-warning">
                                         Rp {{ number_format($invoice->tambahan, 0, ',', '.') }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="bx bx-plus-circle text-warning me-2"></i>
+                                    <span class="fw-semibold text-warning">
+                                        Rp {{ number_format($invoice->tunggakan, 0, ',', '.') }}
                                     </span>
                                 </div>
                             </td>
@@ -538,11 +547,15 @@
                             <label class="form-label">Sisa Saldo</label>
                             <input type="text" class="form-control" value="Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
                         </div>
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label">Tunggakan</label>
+                            <input type="text" class="form-control" value="Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}" readonly>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-12 mb-4 col-lg-12">
                             <label class="form-label">Total</label>
-                            <input type="text" name="total" class="form-control" value="Rp {{ number_format($invoice->tagihan - $invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                            <input type="text" name="total" class="form-control" value="Rp {{ number_format($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
                         </div>
                     </div>
                     <div class="row g-2">
