@@ -19,7 +19,7 @@ class Jaringan extends Controller
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'lokasi' => Lokasi::all(),
-            'odc' => ODC::with('lokasi')->get(),
+            'odc' => ODC::with('olt')->get(),
             'odp' => ODP::with('odc')->get(),
             'server' => Server::all(),
         ]);
