@@ -118,7 +118,8 @@ class ChatServices
             $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
             $pesan .= "📅 Tanggal: " . now()->format('d-m-Y') . "\n";
             $pesan .= "💰 Jumlah: Rp " . number_format($invoice->tagihan, 0, ',', '.') . "\n";
-            $pesan .= "🔔 Jatuh Tempo: {$invoice->tanggal_blokir}\n";
+            $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan, 0, ',', '.') . "\n\n";
+            $pesan .= "🔔 Jatuh Tempo: {$invoice->jatuh_tempo}\n";
             $pesan .= "--------------------------\n";
         }
 
