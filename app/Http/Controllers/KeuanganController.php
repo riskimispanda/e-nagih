@@ -172,7 +172,9 @@ class KeuanganController extends Controller
             $q->where('nama_status', 'Sudah Bayar');
         })->sum('tagihan') + Invoice::whereHas('status', function($q) {
             $q->where('nama_status', 'Sudah Bayar');
-        })->sum('tambahan');
+        })->sum('tambahan') - Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Belum Bayar');
+        })->sum('tunggakan');
 
         $monthlyRevenue = Invoice::whereHas('status', function($q) {
             $q->where('nama_status', 'Sudah Bayar');
