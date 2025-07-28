@@ -194,7 +194,9 @@ class KeuanganController extends Controller
             $q->where('nama_status', 'Belum Bayar');
         })->sum('tagihan') + Invoice::whereHas('status', function($q) {
             $q->where('nama_status', 'Belum Bayar');
-        })->sum('tambahan');
+        })->sum('tambahan') + Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Belum Bayar');
+        })->sum('tunggakan');
 
         $totalInvoices = Invoice::where('status_id', 7)->count();
 
