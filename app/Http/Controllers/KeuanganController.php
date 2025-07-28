@@ -184,7 +184,11 @@ class KeuanganController extends Controller
             $q->where('nama_status', 'Sudah Bayar');
         })->whereMonth('created_at', Carbon::now()->month)
           ->whereYear('created_at', Carbon::now()->year)
-          ->sum('tambahan');
+          ->sum('tambahan') - Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Belum Bayar');
+        })->whereMonth('created_at', Carbon::now()->month)
+          ->whereYear('created_at', Carbon::now()->year)
+          ->sum('tunggakan');
 
         $pendingRevenue = Invoice::whereHas('status', function($q) {
             $q->where('nama_status', 'Belum Bayar');
