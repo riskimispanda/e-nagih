@@ -345,7 +345,8 @@ class KeuanganController extends Controller
               ->orWhere('metode_bayar', 'like', '%gopay%')
               ->orWhere('metode_bayar', 'like', '%ovo%')
               ->orWhere('metode_bayar', 'like', '%dana%')
-              ->orWhere('metode_bayar', 'like', '%qris%');
+              ->orWhere('metode_bayar', 'like', '%qris%')
+              ->orWhere('metode_bayar', 'like', '%shopeepay%');
         })->count();
 
         return view('/keuangan/data-pembayaran',[
