@@ -211,7 +211,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Keuangan
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
-    Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getRevenueData'])->name('pendapatan.ajax');
+    Route::get('/data/pendapatan/filter', [DataController::class, 'filterPendapatan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan.filter');
     Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pembayaran');
     Route::get('/dashboard/keuangan', [KeuanganController::class, 'dashboardKeuangan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('dashboard-keuangan');
     Route::get('/api/dashboard/keuangan', [KeuanganController::class, 'getDashboardData'])->name('api.dashboard.keuangan');

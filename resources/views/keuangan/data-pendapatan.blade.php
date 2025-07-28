@@ -214,7 +214,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p class="text-muted small mb-1 fw-medium">Total Pendapatan</p>
-                    <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</h5>
+                    <h5 id="totalRevenueValue" class="fw-bold text-dark mb-0">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</h5>
                 </div>
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
                     <i class="bx bx-trending-up"></i>
@@ -230,7 +230,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted small mb-1 fw-medium">Jumlah Pembayaran</p>
-                        <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($monthlyRevenue ?? 0, 0, ',', '.') }}
+                        <h5 id="monthlyRevenueValue" class="fw-bold text-dark mb-0">Rp {{ number_format($monthlyRevenue ?? 0, 0, ',', '.') }}
                         </h5>
                     </div>
                     <div class="stat-icon bg-danger bg-opacity-10 text-danger">
@@ -247,7 +247,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p class="text-muted small mb-1 fw-medium">Pendapatan Tertunda</p>
-                    <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($pendingRevenue ?? 0, 0, ',', '.') }}
+                    <h5 id="pendingRevenueValue" class="fw-bold text-dark mb-0">Rp {{ number_format($pendingRevenue ?? 0, 0, ',', '.') }}
                     </h5>
                 </div>
                 <div class="stat-icon bg-warning bg-opacity-10 text-warning">
@@ -263,7 +263,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p class="text-muted small mb-1 fw-medium">Total Invoice</p>
-                    <h5 class="fw-bold text-dark mb-0">{{ number_format($totalInvoices ?? 0, 0, ',', '.') }}</h5>
+                    <h5 id="totalInvoicesValue" class="fw-bold text-dark mb-0">{{ number_format($totalInvoices ?? 0, 0, ',', '.') }}</h5>
                 </div>
                 <div class="stat-icon bg-info bg-opacity-10 text-info">
                     <i class="bx bx-receipt"></i>
@@ -321,19 +321,7 @@
             </div>
             
             
-            <!-- Status Filter -->
-            <div class="col-12 col-md-6 col-lg-4">
-                <label class="form-label fw-medium text-dark">Status</label>
-                <select id="statusFilter" name="status" class="form-select">
-                    <option value="">Semua Status</option>
-                    @foreach ($statusOptions ?? [] as $statusOption)
-                    <option value="{{ $statusOption->id }}"
-                        {{ ($status ?? '') == $statusOption->id ? 'selected' : '' }}>
-                        {{ $statusOption->nama_status }}
-                    </option>
-                    @endforeach
-                </select>
-            </div>
+            <!-- Status filter removed as requested -->
             
             <!-- Date Range -->
             {{-- <div class="col-12 col-md-6 col-lg-4">
@@ -351,16 +339,7 @@
             </div> --}}
         </div>
         
-        <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
-            <button type="button" onclick="applyFilters()" class="btn btn-outline-warning btn-modern btn-sm">
-                <i class="bx bx-filter-alt me-2"></i>
-                Terapkan Filter
-            </button>
-            <button type="button" onclick="clearFilters()" class="btn btn-outline-secondary btn-modern">
-                <i class="bx bx-x me-2"></i>
-                Reset Filter
-            </button>
-        </div>
+        <!-- Filter action buttons removed as requested -->
     </form>
 </div>
 
@@ -688,55 +667,6 @@
 
 @section('page-script')
 <script>
-    // Filter Bulan
-    function filterBulan() {
-        if (isLoading) return;
-        showLoading();
-        
-        const bulan = $('#bulan').val();
-        const params = new URLSearchParams(window.location.search);
-        
-        if (bulan) {
-            params.set('bulan', bulan);
-        } else {
-            params.delete('bulan');
-        }
-        
-        $.ajax({
-            url: '{{ route("pendapatan") }}',
-            method: 'GET',
-            data: params.toString(),
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(response) {
-                // Update table content
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(response, 'text/html');
-                
-                // Update table container
-                const newTableContainer = $(doc).find('#tableContainer').html();
-                $('#tableContainer').html(newTableContainer);
-                
-                // Update pagination if exists
-                const newPagination = $(doc).find('.p-4.border-top').html();
-                if (newPagination) {
-                    $('.p-4.border-top').html(newPagination);
-                }
-                
-                // Update URL without page reload
-                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
-            },
-            error: function(xhr, status, error) {
-                console.error('Error:', error);
-                showNotification('Terjadi kesalahan saat memuat data', 'error');
-            },
-            complete: function() {
-                hideLoading();
-            }
-        });
-    }
-    
     let searchTimeout;
     let isLoading = false;
     
@@ -755,27 +685,27 @@
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
                     applyFilters();
-                }, 500); // Debounce search for 500ms
+                }, 500); // Delay 500ms after user stops typing
             });
         }
     }
     
     // Initialize filter functionality
     function initializeFilters() {
-        const statusFilter = document.getElementById('statusFilter');
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
+        const bulanSelect = document.getElementById('bulan');
         
-        [statusFilter, startDate, endDate].forEach(element => {
-            if (element) {
-                element.addEventListener('change', applyFilters);
-            }
-        });
+        if (bulanSelect) {
+            bulanSelect.addEventListener('change', function() {
+                applyFilters();
+            });
+        }
     }
     
-    // Apply filters and search
+    // Apply filters using AJAX
     function applyFilters() {
         if (isLoading) return;
+        
+        showLoading();
         
         const formData = new FormData(document.getElementById('filterForm'));
         const params = new URLSearchParams();
@@ -786,58 +716,27 @@
             }
         }
         
-        // Show loading
-        showLoading();
-        
-        // Make AJAX request
-        fetch(`{{ route('pendapatan') }}?${params.toString()}`, {
+        fetch('{{ route("pendapatan.filter") }}?' + params.toString(), {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html'
+                'Accept': 'application/json',
             }
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateTable(data.data.invoices, data.data.pagination);
+                updateStatistics(data.data.statistics);
+                
+                // Update URL without page reload
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                window.history.pushState({}, '', newUrl);
+                
+                showNotification('Data berhasil diperbarui', 'success');
+            } else {
+                showNotification(data.message || 'Terjadi kesalahan', 'error');
             }
-            return response.text();
-        })
-        .then(html => {
-            // Parse the response and update the table
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Update table content
-            const newTableContainer = doc.querySelector('#tableContainer');
-            const currentTableContainer = document.querySelector('#tableContainer');
-            
-            if (newTableContainer && currentTableContainer) {
-                currentTableContainer.innerHTML = newTableContainer.innerHTML;
-            }
-            
-            // Update pagination if exists
-            const newPagination = doc.querySelector('.p-4.border-top');
-            const currentPagination = document.querySelector('.p-4.border-top');
-            
-            if (newPagination && currentPagination) {
-                currentPagination.innerHTML = newPagination.innerHTML;
-            }
-            
-            // Update URL without page reload
-            const url = new URL(window.location);
-            for (let [key, value] of params.entries()) {
-                url.searchParams.set(key, value);
-            }
-            
-            // Remove empty parameters
-            for (let key of url.searchParams.keys()) {
-                if (!params.has(key)) {
-                    url.searchParams.delete(key);
-                }
-            }
-            
-            window.history.pushState({}, '', url);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -848,15 +747,210 @@
         });
     }
     
-    // Clear all filters
-    function clearFilters() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('statusFilter').value = '';
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
+    // Update table with new data
+    function updateTable(invoices, pagination) {
+        const tableBody = document.getElementById('tableBody');
         
-        // Redirect to clean URL
-        window.location.href = '{{ route('pendapatan') }}';
+        if (!tableBody) return;
+        
+        if (invoices.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                            <p class="text-muted mb-0">Belum ada data invoice yang tersedia</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let tableHTML = '';
+        invoices.forEach((invoice, index) => {
+            const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
+            const rowNumber = startIndex + index;
+            
+            tableHTML += `
+                <tr>
+                    <td class="fw-medium">${rowNumber}</td>
+                    <td>
+                        <div>
+                            <div class="fw-medium text-dark">${invoice.customer?.nama_customer || 'N/A'}</div>
+                            <small class="text-muted">${invoice.customer?.alamat ? invoice.customer.alamat.substring(0, 30) + (invoice.customer.alamat.length > 30 ? '...' : '') : ''}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-info bg-opacity-10 text-primary">
+                            ${invoice.paket?.nama_paket || 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-money text-secondary me-2"></i>
+                            <span class="fw-bold text-secondary">
+                                Rp ${formatNumber(invoice.tagihan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-plus-circle text-warning me-2"></i>
+                            <span class="fw-semibold text-warning">
+                                Rp ${formatNumber(invoice.tambahan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-plus-circle text-warning me-2"></i>
+                            <span class="fw-semibold text-warning">
+                                Rp ${formatNumber(invoice.tunggakan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-wallet text-success me-2"></i>
+                            <span class="fw-semibold text-dark">
+                                Rp ${formatNumber(invoice.saldo || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td style="font-size: 14px;">
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-calendar text-danger me-2"></i>
+                            ${formatDate(invoice.jatuh_tempo)}
+                        </div>
+                    </td>
+                    <td>
+                        ${getStatusBadge(invoice.status)}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            ${getActionButtons(invoice)}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableBody.innerHTML = tableHTML;
+    }
+    
+    // Update statistics cards
+    function updateStatistics(stats) {
+        console.log('Updating statistics:', stats); // Debug log
+        
+        // Update Total Pendapatan using ID
+        const totalRevenueElement = document.getElementById('totalRevenueValue');
+        if (totalRevenueElement) {
+            totalRevenueElement.textContent = `Rp ${formatNumber(stats.totalRevenue || 0)}`;
+            console.log('Updated Total Pendapatan:', stats.totalRevenue);
+        } else {
+            console.log('Total Revenue element not found');
+        }
+        
+        // Update Jumlah Pembayaran using ID
+        const monthlyRevenueElement = document.getElementById('monthlyRevenueValue');
+        if (monthlyRevenueElement) {
+            monthlyRevenueElement.textContent = `Rp ${formatNumber(stats.monthlyRevenue || 0)}`;
+            console.log('Updated Jumlah Pembayaran:', stats.monthlyRevenue);
+        } else {
+            console.log('Monthly Revenue element not found');
+        }
+        
+        // Update Pendapatan Tertunda using ID
+        const pendingRevenueElement = document.getElementById('pendingRevenueValue');
+        if (pendingRevenueElement) {
+            pendingRevenueElement.textContent = `Rp ${formatNumber(stats.pendingRevenue || 0)}`;
+            console.log('Updated Pendapatan Tertunda:', stats.pendingRevenue);
+        } else {
+            console.log('Pending Revenue element not found');
+        }
+        
+        // Update Total Invoice using ID
+        const totalInvoicesElement = document.getElementById('totalInvoicesValue');
+        if (totalInvoicesElement) {
+            totalInvoicesElement.textContent = formatNumber(stats.totalInvoices || 0);
+            console.log('Updated Total Invoice:', stats.totalInvoices);
+        } else {
+            console.log('Total Invoices element not found');
+        }
+    }
+    
+    // Helper function to format numbers
+    function formatNumber(number) {
+        return new Intl.NumberFormat('id-ID').format(number);
+    }
+    
+    // Helper function to format dates
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+    
+    // Helper function to get status badge
+    function getStatusBadge(status) {
+        if (!status) return '<span class="status-badge bg-secondary bg-opacity-10 text-secondary">N/A</span>';
+        
+        if (status.nama_status === 'Sudah Bayar') {
+            return `
+                <span class="status-badge bg-success bg-opacity-10 text-success">
+                    <i class="bx bx-check-circle"></i>
+                    ${status.nama_status}
+                </span>
+            `;
+        } else if (status.nama_status === 'Belum Bayar') {
+            return `
+                <span class="status-badge bg-danger bg-opacity-10 text-danger">
+                    <i class="bx bx-x-circle"></i>
+                    ${status.nama_status}
+                </span>
+            `;
+        } else if (status.nama_status === 'Menunggu') {
+            return `
+                <span class="status-badge bg-warning bg-opacity-10 text-warning">
+                    <i class="bx bx-time-five"></i>
+                    ${status.nama_status}
+                </span>
+            `;
+        }
+        
+        return `<span class="status-badge bg-secondary bg-opacity-10 text-secondary">${status.nama_status}</span>`;
+    }
+    
+    // Helper function to get action buttons
+    function getActionButtons(invoice) {
+        let buttons = '';
+        
+        if (invoice.status && invoice.status.nama_status === 'Belum Bayar') {
+            buttons += `
+                <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran${invoice.id}" data-bs-toggle="modal">
+                    <i class="bx bx-money"></i>
+                </button>
+            `;
+        }
+        
+        buttons += `
+            <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
+                <i class="bx bx-message"></i>
+            </a>
+        `;
+        
+        return buttons;
+    }
+    
+    // Filter Bulan (legacy function for compatibility)
+    function filterBulan() {
+        applyFilters();
     }
     
     // Refresh data

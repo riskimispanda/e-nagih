@@ -199,6 +199,8 @@ class SuperAdmin extends Controller
     {
         $invoices = Invoice::with('customer', 'paket')
                     ->where('status_id', 7)
+                    ->whereMonth('jatuh_tempo', Carbon::now()->month)
+                    ->whereYear('jatuh_tempo', Carbon::now()->year)
                     ->get()
                     ->groupBy('customer_id'); // Group by customer
 
