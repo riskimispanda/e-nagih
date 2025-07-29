@@ -133,11 +133,12 @@
           ]
         },
         {
-          "url": "/data/karyawan",
+          "url": "/data-karyawan",
           "name": "Data Karyawan",
-          "slug": "karyawan",
+          "slug": "data-karyawan",
           "roles": [
-            "Super Admin"
+            "Super Admin",
+            "Admin Keuangan"
           ]
         },
         {
@@ -163,7 +164,9 @@
           "name": "Data Logistik",
           "slug": "logistik",
           "roles": [
-            "Super Admin"
+            "Super Admin",
+            "Admin Logistik",
+            "Admin Keuangan"
           ]
         }
       ]

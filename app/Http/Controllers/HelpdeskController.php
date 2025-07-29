@@ -198,7 +198,7 @@ class HelpdeskController extends Controller
                 'identitas' => $identitas_file,
                 'created_at' => $request->tanggal_reg,
             ]);
-
+            $noc = User::where('roles_id', 4)->get();
             activity('customer')
                 ->causedBy(auth()->user())
                 ->performedOn($data)
@@ -213,6 +213,14 @@ class HelpdeskController extends Controller
 
             try {
                 $chat->CustomerBaru($nomor, $data);
+                foreach($noc as $n)
+                {
+                    $nomor = preg_replace('/[^0-9]/', '', $n->no_hp);
+                    if (str_starts_with($nomor, '0')) {
+                        $nomor = '62' . substr($nomor, 1);
+                    }
+                    $chat->kirimNotifikasiNoc($nomor, $n, $data);
+                }
             } catch (\Throwable $e) {
                 \Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
             }
@@ -232,7 +240,7 @@ class HelpdeskController extends Controller
      */
     public function detailAntrian($id)
     {
-        $customer = Customer::with(['paket', 'status', 'agen', 'teknisi', 'lokasi'])->findOrFail($id);
+        $customer = Customer::with(['paket', 'status', 'agen', 'teknisi', 'getServer'])->findOrFail($id);
         $agen = User::where('roles_id', 6)->get();
         return view('Helpdesk.detail-antrian-helpdesk', [
             'users' => auth()->user(),

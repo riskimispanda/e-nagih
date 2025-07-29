@@ -51,15 +51,37 @@ class PengeluaranController extends Controller
 
     public function tambahPengeluaran(Request $request)
     {
-        // dd($request->all());
-        $rab = $request->rab_id ?? null;
+        $request->validate([
+            'jumlahPengeluaran' => 'required|numeric|min:1',
+            'buktiPengeluaran' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            // tambahkan validasi lain sesuai kebutuhan
+        ]);
 
+        $rabId = $request->rab_id;
+        $jumlah = $request->jumlahPengeluaran;
+
+        // ✅ Cek jika ada RAB
+        if ($rabId) {
+            $rab = Rab::with('pengeluaran')->find($rabId);
+            if (!$rab) {
+                return back()->with('error', 'RAB tidak ditemukan.');
+            }
+
+            $totalRealisasi = $rab->pengeluaran->sum('jumlah_pengeluaran');
+            $sisa = $rab->jumlah_anggaran - $totalRealisasi;
+
+            if ($jumlah > $sisa) {
+                return back()->with('error', 'Jumlah pengeluaran melebihi sisa anggaran RAB.');
+            }
+        }
+
+        // ✅ Upload bukti pengeluaran
         $path = $request->file('buktiPengeluaran')->getClientOriginalName();
         $request->file('buktiPengeluaran')->storeAs('public/uploads', $path);
 
-
+        // ✅ Simpan ke tabel pengeluaran
         $pengeluaran = new Pengeluaran();
-        $pengeluaran->jumlah_pengeluaran = $request->jumlahPengeluaran;
+        $pengeluaran->jumlah_pengeluaran = $jumlah;
         $pengeluaran->jenis_pengeluaran = $request->jenisPengeluaran;
         $pengeluaran->keterangan = $request->keterangan;
         $pengeluaran->metode_bayar = $request->metodePengeluaran;
@@ -68,12 +90,12 @@ class PengeluaranController extends Controller
         $pengeluaran->kas_id = $request->kas_id;
         $pengeluaran->tanggal_pengeluaran = $request->tanggalPengeluaran;
         $pengeluaran->status_id = 3;
-        $pengeluaran->rab_id = $request->rab_id;
+        $pengeluaran->rab_id = $rabId;
         $pengeluaran->save();
 
-        
+        // ✅ Simpan ke kas
         $kas = new Kas();
-        $kas->kredit = $request->jumlahPengeluaran;
+        $kas->kredit = $jumlah;
         $kas->keterangan = $request->keterangan;
         $kas->tanggal_kas = $request->tanggalPengeluaran;
         $kas->kas_id = $request->kas_id;
@@ -82,15 +104,14 @@ class PengeluaranController extends Controller
         $kas->status_id = 3;
         $kas->save();
 
-        if($rab != null){
-            $rab = Rab::find($rab);
-            if($rab){
-                $rab->update([
-                    'status_id' => 11
-                ]);
-            }
+        // ✅ Update status RAB kalau perlu
+        if ($rabId && $sisa - $jumlah <= 0) {
+            $rab->update([
+                'status_id' => 11 // Misal: "Sudah Direalisasi Semua"
+            ]);
         }
 
+        // ✅ Log activity
         activity('pengeluaran')
             ->performedOn($pengeluaran)
             ->causedBy(auth()->user())
@@ -98,6 +119,7 @@ class PengeluaranController extends Controller
 
         return redirect('/pengeluaran/global')->with('success', 'Pengeluaran berhasil ditambahkan');
     }
+
 
     public function hapusPengeluaran(Request $request, $id)
     {

@@ -63,6 +63,10 @@ class RabController extends Controller
             $query->where('tahun_anggaran', $request->tahun);
         }
 
+        if ($request->filled('kegiatan')) {
+            $query->where('kegiatan', 'like', '%' . $request->kegiatan . '%');
+        }
+
         $data = $query->latest()->paginate(10);
 
         // Calculate totals
@@ -87,6 +91,45 @@ class RabController extends Controller
             'terealisasi' => $totalTerealisasi,
             'sisa' => $sisaAnggaran
         ]);
+    }
+
+    public function detail($id)
+    {
+        try {
+            $rab = Rab::with(['usr', 'status', 'pengeluaran'])->findOrFail($id);
+
+            // Calculate totals for this specific RAB - include all pengeluaran for debugging
+            $allPengeluaran = $rab->pengeluaran;
+            $approvedPengeluaran = $rab->pengeluaran->where('status_id', 3);
+            
+            $totalTerealisasi = $approvedPengeluaran->sum('jumlah_pengeluaran');
+            $sisaAnggaran = $rab->jumlah_anggaran - $totalTerealisasi;
+
+            return response()->json([
+                'success' => true,
+                'rab' => $rab,
+                'totalTerealisasi' => $totalTerealisasi,
+                'sisaAnggaran' => $sisaAnggaran,
+                'bulanNama' => \Carbon\Carbon::createFromFormat('m', $rab->bulan)->translatedFormat('F'),
+                'pengeluaranCount' => $allPengeluaran->count(),
+                'approvedPengeluaranCount' => $approvedPengeluaran->count()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getKegiatan()
+    {
+        $kegiatan = Rab::select('kegiatan')
+            ->distinct()
+            ->orderBy('kegiatan')
+            ->pluck('kegiatan');
+
+        return response()->json($kegiatan);
     }
 
 }

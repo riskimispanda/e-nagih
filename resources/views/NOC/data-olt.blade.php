@@ -26,17 +26,29 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Data OLT</th>
+                                    <th>Lokasi OLT</th>
                                     <th>Total ODC</th>
                                     <th>Total ODP</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-center">
+                            <tbody>
                                 @forelse ($lokasi as $index => $olt)
                                     <tr class="text-uppercase">
                                         <td class="text-center">{{ $index + 1 }}</td>
                                         <td class="fw-semibold">
-                                            <i class="bx bx-server me-1 text-primary"></i>{{ $olt->nama_lokasi }}
+                                            <i class="bx bx-terminal me-1 text-primary"></i>{{ $olt->nama_lokasi }}
+                                        </td>
+                                        @php
+                                            $gps = $olt->gps;
+                                            $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
+                                            $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                                        @endphp
+
+                                        <td class="text-center">
+                                            <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }} data-bs-toggle="tooltip" title="Lokasi OLT" data-bs-placement="bottom">
+                                                <i class="bx bx-map {{ $url == '#' ? 'text-muted' : 'text-primary' }}"></i>
+                                            </a>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-warning">
@@ -87,17 +99,21 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-sm-12">
-                                <label class="form-label">Nama Lokasi OLT</label>
+                                <label class="form-label">Nama OLT</label>
                                 <input type="text" class="form-control mb-3" name="olt" required>
                             </div>
                             <div class="col-sm-12">
-                                <label class="form-label">Lokasi Server</label>
-                                <select name="lokasi_server" id="" class="form-select">
-                                    <option value="" selected disabled>Lokasi Server</option>
+                                <label class="form-label">Server</label>
+                                <select name="lokasi_server" id="" class="form-select mb-3">
+                                    <option value="" selected disabled>Pilih Server</option>
                                     @foreach ($server as $s)
                                         <option value="{{ $s->id }}">{{ $s->lokasi_server }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Lokasi OLT</label>
+                                <input type="text" class="form-control" name="gps" required placeholder="https://maps.google.com/... atau -1.0269916,110.48579129">
                             </div>
                         </div>
                     </div>
@@ -123,17 +139,21 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-sm-12">
-                                <label class="form-label">Nama Lokasi OLT</label>
+                                <label class="form-label">Nama OLT</label>
                                 <input type="text" class="form-control mb-3" name="nama_lokasi" id="edit_nama_lokasi" required>
                             </div>
                             <div class="col-sm-12">
-                                <label class="form-label">Lokasi Server</label>
-                                <select name="id_server" id="edit_id_server" class="form-select" required>
-                                    <option value="" selected disabled>Lokasi Server</option>
+                                <label class="form-label">Server</label>
+                                <select name="id_server" id="edit_id_server" class="form-select mb-3" required>
+                                    <option value="" selected disabled>Pilih Server</option>
                                     @foreach ($server as $s)
                                         <option value="{{ $s->id }}">{{ $s->lokasi_server }}</option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Lokasi OLT</label>
+                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control" id="edit_gps">
                             </div>
                         </div>
                     </div>
@@ -156,6 +176,7 @@
                         .then(data => {
                             document.getElementById('edit_nama_lokasi').value = data.nama_lokasi || '';
                             document.getElementById('edit_id_server').value = data.id_server || '';
+                            document.getElementById('edit_gps').value = data.gps || 'Lokasi belum di atur';
                             document.getElementById('editOltForm').action = `/update/olt/${id}`;
                             var modal = new bootstrap.Modal(document.getElementById('modalEditOlt'));
                             modal.show();
@@ -163,5 +184,5 @@
                 });
             });
         });
-        </script>
+    </script>
 @endsection

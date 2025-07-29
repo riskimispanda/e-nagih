@@ -12,6 +12,9 @@ use App\Models\Perusahaan;
 use App\Models\Paket;
 use App\Models\Server;
 use App\Models\Lokasi;
+use App\Models\ODC;
+use App\Models\ODP;
+use App\Services\ChatServices;
 
 
 
@@ -105,6 +108,9 @@ class NocController extends Controller
         $koneksi = Koneksi::findOrFail($request->koneksi_id);
         $konek = strtolower($koneksi->nama_koneksi);
 
+        // Teknisi
+        $teknisi = User::where('roles_id', 5)->get();
+
         // Update data customer
         $customer->update([
             'koneksi_id' => $request->koneksi_id,
@@ -116,6 +122,18 @@ class NocController extends Controller
             'status_id' => 5,
             'remote' => $request->remote,
         ]);
+
+        // Notif Ke Teknisi
+        $chat = new ChatServices();
+        foreach ($teknisi as $tek) {
+            $nomor = preg_replace('/[^0-9]/', '', $tek->no_hp);
+            if (str_starts_with($nomor, '0')) {
+                $nomor = '62' . substr($nomor, 1);
+            }
+        
+            $chat->kirimNotifikasiTeknisi($nomor, $tek);
+        }
+        
 
         // 🔌 Connect ke router sekali saja
         $client = MikrotikServices::connect($router);
@@ -321,6 +339,7 @@ class NocController extends Controller
         $server = Server::findOrFail($id);
         $server->lokasi_server = $request->lokasi_server;
         $server->ip_address = $request->ip_address;
+        $server->gps = $request->gps;
         $server->save();
 
         return redirect()->back()->with('toast_success', 'Server berhasil diperbarui');
@@ -345,6 +364,7 @@ class NocController extends Controller
         $olt = Lokasi::findOrFail($id);
         $olt->nama_lokasi = $request->nama_lokasi;
         $olt->id_server = $request->id_server;
+        $olt->gps = $request->gps;
         $olt->save();
         return redirect()->back()->with('toast_success', 'OLT berhasil diperbarui');
     }
@@ -356,4 +376,49 @@ class NocController extends Controller
         return redirect()->back()->with('toast_success', 'OLT berhasil dihapus');
     }
 
+    public function editOdc($id)
+    {
+        $odc = ODC::findOrFail($id);
+        return response()->json($odc);
+    }
+
+    public function updateOdc(Request $request, $id)
+    {
+        $odc = ODC::findOrFail($id);
+        $odc->nama_odc = $request->nama_odc;
+        $odc->lokasi_id = $request->olt;
+        $odc->gps = $request->gps;
+        $odc->save();
+        return redirect()->back()->with('toast_success', 'ODC berhasil diperbarui');
+    }
+
+    public function hapusOdc($id)
+    {
+        $odc = ODC::findOrFail($id);
+        $odc->delete();
+        return redirect()->back()->with('toast_success', 'ODC berhasil dihapus');
+    }
+
+    public function editOdp($id)
+    {
+        $odp = ODP::findOrFail($id);
+        return response()->json($odp);
+    }
+
+    public function updateOdp(Request $request, $id)
+    {
+        $odp = ODP::findOrFail($id);
+        $odp->nama_odp = $request->nama_odp;
+        $odp->odc_id = $request->odc;
+        $odp->gps = $request->gps;
+        $odp->save();
+        return redirect()->back()->with('toast_success', 'ODP berhasil diperbarui');
+    }
+
+    public function hapusOdp($id)
+    {
+        $odp = ODP::findOrFail($id);
+        $odp->delete();
+        return redirect()->back()->with('toast_success', 'ODP berhasil dihapus');
+    }
 }

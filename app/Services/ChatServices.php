@@ -239,4 +239,49 @@ class ChatServices
             'pesan' => $response->body(),
         ];
     }
+
+    public function kirimNotifikasiTeknisi($to, $tek)
+    {
+        $url = url('/teknisi/antrian');
+        $response = Http::post("{$this->baseURL}/send-pesan", [
+            'to' => $to . '@c.us',
+            'pesan' => "Halo {$tek->name}, Antrian Instalasi Pelanggan baru tersedia. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+                        "🔗 Link Aplikasi:\n{$url}\n\n" .
+                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+        ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'pesan' => $response->body(),
+        ];
+    }
+
+    public function kirimNotifikasiNoc($to, $noc ,$customer)
+    {
+        $url = url('/data/antrian-noc');
+        $response = Http::post("{$this->baseURL}/send-pesan", [
+            'to' => $to . '@c.us',
+            'pesan' => "Halo {$noc->name}, Antrian Pelanggan baru tersedia untuk di proses. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+                        "Nama Pelanggan: {$customer->nama_customer}\n" .
+                        "Nama Agen: " . ($customer->agen->nama_agen ?? '-') . "\n" .
+                        "🔗 Link Aplikasi:\n{$url}\n\n" .
+                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+        ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'pesan' => $response->body(),
+        ];
+    }
+
 }

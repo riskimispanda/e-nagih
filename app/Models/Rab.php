@@ -21,7 +21,7 @@ class Rab extends Model
 
     public function pengeluaran()
     {
-        return $this->hasOne(Pengeluaran::class, 'rab_id');
+        return $this->hasMany(Pengeluaran::class, 'rab_id');
     }
 
 }

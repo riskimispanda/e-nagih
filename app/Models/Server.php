@@ -10,6 +10,7 @@ class Server extends Model
     protected $fillable = [
         'lokasi_server',
         'ip_address',
+        'gps'
     ];
 
     public function lokasi()

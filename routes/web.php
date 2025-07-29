@@ -62,6 +62,7 @@ use App\Http\Controllers\RabController;
 use App\Http\Controllers\PerusahaanController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AgenController;
+use App\Http\Controllers\KaryawanController;
 use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\Http;
 use App\Models\Router;
@@ -130,6 +131,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])->middleware('auth', 'roles:Super Admin')->name('log-aktivitas');
     Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail'])->middleware('auth', 'roles:Super Admin')->name('logs-detail');
     Route::get('/rab', [RabController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('rab');
+    Route::get('/rab/detail/{id}', [RabController::class, 'detail'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('rab-detail');
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
 
     //dashboard
@@ -204,10 +206,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/edit/olt/{id}', [NocController::class, 'editOlt']);
     Route::post('/update/olt/{id}', [NocController::class, 'updateOlt']);
     Route::get('/hapus/olt/{id}', [NocController::class, 'hapusOlt']);
+    Route::get('/edit/odc/{id}', [NocController::class, 'editOdc']);
+    Route::post('/update/odc/{id}', [NocController::class, 'updateOdc']);
+    Route::get('/hapus/odc/{id}', [NocController::class, 'hapusOdc']);
+    Route::get('/edit/odp/{id}', [NocController::class, 'editOdp']);
+    Route::post('/update/odp/{id}', [NocController::class, 'updateOdp']);
+    Route::get('/hapus/odp/{id}', [NocController::class, 'hapusOdp']);
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
 
 
-
+    Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');
 
     // Keuangan
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
@@ -227,6 +235,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tambah/kas/kecil', [KasController::class, 'tambahKas'])->name('tambah');
     Route::post('/rab/store', [RabController::class, 'store'])->name('store-rab');
     Route::get('/rab/search', [RabController::class, 'search'])->name('rab-filter');
+    Route::get('/rab/kegiatan', [RabController::class, 'getKegiatan'])->name('rab-kegiatan');
     Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('kas-kecil');
     Route::get('/transaksi/kas-besar', [KasController::class, 'besar'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('kas-besar');
     Route::post('/request/pembayaran/{id}', [KeuanganController::class, 'requestPembayaran']);

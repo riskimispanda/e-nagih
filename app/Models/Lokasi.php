@@ -8,7 +8,7 @@ class Lokasi extends Model
 {
     protected $table = 'lokasi';
     protected $fillable = [
-        'nama_lokasi','id_server'
+        'nama_lokasi','id_server','gps'
     ];
     public function customer()
     {

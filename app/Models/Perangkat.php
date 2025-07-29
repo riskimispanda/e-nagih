@@ -12,4 +12,10 @@ class Perangkat extends Model
         'jumlah_stok',
         'harga',
     ];
+
+    public function customer()
+    {
+        return $this->hasMany(Customer::class, 'perangkat_id');
+    }
+
 }

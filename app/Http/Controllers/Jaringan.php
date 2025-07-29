@@ -7,6 +7,7 @@ use App\Models\Lokasi;
 use App\Models\ODP;
 use App\Models\ODC;
 use App\Models\Server;
+use App\Models\Customer;
 
 class Jaringan extends Controller
 {
@@ -40,6 +41,7 @@ class Jaringan extends Controller
         $server = new Server();
         $server->lokasi_server = $request->lokasi_server;
         $server->ip_address = $request->ip;
+        $server->gps = $request->gps;
         $server->save();
 
         return redirect()->back()->with('success', 'Data Berhasil Ditambahkan');
@@ -94,6 +96,7 @@ class Jaringan extends Controller
             'roles' => auth()->user()->roles,
             'lokasi' => Lokasi::all(),
             'odc' => ODC::all(),
+            'odp' => ODP::all(),
         ]);
     }
 
@@ -104,6 +107,7 @@ class Jaringan extends Controller
             'roles' => auth()->user()->roles,
             'odp' => ODP::all(),
             'lokasi' => ODC::all(),
+            'customer' => Customer::all(),
         ]);
     }
 
@@ -113,6 +117,7 @@ class Jaringan extends Controller
         $lokasi = new Lokasi();
         $lokasi->nama_lokasi = $request->olt;
         $lokasi->id_server = $request->lokasi_server;
+        $lokasi->gps = $request->gps;
         $lokasi->save();
 
         return redirect()->back()->with('success', 'Data Berhasil Ditambahkan');
@@ -122,8 +127,9 @@ class Jaringan extends Controller
     {
         // dd($request->all());
         $odc = new ODC();
-        $odc->nama_odc = $request->odc;
+        $odc->nama_odc = $request->nama_odc;
         $odc->lokasi_id = $request->olt;
+        $odc->gps = $request->gps;
         $odc->save();
 
         return redirect()->back()->with('success', 'Data Berhasil Ditambahkan');
@@ -133,8 +139,9 @@ class Jaringan extends Controller
     {
         // dd($request->all());
         $odp = new ODP();
-        $odp->nama_odp = $request->odp;
+        $odp->nama_odp = $request->nama_odp;
         $odp->odc_id = $request->odc;
+        $odp->gps = $request->gps;
         $odp->save();
 
         return redirect()->back()->with('success', 'Data Berhasil Ditambahkan');

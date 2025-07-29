@@ -20,32 +20,54 @@
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive text-nowrap">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark text-center">
                                 <tr>
-                                    <th width="5%">No</th>
+                                    <th>No</th>
                                     <th>Data ODP</th>
-                                    <th width="20%" class="text-center">Aksi</th>
+                                    <th>Lokasi ODP</th>
+                                    <th>Total Pelanggan</th>
+                                    <th>Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody class="table-border-bottom-0">
+                            <tbody>
                                 @forelse ($odp as $index => $od)
                                     <tr class="text-uppercase">
                                         <td class="text-center">{{ $index + 1 }}</td>
-                                        <td><strong>{{ $od->nama_odp }}</strong></td>
+                                        <td class="fw-semibold">
+                                            <i class="bx bx-terminal me-1 text-primary"></i>{{$od->nama_odp}}
+                                        </td>
+                                        @php
+                                            $gps = $od->gps;
+                                            $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
+                                            $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                                        @endphp
+
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-warning btn-sm">
-                                                <i class="bx bx-edit-alt"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-danger btn-sm">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
+                                            <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }} data-bs-toggle="tooltip" title="Lokasi ODP" data-bs-placement="bottom">
+                                                <i class="bx bx-map {{ $url == '#' ? 'text-muted' : 'text-primary' }}"></i>
+                                            </a>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-warning">
+                                                {{ $customer->where('lokasi_id', $od->id)->count() }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="#" class="edit-odp-btn" data-id="{{ $od->id }}" data-bs-toggle="tooltip" title="Edit ODP" data-bs-placement="bottom">
+                                                    <i class="bx bx-edit text-warning"></i>
+                                                </a>|
+                                                <a href="/hapus/odp/{{ $od->id }}" data-bs-toggle="tooltip" title="Hapus ODP" data-bs-placement="bottom">
+                                                    <i class="bx bx-trash text-danger"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center">Tidak ada data</td>
+                                        <td colspan="5" class="text-center">Tidak ada data</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -79,9 +101,12 @@
                                 </select>
                             </div>
                             <div class="col-sm-12">
+                                <label class="form-label">Nama ODP</label>
+                                <input type="text" class="form-control mb-3" name="nama_odp" id="nama_odp" placeholder="ODP Dondong 2" required />
+                            </div>
+                            <div class="col-sm-12">
                                 <label class="form-label">Lokasi ODP</label>
-                                <input type="text" class="form-control" name="odp" id="nama_odp"
-                                    placeholder="ODP Dondong 2" required />
+                                <input type="text" class="form-control" name="gps" id="lokasi_odp" placeholder="GPS Lokasi ODP" required />
                             </div>
                         </div>
                     </div>
@@ -92,4 +117,64 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Edit --}}
+    <div class="modal fade" id="modalEditOdp" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="bx bxs-terminal me-2"></i>
+                    <h5 class="modal-title">Edit ODP</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editOdpForm" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label class="form-label">Nama ODP</label>
+                                <input type="text" class="form-control mb-3" name="nama_odp" id="edit_nama_odp" required>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Lokasi ODC</label>
+                                <select name="odc" id="edit_odc" class="form-select mb-3" required>
+                                    <option value="" selected disabled>Pilih ODC</option>
+                                    @foreach ($lokasi as $o)
+                                        <option value="{{ $o->id }}">{{ $o->nama_odc }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Lokasi ODP</label>
+                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control" id="edit_gps">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('.edit-odp-btn').click(function(e) {
+                e.preventDefault();
+                var id = $(this).data('id');
+                $.ajax({
+                    url: '/edit/odp/' + id,
+                    type: 'GET',
+                    success: function(data) {
+                        $('#edit_nama_odp').val(data.nama_odp);
+                        $('#edit_odc').val(data.odc_id);
+                        $('#edit_gps').val(data.gps);
+                        $('#editOdpForm').attr('action', '/update/odp/' + id);
+                        $('#modalEditOdp').modal('show');
+                    }
+                });
+            });
+        });
+    </script>
 @endsection

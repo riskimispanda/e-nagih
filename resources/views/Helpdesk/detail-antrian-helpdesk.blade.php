@@ -574,6 +574,7 @@
                                 @endforeach
                             </select>
                         </div>
+                        @if(auth()->user()->roles_id == 7)
                         <div class="col-md-6">
                             <label class="form-label">Agen</label>
                             <select id="edit_status" name="agen_id" class="form-select">
@@ -586,6 +587,15 @@
                                 @endforeach
                             </select>
                         </div>
+                        @elseif(auth()->user()->roles_id == 6)
+                        <div class="col-sm-6">
+                            <label class="form-label">Agen</label>
+                            <select id="edit_status" name="agen_id" class="form-select">
+                                <option value="" disabled>Pilih Agen</option>
+                                <option value="{{ auth()->user()->id }}" selected>{{ auth()->user()->name }}</option>
+                            </select>
+                        </div>
+                        @endif
                     </div>
                 </div>
                 <div class="modal-footer gap-2">

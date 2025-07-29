@@ -7,6 +7,7 @@
             <th>Kegiatan</th>
             <th>Jumlah Anggaran</th>
             <th>Anggaran Terealisasi</th>
+            <th>Sisa Anggaran</th>
             <th>Status</th>
             <th>Admin</th>
             <th>Aksi</th>
@@ -21,14 +22,17 @@
             <td>{{$no++}}</td>
             <td>
                 {{ \Carbon\Carbon::createFromFormat('m', $item->bulan)->translatedFormat('F') }}
-            </td>              
+            </td>
             <td>{{ $item->tahun_anggaran }}</td>
             <td>{{ $item->kegiatan }}</td>
             <td>
                 Rp. {{ number_format($item->jumlah_anggaran, 0, ',', '.') }}
             </td>
             <td>
-                Rp. {{ number_format($item->pengeluaran->jumlah_pengeluaran?? 0, 0, ',', '.') }}
+                Rp. {{ number_format($item->pengeluaran->sum('jumlah_pengeluaran'), 0, ',', '.') }}
+            </td>
+            <td>
+                Rp. {{ number_format($item->jumlah_anggaran - $item->pengeluaran->sum('jumlah_pengeluaran'), 0, ',', '.') }}
             </td>
             <td>
                 @if($item->status_id == 11)
@@ -45,14 +49,20 @@
                 </span>
             </td>
             <td>
-                <a href="" class="btn btn-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Detail Kegiatan">
-                    <i class="bx bx-info-circle"></i>
-                </a>
+                <div class="d-flex justify-content-center">
+                    <button type="button" class="btn btn-info btn-sm btn-detail" 
+                            data-id="{{ $item->id }}" 
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="bottom" 
+                            title="Detail RAB">
+                        <i class="bx bx-show"></i>
+                    </button>
+                </div>
             </td>
         </tr>
         @empty
         <tr>
-            <td colspan="9" class="text-center fw-bold">Tidak ada data</td>
+            <td colspan="10" class="text-center fw-bold">Tidak ada data</td>
         </tr>
         @endforelse
     </tbody>

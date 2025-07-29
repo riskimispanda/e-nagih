@@ -421,30 +421,35 @@
             <small class="text-muted">Dokumentasi perencanaan anggaran proyek</small>
         </div>
         <div class="card mb-5 p-4">
-            <div class="row border-bottom mb-4">
-                <div class="row mb-4">
-                    <div class="col-sm-3">
-                        <label class="form-label mb-2"><i class="bx bx-calendar me-1 text-primary"></i>Filter Tahun</label>
-                        <select id="filter-tahun" class="form-select">
-                            <option value="">-- Semua Tahun --</option>
-                            @for ($i = date('Y'); $i <= date('Y') + 5; $i++)
-                                <option value="{{ $i }}">{{ $i }}</option>
-                            @endfor
-                        </select>
-                    </div>
-                    <div class="col-sm-3">
-                        <label class="form-label mb-2"><i class="bx bx-calendar me-1 text-primary"></i>Filter Bulan</label>
-                        <select id="filter-bulan" class="form-select">
-                            <option value="">-- Semua Bulan --</option>
-                            @foreach ([
-                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-                                '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-                                '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
-                            ] as $key => $value)
-                                <option value="{{ $key }}">{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+            <div class="row mb-4">
+                <div class="col-sm-4">
+                    <label class="form-label mb-2"><i class="bx bx-calendar me-1 text-primary"></i>Filter Tahun</label>
+                    <select id="filter-tahun" class="form-select">
+                        <option value="">-- Semua Tahun --</option>
+                        @for ($i = date('Y'); $i <= date('Y') + 5; $i++)
+                        <option value="{{ $i }}">{{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label mb-2"><i class="bx bx-calendar me-1 text-primary"></i>Filter Bulan</label>
+                    <select id="filter-bulan" class="form-select">
+                        <option value="">-- Semua Bulan --</option>
+                        @foreach ([
+                        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+                        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+                        ] as $key => $value)
+                        <option value="{{ $key }}">{{ $value }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label mb-2"><i class="bx bx-briefcase me-1 text-primary"></i>Filter Kegiatan</label>
+                    <select id="filter-kegiatan" class="form-select">
+                        <option value="">-- Semua Kegiatan --</option>
+                        <!-- Options will be loaded dynamically -->
+                    </select>
                 </div>
             </div>
             <div class="row">
@@ -589,6 +594,25 @@
     </div>
 </div>
 
+{{-- Detail Modal --}}
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white border-bottom">
+                <h5 class="modal-title text-dark fw-semibold" id="detailModalLabel">
+                    <i class='bx bx-detail me-2 text-muted'></i>Detail RAB
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="detailContent">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Filter Ajax --}}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -627,58 +651,251 @@
             minimumFractionDigits: 0
         }).format(amount || 0);
     }
-
-    // Initialize cards with data from server
-    $(document).ready(function() {
+    
+    // Load kegiatan options on page load
+    async function loadKegiatanOptions() {
+        try {
+            const response = await fetch('{{ route("rab-kegiatan") }}');
+            const kegiatan = await response.json();
+            
+            const select = document.getElementById('filter-kegiatan');
+            
+            // Clear existing options except the first one
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            // Add kegiatan options
+            kegiatan.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading kegiatan options:', error);
+        }
+    }
+    
+    // Real-time filter function using fetch
+    async function performFilter() {
+        const bulan = document.getElementById('filter-bulan').value;
+        const tahun = document.getElementById('filter-tahun').value;
+        const kegiatan = document.getElementById('filter-kegiatan').value;
+        
+        console.log('Filter changed:', { bulan, tahun, kegiatan });
+        
+        try {
+            const params = new URLSearchParams();
+            if (bulan) params.append('bulan', bulan);
+            if (tahun) params.append('tahun', tahun);
+            if (kegiatan) params.append('kegiatan', kegiatan);
+            
+            const response = await fetch(`{{ route("rab-filter") }}?${params.toString()}`);
+            const data = await response.json();
+            
+            console.log('Response received:', data);
+            
+            // Update table
+            document.getElementById('result-container').innerHTML = data.html;
+            
+            // Update cards with formatted currency
+            document.getElementById('pagu-tahun').textContent = formatCurrency(data.total);
+            document.getElementById('anggaran-terealisasi').textContent = formatCurrency(data.terealisasi);
+            document.getElementById('sisa-anggaran').textContent = formatCurrency(data.sisa);
+            
+            console.log('Cards updated:', {
+                total: data.total,
+                terealisasi: data.terealisasi,
+                sisa: data.sisa
+            });
+        } catch (error) {
+            console.error('Filter Error:', error);
+            alert('Gagal mengambil data');
+        }
+    }
+    
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
         // Set initial values from server data
-        $('#pagu-tahun').text(formatCurrency({{ $totalAnggaran ?? 0 }}));
-        $('#anggaran-terealisasi').text(formatCurrency({{ $totalTerealisasi ?? 0 }}));
-        $('#sisa-anggaran').text(formatCurrency({{ $sisaAnggaran ?? 0 }}));
-
+        document.getElementById('pagu-tahun').textContent = formatCurrency({{ $totalAnggaran ?? 0 }});
+        document.getElementById('anggaran-terealisasi').textContent = formatCurrency({{ $totalTerealisasi ?? 0 }});
+        document.getElementById('sisa-anggaran').textContent = formatCurrency({{ $sisaAnggaran ?? 0 }});
+        
+        // Load kegiatan options
+        loadKegiatanOptions();
+        
+        // Add event listeners for filters
+        document.getElementById('filter-bulan').addEventListener('change', performFilter);
+        document.getElementById('filter-tahun').addEventListener('change', performFilter);
+        document.getElementById('filter-kegiatan').addEventListener('change', performFilter);
+        
         console.log('Initial data loaded:', {
             total: {{ $totalAnggaran ?? 0 }},
             terealisasi: {{ $totalTerealisasi ?? 0 }},
             sisa: {{ $sisaAnggaran ?? 0 }}
         });
     });
-
-    $('#filter-bulan, #filter-tahun').on('change', function () {
-        let bulan = $('#filter-bulan').val();
-        let tahun = $('#filter-tahun').val();
-
-        console.log('Filter changed:', { bulan, tahun });
-
-        $.ajax({
-            url: '{{ route("rab-filter") }}',
-            type: 'GET',
-            data: {
-                bulan: bulan,
-                tahun: tahun
-            },
-            success: function (response) {
-                console.log('Response received:', response);
-
-                // Update table
-                $('#result-container').html(response.html);
-
-                // Update cards with formatted currency
-                $('#pagu-tahun').text(formatCurrency(response.total));
-                $('#anggaran-terealisasi').text(formatCurrency(response.terealisasi));
-                $('#sisa-anggaran').text(formatCurrency(response.sisa));
-
-                console.log('Cards updated:', {
-                    total: response.total,
-                    terealisasi: response.terealisasi,
-                    sisa: response.sisa
-                });
-            },
-            error: function (xhr, status, error) {
-                console.error('AJAX Error:', { xhr, status, error });
-                alert('Gagal mengambil data');
+    
+    // Handle detail button click using event delegation
+    document.addEventListener('click', async function(e) {
+        if (e.target.closest('.btn-detail')) {
+            const button = e.target.closest('.btn-detail');
+            const rabId = button.getAttribute('data-id');
+            
+            console.log('Detail button clicked for RAB ID:', rabId);
+            
+            // Show loading state
+            document.getElementById('detailContent').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-secondary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Memuat detail RAB...</p>
+                </div>
+            `;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+            modal.show();
+            
+            try {
+                // Fetch detail data
+                const response = await fetch(`/rab/detail/${rabId}`);
+                const data = await response.json();
+                
+                console.log('Detail response:', data);
+                
+                if (!data.success) {
+                    document.getElementById('detailContent').innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="bx bx-error-circle text-danger fs-1"></i>
+                            <p class="text-danger mt-2">${data.message || 'Gagal memuat detail RAB'}</p>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const rab = data.rab;
+                const bulanNama = data.bulanNama;
+                
+                // Build minimalist detail content
+                const detailHtml = `
+                    <div class="row g-4">
+                        <!-- Basic Information -->
+                        <div class="col-12">
+                            <div class="border-bottom pb-3 mb-3">
+                                <h6 class="text-dark mb-3">Informasi Dasar</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Kegiatan</small>
+                                            <span class="fw-medium">${rab.kegiatan}</span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Periode</small>
+                                            <span class="fw-medium">${bulanNama} ${rab.tahun_anggaran}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Jumlah Item</small>
+                                            <span class="fw-medium">${rab.item || '-'}</span>
+                                        </div>
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Status</small>
+                                            ${rab.status_id == 11 ? 
+                                                '<span class="badge bg-success">'+rab.status.nama_status+'</span>' : 
+                                                rab.status_id == 12 ? 
+                                                '<span class="badge bg-danger">'+rab.status.nama_status+'</span>' : 
+                                                '<span class="badge bg-warning">'+rab.status.nama_status+'</span>'
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Budget Information -->
+                        <div class="col-12">
+                            <div class="border-bottom pb-3 mb-3">
+                                <h6 class="text-dark mb-3">Informasi Anggaran</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <small class="text-muted d-block">Total Anggaran</small>
+                                            <div class="fw-bold text-dark">${formatCurrency(rab.jumlah_anggaran)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <small class="text-muted d-block">Terealisasi</small>
+                                            <div class="fw-bold text-success">${formatCurrency(data.totalTerealisasi)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-center p-3 bg-light rounded">
+                                            <small class="text-muted d-block">Sisa Anggaran</small>
+                                            <div class="fw-bold text-primary">${formatCurrency(data.sisaAnggaran)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <small class="text-muted">Progress Realisasi</small>
+                                        <small class="text-muted">${(data.totalTerealisasi / rab.jumlah_anggaran * 100).toFixed(1)}%</small>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: ${(data.totalTerealisasi / rab.jumlah_anggaran * 100).toFixed(1)}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="col-12">
+                            <h6 class="text-dark mb-3">Keterangan</h6>
+                            <div class="p-3 bg-light rounded">
+                                <p class="mb-0 text-muted">${rab.keterangan || 'Tidak ada keterangan'}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Admin Info -->
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center text-muted small">
+                                <span>Dibuat oleh: <strong>${rab.usr.name}</strong></span>
+                                <span>Total Pengeluaran: ${data.pengeluaranCount || 0} item (${data.approvedPengeluaranCount || 0} disetujui)</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('detailContent').innerHTML = detailHtml;
+            } catch (error) {
+                console.error('Error fetching detail:', error);
+                
+                let errorMessage = 'Gagal memuat detail RAB';
+                if (error.response && error.response.status === 404) {
+                    errorMessage = 'Data RAB tidak ditemukan';
+                } else if (error.response && error.response.status === 500) {
+                    errorMessage = 'Terjadi kesalahan server';
+                }
+                
+                document.getElementById('detailContent').innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bx bx-error-circle text-danger fs-1"></i>
+                        <p class="text-danger mt-2">${errorMessage}</p>
+                        <small class="text-muted d-block">RAB ID: ${rabId}</small>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                `;
             }
-        });
+        }
     });
-
+    
 </script>
 
 

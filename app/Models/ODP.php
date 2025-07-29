@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ODP extends Model
 {
     protected $table = 'odp';
-    protected $fillable = ['nama_odp', 'odc_id'];
+    protected $fillable = ['nama_odp', 'odc_id', 'gps'];
 
     public function odc()
     {

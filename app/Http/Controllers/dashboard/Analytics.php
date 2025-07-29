@@ -34,17 +34,17 @@ class Analytics extends Controller
   {
     // Ambil semua data invoice lengkap dengan relasinya
     $customers = Customer::with([
-        "status",
-        "paket",
-        "lokasi",
-        "invoice.status",
-        "invoice",
-        "getServer",
-        "odp.odc.olt"
+      "status",
+      "paket",
+      "lokasi",
+      "invoice.status",
+      "invoice",
+      "getServer",
+      "odp.odc.olt"
       ])
       ->whereIn("status_id", [3, 9])
       ->get();
-
+      
       $metode = Metode::all();
       $pembayaran = Pembayaran::where("status_id", 6)->get();
       
@@ -127,12 +127,27 @@ class Analytics extends Controller
     
     public function logistik()
     {
-      return view("data.data-logistik", [
-        "users" => auth()->user(),
-        "roles" => auth()->user()->roles,
-        "perangkat" => Perangkat::all(),
-      ]);
+        $perangkat = Perangkat::withCount(['customer'])->get();
+
+        foreach ($perangkat as $item) {
+            $item->stok_terpakai = $item->customer_count ?? 0;
+            $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai;
+
+            // Hindari angka minus
+            if ($item->stok_tersedia < 0) {
+                $item->stok_tersedia = 0;
+            }
+        }
+
+        return view("data.data-logistik", [
+            "users" => auth()->user(),
+            "roles" => auth()->user()->roles,
+            "perangkat" => $perangkat,
+        ]);
     }
+
+
+
     
     public function antrian()
     {
@@ -168,58 +183,58 @@ class Analytics extends Controller
     * @return \Illuminate\Http\RedirectResponse
     */
     public function blokir(Request $request, $id)
-  {
+    {
       try {
-          $customer = Customer::findOrFail($id);
-          $invoice = Invoice::where("customer_id", $id)->first();
-
-          if (!$invoice) {
-              return redirect()->back()->with("toast_error", "Invoice tidak ditemukan");
-          }
-
-          // Update status customer dan paket invoice
-          $customer->status_id = 9;
-          $customer->save();
-
-          $invoice->paket_id = 2; // ISOLIREBILLING
-          $invoice->save();
-
-          // Ambil router berdasarkan customer
-          $router = Router::findOrFail($customer->router_id);
-          $client = MikrotikServices::connect($router);
-
-          // Ganti profile jadi ISOLIREBILLING
-          $profileResult = MikrotikServices::changeUserProfile(
-              $client,
-              $customer->usersecret,
-              'ISOLIREBILLING'
-          );
-
-          // Disconnect koneksi aktif
-          $disconnectResult = MikrotikServices::removeActiveConnections(
-              $client,
-              $customer->usersecret
-          );
-
-          // Logging
-          \Log::info("✅ Pelanggan diblokir melalui profile", [
-              "customer_id" => $id,
-              "usersecret" => $customer->usersecret,
-              "new_profile" => "ISOLIREBILLING",
-              "profile_result" => $profileResult,
-              "disconnect_result" => $disconnectResult,
-          ]);
-
-          return redirect()->back()->with("success", "Pelanggan berhasil diblokir");
+        $customer = Customer::findOrFail($id);
+        $invoice = Invoice::where("customer_id", $id)->first();
+        
+        if (!$invoice) {
+          return redirect()->back()->with("toast_error", "Invoice tidak ditemukan");
+        }
+        
+        // Update status customer dan paket invoice
+        $customer->status_id = 9;
+        $customer->save();
+        
+        $invoice->paket_id = 2; // ISOLIREBILLING
+        $invoice->save();
+        
+        // Ambil router berdasarkan customer
+        $router = Router::findOrFail($customer->router_id);
+        $client = MikrotikServices::connect($router);
+        
+        // Ganti profile jadi ISOLIREBILLING
+        $profileResult = MikrotikServices::changeUserProfile(
+          $client,
+          $customer->usersecret,
+          'ISOLIREBILLING'
+        );
+        
+        // Disconnect koneksi aktif
+        $disconnectResult = MikrotikServices::removeActiveConnections(
+          $client,
+          $customer->usersecret
+        );
+        
+        // Logging
+        \Log::info("✅ Pelanggan diblokir melalui profile", [
+          "customer_id" => $id,
+          "usersecret" => $customer->usersecret,
+          "new_profile" => "ISOLIREBILLING",
+          "profile_result" => $profileResult,
+          "disconnect_result" => $disconnectResult,
+        ]);
+        
+        return redirect()->back()->with("success", "Pelanggan berhasil diblokir");
       } catch (\Exception $e) {
-          \Log::error("❌ Gagal blokir pelanggan: " . $e->getMessage(), [
-              "customer_id" => $id,
-              "trace" => $e->getTraceAsString(),
-          ]);
-
-          return redirect()->back()->with("toast_error", "Gagal memblokir pelanggan: " . $e->getMessage());
+        \Log::error("❌ Gagal blokir pelanggan: " . $e->getMessage(), [
+          "customer_id" => $id,
+          "trace" => $e->getTraceAsString(),
+        ]);
+        
+        return redirect()->back()->with("toast_error", "Gagal memblokir pelanggan: " . $e->getMessage());
       }
-  }
+    }
     
     /**
     * Unblock a customer by changing their status and restoring their original Mikrotik profile
@@ -230,55 +245,55 @@ class Analytics extends Controller
     * @return \Illuminate\Http\RedirectResponse
     */
     public function unblokir(Request $request, $id)
-  {
+    {
       try {
-          // Ambil customer beserta router & paket
-          $customer = Customer::with('router', 'paket')->findOrFail($id);
-
-          if (!$customer->router || !$customer->paket) {
-              return redirect()->back()->with("toast_error", "Router atau paket pelanggan tidak lengkap.");
-          }
-
-          $invoice = Invoice::where("customer_id", $id)->first();
-          if (!$invoice) {
-              return redirect()->back()->with("toast_error", "Invoice tidak ditemukan");
-          }
-
-          // Update status & invoice
-          $customer->status_id = 3;
-          $customer->save();
-
-          $invoice->paket_id = $customer->paket_id;
-          $invoice->save();
-
-          // Koneksi ke Mikrotik
-          $client = MikrotikServices::connect($customer->router);
-
-          // Ambil nama profile sesuai paket
-          $originalProfile = $customer->paket->paket_name ?? 'default';
-
-          // Unblok user dan kembalikan profil
-          $unblockResult = MikrotikServices::unblokUser($client, $customer->usersecret, $originalProfile);
-
-          // Log hasil
-          \Log::info("✅ Pelanggan diaktifkan kembali", [
-              "customer_id" => $id,
-              "usersecret" => $customer->usersecret,
-              "restored_profile" => $originalProfile,
-              "unblock_result" => $unblockResult,
-          ]);
-
-          return redirect()->back()->with("toast_success", "Pelanggan berhasil diaktifkan kembali");
+        // Ambil customer beserta router & paket
+        $customer = Customer::with('router', 'paket')->findOrFail($id);
+        
+        if (!$customer->router || !$customer->paket) {
+          return redirect()->back()->with("toast_error", "Router atau paket pelanggan tidak lengkap.");
+        }
+        
+        $invoice = Invoice::where("customer_id", $id)->first();
+        if (!$invoice) {
+          return redirect()->back()->with("toast_error", "Invoice tidak ditemukan");
+        }
+        
+        // Update status & invoice
+        $customer->status_id = 3;
+        $customer->save();
+        
+        $invoice->paket_id = $customer->paket_id;
+        $invoice->save();
+        
+        // Koneksi ke Mikrotik
+        $client = MikrotikServices::connect($customer->router);
+        
+        // Ambil nama profile sesuai paket
+        $originalProfile = $customer->paket->paket_name ?? 'default';
+        
+        // Unblok user dan kembalikan profil
+        $unblockResult = MikrotikServices::unblokUser($client, $customer->usersecret, $originalProfile);
+        
+        // Log hasil
+        \Log::info("✅ Pelanggan diaktifkan kembali", [
+          "customer_id" => $id,
+          "usersecret" => $customer->usersecret,
+          "restored_profile" => $originalProfile,
+          "unblock_result" => $unblockResult,
+        ]);
+        
+        return redirect()->back()->with("toast_success", "Pelanggan berhasil diaktifkan kembali");
       } catch (\Exception $e) {
-          \Log::error("❌ Gagal unblock pelanggan: " . $e->getMessage(), [
-              "customer_id" => $id,
-              "trace" => $e->getTraceAsString(),
-          ]);
-
-          return redirect()->back()->with("toast_error", "Gagal mengaktifkan pelanggan: " . $e->getMessage());
+        \Log::error("❌ Gagal unblock pelanggan: " . $e->getMessage(), [
+          "customer_id" => $id,
+          "trace" => $e->getTraceAsString(),
+        ]);
+        
+        return redirect()->back()->with("toast_error", "Gagal mengaktifkan pelanggan: " . $e->getMessage());
       }
-  }
-
+    }
+    
     
     public function detailPelanggan($id)
     {

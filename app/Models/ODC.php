@@ -11,6 +11,7 @@ class ODC extends Model
     protected $fillable = [
         'nama_odc',
         'lokasi_id',
+        'gps',
     ];
 
     public function olt()
