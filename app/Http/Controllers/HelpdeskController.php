@@ -261,7 +261,6 @@ class HelpdeskController extends Controller
             'nama_customer' => 'required',
             'no_hp' => 'required',
             'alamat' => 'required',
-            'gps' => 'required',
         ]);
 
         $customer = Customer::findOrFail($id);
@@ -271,7 +270,7 @@ class HelpdeskController extends Controller
             'email' => $request->email,
             'no_hp' => $request->no_hp,
             'alamat' => $request->alamat,
-            'gps' => $request->gps,
+            'gps' => $request->gps ?? null,
             'no_identitas' => $request->no_identitas,
             'paket_id' => $request->paket_id,
             'agen_id' => $request->agen_id,

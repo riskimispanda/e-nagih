@@ -435,61 +435,40 @@
                                     <div class="row">
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups">
-                                                <label class="form-label"><i class='bx bx-user me-2'></i>Nama
-                                                    Pelanggan</label>
-                                                <input type="text" class="form-control"
-                                                    value="{{ $customer->nama_customer }}" readonly>
+                                                <label class="form-label"><i class='bx bx-user me-2'></i>Nama Pelanggan</label>
+                                                <input type="text" class="form-control" value="{{ $customer->nama_customer }}" readonly>
                                             </div>
                                         </div>
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups">
-                                                <label class="form-label"><i class='bx bx-phone me-2'></i>Nomor
-                                                    Telepon</label>
-                                                <input type="text" class="form-control" value="{{ $customer->no_hp }}"
-                                                    readonly>
+                                                <label class="form-label"><i class='bx bx-phone me-2'></i>Nomor Telepon</label>
+                                                <input type="text" class="form-control" value="{{ $customer->no_hp }}" readonly>
                                             </div>
                                         </div>
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups">
-                                                <label class="form-label"><i class='bx bx-id-card me-2'></i>Nomor
-                                                    Identitas</label>
-                                                <input type="text" class="form-control"
-                                                    value="{{ $customer->no_identitas }}" readonly>
+                                                <label class="form-label"><i class='bx bx-id-card me-2'></i>Nomor Identitas</label>
+                                                <input type="text" class="form-control" value="{{ $customer->no_identitas }}" readonly>
                                             </div>
                                         </div>
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups">
                                                 <label class="form-label"><i class='bx bx-home me-2'></i>Alamat</label>
-                                                <input type="text" class="form-control" value="{{ $customer->alamat }}"
-                                                    readonly>
+                                                <input type="text" class="form-control" value="{{ $customer->alamat }}" readonly>
                                             </div>
                                         </div>
                                         <div class="col-sm-6 mb-4">
                                             <div class="input-groups col-sm-4">
-                                                <label class="form-label"><i class='bx bx-image me-2'></i>Foto
-                                                    Identitas</label>
-                                                <a href="{{ asset($customer->identitas) }}" target="_blank"
-                                                    class="btn btn-outline-primary btn-sm form-control">
+                                                <label class="form-label"><i class='bx bx-image me-2'></i>Foto Identitas</label>
+                                                <a href="{{ asset($customer->identitas) }}" target="_blank" class="btn btn-outline-primary btn-sm form-control">
                                                     <i class='bx bx-image'></i>
                                                 </a>
                                             </div>
                                         </div>
-                                        <div class="col-sm-6 mb-4">
-                                            <div class="input-groups col-sm-4">
-                                                <label class="form-label"><i class='bx bx-map-pin me-2'></i>Titik
-                                                    Lokasi</label>
-                                                <a href="{{ asset($customer->gps) }}" target="_blank"
-                                                    class="btn btn-outline-primary btn-sm form-control">
-                                                    <i class='bx bx-map'></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-12">
+                                        <div class="col-sm-6">
                                             <div class="input-groups">
-                                                <label class="form-label"><i class='bx bx-calendar me-2'></i>Tanggal
-                                                    Registrasi</label>
-                                                <input type="text" class="form-control"
-                                                    value="{{ $customer->created_at->format('d F Y, H:i') }}" readonly>
+                                                <label class="form-label"><i class='bx bx-calendar me-2'></i>Tanggal Registrasi</label>
+                                                <input type="text" class="form-control" value="{{ $customer->created_at->format('d F Y, H:i') }}" readonly>
                                             </div>
                                         </div>
                                     </div>
@@ -622,11 +601,9 @@
                                         </div>
 
                                         <div class="mb-4">
-                                            <label class="form-label"><i class="bx bx-image me-2"></i>Foto
-                                                Rumah/Lokasi</label>
+                                            <label class="form-label"><i class="bx bx-image me-2"></i>Foto Rumah/Lokasi</label>
                                             <div class="input-group">
-                                                <input type="file" class="form-control" accept="image/*"
-                                                    name="foto_rumah">
+                                                <input type="file" class="form-control" accept="image/*" name="foto_rumah">
                                                 <button class="btn btn-outline-primary" type="button">
                                                     <i class='bx bx-upload'></i>
                                                 </button>
@@ -634,13 +611,16 @@
                                             <small class="text-muted">Max 2MB (JPG, JPEG, PNG)</small>
                                         </div>
 
-
+                                        <div class="col-sm-12 mb-4">
+                                            <div class="input-groups col-sm-12">
+                                                <label class="form-label"><i class='bx bx-map-pin me-2'></i>Titik Lokasi</label>
+                                                <input type="text" name="gps" value="{{ $customer->gps ?? 'Belum Ada Koordinat'}}" class="form-control" required placeholder="https://maps.google.com/... atau -1.0269916,110.48579129">
+                                            </div>
+                                        </div>
                                         <div class="mb-4">
-                                            <label class="form-label"><i class="bx bx-image me-2"></i>Foto
-                                                Perangkat</label>
+                                            <label class="form-label"><i class="bx bx-image me-2"></i>Foto Perangkat</label>
                                             <div class="input-group">
-                                                <input type="file" class="form-control" accept="image/*"
-                                                    name="foto_perangkat">
+                                                <input type="file" class="form-control" accept="image/*" name="foto_perangkat">
                                                 <button class="btn btn-outline-primary" type="button">
                                                     <i class='bx bx-upload'></i>
                                                 </button>
@@ -648,16 +628,12 @@
                                             <small class="text-muted">Max 2MB (JPG, JPEG, PNG)</small>
                                         </div>
                                         <div class="mb-4">
-                                            <label class="form-label"><i class="bx bx-link me-2"></i>Panjang
-                                                Kabel</label>
-                                            <input type="text" name="panjang_kabel" class="form-control"
-                                                placeholder="Contoh: 10m">
+                                            <label class="form-label"><i class="bx bx-link me-2"></i>Panjang Kabel</label>
+                                            <input type="text" name="panjang_kabel" class="form-control" placeholder="Contoh: 10m">
                                         </div>
                                         <div class="mb-4">
-                                            <label class="form-label"><i class="bx bx-radio me-2"></i>Nilai
-                                                Redam</label>
-                                            <input type="text" name="redaman" class="form-control"
-                                                placeholder="Contoh: 50db">
+                                            <label class="form-label"><i class="bx bx-radio me-2"></i>Nilai Redam</label>
+                                            <input type="text" name="redaman" class="form-control" placeholder="Contoh: 50db">
                                         </div>
                                     </div>
                                 </div>
@@ -680,8 +656,7 @@
                                         <div class="row g-3 mb-3">
 
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i class="bx bx-server me-2"></i>Server
-                                                    BTS</label>
+                                                <label class="form-label"><i class="bx bx-server me-2"></i>Server BTS</label>
                                                 <select id="server" name="lokasi_id" class="form-select" required>
                                                     <option value="" selected disabled>Pilih Server BTS
                                                     </option>
@@ -694,7 +669,7 @@
 
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-devices me-2"></i>Modem</label>
-                                                <select name="modem" class="form-select" required>
+                                                <select name="modem" class="form-select" required id="modem">
                                                     <option value="" selected disabled>Pilih Modem
                                                     </option>
                                                     @foreach ($modem as $item)
@@ -708,25 +683,19 @@
 
                                         <div class="row g-3">
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i class="bx bx-laptop me-2"></i>Serial Number
-                                                    Modem</label>
-                                                <input type="text" name="serial_number" class="form-control"
-                                                    placeholder="Masukkan S/N" required>
+                                                <label class="form-label"><i class="bx bx-laptop me-2"></i>Serial Number Modem</label>
+                                                <input type="text" name="serial_number" class="form-control" placeholder="Masukkan S/N" required>
                                             </div>
 
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i class="bx bx-phone me-2"></i>Mac Address
-                                                    Modem</label>
-                                                <input type="text" name="mac_address" class="form-control"
-                                                    placeholder="XX:XX:XX:XX:XX:XX" required>
+                                                <label class="form-label"><i class="bx bx-phone me-2"></i>Mac Address Modem</label>
+                                                <input type="text" name="mac_address" class="form-control" placeholder="XX:XX:XX:XX:XX:XX" required>
                                             </div>
                                             <hr class="my-2">
                                             <div class="col-sm-12">
                                                 <div class="input-groups">
-                                                    <label class="form-label"><i class="bx bx-disc me-2"></i>Pilih
-                                                        Media</label>
-                                                    <select name="media_id" id="media" class="form-select"
-                                                        onchange="showMedia()" required>
+                                                    <label class="form-label"><i class="bx bx-disc me-2"></i>Pilih Media</label>
+                                                    <select name="media_id" id="media" class="form-select" required>
                                                         <option value="" selected disabled>Pilih Media</option>
                                                         @foreach ($media as $item)
                                                             <option value="{{ $item->id }}">
@@ -761,25 +730,21 @@
                                         </div>
                                         <div class="row g-3 mt-2 mb-2" id="htb" style="display: none;">
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i
-                                                        class="bx bx-sitemap me-2"></i>Transiver</label>
+                                                <label class="form-label"><i class="bx bx-sitemap me-2"></i>Transiver</label>
                                                 <input type="text" name="transiver" class="form-control">
                                             </div>
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i
-                                                        class="bx bx-sitemap me-2"></i>Receiver</label>
+                                                <label class="form-label"><i class="bx bx-sitemap me-2"></i>Receiver</label>
                                                 <input type="text" name="receiver" class="form-control">
                                             </div>
                                         </div>
                                         <div class="row g-3 mt-2 mb-2" id="wireless" style="display: none;">
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i class="bx bx-sitemap me-2"></i>Access
-                                                    Point</label>
+                                                <label class="form-label"><i class="bx bx-sitemap me-2"></i>Access Point</label>
                                                 <input type="text" name="access_point" class="form-control">
                                             </div>
                                             <div class="col-12 col-sm-6 mb-2">
-                                                <label class="form-label"><i
-                                                        class="bx bx-sitemap me-2"></i>Station</label>
+                                                <label class="form-label"><i class="bx bx-sitemap me-2"></i>Station</label>
                                                 <input type="text" name="station" class="form-control">
                                             </div>
                                         </div>
@@ -822,7 +787,7 @@
         });
     </script>
 
-    <script>
+    {{-- <script>
         $('#server').on('change', function() {
             const serverId = $(this).val();
 
@@ -867,6 +832,83 @@
                     });
                 });
         });
+    </script> --}}
+    <script>
+        let tomOlt, tomOdc, tomOdp;
+    
+        $('#server').on('change', function () {
+            const serverId = $(this).val();
+    
+            fetch(`/api/olt/by-server/${serverId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const $olt = $('#olt');
+                    $olt.empty().append('<option value="">Pilih OLT</option>');
+                    data.forEach(item => {
+                        $olt.append(`<option value="${item.id}">${item.nama_lokasi}</option>`);
+                    });
+    
+                    if (tomOlt) tomOlt.destroy();
+                    tomOlt = new TomSelect('#olt', { create: false });
+    
+                    $('#olt_id').show(); // Tampilkan dropdown setelah pilih server
+                });
+        });
+    
+        $('#olt').on('change', function () {
+            const oltId = $(this).val();
+    
+            fetch(`/api/odc/by-olt/${oltId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const $odc = $('#odc');
+                    $odc.empty().append('<option value="">Pilih ODC</option>');
+                    data.forEach(item => {
+                        $odc.append(`<option value="${item.id}">${item.nama_odc}</option>`);
+                    });
+    
+                    if (tomOdc) tomOdc.destroy();
+                    tomOdc = new TomSelect('#odc', { create: false });
+                });
+        });
+    
+        $('#odc').on('change', function () {
+            const odcId = $(this).val();
+    
+            fetch(`/api/odp/by-odc/${odcId}`)
+                .then(res => res.json())
+                .then(data => {
+                    const $odp = $('#odp');
+                    $odp.empty().append('<option value="">Pilih ODP</option>');
+                    data.forEach(item => {
+                        $odp.append(`<option value="${item.id}">${item.nama_odp}</option>`);
+                    });
+    
+                    if (tomOdp) tomOdp.destroy();
+                    tomOdp = new TomSelect('#odp', { create: false });
+                });
+        });
     </script>
 
+    <script>
+        // Server BTS
+        new TomSelect("#server", {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+        // Media
+        new TomSelect("#modem", {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+
+    </script>
 @endsection

@@ -230,11 +230,25 @@
                                 <td>{{$no++}}</td>
                                 <td>{{$item->nama_perusahaan}}</td>
                                 <td>{{$item->alamat}}</td>
+                                @php
+                                    $gps = $item->gps;
+                                    $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                                    $url = $gps 
+                                        ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) 
+                                        : '#';
+                                @endphp
+
                                 <td>
-                                    <a href="{{ $item->gps }}" target="_blank" class="btn btn-action btn-maps" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat di Google Maps">
+                                    <a href="{{ $url }}" 
+                                    target="_blank" 
+                                    class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="bottom" 
+                                    title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                                         <i class="bx bx-map"></i>
                                     </a>
                                 </td>
+
                                 <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}</td>
                                 <td>
                                     <span class="badge bg-warning bg-opacity-10 text-warning">
@@ -327,13 +341,25 @@
                                 </div>
                             </td>
                             <td>{{ $item->alamat }}</td>
+                            @php
+                                $gps = $item->gps;
+                                $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                                $url = $gps 
+                                    ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) 
+                                    : '#';
+                            @endphp
+
                             <td>
-                                <a href="{{ $item->gps }}" target="_blank"
-                                    class="btn btn-action btn-maps" data-bs-toggle="tooltip"
-                                    data-bs-placement="top" title="Lihat di Google Maps">
+                                <a href="{{ $url }}" 
+                                target="_blank" 
+                                class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="bottom" 
+                                title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                                     <i class="bx bx-map"></i>
                                 </a>
                             </td>
+
                             <td>{{ $item->created_at->format('d M Y') }}</td>
                             <td>
                                 <span

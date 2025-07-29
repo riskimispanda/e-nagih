@@ -408,9 +408,11 @@
                         @php
                             $gps = $customer->gps;
                             $isLink = Str::startsWith($gps, ['http://', 'https://']);
-                            $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                            $url = $gps 
+                                ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) 
+                                : '#';
                         @endphp
-                        <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat di Google Maps">
+                        <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                         <i class="bx bx-map"></i>
                     </a>
                 </div>
@@ -556,8 +558,7 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="edit_gps">Titik Lokasi</label>
-                            <input type="text" id="edit_gps" name="gps" class="form-control"
-                            value="{{ $customer->gps }}" required>
+                            <input type="text" id="edit_gps" name="gps" class="form-control" value="{{ $customer->gps }}">
                             <small class="form-text">Masukkan link Google Maps lokasi pelanggan</small>
                         </div>
                         <div class="col-md-6">

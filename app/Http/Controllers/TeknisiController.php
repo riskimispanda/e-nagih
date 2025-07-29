@@ -192,6 +192,7 @@ class TeknisiController extends Controller
             'mac_address'     => $request->mac_address,
             'perangkat_id'    => $request->modem,
             'seri_perangkat'  => $request->serial_number,
+            'gps' => $request->gps,
         ]);
 
         // Hitung jatuh tempo di akhir bulan

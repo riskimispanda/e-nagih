@@ -622,19 +622,24 @@
                                                 {{ $c->paket->nama_paket ?? 'Belum ada paket' }}
                                             </span>
                                         </td>
-                                        <td>
                                             @php
                                                 $gps = $c->gps;
                                                 $isLink = Str::startsWith($gps, ['http://', 'https://']);
-                                                $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                                                $url = $gps 
+                                                    ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) 
+                                                    : '#';
                                             @endphp
-                                        
-                                            <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps"
-                                                data-bs-toggle="tooltip" data-bs-placement="top"
-                                                title="Lihat di Google Maps">
-                                                <i class="bx bx-map"></i>
-                                            </a>
-                                        </td>                                        
+
+                                            <td>
+                                                <a href="{{ $url }}" 
+                                                target="_blank" 
+                                                class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
+                                                data-bs-toggle="tooltip" 
+                                                data-bs-placement="bottom" 
+                                                title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
+                                                    <i class="bx bx-map"></i>
+                                                </a>
+                                            </td>                                    
                                         <td>{{ \Carbon\Carbon::parse($c->created_at)->translatedFormat('d F Y') }}</td>
                                         <td>
                                             <span class="badge badge-status badge-waiting">
@@ -715,38 +720,31 @@
                     <div class="modal-body" id="pelanggan" style="display: none;">
                         <div class="row p-2">
                             <div class="col-md-6 form-group">
-                                <label class="form-label" for="add_nama_customer">Nama <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label" for="add_nama_customer">Nama <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-user"></i></span>
-                                    <input type="text" name="nama_customer" class="form-control" id="add_nama_customer"
-                                        placeholder="Masukkan nama pelanggan" required>
+                                    <input type="text" name="nama_customer" class="form-control" id="add_nama_customer" placeholder="Masukkan nama pelanggan" required>
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
                                 <label class="form-label" for="add_no_hp">No. HP <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-phone"></i></span>
-                                    <input type="text" name="no_hp" class="form-control" id="add_no_hp"
-                                        placeholder="08xxxxxxxxxx" required>
+                                    <input type="text" name="no_hp" class="form-control" id="add_no_hp" placeholder="08xxxxxxxxxx" required>
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label" for="add_email">Email <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label" for="add_email">Email <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-envelope"></i></span>
-                                    <input type="email" name="email" class="form-control" id="add_email"
-                                        placeholder="contoh@email.com" required>
+                                    <input type="email" name="email" class="form-control" id="add_email" placeholder="contoh@email.com">
                                 </div>
                             </div>
                             <div class="col-md-6 form-group">
-                                <label class="form-label" for="add_email">No. Identitas <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label" for="add_email">No. Identitas <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx  bx-credit-card-front"></i></span>
-                                    <input type="text" name="no_identitas" class="form-control" id="add_email"
-                                        placeholder="1234567890" required>
+                                    <input type="text" name="no_identitas" class="form-control" id="add_email" placeholder="1234567890" required>
                                 </div>
                             </div>
                             <div class="col-12 form-group">
@@ -754,8 +752,7 @@
                                         class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-home"></i></span>
-                                    <textarea name="alamat" id="add_alamat" class="form-control" rows="2" placeholder="Masukkan alamat lengkap"
-                                        required></textarea>
+                                    <textarea name="alamat" id="add_alamat" class="form-control" rows="2" placeholder="Masukkan alamat lengkap" required></textarea>
                                 </div>
                             </div>
                             <div class="col-12 form-group">
@@ -763,8 +760,7 @@
                                         class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-map"></i></span>
-                                    <input type="text" name="gps" class="form-control" id="add_gps"
-                                        placeholder="https://maps.google.com/..." required>
+                                    <input type="text" name="gps" class="form-control" id="add_gps" placeholder="https://maps.google.com/...">
                                 </div>
                                 <small class="form-text">Masukkan link Google Maps lokasi pelanggan</small>
                             </div>
