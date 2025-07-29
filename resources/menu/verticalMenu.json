@@ -439,11 +439,12 @@
       ]
     },
     {
-      "url": "/mindmap",
-      "name": "Mind Mapping",
-      "icon": "menu-icon tf-icons bx bx-broadcast",
+      "url": "/peta",
+      "name": "Peta Mapping",
+      "icon": "menu-icon tf-icons bx bx-globe",
       "slug": "broadcast",
       "roles": [
+        "Super Admin",
         "NOC"
       ]
     },

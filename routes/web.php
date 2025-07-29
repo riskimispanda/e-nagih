@@ -67,6 +67,7 @@ use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\Http;
 use App\Models\Router;
 use App\Http\Controllers\TiketController;
+use App\Http\Controllers\MapController;
 
 
 // Main Page Route
@@ -133,6 +134,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rab', [RabController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('rab');
     Route::get('/rab/detail/{id}', [RabController::class, 'detail'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('rab-detail');
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
+    Route::get('/peta', [MapController::class, 'index']);
+    Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
 
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
