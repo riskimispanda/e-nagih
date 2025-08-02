@@ -1328,13 +1328,13 @@ class KeuanganController extends Controller
         ->whereYear('jatuh_tempo', $year)
         ->value('total');
 
-        $pelangganLunas = Invoice::whereIn('status_id', [7, 8])
-            ->when($month !== 'all', fn($q) => $q->whereMonth('jatuh_tempo', $month))
+        $pelangganLunas = Invoice::where('status_id', 8)
+            ->whereMonth('jatuh_tempo', $month)
             ->whereYear('jatuh_tempo', $year)
             ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
 
-        $pelangganNonLunas = Invoice::whereNotIn('status_id', [7, 8])
-            ->when($month !== 'all', fn($q) => $q->whereMonth('jatuh_tempo', $month))
+        $pelangganNonLunas = Invoice::where('status_id', 7)
+            ->whereMonth('jatuh_tempo', $month)
             ->whereYear('jatuh_tempo', $year)
             ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
 
