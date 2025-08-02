@@ -313,7 +313,7 @@
                 <select name="bulan" id="bulan" class="form-select" onchange="filterBulan()">
                     <option value="">Semua Bulan</option>
                     @for ($i = 1; $i <= 12; $i++)
-                    <option value="{{ $i }}">
+                    <option value="{{ $i }}" {{ (isset($bulan) && $bulan == $i) ? 'selected' : '' }}>
                         {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
                     </option>
                     @endfor
@@ -466,7 +466,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center">
                                     <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>

@@ -131,7 +131,11 @@ class KeuanganController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $bulan = $request->get('bulan');
-        // dd($bulan);
+
+        // Default to current month only if no bulan parameter is provided at all (first time load)
+        if ($bulan === null && !$request->has('bulan')) {
+            $bulan = Carbon::now()->month;
+        }
 
         // Build query for invoices with relationships
         $query = Invoice::with(['customer', 'paket', 'status'])
@@ -151,8 +155,8 @@ class KeuanganController extends Controller
             $query->where('status_id', $status);
         }
 
-        // Apply month filter
-        if ($bulan) {
+        // Apply month filter - only filter by month if bulan is not empty (when "Semua Bulan" is selected, bulan will be empty)
+        if ($bulan && $bulan !== '' && $bulan !== null) {
             $query->whereMonth('jatuh_tempo', $bulan);
         }
 
@@ -163,42 +167,35 @@ class KeuanganController extends Controller
                 Carbon::parse($endDate)->endOfDay()
             ]);
         }
-        
 
+        // Clone query for statistics calculation
+        $statisticsQuery = clone $query;
         $invoices = $query->paginate(10);
 
-        // Calculate revenue statistics
-        $totalRevenue = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })->sum('tagihan') + Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })->sum('tambahan') - Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })->sum('tunggakan');
+        // Calculate revenue statistics based on filtered data
+        $filteredInvoices = $statisticsQuery->get();
 
-        $monthlyRevenue = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->sum('tagihan') + Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->sum('tambahan') - Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->sum('tunggakan');
+        $totalRevenue = 0;
+        $pendingRevenue = 0;
+        $totalInvoices = 0;
 
-        $pendingRevenue = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })->sum('tagihan') + Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })->sum('tambahan') + Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })->sum('tunggakan');
+        foreach ($filteredInvoices as $invoice) {
+            if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
+                $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
+            } elseif ($invoice->status && $invoice->status->nama_status == 'Belum Bayar') {
+                $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
+                $totalInvoices++;
+            }
+        }
 
-        $totalInvoices = Invoice::where('status_id', 7)->count();
+        // Monthly revenue from payments (Pembayaran) - filtered by selected month or all if no month filter
+        if ($bulan && $bulan !== '' && $bulan !== null) {
+            $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $bulan)
+                ->whereYear('tanggal_bayar', Carbon::now()->year)
+                ->sum('jumlah_bayar');
+        } else {
+            $monthlyRevenue = Pembayaran::sum('jumlah_bayar');
+        }
 
         // Get all status options for filter dropdown
         $statusOptions = Status::whereIn('id', [7, 8])->get();
@@ -207,9 +204,8 @@ class KeuanganController extends Controller
         $pendapatan = Pendapatan::paginate(5);
         $agen = User::where('roles_id', 6)->count();
         $totalPembayaran = Pembayaran::where('status_id', 1)->count();
-        // dd($agen);
 
-        return view('/keuangan/data-pendapatan',[
+        return view('keuangan.data-pendapatan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'invoices' => $invoices,
@@ -222,6 +218,7 @@ class KeuanganController extends Controller
             'status' => $status,
             'startDate' => $startDate,
             'endDate' => $endDate,
+            'bulan' => $bulan,
             'metode' => $metode,
             'pendapatan' => $pendapatan,
             'agen' => $agen,
