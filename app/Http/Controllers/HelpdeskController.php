@@ -12,6 +12,7 @@ use App\Services\ChatServices;
 use App\Models\Perusahaan;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use App\Models\ODP;
 
 
 // Log
@@ -66,7 +67,7 @@ class HelpdeskController extends Controller
         $corp = Paket::where('nama_paket', 'Dedicated')->get();
         $perusahaan = Perusahaan::all();
         $agen = User::where('roles_id', 6)->get();
-
+        $odp = ODP::all();
         $user = auth()->user();
         // $coba = $user->roles_id == 6;
         // dd($coba);
@@ -83,7 +84,8 @@ class HelpdeskController extends Controller
             'customer' => $customer,
             'corp' => $corp,
             'perusahaan' => $perusahaan,
-            'agen' => $agen
+            'agen' => $agen,
+            'odp' => $odp
         ]);
     }
 

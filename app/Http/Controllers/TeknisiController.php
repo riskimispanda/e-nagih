@@ -203,7 +203,14 @@ class TeknisiController extends Controller
         $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
 
         // Hitung tagihan prorate
-        $tagihanProrate = $this->calculateProrate($customer->paket->harga, $tanggalSelesai);
+        $hargaPaket = $customer->paket->harga;
+        // Jika tanggal selesai tgl 1, tagihan = full harga paket
+        if ($tanggalSelesai->day == 1) {
+            $tagihanProrate = $hargaPaket;
+        } else {
+            $tagihanProrate = $this->calculateProrate($hargaPaket, $tanggalSelesai);
+        }
+
 
         // Buat invoice
         $invoice = Invoice::create([

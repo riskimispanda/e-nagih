@@ -284,4 +284,29 @@ class ChatServices
         ];
     }
 
+    public function kirimNotifikasiTiketOpen($to, $user, $tiket)
+    {
+        $url = url('/helpdesk/tiket-open');
+        $response = Http::post("{$this->baseURL}/send-pesan", [
+            'to' => $to . '@c.us',
+            'pesan' => "Halo {$user->name}, Tiket Open baru telah ditambahkan. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+                        "Nama Pelanggan: {$tiket->customer->nama_customer}\n" .
+                        "Kategori: {$tiket->kategori->nama_kategori}\n" .
+                        "Keterangan: {$tiket->keterangan}\n" .
+                        "By Admin: {$tiket->user->name}\n" .
+                        "🔗 Link Aplikasi:\n{$url}\n\n" .
+                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+        ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return [
+            'error' => true,
+            'status' => $response->status(),
+            'pesan' => $response->body(),
+        ];
+    }
+
 }

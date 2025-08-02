@@ -123,18 +123,6 @@ class NocController extends Controller
             'remote' => $request->remote,
         ]);
 
-        // Notif Ke Teknisi
-        $chat = new ChatServices();
-        foreach ($teknisi as $tek) {
-            $nomor = preg_replace('/[^0-9]/', '', $tek->no_hp);
-            if (str_starts_with($nomor, '0')) {
-                $nomor = '62' . substr($nomor, 1);
-            }
-        
-            $chat->kirimNotifikasiTeknisi($nomor, $tek);
-        }
-        
-
         // 🔌 Connect ke router sekali saja
         $client = MikrotikServices::connect($router);
 
@@ -147,6 +135,17 @@ class NocController extends Controller
             'profile' => $paket,
             'service' => $konek,
         ]);
+
+        // Notif Ke Teknisi
+        $chat = new ChatServices();
+        foreach ($teknisi as $tek) {
+            $nomor = preg_replace('/[^0-9]/', '', $tek->no_hp);
+            if (str_starts_with($nomor, '0')) {
+                $nomor = '62' . substr($nomor, 1);
+            }
+        
+            $chat->kirimNotifikasiTeknisi($nomor, $tek);
+        }
 
         return redirect('/data/antrian-noc')->with('success', 'Antrian assigned successfully');
     }

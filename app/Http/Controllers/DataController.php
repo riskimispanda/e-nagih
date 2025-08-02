@@ -21,7 +21,7 @@ class DataController extends Controller
             'invoice',
             'getServer',
             'odp.odc.olt'
-        ])->whereIn('status_id', [3, 9])
+        ])->whereIn('status_id', [3, 4, 9])
         ->orderBy('created_at', 'desc')
         ->get();
         

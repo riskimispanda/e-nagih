@@ -755,9 +755,8 @@
                                     <textarea name="alamat" id="add_alamat" class="form-control" rows="2" placeholder="Masukkan alamat lengkap" required></textarea>
                                 </div>
                             </div>
-                            <div class="col-12 form-group">
-                                <label class="form-label" for="add_gps">Titik Lokasi <span
-                                        class="text-danger">*</span></label>
+                            <div class="col-6 form-group">
+                                <label class="form-label" for="add_gps">Titik Lokasi <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bx-map"></i></span>
                                     <input type="text" name="gps" class="form-control" id="add_gps" placeholder="https://maps.google.com/...">
@@ -785,14 +784,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-6 form-group">
-                                <label class="form-label" for="add_foto_ktp">Tanggal Registrasi</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bx bx-calendar-alt"></i></span>
-                                    <input type="date" name="tanggal_reg" class="form-control" id="add_foto_ktp">
-                                </div>
-                                <small class="form-text">Tanggal Registrasi</small>
-                            </div>
                             @if(auth()->user()->roles_id == 7)
                             <div class="col-md-6 form-group">
                                 <label class="form-label">Agen</label>
@@ -808,6 +799,14 @@
                                 <small class="form-text">Boleh kosong</small>
                             </div>
                             @endif
+                            <div class="col-md-12 form-group">
+                                <label class="form-label" for="add_foto_ktp">Tanggal Registrasi</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-calendar-alt"></i></span>
+                                    <input type="date" name="tanggal_reg" class="form-control" id="add_foto_ktp">
+                                </div>
+                                <small class="form-text">Tanggal Registrasi</small>
+                            </div>
                         </div>
                     </div>
 
@@ -1120,6 +1119,14 @@
     </script>
     <script>
         new TomSelect("#agen", {
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+        // Odp
+        new TomSelect("#select_odp", {
             create: false,
             sortField: {
                 field: "text",

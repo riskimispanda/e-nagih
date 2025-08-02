@@ -267,9 +267,9 @@
           ]
         },
         {
-          "url": "/ticket/create",
+          "url": "/tiket-closed",
           "name": "Tiket Closed",
-          "slug": "ticket-create",
+          "slug": "tiket-closed",
           "roles": [
             "NOC",
             "Super Admin",

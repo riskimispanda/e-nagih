@@ -1,14 +1,14 @@
 @extends('layouts.contentNavbarLayout')
 
-@section('title', 'Tiket Open')
+@section('title', 'Tiket Closed')
 
 @section('content')
 <div class="row">
-    <div class="col-12">
+    <div class="col-sm-12">
         <div class="card mb-3">
             <div class="card-header">
-                <h4 class="card-title fw-bold">Tiket Open</h4>
-                <small class="card-subtitle">Daftar tiket yang sedang terbuka</small>
+                <h4 class="card-title fw-bold">Tiket Closed</h4>
+                <small class="card-subtitle">Daftar tiket yang belum ditutup</small>
             </div>
         </div>
         <div class="card">
@@ -22,6 +22,8 @@
                                 <th>Alamat</th>
                                 <th>No HP</th>
                                 <th>Lokasi</th>
+                                <th>Keterangan</th>
+                                <th>Kategori</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -29,14 +31,14 @@
                             @forelse ($customer as $item)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $item->nama_customer }}</td>
-                                <td>{{ $item->alamat }}</td>
-                                <td>{{ $item->no_hp }}</td>
+                                <td>{{ $item->customer->nama_customer }}</td>
+                                <td>{{ $item->customer->alamat }}</td>
+                                <td>{{ $item->customer->no_hp }}</td>
                                 <td>
                                     @php
-                                        $gps = $item->gps;
-                                        $isLink = Str::startsWith($gps, ['http://', 'https://']);
-                                        $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                                    $gps = $item->customer->gps;
+                                    $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                                    $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
                                     @endphp
                                     <div class="row">
                                         <a href="{{ $url }}" target="_blank" class="btn btn-action btn-maps" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat di Google Maps">
@@ -44,13 +46,17 @@
                                         </a></a>
                                     </div>
                                 </td>
+                                <td>{{ $item->keterangan }}</td>
                                 <td>
-                                    <div class="row">
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a href="/open-tiket/{{ $item->id }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Open Tiket">
-                                                <i class="bx bx-lock-open-alt text-danger"></i>
-                                            </a>
-                                        </div>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger">
+                                        {{ $item->kategori->nama_kategori }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center">
+                                        <a href="/tiket-open/{{ $item->id }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tutup Tiket">
+                                            <i class="bx bx-user-check text-warning"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -61,11 +67,6 @@
                             @endforelse
                         </tbody>
                     </table>
-                </div>
-                <div class="d-flex mt-3">
-                    <div class="d-flex justify-content-center gap-2">
-                        {{ $customer->links() }}
-                    </div>
                 </div>
             </div>
         </div>

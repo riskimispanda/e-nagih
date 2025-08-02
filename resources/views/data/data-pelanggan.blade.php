@@ -931,9 +931,12 @@
                                         Aktif
                                     </span>
                                     @elseif($item->status_id == 9)
-                                    <span class="badge bg-danger status-badge bg-opacity-10 text-danger"
-                                    style="text-transform: uppercase">
+                                    <span class="badge bg-danger status-badge bg-opacity-10 text-danger" style="text-transform: uppercase">
                                     Isolire Billing
+                                </span>
+                                @elseif($item->status_id == 4)
+                                <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
+                                    Maintenance
                                 </span>
                                 @endif
                             </td>

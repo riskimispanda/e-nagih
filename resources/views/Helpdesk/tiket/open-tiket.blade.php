@@ -132,8 +132,9 @@
                         <h5 class="mb-0">Detail Gangguan</h5>
                     </div>
                     <div class="card-body">
-                        <form action="" method="POST" enctype="multipart/form-data">
+                        <form action="/add/tiket-open" method="POST" enctype="multipart/form-data">
                             @csrf
+                            <input type="text" name="customer_id" value="{{ $customer->id }}" class="form-control" hidden>
                             <div class="row">
                                 <div class="col-sm-12 mb-6">
                                     <label class="form-label">Kategori Tiket Open</label>
