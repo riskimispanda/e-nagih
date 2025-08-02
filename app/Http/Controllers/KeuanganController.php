@@ -1307,58 +1307,42 @@ class KeuanganController extends Controller
         // Calculate customer statistics
         $totalCustomers = Customer::where('status_id', 3)->count(); // Active customers
 
-        // Total pendapatan dari invoice: sudah bayar + belum bayar + tunggakan
-        $totalPendapatan = Invoice::selectRaw("
-        SUM(
-            CASE
-                WHEN status_id IN (7, 8) THEN tagihan + tambahan + COALESCE(tunggakan, 0)
-                ELSE 0
-            END
-        ) +
-        SUM(
-            CASE
-                WHEN status_id NOT IN (7, 8) THEN tagihan + tambahan + COALESCE(tunggakan, 0)
-                ELSE 0
-            END
-        ) AS total
-        ")
-        ->when($month !== 'all', function ($query) use ($month) {
-            $query->whereMonth('jatuh_tempo', $month);
-        })
-        ->whereYear('jatuh_tempo', $year)
-        ->value('total');
-
-        $pelangganLunas = Invoice::where('status_id', 8)
-            ->whereMonth('jatuh_tempo', $month)
-            ->whereYear('jatuh_tempo', $year)
-            ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
-
-        $pelangganNonLunas = Invoice::where('status_id', 7)
-            ->whereMonth('jatuh_tempo', $month)
-            ->whereYear('jatuh_tempo', $year)
-            ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
-
         // Determine month for customer statistics
         $customerMonth = $month !== 'all' ? $month : date('m');
         $customerYear = $year;
 
-        // Paid customers for specified month
-        $paidCustomers = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })
-        ->whereMonth('jatuh_tempo', $customerMonth)
-        ->whereYear('jatuh_tempo', $customerYear)
-        ->distinct('customer_id')
-        ->count();
+        // Build base query for invoices with month/year filter
+        $invoiceBaseQuery = Invoice::whereYear('jatuh_tempo', $customerYear);
+        if ($month !== 'all') {
+            $invoiceBaseQuery->whereMonth('jatuh_tempo', $customerMonth);
+        }
 
-        // Unpaid customers for specified month
-        $unpaidCustomers = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })
-        ->whereMonth('jatuh_tempo', $customerMonth)
-        ->whereYear('jatuh_tempo', $customerYear)
-        ->distinct('customer_id')
-        ->count();
+        // Total pendapatan dari invoice: sudah bayar + belum bayar + tunggakan
+        $totalPendapatan = (clone $invoiceBaseQuery)
+            ->whereIn('status_id', [7, 8])
+            ->sum(DB::raw('tagihan + tambahan + COALESCE(tunggakan, 0)'));
+
+        // Revenue from paid customers (status_id = 8)
+        $pelangganLunas = (clone $invoiceBaseQuery)
+            ->where('status_id', 8)
+            ->sum(DB::raw('tagihan + tambahan + COALESCE(tunggakan, 0)'));
+
+        // Revenue from unpaid customers (status_id = 7)
+        $pelangganBelumLunas = (clone $invoiceBaseQuery)
+            ->where('status_id', 7)
+            ->sum(DB::raw('tagihan + tambahan + COALESCE(tunggakan, 0)'));
+
+        // Count of paid customers for specified period
+        $paidCustomers = (clone $invoiceBaseQuery)
+            ->where('status_id', 8)
+            ->distinct('customer_id')
+            ->count();
+
+        // Count of unpaid customers for specified period
+        $unpaidCustomers = (clone $invoiceBaseQuery)
+            ->where('status_id', 7)
+            ->distinct('customer_id')
+            ->count();
 
         return [
             'totalSubscription' => (float) $totalSubscription,
@@ -1370,9 +1354,9 @@ class KeuanganController extends Controller
             'totalCustomers' => (int) $totalCustomers,
             'paidCustomers' => (int) $paidCustomers,
             'totalPendapatan' => (float) $totalPendapatan,
-            'pelangganLunas' => (int) $pelangganLunas,
+            'pelangganLunas' => (float) $pelangganLunas,
             'unpaidCustomers' => (int) $unpaidCustomers,
-            'pelangganBelumLunas' => (int) $pelangganNonLunas,
+            'pelangganBelumLunas' => (float) $pelangganBelumLunas,
             'monthlyRevenueDifference' => (float) ($currentMonthRevenue - $prevMonthRevenue),
             'yearlyRevenueDifference' => (float) ($currentYearRevenue - $prevYearRevenue),
             'currentMonthRevenue' => (float) $currentMonthRevenue,
