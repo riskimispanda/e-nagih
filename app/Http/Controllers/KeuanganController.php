@@ -1328,21 +1328,15 @@ class KeuanganController extends Controller
         ->whereYear('jatuh_tempo', $year)
         ->value('total');
 
-        $paidCustomers = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })
-        ->whereMonth('jatuh_tempo', $month)
-        ->whereYear('jatuh_tempo', $year)
-        ->distinct('customer_id')
-        ->count();
+        $pelangganLunas = Invoice::whereIn('status_id', [7, 8])
+            ->when($month !== 'all', fn($q) => $q->whereMonth('jatuh_tempo', $month))
+            ->whereYear('jatuh_tempo', $year)
+            ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
 
-        $unpaidCustomers = Invoice::whereHas('status', function($q) {
-            $q->where('nama_status', 'Belum Bayar');
-        })
-        ->whereMonth('jatuh_tempo', $month)
-        ->whereYear('jatuh_tempo', $year)
-        ->distinct('customer_id')
-        ->count();
+        $pelangganNonLunas = Invoice::whereNotIn('status_id', [7, 8])
+            ->when($month !== 'all', fn($q) => $q->whereMonth('jatuh_tempo', $month))
+            ->whereYear('jatuh_tempo', $year)
+            ->sum(DB::raw('tagihan + tambahan - IFNULL(tunggakan, 0)'));
 
         // Determine month for customer statistics
         $customerMonth = $month !== 'all' ? $month : date('m');
@@ -1376,9 +1370,9 @@ class KeuanganController extends Controller
             'totalCustomers' => (int) $totalCustomers,
             'paidCustomers' => (int) $paidCustomers,
             'totalPendapatan' => (float) $totalPendapatan,
-            'pelangganLunas' => (float) $totalPendapatan * $paidCustomers / $totalCustomers,
+            'pelangganLunas' => (int) $pelangganLunas,
             'unpaidCustomers' => (int) $unpaidCustomers,
-            'pelangganBelumLunas' => (float) $totalPendapatan * $unpaidCustomers / $totalCustomers,
+            'pelangganBelumLunas' => (int) $pelangganNonLunas,
             'monthlyRevenueDifference' => (float) ($currentMonthRevenue - $prevMonthRevenue),
             'yearlyRevenueDifference' => (float) ($currentYearRevenue - $prevYearRevenue),
             'currentMonthRevenue' => (float) $currentMonthRevenue,
