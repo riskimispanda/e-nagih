@@ -176,6 +176,7 @@
                         </div>
                         <p class="mb-1">Total Pelanggan</p>
                         <h5 class="card-title mb-3 fw-semibold" id="totalCustomers">0</h5>
+                        <h6 class="card-title mb-3 fw-semibold" id="totalPendapatan">Rp. 0</h6>
                         <small class="text-info fw-medium">
                             <i class="bx bx-user"></i> Pelanggan Aktif
                         </small>
@@ -194,6 +195,7 @@
                         </div>
                         <p class="mb-1">Pelanggan Lunas</p>
                         <h5 class="card-title mb-3 fw-semibold" id="paidCustomers">0</h5>
+                        <h6 class="card-title mb-3 fw-semibold" id="pelangganLunas">Rp 0</h6>
                         <small class="text-success fw-medium">
                             <i class="bx bx-calendar"></i> Bulan <span id="currentMonthName"></span>
                         </small>
@@ -212,6 +214,7 @@
                         </div>
                         <p class="mb-1">Pelanggan Belum Lunas</p>
                         <h5 class="card-title mb-3 fw-semibold" id="unpaidCustomers">0</h5>
+                        <h6 class="card-title mb-3 fw-semibold" id="pelangganBelumLunas">Rp 0</h6>
                         <small class="text-danger fw-medium">
                             <i class="bx bx-calendar"></i> Bulan <span id="currentMonthName2"></span>
                         </small>
@@ -604,8 +607,11 @@
         // Update additional cards
         document.getElementById('totalKasSaldo').textContent = formatRupiah(summary.totalKasSaldo);
         document.getElementById('totalCustomers').textContent = summary.totalCustomers;
+        document.getElementById('totalPendapatan').textContent = formatRupiah(summary.totalPendapatan);
         document.getElementById('paidCustomers').textContent = summary.paidCustomers;
+        document.getElementById('pelangganLunas').textContent = formatRupiah(summary.pelangganLunas);
         document.getElementById('unpaidCustomers').textContent = summary.unpaidCustomers;
+        document.getElementById('pelangganBelumLunas').textContent = formatRupiah(summary.pelangganBelumLunas);
 
         // Update current month name for customer statistics
         const currentMonthName = getCurrentMonthName();

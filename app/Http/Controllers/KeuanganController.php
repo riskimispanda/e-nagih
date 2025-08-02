@@ -182,42 +182,30 @@ class KeuanganController extends Controller
             $totalInvoices = 0;
 
             foreach ($filteredInvoices as $invoice) {
-                if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
-                    $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
-                } elseif ($invoice->status && $invoice->status->nama_status == 'Belum Bayar') {
-                    $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
+                // Count total invoices with status_id = 7 (Belum Bayar)
+                if ($invoice->status_id == 7) {
                     $totalInvoices++;
+                }
+
+                // Calculate based on status_id
+                if ($invoice->status_id == 8) { // Sudah Bayar
+                    $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
+                } elseif ($invoice->status_id == 7) { // Belum Bayar
+                    $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
                 }
             }
         } else {
-            // When no month filter (Semua Bulan), calculate from all invoices
-            $paidInvoicesTagihan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Sudah Bayar');
-            })->sum('tagihan');
+            // When no month filter (Semua Bulan), calculate from all invoices with status_id 8 (Sudah Bayar)
+            $totalRevenue = Invoice::where('status_id', 8)
+                ->sum('tagihan') + Invoice::where('status_id', 8)
+                ->sum('tambahan') - Invoice::where('status_id', 8)
+                ->sum('tunggakan');
 
-            $paidInvoicesTambahan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Sudah Bayar');
-            })->sum('tambahan');
-
-            $paidInvoicesTunggakan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Sudah Bayar');
-            })->sum('tunggakan');
-
-            $totalRevenue = $paidInvoicesTagihan + $paidInvoicesTambahan - $paidInvoicesTunggakan;
-
-            $unpaidInvoicesTagihan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Belum Bayar');
-            })->sum('tagihan');
-
-            $unpaidInvoicesTambahan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Belum Bayar');
-            })->sum('tambahan');
-
-            $unpaidInvoicesTunggakan = Invoice::whereHas('status', function($q) {
-                $q->where('nama_status', 'Belum Bayar');
-            })->sum('tunggakan');
-
-            $pendingRevenue = $unpaidInvoicesTagihan + $unpaidInvoicesTambahan + $unpaidInvoicesTunggakan;
+            // Calculate pending revenue from status_id 7 (Belum Bayar)
+            $pendingRevenue = Invoice::where('status_id', 7)
+                ->sum('tagihan') + Invoice::where('status_id', 7)
+                ->sum('tambahan') + Invoice::where('status_id', 7)
+                ->sum('tunggakan');
 
             $totalInvoices = Invoice::where('status_id', 7)->count();
         }
@@ -1319,6 +1307,43 @@ class KeuanganController extends Controller
         // Calculate customer statistics
         $totalCustomers = Customer::where('status_id', 3)->count(); // Active customers
 
+        // Total pendapatan dari invoice: sudah bayar + belum bayar + tunggakan
+        $totalPendapatan = Invoice::selectRaw("
+        SUM(
+            CASE
+                WHEN status_id IN (7, 8) THEN tagihan + tambahan + COALESCE(tunggakan, 0)
+                ELSE 0
+            END
+        ) +
+        SUM(
+            CASE
+                WHEN status_id NOT IN (7, 8) THEN tagihan + tambahan + COALESCE(tunggakan, 0)
+                ELSE 0
+            END
+        ) AS total
+        ")
+        ->when($month !== 'all', function ($query) use ($month) {
+            $query->whereMonth('jatuh_tempo', $month);
+        })
+        ->whereYear('jatuh_tempo', $year)
+        ->value('total');
+
+        $paidCustomers = Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Sudah Bayar');
+        })
+        ->whereMonth('jatuh_tempo', $month)
+        ->whereYear('jatuh_tempo', $year)
+        ->distinct('customer_id')
+        ->count();
+
+        $unpaidCustomers = Invoice::whereHas('status', function($q) {
+            $q->where('nama_status', 'Belum Bayar');
+        })
+        ->whereMonth('jatuh_tempo', $month)
+        ->whereYear('jatuh_tempo', $year)
+        ->distinct('customer_id')
+        ->count();
+
         // Determine month for customer statistics
         $customerMonth = $month !== 'all' ? $month : date('m');
         $customerYear = $year;
@@ -1350,7 +1375,10 @@ class KeuanganController extends Controller
             'totalKasSaldo' => (float) $totalKasSaldo,
             'totalCustomers' => (int) $totalCustomers,
             'paidCustomers' => (int) $paidCustomers,
+            'totalPendapatan' => (float) $totalPendapatan,
+            'pelangganLunas' => (float) $totalPendapatan * $paidCustomers / $totalCustomers,
             'unpaidCustomers' => (int) $unpaidCustomers,
+            'pelangganBelumLunas' => (float) $totalPendapatan * $unpaidCustomers / $totalCustomers,
             'monthlyRevenueDifference' => (float) ($currentMonthRevenue - $prevMonthRevenue),
             'yearlyRevenueDifference' => (float) ($currentYearRevenue - $prevYearRevenue),
             'currentMonthRevenue' => (float) $currentMonthRevenue,
