@@ -133,27 +133,61 @@ class DataController extends Controller
             $allFilteredQuery = clone $query;
             $invoices = $query->paginate(10);
 
-            // Calculate statistics from filtered data
-            $allFilteredInvoices = $allFilteredQuery->get();
+            // Calculate statistics based on filter
+            if ($bulan && $bulan !== '' && $bulan !== null) {
+                // When month filter is applied, calculate from filtered invoices
+                $allFilteredInvoices = $allFilteredQuery->get();
 
-            $totalRevenue = 0;
-            $pendingRevenue = 0;
-            $totalInvoices = 0;
+                $totalRevenue = 0;
+                $pendingRevenue = 0;
+                $totalInvoices = 0;
 
-            foreach ($allFilteredInvoices as $invoice) {
-                // Count total invoices with status_id = 7 (Belum Bayar)
-                if ($invoice->status_id == 7) {
-                    $totalInvoices++;
+                foreach ($allFilteredInvoices as $invoice) {
+                    // Count total invoices with status_id = 7 (Belum Bayar)
+                    if ($invoice->status_id == 7) {
+                        $totalInvoices++;
+                    }
+
+                    // Calculate based on status
+                    if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
+                        // For paid invoices: add tagihan + tambahan - tunggakan to total revenue
+                        $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
+                    } elseif ($invoice->status && $invoice->status->nama_status == 'Belum Bayar') {
+                        // For unpaid invoices: add tagihan + tambahan + tunggakan to pending revenue
+                        $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
+                    }
                 }
+            } else {
+                // When no month filter (Semua Bulan), calculate from all invoices
+                $paidInvoicesTagihan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                })->sum('tagihan');
 
-                // Calculate based on status
-                if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
-                    // For paid invoices: add tagihan + tambahan - tunggakan to total revenue
-                    $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
-                } elseif ($invoice->status && $invoice->status->nama_status == 'Belum Bayar') {
-                    // For unpaid invoices: add tagihan + tambahan + tunggakan to pending revenue
-                    $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
-                }
+                $paidInvoicesTambahan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                })->sum('tambahan');
+
+                $paidInvoicesTunggakan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                })->sum('tunggakan');
+
+                $totalRevenue = $paidInvoicesTagihan + $paidInvoicesTambahan - $paidInvoicesTunggakan;
+
+                $unpaidInvoicesTagihan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Belum Bayar');
+                })->sum('tagihan');
+
+                $unpaidInvoicesTambahan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Belum Bayar');
+                })->sum('tambahan');
+
+                $unpaidInvoicesTunggakan = \App\Models\Invoice::whereHas('status', function($q) {
+                    $q->where('nama_status', 'Belum Bayar');
+                })->sum('tunggakan');
+
+                $pendingRevenue = $unpaidInvoicesTagihan + $unpaidInvoicesTambahan + $unpaidInvoicesTunggakan;
+
+                $totalInvoices = \App\Models\Invoice::where('status_id', 7)->count();
             }
 
             // Calculate monthly revenue from Pembayaran based on selected month or all if no month filter
