@@ -6,6 +6,7 @@ use App\Models\Customer;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 
 class ChatServices
@@ -122,15 +123,19 @@ class ChatServices
 
     public function kirimInvoiceMassal($customer, $invoices)
     {
-        // dd($customer, $invoices);
+        $url = url('/payment/invoice/' . $invoices[0]->id);
+        $jatuhTempo = Carbon::parse($invoices[0]->jatuh_tempo);
         $pesan = "Halo {$customer->nama_customer}, berikut adalah daftar tagihan Anda:\n\n";
 
         foreach ($invoices as $invoice) {
             $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
             $pesan .= "📅 Tanggal: " . now()->format('d-m-Y') . "\n";
+            $pesan .= "💰 Tagihan Bulan: " . $jatuhTempo->translatedFormat('F Y') . "\n";
             $pesan .= "💰 Jumlah: Rp " . number_format($invoice->tagihan, 0, ',', '.') . "\n";
-            $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n\n";
-            $pesan .= "🔔 Jatuh Tempo: {$invoice->jatuh_tempo}\n";
+            $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n";
+            $pesan .= "📊 Status: {$invoice->status->nama_status}\n\n";
+            $pesan .= "🔔 Jatuh Tempo: {$jatuhTempo->translatedFormat('d F Y')}\n\n";
+            $pesan .= "🔗 Link Pembayaran: \n{$url}\n";
             $pesan .= "--------------------------\n";
         }
 
