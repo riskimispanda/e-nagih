@@ -86,6 +86,10 @@
         border-left-color: #8898aa;
     }
     
+    .data-card.warning-card {
+        border-left-color: #f7b924;
+    }
+    
     .data-card-icon {
         font-size: 1.25rem;
         margin-right: 0.75rem;
@@ -121,6 +125,11 @@
     .data-card-icon.secondary {
         background-color: rgba(136, 152, 170, 0.1);
         color: #8898aa;
+    }
+    
+    .data-card-icon.warning {
+        background-color: rgba(247, 185, 36, 0.1);
+        color: #f7b924;
     }
     
     .data-card-content {
@@ -787,25 +796,51 @@
                             </div>
                         </div>
                     </div>
-                    @if (auth()->user()->roles_id == 1)
-                    <div class="col-md-6 col-lg-3 mb-3">
-                        <div class="data-card bg-white primary-card">
-                            <div class="data-card-icon primary">
-                                <i class="bx bx-money"></i>
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="tooltip" title="Jumlah Maintenance Hari Ini" data-bs-placement="top">
+                        <div class="data-card bg-white danger-card">
+                            <div class="data-card-icon danger">
+                                <i class="bx bx-loader"></i>
                             </div>
-                            <a href="/payment/approve">
-                                <div class="data-card-content">
-                                    <div class="data-label">Konfirmasi Pembayaran</div>
-                                    <div class="data-value">
-                                        <span class="badge bg-primary rounded-pill">
-                                            {{ count($pembayaran) }}
-                                        </span>
-                                    </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Maintenance Hari Ini</div>
+                                <div class="data-value">
+                                    <span class="badge bg-danger rounded-pill">
+                                        {{ $maintenance }}
+                                    </span>
                                 </div>
-                            </a>
+                            </div>
                         </div>
                     </div>
-                    @endif
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#selesai">
+                        <div class="data-card bg-white success-card">
+                            <div class="data-card-icon success">
+                                <i class="bx bx-check-circle"></i>
+                            </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Installasi Hari Ini</div>
+                                <div class="data-value">
+                                    <span class="badge bg-success rounded-pill">
+                                        {{ $hariIni }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#antrian">
+                        <div class="data-card bg-white warning-card">
+                            <div class="data-card-icon warning">
+                                <i class="bx bx-hourglass"></i>
+                            </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Antrian Hari Ini</div>
+                                <div class="data-value">
+                                    <span class="badge bg-warning rounded-pill">
+                                        {{ $menunggu }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -932,171 +967,175 @@
                                     </span>
                                     @elseif($item->status_id == 9)
                                     <span class="badge bg-danger status-badge bg-opacity-10 text-danger" style="text-transform: uppercase">
-                                    Isolire Billing
-                                </span>
-                                @elseif($item->status_id == 4)
-                                <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
-                                    Maintenance
-                                </span>
-                                @endif
-                            </td>
-                            <td>
-                                <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
-                                    <i class="bx bx-cloud"></i>
-                                </a>
-                            </td>
-                            <td class="text-center">
-                                <div class="row">
-                                    <div class="d-flex justify-content-center">
-                                        @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
-                                        <a href="/blokir/{{ $item->id }}"
-                                            class="btn btn-danger action-btn blokir-customer-btn mb-2"
-                                            data-bs-toggle="tooltip" data-bs-placement="top"
-                                            title="Blokir Pelanggan">
-                                            <i class="bx bx-block"></i>
-                                        </a>
-                                        <a href="/unblokir/{{ $item->id }}"
-                                            class="btn btn-warning action-btn unblokir-customer-btn mb-2"
-                                            data-bs-toggle="tooltip" data-bs-placement="top"
-                                            title="Aktifkan Pelanggan">
-                                            <i class="bx bx-check-circle"></i>
-                                        </a>
+                                        Isolire Billing
+                                    </span>
+                                    @elseif($item->status_id == 4)
+                                    <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
+                                        Maintenance
+                                    </span>
                                     @endif
-                                    <a href="/detail-pelanggan/{{ $item->id }}"
-                                        class="btn btn-info action-btn detail-customer-btn mb-2"
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Detail Pelanggan">
-                                        <i class="bx bx-show"></i>
+                                </td>
+                                <td>
+                                    <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
+                                        <i class="bx bx-cloud"></i>
                                     </a>
+                                </td>
+                                <td class="text-center">
+                                    <div class="row">
+                                        <div class="d-flex justify-content-center">
+                                            @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
+                                            <a href="/blokir/{{ $item->id }}"
+                                                class="btn btn-danger action-btn blokir-customer-btn mb-2"
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Blokir Pelanggan">
+                                                <i class="bx bx-block"></i>
+                                            </a>
+                                            <a href="/unblokir/{{ $item->id }}"
+                                                class="btn btn-warning action-btn unblokir-customer-btn mb-2"
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Aktifkan Pelanggan">
+                                                <i class="bx bx-check-circle"></i>
+                                            </a>
+                                            @endif
+                                            <a href="/detail-pelanggan/{{ $item->id }}"
+                                                class="btn btn-info action-btn detail-customer-btn mb-2"
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Detail Pelanggan">
+                                                <i class="bx bx-show"></i>
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            @if(empty($item))
-            <div class="d-flex flex-column align-items-center justify-content-center py-5" id="noDataMessage">
-                <div class="mb-3">
-                    <i class="bx bx-user-x" style="font-size: 4rem; color: #8898aa;"></i>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    @if(empty($item))
+                    <div class="d-flex flex-column align-items-center justify-content-center py-5" id="noDataMessage">
+                        <div class="mb-3">
+                            <i class="bx bx-user-x" style="font-size: 4rem; color: #8898aa;"></i>
+                        </div>
+                        <h5 class="text-muted mb-2">Belum Ada Pelanggan</h5>
+                        <p class="text-muted">Saat ini belum ada data pelanggan yang terdaftar.</p>
+                    </div>
+                    @endif
+                    <div class="no-results" id="noResults">
+                        <p>Tidak ada data pelanggan yang sesuai dengan pencarian.</p>
+                    </div>
                 </div>
-                <h5 class="text-muted mb-2">Belum Ada Pelanggan</h5>
-                <p class="text-muted">Saat ini belum ada data pelanggan yang terdaftar.</p>
-            </div>
-            @endif
-            <div class="no-results" id="noResults">
-                <p>Tidak ada data pelanggan yang sesuai dengan pencarian.</p>
+                
+                <!-- Pagination Container -->
+                <div class="pagination-container" id="paginationContainer">
+                    <div class="pagination-info">
+                        <div class="data-count-info">
+                            Menampilkan <span class="count-highlight" id="showingStart">1</span> -
+                            <span class="count-highlight" id="showingEnd">10</span> dari
+                            <span class="count-highlight" id="totalRecords">{{ count($data) }}</span> data
+                        </div>
+                        <div class="page-size-selector">
+                            <label for="pageSize">Data per halaman:</label>
+                            <select id="pageSize" class="page-size-select">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="pagination-controls" id="paginationControls">
+                        <!-- Pagination buttons will be generated by JavaScript -->
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Pagination Container -->
-        <div class="pagination-container" id="paginationContainer">
-            <div class="pagination-info">
-                <div class="data-count-info">
-                    Menampilkan <span class="count-highlight" id="showingStart">1</span> -
-                    <span class="count-highlight" id="showingEnd">10</span> dari
-                    <span class="count-highlight" id="totalRecords">{{ count($data) }}</span> data
-                </div>
-                <div class="page-size-selector">
-                    <label for="pageSize">Data per halaman:</label>
-                    <select id="pageSize" class="page-size-select">
-                        <option value="10">10</option>
-                        <option value="25">25</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                </div>
+    </div>
+    
+</div>
+
+{{-- Modal Antrian --}}
+<div class="modal fade" id="antrian" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel4">Antrian Pelanggan hari ini</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="pagination-controls" id="paginationControls">
-                <!-- Pagination buttons will be generated by JavaScript -->
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>Status</th>
+                                <th>Teknisi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($antrian as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        @if ($item->status_id == 1)
+                                            <span class="badge bg-warning bg-opacity-10 text-warning">Menunggu</span>
+                                        @elseif($item->status_id == 2)
+                                            <span class="badge bg-info bg-opacity-10 text-info">On Progress</span>
+                                        @elseif($item->status_id == 5)
+                                            <span class="badge bg-info bg-opacity-10 text-info">Assigment</span>
+                                        @endif
+                                    </td>
+                                    <td>{{$item->teknisi->name ?? '-'}}</td>
+                                </tr>
+                            @empty
+                            
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
-</div>
 
-</div>
-
-<!-- Payment Confirmation Modal - Minimalist Version -->
-<div class="modal fade payment-modal" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel"
-aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="paymentModalLabel">
-                <i class="bx bx-money"></i>Pembayaran
-            </h5>
-            <button type="button" class="close-btn" data-bs-dismiss="modal" aria-label="Close"
-            style="margin-left: auto;">
-            <i class="bx bx-x"></i>
-        </button>
+{{-- Modal Selesai --}}
+<div class="modal fade" id="selesai" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel4">Installasi hari ini</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>Status</th>
+                                <th>Teknisi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($selesai as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
+                                    </td>
+                                    <td>{{$item->teknisi->name ?? '-'}}</td>
+                                </tr>
+                            @empty
+                            
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="modal-body">
-        <form id="paymentForm" enctype="multipart/form-data" method="post"
-        action="/konfirmasi/pembayaran/{{ $item->id ?? '' }}">
-        @csrf
-        @if($item->id ?? '')
-        <input type="hidden" name="invoice_id" value="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}">
-        @endif
-        <!-- Customer Information -->
-        <div class="customer-info">
-            <div class="info-item">
-                <div class="info-label">Nama</div>
-                <div class="info-value" id="customerName">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Paket</div>
-                <div class="info-value" id="customerPackage">-</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Status</div>
-                <div class="info-value" id="billStatus">-</div>
-            </div>
-        </div>
-        <hr>
-        <!-- Payment Amount -->
-        <div class="payment-amount">
-            <span class="currency">Rp</span><span id="paymentAmount"></span>
-        </div>
-        <hr>
-        <!-- Payment Details -->
-        <div class="payment-details">
-            <div class="mb-3">
-                <label for="paymentDate" class="form-label">Tanggal Pembayaran</label>
-                <input type="date" class="form-control" id="paymentDate" name="paymentDate" required>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Metode Pembayaran</label>
-                <select class="form-select" id="paymentMethodSelect" name="paymentMethodSelect">
-                    <option selected disabled>Pilih Metode Pembayaran</option>
-                    @foreach ($metode as $item)
-                    <option value="{{ $item->id }}">{{ $item->nama_metode }}</option>
-                    @endforeach
-                </select>
-            </div>
-            
-            <div class="mb-3" id="transferDetails" style="display: none;">
-                <label for="transferProof" class="form-label">Bukti Pembayaran</label>
-                <input type="file" class="form-control" id="transferProof" name="transferProof"
-                accept="image/*,.pdf">
-                <small class="form-text text-muted">Format: JPG, PNG, PDF (Maks. 5MB)</small>
-            </div>
-            
-            <div class="mb-3">
-                <label for="paymentNotes" class="form-label">Catatan</label>
-                <textarea class="form-control" id="paymentNotes" name="paymentNotes" rows="2"
-                placeholder="Tambahkan catatan jika diperlukan"></textarea>
-            </div>
-        </div>
-        <div class="modal-footer mt-5 gap-3">
-            <button type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-warning btn-sm">Konfirmasi</button>
-        </div>
-    </form>
-</div>
-</div>
-</div>
 </div>
 @endsection
 

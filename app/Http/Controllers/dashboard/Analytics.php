@@ -127,28 +127,25 @@ class Analytics extends Controller
     
     public function logistik()
     {
-        $perangkat = Perangkat::withCount(['customer'])->get();
-
-        foreach ($perangkat as $item) {
-            $item->stok_terpakai = $item->customer_count ?? 0;
-            $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai;
-
-            // Hindari angka minus
-            if ($item->stok_tersedia < 0) {
-                $item->stok_tersedia = 0;
-            }
+      $perangkat = Perangkat::withCount(['customer'])->get();
+      
+      foreach ($perangkat as $item) {
+        $item->stok_terpakai = $item->customer_count ?? 0;
+        $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai;
+        
+        // Hindari angka minus
+        if ($item->stok_tersedia < 0) {
+          $item->stok_tersedia = 0;
         }
-
-        return view("data.data-logistik", [
-            "users" => auth()->user(),
-            "roles" => auth()->user()->roles,
-            "perangkat" => $perangkat,
-        ]);
+      }
+      
+      return view("data.data-logistik", [
+        "users" => auth()->user(),
+        "roles" => auth()->user()->roles,
+        "perangkat" => $perangkat,
+      ]);
     }
 
-
-
-    
     public function antrian()
     {
       return view("data.data-antrian", [

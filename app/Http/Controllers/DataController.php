@@ -9,6 +9,7 @@ use App\Models\Pembayaran;
 use App\Events\UpdateBaru;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DataController extends Controller
 {
@@ -29,7 +30,17 @@ class DataController extends Controller
 
         $metode = Metode::all();
         $pembayaran = Pembayaran::where('status_id', 6)->get();
-        
+        $hariIni = Customer::whereDate('created_at', today())
+        ->where('status_id', 3)
+        ->count();
+        $menunggu = Customer::whereDate('created_at', today())
+            ->whereIn('status_id', [1, 2, 5])
+            ->count();
+
+        $maintenance = Customer::whereDate('created_at', today())
+        ->where('status_id', 4)
+        ->count();
+        // dd($menunggu);
         // Format data sesuai kebutuhan frontend
         $customerData = $customers->map(function ($customer) {
             $latestInvoice = $customer->invoice->sortByDesc('created_at')->first();
@@ -80,13 +91,28 @@ class DataController extends Controller
             cache(['last_customer_update' => $currentUpdate], now()->addMinutes(5));
         }
         
+        $antrian = Customer::whereIn('status_id', [1, 2, 5])
+        ->whereDate('created_at', today())
+        ->with('teknisi')
+        ->get();
+        
+        $selesai = Customer::where('status_id', 3)
+        ->whereDate('created_at', today())
+        ->with('teknisi')
+        ->get();
+
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'data' => $customers,
             'metode' => $metode,
             'pembayaran' => $pembayaran,
+            'hariIni' => $hariIni,
+            'menunggu' => $menunggu,
+            'maintenance' => $maintenance,
             'customerData' => $customerData->toArray(),
+            'antrian' => $antrian,
+            'selesai' => $selesai
         ]);
     }
 

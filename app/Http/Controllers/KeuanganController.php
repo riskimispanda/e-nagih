@@ -201,6 +201,7 @@ class KeuanganController extends Controller
                 ->sum('tambahan') - Invoice::where('status_id', 8)
                 ->sum('tunggakan');
 
+
             // Calculate pending revenue from status_id 7 (Belum Bayar)
             $pendingRevenue = Invoice::where('status_id', 7)
                 ->sum('tagihan') + Invoice::where('status_id', 7)
@@ -226,6 +227,7 @@ class KeuanganController extends Controller
         $pendapatan = Pendapatan::paginate(5);
         $agen = User::where('roles_id', 6)->count();
         $totalPembayaran = Pembayaran::where('status_id', 1)->count();
+        $pembayaran = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
 
         return view('keuangan.data-pendapatan',[
             'users' => auth()->user(),
@@ -244,7 +246,8 @@ class KeuanganController extends Controller
             'metode' => $metode,
             'pendapatan' => $pendapatan,
             'agen' => $agen,
-            'totalPembayaran' => $totalPembayaran
+            'totalPembayaran' => $totalPembayaran,
+            'pembayaran' => $pembayaran,
         ]);
     }
 
@@ -991,9 +994,6 @@ class KeuanganController extends Controller
             return redirect()->back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
         }
     }
-
-
-
 
     public function agen(Request $request)
     {
