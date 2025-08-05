@@ -1088,7 +1088,9 @@
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                 </tr>
                             @empty
-                            
+                            <tr>
+                                <td colspan="4">Tidak ada data</td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -1128,7 +1130,9 @@
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                 </tr>
                             @empty
-                            
+                            <tr>
+                                <td colspan="4">Tidak ada data</td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
