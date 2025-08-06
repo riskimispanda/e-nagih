@@ -138,7 +138,7 @@ class CallbackController extends Controller
         try {
             DB::beginTransaction();
 
-            $totalBayar = $invoice->tagihan + $invoice->tambahan;
+            $totalBayar = $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan;
 
             // Update status invoice menjadi lunas
             $invoice->update(['status_id' => 8]);
