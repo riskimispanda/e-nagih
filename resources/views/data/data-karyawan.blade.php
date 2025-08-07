@@ -19,8 +19,8 @@
                                 <th>Nama Karyawan</th>
                                 <th>Nomor HP</th>
                                 <th>Alamat</th>
-                                <th>Email</th>
-                                <th>Role Karyawan</th>
+                                <th>Bio</th>
+                                <th>Role</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -28,13 +28,19 @@
                                 <tr>
                                     <td class="fw-semibold">{{ $loop->iteration }}</td>
                                     <td class="fw-semibold">
-                                        <i class="bx bx-user text-primary me-1 fw-bold"></i>{{ $k->name }}
+                                        <div class="d-flex align-items-center">
+                                            <i class="bx bx-user text-primary me-2 fw-bold"></i>
+                                            <div>
+                                                <span class="fw-medium">{{ $k->name }}</span>
+                                                <div class="text-muted small">Email: {{ $k->email }}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="fw-semibold">{{ $k->no_hp ?? '-' }}</td>
                                     <td class="fw-semibold">{{ ucwords($k->alamat ?? '-') }}</td>
                                     <td>
                                         <span class="badge bg-warning bg-opacity-10 text-warning fw-bold">
-                                            {{ strtolower($k->email ?? '-') }}
+                                            {{ strtolower($k->bio ?? '-') }}
                                         </span>
                                     </td>
                                     <td>

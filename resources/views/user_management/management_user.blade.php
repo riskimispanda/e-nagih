@@ -87,12 +87,14 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalCenter{{ $u->id }}">
-                                        <i class="bx bx-pencil"></i>
-                                    </button>
-                                    <a href="/hapus/user/{{ $u->id }}" class="btn btn-outline-danger btn-sm">
-                                        <i class="bx bx-trash"></i>
-                                    </a>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <a href="" data-bs-toggle="modal" data-bs-target="#modalCenter{{ $u->id }}">
+                                            <i class="bx bx-edit text-warning"></i>
+                                        </a>|
+                                        <a href="/hapus/user/{{ $u->id }}" data-bs-toggle="tooltip" title="Hapus User" data-bs-placement="bottom">
+                                            <i class="bx bx-trash text-danger"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach

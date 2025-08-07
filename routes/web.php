@@ -124,6 +124,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/detail-pelanggan/{id}', [Analytics::class, 'detailPelanggan'])->name('detail-pelanggan');
     Route::get('/profile-user/{id}', [UserController::class, 'profileUser'])->name('profile-user)');
     Route::post('/update-photo/{id}', [UserController::class, 'updatePhoto'])->name('update-photo');
+    Route::post('/update/user/{id}', [UserController::class, 'updateUser'])->name('update-user');
     Route::get('/data/invoice/{name}', [Customer::class, 'dataInvoice'])->name('invoice');
 
     // SuperAdmin

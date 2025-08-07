@@ -117,6 +117,19 @@ class UserController extends Controller
         return redirect('/user/management')->with('success', 'Role user berhasil diubah');
     }
 
+    public function updateUser(Request $request, $id)
+    {
+        // dd($request->all());
+        $user = User::find($id);
+        $user->name = $request->input('name');
+        $user->email = $request->input('email');
+        $user->alamat = $request->input('address');
+        $user->no_hp = $request->input('phone');
+        $user->bio = $request->input('bio');
+        $user->save();
+        return redirect()->back()->with('success', 'Profile berhasil diubah');
+    }
+
     public function updatePassword(Request $request, $id)
     {
         $user = User::find($id);

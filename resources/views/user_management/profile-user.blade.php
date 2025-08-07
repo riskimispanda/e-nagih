@@ -182,8 +182,8 @@
                                                 <i class="bx bx-phone-call"></i>
                                             </div>
                                             <div>
-                                                <div class="text-muted small">Phone</div>
-                                                <div class="fw-medium">{{ auth()->user()->phone ?? '+1 (123) 456-7890' }}
+                                                <div class="text-muted small">No Telepon</div>
+                                                <div class="fw-medium">{{ auth()->user()->no_hp ?? '+1 (123) 456-7890' }}
                                                 </div>
                                             </div>
                                         </div>
@@ -199,6 +199,19 @@
                                                 <div class="fw-medium">
                                                     {{ auth()->user()->created_at ? auth()->user()->created_at->format('d M Y') : '01 Jan 2023' }}
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-sm-12">
+                                        <div class="d-flex align-items-center">
+                                            <div class="d-flex justify-content-center align-items-center me-3 rounded-circle bg-label-primary" style="width: 38px; height: 38px;">
+                                                <i class="bx bx-message"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-muted small">Bio</div>
+                                                <div class="fw-medium">{{ auth()->user()->bio ?? 'Tidak ada bio' }}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -299,8 +312,7 @@
                                 </div>
                                 <div>
                                     <h6 class="mb-0 fw-semibold">Ganti Password</h6>
-                                    <p class="text-muted mb-0 small">Pastikan akun Anda tetap aman dengan kata sandi yang
-                                        kuat</p>
+                                    <p class="text-muted mb-0 small">Pastikan akun Anda tetap aman dengan kata sandi yang kuat</p>
                                 </div>
                             </div>
                         </div>
@@ -365,8 +377,8 @@
                                 <div class="icon">
                                     <i class="bx bx-phone"></i>
                                 </div>
-                                <h6 class="text-muted small mb-1">Phone Number</h6>
-                                <h5 class="fw-semibold mb-0">{{ auth()->user()->phone ?? '+1 (123) 456-7890' }}</h5>
+                                <h6 class="text-muted small mb-1">No Telepon</h6>
+                                <h5 class="fw-semibold mb-0">{{ auth()->user()->no_hp ?? '+1 (123) 456-7890' }}</h5>
                             </div>
                         </div>
 
@@ -427,50 +439,41 @@
                                 alt="Not Found" class="w-100 h-100 rounded-circle"" />
                         </div>
                         <h3 class="mb-1 fw-bold">Edit Profile Information</h3>
-                        <p class="text-muted">Update your personal information</p>
+                        <p class="text-muted">Update Informasi Profil Kamu</p>
                     </div>
 
-                    <form id="editUserForm" class="row g-3" action="#" method="POST">
+                    <form id="editUserForm" class="row g-3" action="/update/user/{{ auth()->user()->id }}" method="POST">
                         @csrf
-                        @method('PUT')
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium" for="modalEditUserName">Full Name</label>
+                            <label class="form-label fw-medium" for="modalEditUserName">Username</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-user"></i></span>
-                                <input type="text" id="modalEditUserName" name="name"
-                                    class="form-control custom-input" value="{{ auth()->user()->name ?? '' }}"
-                                    placeholder="John Doe" />
+                                <input type="text" id="modalEditUserName" name="name" class="form-control custom-input" value="{{ auth()->user()->name ?? '' }}" placeholder="John Doe" />
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium" for="modalEditUserEmail">Email Address</label>
+                            <label class="form-label fw-medium" for="modalEditUserEmail">Email</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-mail-send"></i></span>
-                                <input type="email" id="modalEditUserEmail" name="email"
-                                    class="form-control custom-input" value="{{ auth()->user()->email ?? '' }}"
-                                    placeholder="example@domain.com" />
+                                <input type="email" id="modalEditUserEmail" name="email" class="form-control custom-input" value="{{ auth()->user()->email ?? '' }}" placeholder="example@domain.com" />
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium" for="modalEditUserPhone">Phone Number</label>
+                            <label class="form-label fw-medium" for="modalEditUserPhone">No Telepon</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-phone"></i></span>
-                                <input type="text" id="modalEditUserPhone" name="phone"
-                                    class="form-control custom-input" value="{{ auth()->user()->phone ?? '' }}"
-                                    placeholder="+1 (123) 456-7890" />
+                                <input type="text" id="modalEditUserPhone" name="phone" class="form-control custom-input" value="{{ auth()->user()->no_hp ?? '' }}" placeholder="+1 (123) 456-7890" />
                             </div>
                         </div>
 
                         <div class="col-12 col-md-6">
-                            <label class="form-label fw-medium" for="modalEditUserAddress">Address</label>
+                            <label class="form-label fw-medium" for="modalEditUserAddress">Alamat</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-map-pin"></i></span>
-                                <input type="text" id="modalEditUserAddress" name="address"
-                                    class="form-control custom-input" value="{{ auth()->user()->address ?? '' }}"
-                                    placeholder="1234 Main St" />
+                                <input type="text" id="modalEditUserAddress" name="address" class="form-control custom-input" value="{{ auth()->user()->alamat ?? '' }}" placeholder="1234 Main St" />
                             </div>
                         </div>
 
@@ -478,10 +481,9 @@
                             <label class="form-label fw-medium" for="modalEditUserBio">Bio</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-edit-alt"></i></span>
-                                <textarea id="modalEditUserBio" name="bio" class="form-control custom-input"
-                                    placeholder="Tell us about yourself" rows="3">{{ auth()->user()->bio ?? '' }}</textarea>
+                                <textarea id="modalEditUserBio" name="bio" class="form-control custom-input" placeholder="Tell us about yourself" rows="3">{{ auth()->user()->bio ?? '' }}</textarea>
                             </div>
-                            <small class="text-muted">Brief description for your profile.</small>
+                            <small class="text-muted">Beri Bio Untuk Informasi Profil Kamu.</small>
                         </div>
 
                         <div class="col-12 d-flex justify-content-center gap-2 mt-4">
@@ -489,7 +491,7 @@
                                 <i class="ti ti-x me-1"></i>Cancel
                             </button>
                             <button type="submit" class="btn btn-primary custom-btn">
-                                <i class="ti ti-device-floppy me-1"></i>Save Changes
+                                <i class="ti ti-device-floppy me-1"></i>Save Profile
                             </button>
                         </div>
                     </form>
