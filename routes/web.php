@@ -68,6 +68,8 @@ use Illuminate\Support\Facades\Http;
 use App\Models\Router;
 use App\Http\Controllers\TiketController;
 use App\Http\Controllers\MapController;
+use App\Exports\PembayaranExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 // Main Page Route
@@ -139,7 +141,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
     Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth','roles:Super Admin,NOC,Helpdesk');
     Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk')->name('tiket-closed');
-
+    Route::get('/export/pembayaran/{filter}', function ($filter) {
+        return Excel::download(new PembayaranExport($filter), "pembayaran_export_{$filter}.xlsx");
+    })->name('pembayaran.export');
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');

@@ -101,7 +101,7 @@ class HelpdeskController extends Controller
                 $rules = array_merge($rules, [
                     'nama_customer' => 'required',
                     'no_hp' => 'required',
-                    'email' => 'required|email',
+                    'email' => 'required|email|unique:customer,email',
                     'no_identitas' => 'required',
                     'alamat' => 'required',
                     'gps' => 'required',
@@ -200,6 +200,7 @@ class HelpdeskController extends Controller
                 'identitas' => $identitas_file,
                 'created_at' => $request->tanggal_reg,
             ]);
+            
             $noc = User::where('roles_id', 4)->get();
             activity('customer')
                 ->causedBy(auth()->user())
