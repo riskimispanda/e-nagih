@@ -139,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
     Route::get('/peta', [MapController::class, 'index']);
     Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
-    Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth','roles:Super Admin,NOC,Helpdesk');
+    Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth','roles:Super Admin,NOC,Helpdesk,Admin Keuangan');
     Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk')->name('tiket-closed');
     Route::get('/export/pembayaran/{filter}', function ($filter) {
         return Excel::download(new PembayaranExport($filter), "pembayaran_export_{$filter}.xlsx");
