@@ -503,73 +503,56 @@
                                 <div class="row">
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i
-                                                    class="bx bx-network-chart me-2"></i>Router</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->router->nama_router }}" readonly>
+                                            <label class="form-label"><i class="bx bx-network-chart me-2"></i>Router</label>
+                                            <input type="text" class="form-control" value="{{ $data->router->nama_router }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i class="bx bx-link-alt me-2"></i>Jenis
-                                                Koneksi</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->koneksi->nama_koneksi }}" readonly>
+                                            <label class="form-label"><i class="bx bx-link-alt me-2"></i>Jenis Koneksi</label>
+                                            <input type="text" class="form-control" value="{{ $data->koneksi->nama_koneksi }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i class="bx bx-lock me-2"></i>User
-                                                Secret</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->usersecret }}" readonly>
+                                            <label class="form-label"><i class="bx bx-lock me-2"></i>User Secret</label>
+                                            <input type="text" class="form-control" value="{{ $data->usersecret }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
                                             <label class="form-label"><i class="bx bx-key me-2"></i>Password</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->pass_secret }}" readonly>
+                                            <input type="text" class="form-control" value="{{ $data->pass_secret }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i class="bx bx-math me-2"></i>Local
-                                                Address</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->local_address ?? 'Tidak Tersedia' }}" readonly>
+                                            <label class="form-label"><i class="bx bx-math me-2"></i>Local Address</label>
+                                            <input type="text" class="form-control" value="{{ $data->local_address ?? 'Tidak Tersedia' }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i class="bx bx-network-chart me-2"></i>Remote
-                                                Address</label>
-                                            <input type="text" class="form-control"
-                                                value="{{ $data->remote_address ?? 'Tidak Tersedia' }}" readonly>
+                                            <label class="form-label"><i class="bx bx-network-chart me-2"></i>Remote Address</label>
+                                            <input type="text" class="form-control" value="{{ $data->remote_address ?? 'Tidak Tersedia' }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
-                                            <label class="form-label"><i class="bx bx-package me-2"></i>Paket
-                                                Langganan</label>
-                                            <input name="paket_id" type="text" class="form-control"
-                                                value="{{ $data->paket->nama_paket }}" readonly>
+                                            <label class="form-label"><i class="bx bx-package me-2"></i>Paket Langganan</label>
+                                            <input name="paket_id" type="text" class="form-control" value="{{ $data->paket->nama_paket }}" readonly>
                                         </div>
                                     </div>
                                     <div class="col-sm-6 mb-4">
                                         <div class="input-groups">
                                             <label class="form-label"><i class="bx bx-money me-2"></i>Harga</label>
-                                            <input name="harga" type="text" class="form-control"
-                                                value="Rp {{ number_format($data->paket->harga, 0, ',', '.') }}"
-                                                readonly>
+                                            <input name="harga" type="text" class="form-control" value="Rp {{ number_format($data->paket->harga, 0, ',', '.') }}" readonly>
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>

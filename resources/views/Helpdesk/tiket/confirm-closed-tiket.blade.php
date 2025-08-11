@@ -14,7 +14,7 @@
         <div class="card mb-3">
             <div class="card-body">
                 <div class="card-header d-flex justify-content-between align-items-center border-bottom mb-10">
-                    <h5 class="mb-0 fw-semibold">Detail Tiket</h5>
+                    <h5 class="mb-0 fw-semibold">Detail Tiket {{$kategori->kategori->nama_kategori}}</h5>
                     <small class="float-end badge bg-warning bg-opacity-10 text-warning fw-bold">Kategori Tiket: {{$kategori->kategori->nama_kategori}} by {{$kategori->user->name}}</small>
                 </div>
                 <div class="card-body border-bottom">
@@ -71,7 +71,7 @@
                             <label class="form-label" for="basic-icon-default-fullname">Router</label>
                             <div class="input-group input-group-merge">
                                 <span id="basic-icon-default-fullname2" class="input-group-text"><i class="bx bx-server"></i></span>
-                                <input type="text" class="form-control" value="{{$tiket->customer->router->nama_router}}" readonly>
+                                <input type="text" class="form-control" value="{{$tiket->customer->router->nama_router}}" readonly id="routerOld">
                             </div>
                         </div>
                         <div class="col-sm-4">
@@ -126,14 +126,14 @@
                             <label class="form-label">Usersecret</label>
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text"><i class="bx bx-lock"></i></span>    
-                                <input type="text" class="form-control" value="{{$tiket->customer->usersecret}}" readonly>
+                                <input type="text" name="oldUsersecret" class="form-control" value="{{$tiket->customer->usersecret}}" readonly>
                             </div>
                         </div>
                         <div class="col-sm-4 mb-2">
                             <label class="form-label">Password Secret</label>
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text"><i class="bx bx-key"></i></span>    
-                                <input type="text" class="form-control" value="{{$tiket->customer->pass_secret}}" readonly>
+                                <input type="text" name="pass_secretOld" class="form-control" value="{{$tiket->customer->pass_secret}}" readonly>
                             </div>
                         </div>
                         <div class="col-sm-4">
@@ -174,10 +174,10 @@
         <div class="card">
             <div class="card-body">
                 <div class="card-header d-flex justify-content-between align-items-center border-bottom mb-10">
-                    <h5 class="mb-0 fw-semibold">Form Tutup Tiket</h5>
+                    <h5 class="mb-0 fw-semibold">Form Tutup Tiket {{$kategori->kategori->nama_kategori}}</h5>
                 </div>
                 <div class="card-body">
-                    <form action="/tutup-tiket/{{ $tiket->id }}" method="GET">
+                    <form action="/tutup-tiket/{{ $tiket->id }}" method="POST">
                         @csrf
                         <div class="row mb-3">
                             <div class="col-sm-6 mb-2">
@@ -207,15 +207,17 @@
                                 <label class="form-label">Usersecret</label>
                                 <div class="input-group input-group-merge">
                                     <span class="input-group-text"><i class="bx bx-lock"></i></span>
-                                    <input type="text" class="form-control" name="usersecret" placeholder="coba@niscala.net.id">
+                                    <input type="text" class="form-control" name="usersecret" placeholder="coba@niscala.net.id" id="usersecret">
                                 </div>
+                                <small class="text-muted">*Jika tidak ada perubahan, kosongkan saja</small>
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label">Password Secret</label>
                                 <div class="input-group input-group-merge">
                                     <span class="input-group-text"><i class="bx bx-key"></i></span>
-                                    <input type="text" class="form-control" name="pass_secret" placeholder="coba123">
+                                    <input type="text" class="form-control" name="pass_secret" placeholder="coba123" id="pass_secret">
                                 </div>
+                                <small class="text-muted">*Jika tidak ada perubahan, kosongkan saja</small>
                             </div>
                         </div>
                         <div class="row">
@@ -253,44 +255,43 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Inisialisasi Tom Select di #paket
-    var paketSelect = new TomSelect('#paket', {
-        create: false, // kalau true, user bisa tambah manual
-        sortField: { field: 'text', direction: 'asc' }
-    });
+    $(document).ready(function() {
+        // Inisialisasi Tom Select di #paket
+        var paketSelect = new TomSelect('#paket', {
+            create: false, // kalau true, user bisa tambah manual
+            sortField: { field: 'text', direction: 'asc' }
+        });
 
-    $('#router').change(function() {
-        var routerId = $(this).val();
-        $.ajax({
-            url: '/api/paket/by-router/' + routerId,
-            type: 'GET',
-            dataType: 'json',
-            success: function(data) {
-                console.log('Data API:', data);
+        $('#router').change(function() {
+            var routerId = $(this).val();
+            $.ajax({
+                url: '/api/paket/by-router/' + routerId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    console.log('Data API:', data);
 
-                // Hapus semua option di Tom Select
-                paketSelect.clearOptions();
-                // paketSelect.addOption({ value: '', text: 'Pilih Paket', disabled: true });
+                    // Hapus semua option di Tom Select
+                    paketSelect.clearOptions();
+                    // paketSelect.addOption({ value: '', text: 'Pilih Paket', disabled: true });
 
-                if (Array.isArray(data) && data.length > 0) {
-                    data.forEach(function(item) {
-                        paketSelect.addOption({ value: item.id, text: item.nama_paket });
-                    });
-                } else {
-                    paketSelect.addOption({ value: '', text: 'Tidak ada paket', disabled: true });
+                    if (Array.isArray(data) && data.length > 0) {
+                        data.forEach(function(item) {
+                            paketSelect.addOption({ value: item.id, text: item.nama_paket });
+                        });
+                    } else {
+                        paketSelect.addOption({ value: '', text: 'Tidak ada paket', disabled: true });
+                    }
+
+                    // Refresh Tom Select
+                    paketSelect.refreshOptions(false);
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr.responseText);
                 }
-
-                // Refresh Tom Select
-                paketSelect.refreshOptions(false);
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr.responseText);
-            }
+            });
         });
     });
-});
-
 </script>
 
 @endsection

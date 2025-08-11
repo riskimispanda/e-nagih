@@ -148,6 +148,7 @@ Route::middleware(['auth'])->group(function () {
     // Konfirmasi Tiket Open
     Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi')->name('tutup-tiket');
     Route::get('/api/paket/by-router/{routerId}', [TiketController::class, 'getPaketByRouter']);
+    Route::post('/tutup-tiket/{id}', [TiketController::class, 'confirmClosedTiket'])->name('confirm-closed-tiket');
 
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');

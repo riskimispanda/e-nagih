@@ -176,6 +176,30 @@ class MikrotikServices
         }
     }
 
+    public static function UpgradeDowngrade(Client $client, $usersecret, $newProfile)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) return false;
+
+            foreach ($users as $user) {
+                $setQuery = new Query('/ppp/secret/set');
+                $setQuery->equal('.id', $user['.id']);
+                $setQuery->equal('profile', $newProfile);
+                $client->query($setQuery)->read();
+            }
+
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+
     public static function getProfiles(Client $client)
     {
         $query = new Query('/ppp/profile/print');

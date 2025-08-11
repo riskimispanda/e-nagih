@@ -11,12 +11,15 @@ use Spatie\Activitylog\Models\Activity;
 use App\Services\ChatServices;
 use App\Models\Router;
 use App\Models\Paket;
+use App\Services\MikrotikServices;
+use Illuminate\Support\Facades\DB;
+use App\Models\Invoice;
 
 class TiketController extends Controller
 {
     public function TiketOpen()
     {
-        $customer = Customer::with('status')->where('status_id', 3)->paginate(10);
+        $customer = Customer::with('status')->whereIn('status_id', [3, 4])->paginate(10);
         return view('Helpdesk.tiket-open-pelanggan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -87,13 +90,19 @@ class TiketController extends Controller
 
     public function closedTiket()
     {
-        $customer = TiketOpen::with('kategori','customer','user')->paginate(10);
-        return view('Helpdesk.tiket.closed-tiket',[
-            'users' => auth()->user(),
-            'roles' => auth()->user()->roles,
-            'customer' => $customer,
+        $coba = TiketOpen::with(['kategori','customer','user'])
+            ->whereHas('customer', function ($query) {
+                $query->where('status_id', 4);
+            })
+            ->paginate(10);
+
+        return view('Helpdesk.tiket.closed-tiket', [
+            'users'    => auth()->user(),
+            'roles'    => auth()->user()->roles,
+            'customer' => $coba,
         ]);
     }
+
 
     public function tutupTiket(Request $request, $id)
     {
@@ -119,5 +128,69 @@ class TiketController extends Controller
 
         return response()->json($paket);
     }
+
+    public function confirmClosedTiket(Request $request, $id)
+    {
+        $tiket = TiketOpen::findOrFail($id);
+
+        DB::transaction(function () use ($request, $tiket) {
+            $customer = Customer::findOrFail($tiket->customer_id);
+
+            // Jika router berbeda → tambah PPP secret di router baru
+            if ($request->router != $customer->router_id) {
+                $newRouter = Router::findOrFail($request->router);
+                $customer->update([
+                    'router_id'   => $request->router,
+                    'paket_id'    => $request->paket,
+                    'status_id'   => 3,
+                    'usersecret'  => $request->usersecret ?: $customer->usersecret,
+                    'pass_secret' => $request->pass_secret ?: $customer->pass_secret,
+                ]);
+                $customer->refresh();
+
+                MikrotikServices::addPPPSecret(
+                    MikrotikServices::connect($newRouter),
+                    [
+                        'name'          => $customer->usersecret ?: $customer->usersecret,
+                        'password'      => $customer->pass_secret ?: $customer->pass_secret,
+                        'remoteAddress' => $request->remote_address,
+                        'localAddress'  => $request->local_address,
+                        'profile'       => $customer->paket->paket_name,
+                        'service'       => strtolower($customer->koneksi->nama_koneksi)
+                    ]
+                );
+            } else {
+                // Router sama → cukup update profil
+                $customer->update([
+                    'router_id'   => $request->router,
+                    'paket_id'    => $request->paket,
+                    'status_id'   => 3,
+                    'usersecret'  => $request->usersecret ?: $customer->usersecret,
+                    'pass_secret' => $request->pass_secret ?: $customer->pass_secret,
+                ]);
+                $customer->refresh();
+
+                MikrotikServices::UpgradeDowngrade(
+                    MikrotikServices::connect(Router::findOrFail($customer->router_id)),
+                    $customer->usersecret,
+                    $customer->paket->paket_name
+                );
+            }
+
+            // Update invoice sekali saja
+            $invoice = Invoice::where('customer_id', $customer->id)->first();
+            if ($invoice) {
+                $invoice->update([
+                    'paket_id' => $customer->paket_id,
+                    'tagihan'  => $customer->paket->harga,
+                ]);
+            }
+        });
+
+        $tiket->delete();
+
+        return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
+    }
+
 
 }

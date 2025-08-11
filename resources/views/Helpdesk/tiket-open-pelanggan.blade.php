@@ -22,6 +22,7 @@
                                 <th>Alamat</th>
                                 <th>No HP</th>
                                 <th>Lokasi</th>
+                                <th>Status</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -45,18 +46,35 @@
                                     </div>
                                 </td>
                                 <td>
+                                    @if ($item->status->nama_status == 'Maintenance')
+                                    <span class="badge bg-danger bg-opacity-10 text-danger">
+                                        Maintenance
+                                    </span>
+                                    @else
+                                    <span class="badge bg-success bg-opacity-10 text-success">
+                                        Aktif
+                                    </span>
+                                    @endif
+                                </td>
+                                <td>
                                     <div class="row">
                                         <div class="d-flex justify-content-center gap-2">
+                                            @if($item->status->nama_status != 'Maintenance')
                                             <a href="/open-tiket/{{ $item->id }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Open Tiket">
                                                 <i class="bx bx-lock-open-alt text-danger"></i>
                                             </a>
+                                            @else
+                                            <a disabled data-bs-toggle="tooltip" data-bs-placement="bottom" title="Proses">
+                                                <i class="bx bx-lock text-success"></i>
+                                            </a>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="text-center fw-bold">Tidak ada data</td>
+                                <td colspan="9" class="text-center fw-bold">Tidak ada data</td>
                             </tr>
                             @endforelse
                         </tbody>

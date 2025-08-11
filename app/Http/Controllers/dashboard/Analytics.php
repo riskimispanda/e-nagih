@@ -201,17 +201,10 @@ class Analytics extends Controller
         $client = MikrotikServices::connect($router);
         
         // Ganti profile jadi ISOLIREBILLING
-        $profileResult = MikrotikServices::changeUserProfile(
-          $client,
-          $customer->usersecret,
-          'ISOLIREBILLING'
-        );
+        $profileResult = MikrotikServices::changeUserProfile($client, $customer->usersecret, 'ISOLIREBILLING');
         
         // Disconnect koneksi aktif
-        $disconnectResult = MikrotikServices::removeActiveConnections(
-          $client,
-          $customer->usersecret
-        );
+        $disconnectResult = MikrotikServices::removeActiveConnections($client, $customer->usersecret);
         
         // Logging
         \Log::info("✅ Pelanggan diblokir melalui profile", [
