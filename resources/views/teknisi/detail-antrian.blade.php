@@ -787,107 +787,81 @@
         });
     </script>
 
-    {{-- <script>
-        $('#server').on('change', function() {
-            const serverId = $(this).val();
-
-            fetch(`/api/olt/by-server/${serverId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $olt = $('#olt');
-                    $olt.empty();
-                    $olt.append('<option value="">Pilih OLT</option>');
-                    data.forEach(item => {
-                        $olt.append(`<option value="${item.id}">${item.nama_lokasi}</option>`);
-                    });
-                });
-        });
-
-        $('#olt').on('change', function() {
-            const oltId = $(this).val();
-
-            fetch(`/api/odc/by-olt/${oltId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $odc = $('#odc');
-                    $odc.empty();
-                    $odc.append('<option value="">Pilih ODC</option>');
-                    data.forEach(item => {
-                        $odc.append(`<option value="${item.id}">${item.nama_odc}</option>`);
-                    });
-                });
-        });
-
-        $('#odc').on('change', function() {
-            const odcId = $(this).val();
-
-            fetch(`/api/odp/by-odc/${odcId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $odp = $('#odp');
-                    $odp.empty();
-                    $odp.append('<option value="">Pilih ODP</option>');
-                    data.forEach(item => {
-                        $odp.append(`<option value="${item.id}">${item.nama_odp}</option>`);
-                    });
-                });
-        });
-    </script> --}}
+    
     <script>
         let tomOlt, tomOdc, tomOdp;
-    
-        $('#server').on('change', function () {
-            const serverId = $(this).val();
-    
-            fetch(`/api/olt/by-server/${serverId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $olt = $('#olt');
-                    $olt.empty().append('<option value="">Pilih OLT</option>');
-                    data.forEach(item => {
-                        $olt.append(`<option value="${item.id}">${item.nama_lokasi}</option>`);
+
+        // Server BTS
+            $('#server').on('change', function () {
+                const serverId = $(this).val();
+
+                fetch(`/api/olt/by-server/${serverId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!tomOlt) {
+                            tomOlt = new TomSelect('#olt', { create: false });
+                        }
+
+                        tomOlt.clear(true); // clear pilihan & value
+
+                        tomOlt.clearOptions();
+                        tomOlt.addOption({ value: '', text: 'Pilih OLT', disabled: true }); // placeholder
+                        tomOlt.addOption(data.map(item => ({
+                            value: item.id,
+                            text: item.nama_lokasi
+                        })));
+                        tomOlt.setValue(''); // set ke placeholder
+                        tomOlt.refreshOptions(false);
                     });
-    
-                    if (tomOlt) tomOlt.destroy();
-                    tomOlt = new TomSelect('#olt', { create: false });
-    
-                    $('#olt_id').show(); // Tampilkan dropdown setelah pilih server
-                });
-        });
-    
-        $('#olt').on('change', function () {
-            const oltId = $(this).val();
-    
-            fetch(`/api/odc/by-olt/${oltId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $odc = $('#odc');
-                    $odc.empty().append('<option value="">Pilih ODC</option>');
-                    data.forEach(item => {
-                        $odc.append(`<option value="${item.id}">${item.nama_odc}</option>`);
+            });
+
+            $('#olt').on('change', function () {
+                const oltId = $(this).val();
+
+                fetch(`/api/odc/by-olt/${oltId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!tomOdc) {
+                            tomOdc = new TomSelect('#odc', { create: false });
+                        }
+
+                        tomOdc.clear(true); // clear pilihan & value
+
+                        tomOdc.clearOptions();
+                        tomOdc.addOption({ value: '', text: 'Pilih ODC' ,disabled: true}); // placeholder
+                        tomOdc.addOption(data.map(item => ({
+                            value: item.id,
+                            text: item.nama_odc
+                        })));
+                        tomOdc.setValue(''); // set ke placeholder
+                        tomOdc.refreshOptions(false);
                     });
-    
-                    if (tomOdc) tomOdc.destroy();
-                    tomOdc = new TomSelect('#odc', { create: false });
-                });
-        });
-    
-        $('#odc').on('change', function () {
-            const odcId = $(this).val();
-    
-            fetch(`/api/odp/by-odc/${odcId}`)
-                .then(res => res.json())
-                .then(data => {
-                    const $odp = $('#odp');
-                    $odp.empty().append('<option value="">Pilih ODP</option>');
-                    data.forEach(item => {
-                        $odp.append(`<option value="${item.id}">${item.nama_odp}</option>`);
+            });
+
+            $('#odc').on('change', function () {
+                const odcId = $(this).val();
+
+                fetch(`/api/odp/by-odc/${odcId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!tomOdp) {
+                            tomOdp = new TomSelect('#odp', { create: false });
+                        }
+
+                        tomOdp.clear(true); // clear pilihan & value
+
+                        tomOdp.clearOptions();
+                        tomOdp.addOption({ value: '', text: 'Pilih ODP', disabled: true }); // placeholder
+                        tomOdp.addOption(data.map(item => ({
+                            value: item.id,
+                            text: item.nama_odp
+                        })));
+                        tomOdp.setValue(''); // set ke placeholder
+                        tomOdp.refreshOptions(false);
                     });
-    
-                    if (tomOdp) tomOdp.destroy();
-                    tomOdp = new TomSelect('#odp', { create: false });
-                });
-        });
+            });
+
+
     </script>
 
     <script>
