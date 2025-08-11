@@ -709,21 +709,21 @@
                                         <div class="row g-3 mt-2 mb-2" id="olt_id" style="display: none;">
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>OLT</label>
-                                                <select id="olt" name="olt" class="form-select" required>
+                                                <select id="olt" name="olt" class="form-select">
                                                     <option value="" selected disabled>Pilih OLT</option>
                                                 </select>
                                             </div>
 
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>ODC</label>
-                                                <select id="odc" name="odc" class="form-select" required>
+                                                <select id="odc" name="odc" class="form-select">
                                                     <option value="" selected disabled>Pilih ODC</option>
                                                 </select>
                                             </div>
 
                                             <div class="col-12 col-sm-4 mb-2">
                                                 <label class="form-label"><i class="bx bx-sitemap me-2"></i>ODP</label>
-                                                <select id="odp" name="odp" class="form-select" required>
+                                                <select id="odp" name="odp" class="form-select">
                                                     <option value="" selected disabled>Pilih ODP</option>
                                                 </select>
                                             </div>
