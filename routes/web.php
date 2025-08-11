@@ -144,6 +144,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/export/pembayaran/{filter}', function ($filter) {
         return Excel::download(new PembayaranExport($filter), "pembayaran_export_{$filter}.xlsx");
     })->name('pembayaran.export');
+
+    // Konfirmasi Tiket Open
+    Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi')->name('tutup-tiket');
+    Route::get('/api/paket/by-router/{routerId}', [TiketController::class, 'getPaketByRouter']);
+
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');

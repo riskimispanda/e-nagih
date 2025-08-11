@@ -31,12 +31,12 @@
                             @forelse ($customer as $item)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $item->customer->nama_customer }}</td>
-                                <td>{{ $item->customer->alamat }}</td>
-                                <td>{{ $item->customer->no_hp }}</td>
+                                <td>{{ $item->customer->nama_customer ?? '-' }}</td>
+                                <td>{{ $item->customer->alamat ?? '-' }}</td>
+                                <td>{{ $item->customer->no_hp ?? '-' }}</td>
                                 <td>
                                     @php
-                                    $gps = $item->customer->gps;
+                                    $gps = $item->customer->gps ?? '-';
                                     $isLink = Str::startsWith($gps, ['http://', 'https://']);
                                     $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
                                     @endphp

@@ -979,7 +979,7 @@
                                                             Tanggal Instalasi
                                                         </span>
                                                         <div class="info-value">
-                                                            {{ $customer->updated_at->format('d M Y') }}
+                                                            {{ date('d M Y', strtotime($customer->tanggal_selesai)) }}
                                                         </div>
                                                     </div>
                                                 </div>

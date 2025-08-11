@@ -9,6 +9,8 @@ use App\Models\KategoriTiket;
 use App\Models\TiketOpen;
 use Spatie\Activitylog\Models\Activity;
 use App\Services\ChatServices;
+use App\Models\Router;
+use App\Models\Paket;
 
 class TiketController extends Controller
 {
@@ -91,6 +93,31 @@ class TiketController extends Controller
             'roles' => auth()->user()->roles,
             'customer' => $customer,
         ]);
+    }
+
+    public function tutupTiket(Request $request, $id)
+    {
+        $tiket = TiketOpen::findOrFail($id);
+        $kategori = TiketOpen::where('kategori_id', $tiket->kategori_id)->first();
+        $router = Router::with('paket')->get();
+        $paket = Paket::with('router')->get();
+        return view('helpdesk.tiket.confirm-closed-tiket',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'tiket' => $tiket,
+            'kategori' => $kategori,
+            'router' => $router,
+            'paket' => $paket,
+        ]);
+    }
+
+    public function getPaketByRouter($routerId)
+    {
+        $paket = Paket::where('router_id', $routerId)
+            ->whereNot('nama_paket', 'ISOLIREBILLING')
+            ->get(['id', 'nama_paket']);
+
+        return response()->json($paket);
     }
 
 }
