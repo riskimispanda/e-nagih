@@ -110,7 +110,7 @@ class TiketController extends Controller
         $kategori = TiketOpen::where('kategori_id', $tiket->kategori_id)->first();
         $router = Router::with('paket')->get();
         $paket = Paket::with('router')->get();
-        return view('/helpdesk/tiket/confirm-closed-tiket',[
+        return view('Helpdesk.tiket.confirm-closed-tiket',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'tiket' => $tiket,
