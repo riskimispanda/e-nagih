@@ -217,10 +217,21 @@ class TeknisiController extends Controller
             ]);
 
             DB::commit(); // Jika semua sukses, simpan ke DB
+            LOG::info('Invoice created', [
+                'invoice_id' => $invoice->id,
+                'customer_id' => $customer->id,
+                'tagihan' => $invoice->tagihan,
+                'jatuh_tempo' => $invoice->jatuh_tempo,
+            ]);
 
             // Kirim WA di luar transaction (jika gagal, tidak rollback DB)
             $chat = new ChatServices();
             $chat->invoiceProrate($customer->no_hp, $invoice);
+            
+            LOG::info('WA sent', [
+                'customer_id' => $customer->id,
+                'no_hp' => $customer->no_hp,
+            ]);
 
             return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
         } catch (\Exception $e) {
