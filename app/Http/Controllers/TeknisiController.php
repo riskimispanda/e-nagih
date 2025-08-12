@@ -224,9 +224,8 @@ class TeknisiController extends Controller
 
             return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
         } catch (\Exception $e) {
-            DB::rollBack(); // Batalkan semua perubahan DB
             Log::error('Gagal konfirmasi instalasi: ' . $e->getMessage());
-
+            DB::rollBack(); // Batalkan semua perubahan DB
             return back()->with('toast_error', 'Gagal konfirmasi instalasi. Coba lagi.');
         }
     }
