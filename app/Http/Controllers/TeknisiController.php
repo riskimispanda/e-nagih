@@ -196,6 +196,11 @@ class TeknisiController extends Controller
                 'gps'             => $request->gps,
             ]);
 
+            LOG::info('Customer updated', [
+                'customer_id' => $customer->id,
+                'tanggal_selesai' => $tanggalSelesai,
+            ]);
+
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
 
             $panjangKabel = (int) $request->panjang_kabel;
@@ -227,7 +232,7 @@ class TeknisiController extends Controller
             // Kirim WA di luar transaction (jika gagal, tidak rollback DB)
             $chat = new ChatServices();
             $chat->invoiceProrate($customer->no_hp, $invoice);
-            
+
             LOG::info('WA sent', [
                 'customer_id' => $customer->id,
                 'no_hp' => $customer->no_hp,
