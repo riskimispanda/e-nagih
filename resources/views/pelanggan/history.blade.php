@@ -22,6 +22,7 @@
                                 <th>Tanggal Bayar</th>
                                 <th>Periode</th>
                                 <th>Jumlah Bayar</th>
+                                <th>Metode Bayar</th>
                                 <th>Keterangan</th>
                             </tr>
                         </thead>
@@ -53,7 +54,16 @@
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
                                         @foreach ($item->pembayaran as $cek)
-                                        <span>Rp. {{ number_format($cek->jumlah_bayar, 0, ',', '.') }}</span>
+                                        <span class="badge bg-success">Rp. {{ number_format($cek->jumlah_bayar, 0, ',', '.') }}</span>
+                                        @endforeach
+                                    @else
+                                    -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($item->pembayaran->isNotEmpty())
+                                        @foreach ($item->pembayaran as $cek)
+                                        <span class="badge bg-warning">{{$cek->metode_bayar}}</span>
                                         @endforeach
                                     @else
                                     -
