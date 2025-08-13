@@ -25,7 +25,7 @@ class DataController extends Controller
             'odp.odc.olt'
         ])->whereIn('status_id', [3, 4, 9])
         ->orderBy('created_at', 'desc')
-        ->paginate(10);
+        ->get();
         
         // $coba = Customer::where('status_id', [3, 9])->get();
 
