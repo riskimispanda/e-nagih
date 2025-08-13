@@ -104,7 +104,7 @@
                                     <i class="bx bx-terminal"></i>
                                 </span>
                                 <select name="bts" id="bts" class="form-select">
-                                    <option value="" selected >{{$pelanggan->getServer->lokasi_server}}</option>
+                                    <option value="" selected >{{$pelanggan->odp->odc->olt->lokasi_server}}</option>
                                     @foreach ($bts as $item)
                                     <option value="{{ $item->id }}">{{$item->lokasi_server}}</option>
                                     @endforeach

@@ -32,8 +32,8 @@ class PengeluaranController extends Controller
             ->get();
 
         $totalPengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
-        $dailyPengeluaran = Pengeluaran::whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran');
-        $mounthlyPengeluaran = Pengeluaran::whereMonth('tanggal_pengeluaran', now()->month)->sum('jumlah_pengeluaran');
+        $dailyPengeluaran = Pengeluaran::where('status_id', 3)->whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran');
+        $mounthlyPengeluaran = Pengeluaran::where('status_id', 3)->whereMonth('tanggal_pengeluaran', now()->month)->sum('jumlah_pengeluaran');
 
         $totalRequest = Pengeluaran::where('status_id', 1)->count();
 

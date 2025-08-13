@@ -330,7 +330,7 @@ class DataController extends Controller
 
     public function editPelanggan($id)
     {
-        $pelanggan = Customer::findOrFail($id);
+        $pelanggan = Customer::with('paket','odp.odc.olt')->findOrFail($id);
         $paket = Paket::whereNot('nama_paket', 'ISOLIREBILLING')->get();
         $bts = BTS::all();
         $router = Router::all();
