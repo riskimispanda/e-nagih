@@ -335,14 +335,16 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="#">
-                                        <button class="btn btn-outline-warning btn-sm mb-1" title="Edit" data-bs-toggle="tooltip" data-bs-placement="bottom">
-                                            <i class="bx bx-edit"></i>
+                                    <div class="d-flex gap-2">
+                                        <a href="#">
+                                            <button class="btn btn-outline-warning btn-sm mb-1" title="Edit" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                                                <i class="bx bx-edit"></i>
+                                            </button>
+                                        </a>
+                                        <button class="btn btn-outline-danger btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#deletePengeluaran{{ $pengeluaran->id }}" title="Hapus" data-bs-placement="bottom">
+                                            <i class="bx bx-trash"></i>
                                         </button>
-                                    </a>
-                                    <button class="btn btn-outline-danger btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#deletePengeluaran{{ $pengeluaran->id }}" title="Hapus" data-bs-placement="bottom">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
