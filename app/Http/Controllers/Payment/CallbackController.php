@@ -176,6 +176,7 @@ class CallbackController extends Controller
                 'jumlah_bayar' => $totalBayar,
                 'tanggal_bayar' => now(),
                 'metode_bayar' => $invoice->metode_bayar,
+                'keterangan' => 'Pembayaran Paket Langganan Via Tripay dari: ' . $invoice->customer->nama_customer,
                 'status_id' => 8,
             ]);
 
