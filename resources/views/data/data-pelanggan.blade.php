@@ -744,7 +744,7 @@
                                 <div class="data-label">Jumlah Pelanggan</div>
                                 <div class="data-value">
                                     <span class="badge bg-primary rounded-pill">
-                                        {{ count($data) }}
+                                        {{ $data->total() }}
                                     </span>
                                 </div>
                             </div>
@@ -759,15 +759,7 @@
                                 <div class="data-label">Pelanggan Aktif</div>
                                 <div class="data-value">
                                     <span class="badge bg-success rounded-pill">
-                                        @php
-                                        $aktif = 0;
-                                        foreach ($data as $item) {
-                                            if ($item->status_id == 3) {
-                                                $aktif++;
-                                            }
-                                        }
-                                        echo $aktif;
-                                        @endphp
+                                        {{ \App\Models\Customer::where('status_id', 3)->count() }}
                                     </span>
                                 </div>
                             </div>
@@ -782,15 +774,7 @@
                                 <div class="data-label">Pelanggan Non-Aktif</div>
                                 <div class="data-value">
                                     <span class="badge bg-danger rounded-pill">
-                                        @php
-                                        $nonaktif = 0;
-                                        foreach ($data as $item) {
-                                            if ($item->status_id == 9) {
-                                                $nonaktif++;
-                                            }
-                                        }
-                                        echo $nonaktif;
-                                        @endphp
+                                        {{ \App\Models\Customer::where('status_id', 9)->count() }}
                                     </span>
                                 </div>
                             </div>
@@ -958,14 +942,14 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="customerTableBody">
                             @foreach ($data as $item)
                             <tr class="customer-row text-center" data-id="{{ $item->id }}"
                                 data-tagihan="{{ $item->invoice->isNotEmpty() && $item->invoice->first()->status ? ($item->invoice->first()->status->nama_status == 'Sudah Bayar' ? '0' : $item->invoice->first()->tagihan ?? '0') : '0' }}"
                                 data-customer-id="{{ $item->id }}"
                                 data-invoice-id="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}"
                                 data-tagihan-tambahan="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->tambahan : '' }}">
-                                <td class="text-center">{{ $loop->iteration }}</td>
+                                <td class="text-center">{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
                                 <td class="customer-name">{{ $item->nama_customer }}</td>
                                 <td class="customer-address">{{ $item->alamat }}</td>
                                 <td class="nomor-hp">{{ $item->no_hp }}</td>
@@ -1043,22 +1027,22 @@
                 <div class="pagination-container" id="paginationContainer">
                     <div class="pagination-info">
                         <div class="data-count-info">
-                            Menampilkan <span class="count-highlight" id="showingStart">1</span> -
-                            <span class="count-highlight" id="showingEnd">10</span> dari
-                            <span class="count-highlight" id="totalRecords">{{ count($data) }}</span> data
+                            Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
+                            <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
+                            <span class="count-highlight">{{ $data->total() }}</span> data
                         </div>
                         <div class="page-size-selector">
                             <label for="pageSize">Data per halaman:</label>
                             <select id="pageSize" class="page-size-select">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
+                                <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
+                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
                             </select>
                         </div>
                     </div>
-                    <div class="pagination-controls" id="paginationControls">
-                        <!-- Pagination buttons will be generated by JavaScript -->
+                    <div class="pagination-controls">
+                        {{ $data->links('pagination::bootstrap-4') }}
                     </div>
                 </div>
             </div>
@@ -1166,402 +1150,70 @@
         const searchInput = document.getElementById('searchCustomer');
         const searchButton = document.getElementById('searchButton');
         const sortSelect = document.getElementById('sortSelect');
-        const customerTable = document.getElementById('customerTable');
-        const tableBody = customerTable.querySelector('tbody');
-        const noResultsMessage = document.getElementById('noResults');
-        const paginationContainer = document.getElementById('paginationContainer');
-        const paginationControls = document.getElementById('paginationControls');
         const pageSizeSelect = document.getElementById('pageSize');
-        const showingStart = document.getElementById('showingStart');
-        const showingEnd = document.getElementById('showingEnd');
-        const totalRecords = document.getElementById('totalRecords');
-        const noDataMessage = document.getElementById('noDataMessage');
         
-        // Payment Modal Elements
-        const paymentButtons = document.querySelectorAll('.add-customer-btn');
-        const paymentModalEl = document.getElementById('paymentModal');
-        const paymentModal = new bootstrap.Modal(paymentModalEl);
-        const paymentMethodSelect = document.getElementById('paymentMethodSelect');
-        const transferDetails = document.getElementById('transferDetails');
-        const paymentDateInput = document.getElementById('paymentDate');
+        // Set current values from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        searchInput.value = urlParams.get('search') || '';
+        sortSelect.value = urlParams.get('sort') || 'default';
+        pageSizeSelect.value = urlParams.get('per_page') || '10';
         
-        // Set default payment date to today
-        const today = new Date();
-        const formattedDate = today.toISOString().substr(0, 10);
-        paymentDateInput.value = formattedDate;
-        
-        // Pagination and Data Management
-        let allCustomerData = [];
-        let filteredData = [];
-        let currentPage = 1;
-        let pageSize = 10;
-        
-        // Initialize customer data from DOM
-        function initializeCustomerData() {
-            const rows = document.querySelectorAll('.customer-row');
-            allCustomerData = Array.from(rows).map((row, index) => {
-                return {
-                    element: row.cloneNode(true),
-                    originalIndex: index + 1,
-                    id: row.getAttribute('data-id'),
-                    name: row.querySelector('.customer-name').textContent.toLowerCase(),
-                    address: row.querySelector('.customer-address').textContent.toLowerCase(),
-                    phone: row.querySelector('td:nth-child(4)').textContent,
-                    package: row.querySelector('td:nth-child(6)').textContent.trim(),
-                    status: row.querySelector('td:nth-child(7)').textContent.trim(),
-                    payment: row.querySelector('td:nth-child(8)').textContent.trim(),
-                    tagihan: row.getAttribute('data-tagihan'),
-                    customerId: row.getAttribute('data-customer-id'),
-                    invoiceId: row.getAttribute('data-invoice-id'),
-                    tagihanTambahan: row.getAttribute('data-tagihan-tambahan')
-                };
-            });
-            filteredData = [...allCustomerData];
-            updateDisplay();
+        // Function to update URL and reload page
+        function updatePage() {
+            const params = new URLSearchParams();
+            
+            if (searchInput.value.trim()) {
+                params.set('search', searchInput.value.trim());
+            }
+            
+            if (sortSelect.value !== 'default') {
+                params.set('sort', sortSelect.value);
+            }
+            
+            if (pageSizeSelect.value !== '10') {
+                params.set('per_page', pageSizeSelect.value);
+            }
+            
+            const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+            window.location.href = newUrl;
         }
         
         // Search functionality
         function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            
-            if (searchTerm === '') {
-                filteredData = [...allCustomerData];
-            } else {
-                filteredData = allCustomerData.filter(customer => {
-                    return customer.name.includes(searchTerm) ||
-                    customer.address.includes(searchTerm) ||
-                    customer.phone.toLowerCase().includes(searchTerm);
-                });
-            }
-            
-            currentPage = 1; // Reset to first page after search
-            updateDisplay();
-        }
-        
-        // Sort functionality
-        function performSort() {
-            const sortValue = sortSelect.value;
-            
-            if (sortValue === 'default') {
-                filteredData.sort((a, b) => a.originalIndex - b.originalIndex);
-            } else if (sortValue === 'name-asc') {
-                filteredData.sort((a, b) => a.name.localeCompare(b.name));
-            } else if (sortValue === 'name-desc') {
-                filteredData.sort((a, b) => b.name.localeCompare(a.name));
-            } else if (sortValue === 'status-active') {
-                filteredData.sort((a, b) => {
-                    const isActiveA = a.status.includes('Aktif') ? 1 : 0;
-                    const isActiveB = b.status.includes('Aktif') ? 1 : 0;
-                    return isActiveB - isActiveA;
-                });
-            } else if (sortValue === 'status-inactive') {
-                filteredData.sort((a, b) => {
-                    const isActiveA = a.status.includes('Aktif') ? 1 : 0;
-                    const isActiveB = b.status.includes('Aktif') ? 1 : 0;
-                    return isActiveA - isActiveB;
-                });
-            } else if (sortValue === 'package') {
-                filteredData.sort((a, b) => a.package.localeCompare(b.package));
-            } else if (sortValue === 'payment-paid') {
-                filteredData.sort((a, b) => {
-                    const isPaidA = a.payment.includes('Sudah Bayar') ? 1 : 0;
-                    const isPaidB = b.payment.includes('Sudah Bayar') ? 1 : 0;
-                    return isPaidB - isPaidA;
-                });
-            } else if (sortValue === 'payment-unpaid') {
-                filteredData.sort((a, b) => {
-                    const isPaidA = a.payment.includes('Sudah Bayar') ? 1 : 0;
-                    const isPaidB = b.payment.includes('Sudah Bayar') ? 1 : 0;
-                    return isPaidA - isPaidB;
-                });
-            }
-            
-            updateDisplay();
-        }
-        
-        // Pagination functions
-        function updateDisplay() {
-            const totalItems = filteredData.length;
-            const totalPages = Math.ceil(totalItems / pageSize);
-            const startIndex = (currentPage - 1) * pageSize;
-            const endIndex = Math.min(startIndex + pageSize, totalItems);
-            
-            // Clear table body
-            tableBody.innerHTML = '';
-            
-            if (totalItems === 0 && searchInput.value.trim() !== '') {
-                // Show no results message only when searching
-                noResultsMessage.style.display = 'block';
-                customerTable.style.display = 'none';
-                paginationContainer.style.display = 'none';
-                return;
-            } else {
-                noResultsMessage.style.display = 'none';
-                customerTable.style.display = '';
-                paginationContainer.style.display = 'flex';
-            }
-            
-            // Display current page data
-            for (let i = startIndex; i < endIndex; i++) {
-                const customer = filteredData[i];
-                const row = customer.element.cloneNode(true);
-                
-                // Update row number
-                const numberCell = row.querySelector('td:first-child');
-                if (numberCell) {
-                    numberCell.textContent = i + 1;
-                }
-                
-                tableBody.appendChild(row);
-            }
-            
-            // Update pagination info
-            showingStart.textContent = totalItems > 0 ? startIndex + 1 : 0;
-            showingEnd.textContent = endIndex;
-            totalRecords.textContent = totalItems;
-            
-            // Update pagination controls
-            updatePaginationControls(totalPages);
-            
-            // Re-attach event listeners for payment buttons
-            attachPaymentButtonListeners();
-        }
-        
-        // Update pagination controls
-        function updatePaginationControls(totalPages) {
-            paginationControls.innerHTML = '';
-            
-            if (totalPages <= 1) return;
-            
-            // Previous button
-            const prevBtn = document.createElement('button');
-            prevBtn.className = 'pagination-btn';
-            prevBtn.innerHTML = '<i class="bx bx-chevron-left"></i>';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    updateDisplay();
-                }
-            });
-            paginationControls.appendChild(prevBtn);
-            
-            // Page numbers
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            
-            if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-            
-            // First page
-            if (startPage > 1) {
-                const firstBtn = document.createElement('button');
-                firstBtn.className = 'pagination-btn';
-                firstBtn.textContent = '1';
-                firstBtn.addEventListener('click', () => {
-                    currentPage = 1;
-                    updateDisplay();
-                });
-                paginationControls.appendChild(firstBtn);
-                
-                if (startPage > 2) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.className = 'pagination-btn';
-                    ellipsis.textContent = '...';
-                    ellipsis.style.cursor = 'default';
-                    paginationControls.appendChild(ellipsis);
-                }
-            }
-            
-            // Page numbers
-            for (let i = startPage; i <= endPage; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.className = 'pagination-btn';
-                if (i === currentPage) {
-                    pageBtn.classList.add('active');
-                }
-                pageBtn.textContent = i;
-                pageBtn.addEventListener('click', () => {
-                    currentPage = i;
-                    updateDisplay();
-                });
-                paginationControls.appendChild(pageBtn);
-            }
-            
-            // Last page
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.className = 'pagination-btn';
-                    ellipsis.textContent = '...';
-                    ellipsis.style.cursor = 'default';
-                    paginationControls.appendChild(ellipsis);
-                }
-                
-                const lastBtn = document.createElement('button');
-                lastBtn.className = 'pagination-btn';
-                lastBtn.textContent = totalPages;
-                lastBtn.addEventListener('click', () => {
-                    currentPage = totalPages;
-                    updateDisplay();
-                });
-                paginationControls.appendChild(lastBtn);
-            }
-            
-            // Next button
-            const nextBtn = document.createElement('button');
-            nextBtn.className = 'pagination-btn';
-            nextBtn.innerHTML = '<i class="bx bx-chevron-right"></i>';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    updateDisplay();
-                }
-            });
-            paginationControls.appendChild(nextBtn);
+            updatePage();
         }
         
         // Event Listeners
         searchButton.addEventListener('click', performSearch);
+        
         searchInput.addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
-                performSearch();
-            }
-            if (this.value === '') {
                 performSearch();
             }
         });
         
         // Real-time search with debounce
+        let searchTimeout;
         searchInput.addEventListener('input', function() {
-            clearTimeout(this.searchTimeout);
-            this.searchTimeout = setTimeout(performSearch, 300);
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (this.value.trim() === '' && urlParams.get('search')) {
+                    updatePage();
+                }
+            }, 500);
         });
         
         // Sort dropdown change
-        sortSelect.addEventListener('change', performSort);
+        sortSelect.addEventListener('change', updatePage);
         
         // Page size change
-        pageSizeSelect.addEventListener('change', function() {
-            pageSize = parseInt(this.value);
-            currentPage = 1;
-            updateDisplay();
+        pageSizeSelect.addEventListener('change', updatePage);
+        
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-        
-        // Payment Modal Functionality
-        function attachPaymentButtonListeners() {
-            const currentPaymentButtons = document.querySelectorAll('.add-customer-btn');
-            currentPaymentButtons.forEach(button => {
-                // Remove existing listeners to prevent duplicates
-                button.replaceWith(button.cloneNode(true));
-            });
-            
-            // Re-select buttons after cloning
-            const newPaymentButtons = document.querySelectorAll('.add-customer-btn');
-            newPaymentButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Get customer data from the row
-                    const row = this.closest('tr');
-                    const customerName = row.querySelector('.customer-name').textContent;
-                    const customerPackage = row.querySelector('td:nth-child(6)').textContent;
-                    const billStatus = row.querySelector('td:nth-child(8) .badge').textContent.trim();
-                    
-                    // Set customer data in the modal
-                    document.getElementById('customerName').textContent = customerName;
-                    document.getElementById('customerPackage').textContent = customerPackage;
-                    document.getElementById('billStatus').textContent = billStatus;
-                    
-                    // Reset form state
-                    document.getElementById('paymentForm').reset();
-                    paymentDateInput.value = formattedDate;
-                    paymentMethodSelect.value = 'Pilih Metode Pembayaran';
-                    transferDetails.style.display = 'none';
-                    
-                    // Set payment amount from invoice data
-                    const lain = row.getAttribute('data-tagihan-tambahan') || '0';
-                    const a = row.getAttribute('data-tagihan') || '0';
-                    const amount = parseInt(a) + parseInt(lain);
-                    const customerId = row.getAttribute('data-customer-id');
-                    const invoiceId = row.getAttribute('data-invoice-id');
-                    
-                    // Validate and format the amount
-                    let formattedAmount = '0';
-                    if (amount && amount !== '0' && amount !== '') {
-                        const numericAmount = parseInt(amount);
-                        if (!isNaN(numericAmount)) {
-                            formattedAmount = numericAmount.toLocaleString('id-ID');
-                        }
-                    }
-                    
-                    document.getElementById('paymentAmount').textContent = formattedAmount;
-                    
-                    // Update form action with correct customer ID
-                    const paymentForm = document.getElementById('paymentForm');
-                    if (customerId) {
-                        paymentForm.action = `/konfirmasi/pembayaran/${customerId}`;
-                    }
-                    
-                    // Add hidden input for invoice ID if available
-                    let invoiceInput = paymentForm.querySelector('input[name="invoice_id"]');
-                    if (!invoiceInput) {
-                        invoiceInput = document.createElement('input');
-                        invoiceInput.type = 'hidden';
-                        invoiceInput.name = 'invoice_id';
-                        paymentForm.appendChild(invoiceInput);
-                    }
-                    invoiceInput.value = invoiceId || '';
-                    
-                    // Show warning if no invoice amount
-                    const paymentAmountElement = document.getElementById('paymentAmount');
-                    const paymentAmountContainer = paymentAmountElement.parentElement;
-                    
-                    if (amount === '0' || amount === '' || !amount) {
-                        paymentAmountContainer.classList.add('no-invoice');
-                        paymentAmountContainer.title = 'Tidak ada tagihan yang belum dibayar';
-                        
-                        // Disable submit button if no amount
-                        const submitButton = paymentForm.querySelector('button[type="submit"]');
-                        if (submitButton) {
-                            submitButton.disabled = true;
-                            submitButton.textContent = 'Tidak Ada Tagihan';
-                        }
-                    } else {
-                        paymentAmountContainer.classList.remove('no-invoice');
-                        paymentAmountContainer.title = '';
-                        
-                        // Enable submit button
-                        const submitButton = paymentForm.querySelector('button[type="submit"]');
-                        if (submitButton) {
-                            submitButton.disabled = false;
-                            submitButton.textContent = 'Konfirmasi';
-                        }
-                    }
-                    
-                    // Show the modal
-                    paymentModal.show();
-                });
-            });
-        }
-        
-        // Handle payment method selection with select dropdown
-        paymentMethodSelect.addEventListener('change', function() {
-            const method = this.value;
-            
-            // Show/hide transfer details based on selected method
-            if (method === '2' || method === '3') {
-                transferDetails.style.display = 'block';
-            } else {
-                transferDetails.style.display = 'none';
-            }
-        });
-        
-        // Initialize the system
-        initializeCustomerData();
     });
 </script>
 
