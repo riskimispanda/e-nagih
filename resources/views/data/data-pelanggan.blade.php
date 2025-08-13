@@ -766,7 +766,7 @@
                         </div>
                     </div>
                     <div class="col-md-6 col-lg-3 mb-3">
-                        <div class="data-card bg-white danger-card">
+                        <div class="data-card bg-white danger-card" data-bs-toggle="modal" data-bs-target="#blokir">
                             <div class="data-card-icon danger">
                                 <i class="bx bx-x-circle"></i>
                             </div>
@@ -774,13 +774,13 @@
                                 <div class="data-label">Pelanggan Non-Aktif</div>
                                 <div class="data-value">
                                     <span class="badge bg-danger rounded-pill">
-                                        {{ \App\Models\Customer::where('status_id', 9)->count() }}
+                                        {{ $nonAktif->count() }}
                                     </span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="tooltip" title="Jumlah Maintenance Hari Ini" data-bs-placement="top">
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#maintenance">
                         <div class="data-card bg-white danger-card">
                             <div class="data-card-icon danger">
                                 <i class="bx bx-loader"></i>
@@ -789,7 +789,7 @@
                                 <div class="data-label">Maintenance Hari Ini</div>
                                 <div class="data-value">
                                     <span class="badge bg-danger rounded-pill">
-                                        {{ $maintenance }}
+                                        {{ $maintenance->count() }}
                                     </span>
                                 </div>
                             </div>
@@ -825,7 +825,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah Instalasi Bulan {{now()->translatedFormat('F Y')}}">
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#bulanan">
                         <div class="data-card bg-white success-card">
                             <div class="data-card-icon success">
                                 <i class="bx bx-calendar"></i>
@@ -1140,6 +1140,140 @@
         </div>
     </div>
 </div>
+{{-- Modal Bulanan --}}
+<div class="modal fade" id="bulanan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel4">Instalasi Bulan ini</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>Status</th>
+                                <th>Teknisi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($installasiBulanan as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
+                                    </td>
+                                    <td>{{$item->teknisi->name ?? '-'}}</td>
+                                </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4">Tidak ada data</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Pelanggan Blokir --}}
+<div class="modal fade" id="blokir" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel4">Instalasi Bulan ini</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>No HP</th>
+                                <th>Paket</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($nonAktif as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{$item->nama_customer}}</td>
+                                    <td>{{$item->no_hp}}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">ISOLIRE BILLING</span>
+                                    </td>
+                                </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5">Tidak ada data</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Pelanggan Maintenance --}}
+<div class="modal fade" id="maintenance" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel4">Instalasi Bulan ini</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>No HP</th>
+                                <th>Paket</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($maintenance as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{$item->nama_customer}}</td>
+                                    <td>{{$item->no_hp}}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">ISOLIRE BILLING</span>
+                                    </td>
+                                </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5">Tidak ada data</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 

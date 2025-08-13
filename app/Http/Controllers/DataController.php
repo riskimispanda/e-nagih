@@ -83,7 +83,7 @@ class DataController extends Controller
             ->count();
         $maintenance = Customer::whereDate('updated_at', today())
             ->where('status_id', 4)
-            ->count();
+            ->get();
 
         $antrian = Customer::whereIn('status_id', [1, 2, 5])
             ->whereDate('created_at', today())
@@ -95,10 +95,20 @@ class DataController extends Controller
             ->with('teknisi')
             ->get();
 
+        
+
+        $instalasiBulanan = Customer::where('status_id', 3)
+        ->whereMonth('created_at', now()->month)
+        ->whereYear('created_at', now()->year)
+        ->with('teknisi')
+        ->get();
+
         $bulananInstallasi = Customer::whereIn('status_id', [3, 4])
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
+
+        $nonAktif = Customer::where('status_id', 9)->get();
 
         // Handle AJAX requests
         if ($request->ajax()) {
@@ -180,6 +190,8 @@ class DataController extends Controller
             'antrian' => $antrian,
             'selesai' => $selesai,
             'bulananInstallasi' => $bulananInstallasi,
+            'installasiBulanan' => $instalasiBulanan,
+            'nonAktif' => $nonAktif,
         ]);
     }
 
