@@ -935,7 +935,7 @@
                                             </div>
                                             
                                             <div class="mt-3">
-                                                <a href="#" class="btn btn-outline-primary">
+                                                <a href="/riwayatPembayaran/{{ $customer->id }}" class="btn btn-outline-primary">
                                                     <i class="bx bx-receipt me-1"></i> Lihat Riwayat Pembayaran
                                                 </a>
                                             </div>

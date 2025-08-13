@@ -461,9 +461,6 @@
                                     <a href="/kirim/invoice/{{ $invoice->id }}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                                         <i class="bx bx-message"></i>
                                     </a>
-                                    <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="action-btn bg-info bg-opacity-10 text-info btn-sm" data-bs-toggle="tooltip" title="Lihat Riwayat Pembayaran" data-bs-placement="bottom">
-                                        <i class="bx bx-info-circle"></i>
-                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -946,9 +943,6 @@
             <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                 <i class="bx bx-message"></i>
             </a>
-            <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="action-btn bg-info bg-opacity-10 text-info btn-sm" data-bs-toggle="tooltip" title="Lihat Riwayat Pembayaran" data-bs-placement="bottom">
-                                        <i class="bx bx-info-circle"></i>
-                                    </a>
         `;
         
         return buttons;
