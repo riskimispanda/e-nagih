@@ -21,7 +21,8 @@ class RabController extends Controller
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
         $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
         $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
-        $total = $pendapatanLangganan + $pendapatanNonLangganan;
+        $pengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+        $total = $pendapatanLangganan + $pendapatanNonLangganan - $pengeluaran;
         // dd($total);
 
         return view('/rab/rab',[
