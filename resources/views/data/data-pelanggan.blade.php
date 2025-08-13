@@ -841,6 +841,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah Instalasi Bulan {{now()->translatedFormat('F Y')}}">
+                        <div class="data-card bg-white success-card">
+                            <div class="data-card-icon success">
+                                <i class="bx bx-calendar"></i>
+                            </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Instalasi {{now()->translatedFormat('F Y')}}</div>
+                                <div class="data-value">
+                                    <span class="badge bg-success rounded-pill">
+                                        {{ $bulananInstallasi }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

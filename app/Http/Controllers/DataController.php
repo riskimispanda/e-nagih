@@ -10,6 +10,7 @@ use App\Events\UpdateBaru;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Carbon\Month;
 
 class DataController extends Controller
 {
@@ -24,7 +25,7 @@ class DataController extends Controller
             'odp.odc.olt'
         ])->whereIn('status_id', [3, 4, 9])
         ->orderBy('created_at', 'desc')
-        ->get();
+        ->paginate(10);
         
         // $coba = Customer::where('status_id', [3, 9])->get();
 
@@ -37,9 +38,10 @@ class DataController extends Controller
             ->whereIn('status_id', [1, 2, 5])
             ->count();
 
-        $maintenance = Customer::whereDate('created_at', today())
+        $maintenance = Customer::whereDate('updated_at', today())
         ->where('status_id', 4)
         ->count();
+        // dd($maintenance);
         // dd($menunggu);
         // Format data sesuai kebutuhan frontend
         $customerData = $customers->map(function ($customer) {
@@ -101,6 +103,11 @@ class DataController extends Controller
         ->with('teknisi')
         ->get();
 
+        $bulananInstallasi = Customer::whereIn('status_id', [3, 4])
+        ->whereMonth('created_at', now()->month)
+        ->whereYear('created_at', now()->year)
+        ->count();
+        // dd($bulananInstallasi);
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -112,7 +119,8 @@ class DataController extends Controller
             'maintenance' => $maintenance,
             'customerData' => $customerData->toArray(),
             'antrian' => $antrian,
-            'selesai' => $selesai
+            'selesai' => $selesai,
+            'bulananInstallasi' => $bulananInstallasi,
         ]);
     }
 
