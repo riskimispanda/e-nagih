@@ -48,7 +48,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    {{ \Carbon\Carbon::parse($cek->tanggal_bayar)->locale('id')->translatedFormat('F') }}
+                                    {{ \Carbon\Carbon::parse($item->jatuh_tempo)->locale('id')->translatedFormat('F') }}
                                 </td>
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
