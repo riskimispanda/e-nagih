@@ -1042,7 +1042,7 @@
                         </div>
                     </div>
                     <div class="pagination-controls">
-                        {{ $data->links('pagination::bootstrap-4') }}
+                        {{-- {{ $data->links('pagination::bootstrap-4') }} --}}
                     </div>
                 </div>
             </div>
