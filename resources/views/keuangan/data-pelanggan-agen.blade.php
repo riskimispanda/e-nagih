@@ -425,6 +425,9 @@
                                 <th>Status Tagihan</th>
                                 <th>Total Tagihan</th>
                                 <th>Jatuh Tempo</th>
+                                <th>Metode Bayar</th>
+                                <th>Tanggal Pembayaran</th>
+                                <th>Bukti Pembayaran</th>
                                 <th>Admin / Agen</th>                                
                             </tr>
                         </thead>
@@ -481,6 +484,39 @@
                                 @endif
                             </td>
                             <td>
+                                @if($invoice->pembayaran->isNotEmpty())
+                                    @foreach ($invoice->pembayaran as $item)
+                                        <span class="badge bg-info">{{$item->metode_bayar}}</span>
+                                    @endforeach
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
+                                @if($invoice->pembayaran->isNotEmpty())
+                                    @foreach ($invoice->pembayaran as $item)
+                                        <span class="badge bg-info">{{$item->updated_at}}</span>
+                                    @endforeach
+                                @else
+                                <span>-</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($invoice->pembayaran->isNotEmpty())
+                                    @foreach ($invoice->pembayaran as $item)
+                                    <a href="{{ $item->bukti_bayar ? asset('storage/' . $item->bukti_bayar) : '#' }}"
+                                        target="_blank"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="bottom"
+                                        title="{{ $item->bukti_bayar ? 'Lihat Bukti' : 'Bukti Tidak Ditemukan' }}">
+                                         <i class="bx bx-info-circle text-info"></i>
+                                     </a>                                     
+                                    @endforeach
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td>
                                 @if ($invoice->pembayaran->isNotEmpty())
                                     @foreach ($invoice->pembayaran as $pembayaran)
                                         @if ($pembayaran->user)
@@ -488,7 +524,7 @@
                                                 {{ $pembayaran->user->name }} / {{ $pembayaran->user->roles->name }}
                                             </span>
                                         @else
-                                            <span class="badge bg-secondary">Tanpa User</span>
+                                            <span class="badge bg-secondary">By Tripay</span>
                                         @endif
                                     @endforeach
                                 @else

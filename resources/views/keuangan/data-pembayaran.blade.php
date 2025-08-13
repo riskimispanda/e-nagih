@@ -585,9 +585,9 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <i class="bx bx-calendar text-primary me-2"></i>
-                                    {{ \Carbon\Carbon::parse($payment->tanggal_bayar)->format('d/m/Y') }}
+                                <div class="d-flex justify-content-between">
+                                    <i class="bx bx-calendar text-primary me-1"></i>
+                                    {{ \Carbon\Carbon::parse($payment->tanggal_bayar)->format('d-m-Y h:m:s') }}
                                 </div>
                             </td>
                             <td>

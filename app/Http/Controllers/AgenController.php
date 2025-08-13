@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Pembayaran;
-
+use App\Services\ChatServices;
+use App\Services\MikrotikServices;
+use App\Models\Kas;
+use Illuminate\Support\Facades\DB;
 class AgenController extends Controller
 {
     public function index(Request $request)
@@ -362,7 +365,7 @@ class AgenController extends Controller
         ]);
 
         try {
-            // Validate input
+            // Validasi input
             $request->validate([
                 'jumlah_bayar' => 'required|numeric|min:1',
                 'metode_id' => 'required|string',
@@ -377,32 +380,94 @@ class AgenController extends Controller
                 'bukti_pembayaran.max' => 'Ukuran file maksimal 2MB'
             ]);
 
-            $invoice = Invoice::findOrFail($id);
-            $customer = $invoice->customer;
+            DB::transaction(function () use ($request, $id) {
+                $invoice = Invoice::findOrFail($id);
+                $customer = $invoice->customer;
 
-            // Handle file upload
-            $buktiPath = null;
-            if ($request->hasFile('bukti_pembayaran')) {
-                $file = $request->file('bukti_pembayaran');
-                $fileName = 'bukti_' . time() . '_' . $invoice->id . '.' . $file->getClientOriginalExtension();
-                $buktiPath = $file->storeAs('bukti_pembayaran', $fileName, 'public');
-            }
+                // Upload bukti pembayaran
+                $buktiPath = null;
+                if ($request->hasFile('bukti_pembayaran')) {
+                    $file = $request->file('bukti_pembayaran');
+                    $fileName = 'bukti_' . time() . '_' . $invoice->id . '.' . $file->getClientOriginalExtension();
+                    $buktiPath = $file->storeAs('bukti_pembayaran', $fileName, 'public');
+                }
 
-            // Create payment record
-            $pembayaran = new Pembayaran();
-            $pembayaran->invoice_id = $invoice->id;
-            $pembayaran->jumlah_bayar = $request->jumlah_bayar;
-            $pembayaran->tanggal_bayar = now();
-            $pembayaran->metode_bayar = $request->metode_id;
-            $pembayaran->keterangan = 'Request pembayaran oleh agen ' . Auth::user()->name . ' untuk pelanggan ' . $customer->nama_customer;
-            $pembayaran->bukti_bayar = $buktiPath;
-            $pembayaran->status_id = 1; // Menunggu konfirmasi
-            $pembayaran->user_id = Auth::id();
-            $pembayaran->save();
+                // Buat pembayaran baru
+                $pembayaran = Pembayaran::create([
+                    'invoice_id'   => $invoice->id,
+                    'jumlah_bayar' => $request->jumlah_bayar,
+                    'tanggal_bayar'=> now(),
+                    'metode_bayar' => $request->metode_id,
+                    'keterangan'   => 'Pembayaran dari agen ' . Auth::user()->name . ' untuk pelanggan ' . $customer->nama_customer,
+                    'bukti_bayar'  => $buktiPath,
+                    'status_id'    => 8, // Menunggu konfirmasi
+                    'user_id'      => Auth::id(),
+                ]);
 
-            // Update invoice status to pending
-            $invoice->status_id = 1; // Menunggu konfirmasi
-            $invoice->save();
+                $tagihanTotal = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
+                $tunggakan = max($tagihanTotal - $pembayaran->jumlah_bayar, 0);
+
+                // Kirim notifikasi pelanggan
+                $chat = new ChatServices();
+                $chat->pembayaranBerhasil($customer->no_hp, $pembayaran);
+
+                // Update status customer
+                $customer->update(['status_id' => 3]);
+
+                // Unblok jaringan jika status sebelumnya 9
+                if ($customer->status_id == 9) {
+                    $mikrotik = new MikrotikServices();
+                    $client = MikrotikServices::connect($customer->router);
+                    $mikrotik->removeActiveConnections($client, $customer->usersecret);
+                    $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+                }
+
+                // Update status invoice
+                $invoice->update(['status_id' => 8]);
+
+                // Tentukan tanggal invoice baru
+                $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->startOfMonth();
+                $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
+                $tanggalBlokir = $invoice->tanggal_blokir;
+
+                // Cek apakah invoice bulan berikutnya sudah ada
+                $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                    ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
+                    ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
+                    ->exists();
+
+                if (!$sudahAda) {
+                    Invoice::create([
+                        'customer_id'    => $invoice->customer_id,
+                        'paket_id'       => $customer->paket_id,
+                        'tagihan'        => $customer->paket->harga,
+                        'tambahan'       => 0,
+                        'saldo'          => $pembayaran->saldo,
+                        'status_id'      => 7, // Belum bayar
+                        'created_at'     => $tanggalAwal,
+                        'updated_at'     => $tanggalAwal,
+                        'jatuh_tempo'    => $tanggalJatuhTempo,
+                        'tanggal_blokir' => $tanggalBlokir,
+                        'tunggakan'      => $tunggakan,
+                    ]);
+                }
+
+                // Buat catatan kas
+                $kas = Kas::create([
+                    'debit'       => $pembayaran->jumlah_bayar,
+                    'kas_id'      => 1,
+                    'keterangan'  => 'Pembayaran diterima dari ' . $pembayaran->invoice->customer->nama_customer,
+                    'tanggal_kas' => $pembayaran->tanggal_bayar,
+                    'user_id'     => $pembayaran->user_id,
+                    'status_id'   => 3
+                ]);
+
+                Log::info('Sukses pembayaran', [
+                    'debit'      => $kas->debit,
+                    'kas_id'     => $kas->kas_id,
+                    'keterangan' => $kas->keterangan
+                ]);
+            });
 
             return redirect()->back()->with('success', 'Request pembayaran berhasil dikirim dan menunggu konfirmasi admin.');
 

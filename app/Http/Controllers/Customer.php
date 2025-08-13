@@ -11,6 +11,7 @@ use App\Models\Pengaduan;
 use App\Models\Invoice;
 use App\Models\Metode;
 use App\Events\UpdateBaru;
+use App\Models\Pembayaran;
 
 class Customer extends Controller
 {
@@ -44,13 +45,15 @@ class Customer extends Controller
         ]);
     }
 
-    public function history()
+    public function history($customerId)
     {
+        $invoice = Invoice::with('customer','pembayaran','paket')->where('customer_id',$customerId)->get();
+        // dd($invoice);
         return view('/pelanggan/history',[
             'users' => Auth::user(),
             'roles' => auth()->user()->roles,
             'customer' => CustomerModel::where('nama_customer', Auth::user()->name)->first(),
-            'pengaduan' => Pengaduan::where('customer_id', CustomerModel::where('nama_customer', Auth::user()->name)->first()->id)->get(),
+            'invoice' => $invoice
         ]);
     }
 

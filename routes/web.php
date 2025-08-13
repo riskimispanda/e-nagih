@@ -262,6 +262,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/request/hapus/pengeluaran', [PengeluaranController::class, 'requestHapus'])->name('request-hapus-pengeluaran');
     Route::get('/tolak/hapus/pengeluaran/{id}', [PengeluaranController::class, 'tolakHapus'])->name('tolak-hapus-pengeluaran');
     Route::get('/konfirmasi/hapus/pengeluaran/{id}', [PengeluaranController::class, 'konfirmasiHapus'])->name('konfirmasi-hapus-pengeluaran');
+    Route::get('/riwayatPembayaran/{customerId}', [Customer::class, 'history']);
 
     // Agen
     Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');
