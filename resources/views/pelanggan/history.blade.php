@@ -21,6 +21,7 @@
                                 <th>Paket</th>
                                 <th>Tanggal Bayar</th>
                                 <th>Periode</th>
+                                <th>Status</th>
                                 <th>Jumlah Bayar</th>
                                 <th>Metode Bayar</th>
                                 <th>Keterangan</th>
@@ -28,7 +29,7 @@
                         </thead>
                         <tbody class="text-center">
                             @php
-                                $no = 1;
+                            $no = 1;
                             @endphp
                             @forelse ($invoice as $item)
                             <tr>
@@ -41,9 +42,9 @@
                                 </td>
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
-                                        @foreach ($item->pembayaran as $cek)
-                                            <span>{{ \Carbon\Carbon::parse($cek->tanggal_bayar)->locale('id')->translatedFormat('D F Y h:m:s') }}</span>
-                                        @endforeach
+                                    @foreach ($item->pembayaran as $cek)
+                                    <span>{{ \Carbon\Carbon::parse($cek->tanggal_bayar)->locale('id')->translatedFormat('D F Y h:m:s') }}</span>
+                                    @endforeach
                                     @else
                                     -
                                     @endif
@@ -52,28 +53,35 @@
                                     {{ \Carbon\Carbon::parse($item->jatuh_tempo)->locale('id')->translatedFormat('F') }}
                                 </td>
                                 <td>
+                                    @if($item->status_id == 7)
+                                    <span class="badge bg-danger">Belum Bayar</span>
+                                    @elseif($item->status_id == 8)
+                                    <span class="badge bg-success">Sudah Bayar</span>
+                                    @endif
+                                </td>
+                                <td>
                                     @if($item->pembayaran->isNotEmpty())
-                                        @foreach ($item->pembayaran as $cek)
-                                        <span class="badge bg-success">Rp. {{ number_format($cek->jumlah_bayar, 0, ',', '.') }}</span>
-                                        @endforeach
+                                    @foreach ($item->pembayaran as $cek)
+                                    <span class="badge bg-success">Rp. {{ number_format($cek->jumlah_bayar, 0, ',', '.') }}</span>
+                                    @endforeach
                                     @else
                                     -
                                     @endif
                                 </td>
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
-                                        @foreach ($item->pembayaran as $cek)
-                                        <span class="badge bg-warning">{{$cek->metode_bayar}}</span>
-                                        @endforeach
+                                    @foreach ($item->pembayaran as $cek)
+                                    <span class="badge bg-warning">{{$cek->metode_bayar}}</span>
+                                    @endforeach
                                     @else
                                     -
                                     @endif
                                 </td>
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
-                                        @foreach ($item->pembayaran as $cek)
-                                        <span>{{$cek->keterangan}}</span>
-                                        @endforeach
+                                    @foreach ($item->pembayaran as $cek)
+                                    <span>{{$cek->keterangan}}</span>
+                                    @endforeach
                                     @else
                                     -
                                     @endif
@@ -81,7 +89,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7">Tidak Ada Data</td>
+                                <td colspan="8">Tidak Ada Data</td>
                             </tr>
                             @endforelse
                         </tbody>
