@@ -194,7 +194,25 @@
                 
                 <!-- Summary Cards -->
                 <div class="row mb-5 g-3">
-                    <div class="col-lg-4 col-md-6">
+
+                    <div class="col-lg-3 col-md-6">
+                        <div class="card shadow-sm border-0 bg-info hover-shadow" style="transition: all 0.3s ease;">
+                            <div class="card-body p-3 p-sm-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar avatar-md bg-info bg-opacity-25 rounded-2 p-2">
+                                        <i class="bx bx-money fs-3 text-white"></i>
+                                    </div>
+                                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Total Saldo</h6>
+                                </div>
+                                <h3 class="mb-1 text-white fw-bold" id="totalPengeluaran">
+                                    Rp {{ number_format($total, 0, ',', '.') }}
+                                </h3>
+                                <small class="text-white text-opacity-85">Seluruh saldo Pendapatan</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3 col-md-6">
                         <div class="card shadow-sm border-0 bg-primary hover-shadow" style="transition: all 0.3s ease;">
                             <div class="card-body p-3 p-sm-4">
                                 <div class="d-flex align-items-center mb-2">
@@ -211,7 +229,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-3 col-md-6">
                         <div class="card shadow-sm border-0 bg-success hover-shadow" style="transition: all 0.3s ease;">
                             <div class="card-body p-3 p-sm-4">
                                 <div class="d-flex align-items-center mb-2">
@@ -228,7 +246,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-3 col-md-6">
                         <div class="card shadow-sm border-0 bg-warning hover-shadow" style="transition: all 0.3s ease;">
                             <div class="card-body p-3 p-sm-4">
                                 <div class="d-flex align-items-center mb-2">
@@ -244,7 +262,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-3 col-md-6">
                         <a href="/request/hapus/pengeluaran" data-bs-toggle="tooltip" title="Request Konfirmasi" data-bs-placement="bottom"> 
                             <div class="card shadow-sm border-0 bg-danger hover-shadow" style="transition: all 0.3s ease;">
                                 <div class="card-body p-3 p-sm-4">

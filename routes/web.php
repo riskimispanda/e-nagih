@@ -263,6 +263,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tolak/hapus/pengeluaran/{id}', [PengeluaranController::class, 'tolakHapus'])->name('tolak-hapus-pengeluaran');
     Route::get('/konfirmasi/hapus/pengeluaran/{id}', [PengeluaranController::class, 'konfirmasiHapus'])->name('konfirmasi-hapus-pengeluaran');
     Route::get('/riwayatPembayaran/{customerId}', [Customer::class, 'history']);
+    Route::get('/edit-pelanggan/{id}',[DataController::class,'editPelanggan'])->middleware('auth','roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik');
+    Route::post('/update-pelanggan/{id}', [DataController::class, 'updatePelanggan'])->middleware('auth','roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik');
 
     // Agen
     Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');

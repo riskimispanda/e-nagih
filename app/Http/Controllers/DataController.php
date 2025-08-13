@@ -8,9 +8,21 @@ use App\Models\Metode;
 use App\Models\Pembayaran;
 use App\Events\UpdateBaru;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Carbon\Month;
+use App\Models\Paket;
+use App\Models\Router;
+use App\Models\Server as BTS;
+use App\Models\Lokasi;
+use App\Models\ODC;
+use App\Models\ODP;
+use App\Models\Koneksi;
+use App\Models\MediaKoneksi;
+use App\Models\Perangkat;
+use App\Models\Invoice;
+use App\Services\MikrotikServices;
 
 class DataController extends Controller
 {
@@ -94,7 +106,6 @@ class DataController extends Controller
             ->whereDate('created_at', today())
             ->with('teknisi')
             ->get();
-
         
 
         $instalasiBulanan = Customer::where('status_id', 3)
@@ -314,6 +325,90 @@ class DataController extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memuat data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function editPelanggan($id)
+    {
+        $pelanggan = Customer::findOrFail($id);
+        $paket = Paket::whereNot('nama_paket', 'ISOLIREBILLING')->get();
+        $bts = BTS::all();
+        $router = Router::all();
+        $olt = Lokasi::all();
+        $odc = ODC::all();
+        $odp = ODP::all();
+        $koneksi = Koneksi::all();
+        $media = MediaKoneksi::all();
+        $perangkat = Perangkat::all();
+
+        return view('/pelanggan/edit',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'pelanggan' => $pelanggan,
+            'paket' => $paket,
+            'router' => $router,
+            'bts' => $bts,
+            'olt' => $olt,
+            'odc' => $odc,
+            'odp' => $odp,
+            'koneksi' => $koneksi,
+            'media' => $media,
+            'perangkat' => $perangkat
+        ]);
+    }
+
+    public function updatePelanggan(Request $request, $id)
+    {
+        $invoice = Invoice::where('customer_id', $id)->latest()->first();
+
+        // dd($paket->paket->paket_name);
+        DB::beginTransaction();
+
+        try {
+            $pelanggan = Customer::findOrFail($id);
+
+            $pelanggan->update([
+                'nama_customer' => $request->nama,
+                'no_hp' => $request->no_hp,
+                'alamat' => $request->alamat,
+                'gps' => $request->gps,
+                'no_identitas' => $request->no_identitas,
+                'router_id' => $request->router,
+                'paket_id' => $request->paket,
+                'lokasi_id' => $request->odp,
+                'access_point' => $request->access_point,
+                'koneksi_id' => $request->koneksi,
+                'media_id' => $request->media,
+                'perangkat_id' => $request->perangkat,
+                'local_address' => $request->local_address,
+                'remote_address' => $request->remote_address,
+                'remote' => $request->remote,
+                'seri_perangkat' => $request->seri,
+                'mac_address' => $request->mac,
+                'usersecret' => $request->usersecret,
+                'pass_secret' => $request->pass_secret
+            ]);
+
+            $paket = $pelanggan->paket->paket_name;
+            $router = Router::findOrFail($request->router);
+
+            $invoice->update([
+                'paket_id' => $request->paket,
+                'tagihan' => $pelanggan->paket->harga,
+            ]);
+
+            $client = MikrotikServices::connect($router);
+            MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
+            MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
+            LOG::info('Success update pelanggan');
+
+            DB::commit();
+
+            return redirect('/data/pelanggan')->with('success', 'Data pelanggan berhasil diperbarui.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal update pelanggan: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
         }
     }
 

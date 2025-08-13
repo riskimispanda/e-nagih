@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Rab;
 use App\Models\Pengeluaran;
 use Spatie\Activitylog\Models\Activity;
+use App\Models\Pembayaran;
+use App\Models\Pendapatan;
 
 class RabController extends Controller
 {
@@ -17,6 +19,10 @@ class RabController extends Controller
         $totalAnggaran = Rab::sum('jumlah_anggaran');
         $totalTerealisasi = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
+        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
+        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
+        $total = $pendapatanLangganan + $pendapatanNonLangganan;
+        // dd($total);
 
         return view('/rab/rab',[
             'users' => auth()->user(),
@@ -25,6 +31,7 @@ class RabController extends Controller
             'totalAnggaran' => $totalAnggaran,
             'totalTerealisasi' => $totalTerealisasi,
             'sisaAnggaran' => $sisaAnggaran,
+            'total' => $total,
         ]);
     }
 

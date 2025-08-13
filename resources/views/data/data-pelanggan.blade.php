@@ -938,6 +938,7 @@
                                 <th hidden>BTS Server</th>
                                 <th>Paket</th>
                                 <th>Status</th>
+                                <th>History Pembayaran</th>
                                 <th>Remote IP</th>
                                 <th>Aksi</th>
                             </tr>
@@ -975,7 +976,12 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
+                                    <a href="/riwayatPembayaran/{{ $item->id }}" class="btn btn-outline-info action-btn" data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}" data-bs-placement="top">
+                                        <i class="bx bx-history"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning action-btn" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
                                         <i class="bx bx-cloud"></i>
                                     </a>
                                 </td>
@@ -1001,6 +1007,12 @@
                                                 data-bs-toggle="tooltip" data-bs-placement="top"
                                                 title="Detail Pelanggan">
                                                 <i class="bx bx-show"></i>
+                                            </a>
+                                            <a href="/edit-pelanggan/{{ $item->id }}"
+                                                class="btn btn-secondary action-btn detail-customer-btn mb-2"
+                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Pelanggan"
+                                                title="Edit Pelanggan">
+                                                <i class="bx bx-pencil text-white"></i>
                                             </a>
                                         </div>
                                     </div>

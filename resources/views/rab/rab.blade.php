@@ -453,36 +453,47 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-sm-4">
+                <div class="col-sm-3">
+                    <div class="card bg-danger text-white shadow rounded-3">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class='bx bx-wallet-alt fs-3 me-2'></i>
+                                <h6 class="card-title text-white mb-0 fw-bold">Total Saldo</h6>
+                            </div>
+                            <p class="card-text display-8 fw-bold mb-2">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
                     <div class="card bg-warning text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
-                                <i class='bx bx-wallet-alt fs-1 me-2'></i>
-                                <h5 class="card-title text-white mb-0 fw-bold">Total Anggaran</h5>
+                                <i class='bx bx-wallet-alt fs-3 me-2'></i>
+                                <h6 class="card-title text-white mb-0 fw-bold">Total Anggaran</h6>
                             </div>
-                            <p id="pagu-tahun" class="card-text display-6 fw-bold mb-2">Rp.0</p>
+                            <p id="pagu-tahun" class="card-text display-8 fw-bold mb-2">Rp.0</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <div class="card bg-success text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
-                                <i class='bx bx-check-circle fs-1 me-2'></i>
-                                <h5 class="card-title text-white mb-0 fw-bold">Anggaran Terealisasi</h5>
+                                <i class='bx bx-check-circle fs-3 me-2'></i>
+                                <h6 class="card-title text-white mb-0 fw-bold">Anggaran Terealisasi</h6>
                             </div>
-                            <p id="anggaran-terealisasi" class="card-text display-6 fw-bold mb-2">Rp.0</p>
+                            <p id="anggaran-terealisasi" class="card-text display-8 fw-bold mb-2">Rp.0</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <div class="card bg-info text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
-                                <i class='bx bx-calculator fs-1 me-2'></i>
-                                <h5 class="card-title text-white mb-0 fw-bold">Sisa Anggaran</h5>
+                                <i class='bx bx-calculator fs-3 me-2'></i>
+                                <h6 class="card-title text-white mb-0 fw-bold">Sisa Anggaran</h6>
                             </div>
-                            <p id="sisa-anggaran" class="card-text display-6 fw-bold mb-2">Rp.0</p>
+                            <p id="sisa-anggaran" class="card-text display-8 fw-bold mb-2">Rp.0</p>
                         </div>
                     </div>
                 </div>

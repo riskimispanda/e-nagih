@@ -11,6 +11,8 @@ use App\Models\Kas;
 use App\Models\Rab;
 use Carbon\Carbon;
 use Spatie\Activitylog\Models\Activity;
+use App\Models\Pendapatan;
+use App\Models\Pembayaran;
 
 class PengeluaranController extends Controller
 {
@@ -35,6 +37,11 @@ class PengeluaranController extends Controller
 
         $totalRequest = Pengeluaran::where('status_id', 1)->count();
 
+        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
+        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
+
+        $total = $pendapatanLangganan + $pendapatanNonLangganan - $totalPengeluaran;
+
         return view('keuangan.pengeluaran',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -45,7 +52,8 @@ class PengeluaranController extends Controller
             'mounthlyPengeluaran' => $mounthlyPengeluaran,
             'kas' => $kas,
             'rab' => $rab,
-            'totalRequest' => $totalRequest
+            'totalRequest' => $totalRequest,
+            'total' => $total,
         ]);
     }
 
