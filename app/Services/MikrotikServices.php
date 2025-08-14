@@ -179,11 +179,20 @@ class MikrotikServices
     public static function UpgradeDowngrade(Client $client, $usersecret, $newProfile)
     {
         try {
+            // Validasi awal
+            if (empty($usersecret) || empty($newProfile)) {
+                Log::warning("UpgradeDowngrade dibatalkan: usersecret atau profile kosong. usersecret='{$usersecret}', profile='{$newProfile}'");
+                return false;
+            }
+
             $query = new Query('/ppp/secret/print');
             $query->where('name', $usersecret);
             $users = $client->query($query)->read();
 
-            if (empty($users)) return false;
+            if (empty($users)) {
+                Log::warning("UpgradeDowngrade dibatalkan: user '{$usersecret}' tidak ditemukan di MikroTik");
+                return false;
+            }
 
             foreach ($users as $user) {
                 $setQuery = new Query('/ppp/secret/set');
@@ -191,13 +200,15 @@ class MikrotikServices
                 $setQuery->equal('profile', $newProfile);
                 $client->query($setQuery)->read();
             }
-            LOG::info('MikrotikServices::changeUserProfile Success' . $usersecret . '-' . $newProfile);
+
+            Log::info("MikrotikServices::changeUserProfile Success: {$usersecret} -> {$newProfile}");
             return true;
         } catch (Exception $e) {
-            Log::info('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            Log::error("MikrotikServices::changeUserProfile error: " . $e->getMessage());
             return false;
         }
     }
+
 
 
     public static function getProfiles(Client $client)

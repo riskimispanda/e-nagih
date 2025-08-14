@@ -389,6 +389,7 @@ class DataController extends Controller
                 'pass_secret' => $request->pass_secret
             ]);
 
+            $pelanggan->load('paket');
             $paket = $pelanggan->paket->paket_name;
             $router = Router::findOrFail($request->router);
 
@@ -400,7 +401,7 @@ class DataController extends Controller
             $client = MikrotikServices::connect($router);
             MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
             MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
-            LOG::info('Success update pelanggan');
+            LOG::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
 
             DB::commit();
 
