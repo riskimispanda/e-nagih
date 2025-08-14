@@ -401,6 +401,7 @@ class DataController extends Controller
             $client = MikrotikServices::connect($router);
             MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
             MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
+            MikrotikServices::logInformation($client);
             LOG::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
 
             DB::commit();
