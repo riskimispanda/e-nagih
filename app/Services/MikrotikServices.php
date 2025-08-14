@@ -44,6 +44,33 @@ class MikrotikServices
         return self::$klien[$key];
     }
 
+    public static function logInformation(Client $client, string $message = ''): void
+    {
+        try {
+            // Ambil log dari MikroTik
+            $query = new Query('/log/print');
+            $logs = $client->query($query)->read();
+
+            // Kalau mau filter pesan tertentu
+            if (!empty($message)) {
+                $logs = array_filter($logs, function ($log) use ($message) {
+                    return stripos($log['message'] ?? '', $message) !== false;
+                });
+            }
+
+            // Tampilkan di log Laravel
+            foreach ($logs as $log) {
+                $time = $log['time'] ?? 'unknown time';
+                $topics = $log['topics'] ?? 'no topics';
+                $msg = $log['message'] ?? 'no message';
+                Log::info("[Mikrotik Log] {$time} [{$topics}] {$msg}");
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Gagal mengambil log dari MikroTik: " . $e->getMessage());
+        }
+    }
+
 
     public static function status(Router $router): array
     {

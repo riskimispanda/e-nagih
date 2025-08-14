@@ -20,9 +20,9 @@ public function index()
 
     $inter = MikrotikServices::listInterfaces($client);
     $user = MikrotikServices::getPPPSecret($client);
-    $logs = MikrotikServices::activeConnections($router);
+    $logs = MikrotikServices::logInformation($client);
     $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-    dd($user);
+    dd($logs);
 }
 
     public function testKoneksi($id)
