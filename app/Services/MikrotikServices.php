@@ -168,10 +168,10 @@ class MikrotikServices
                 $setQuery->equal('profile', 'ISOLIREBILLING');
                 $client->query($setQuery)->read();
             }
-
+            Log::info('MikrotikServices::changeUserProfile Success: ' . $usersecret);
             return true;
         } catch (Exception $e) {
-            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            Log::info('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
             return false;
         }
     }
@@ -191,10 +191,10 @@ class MikrotikServices
                 $setQuery->equal('profile', $newProfile);
                 $client->query($setQuery)->read();
             }
-
+            LOG::info('MikrotikServices::changeUserProfile Success' . $usersecret . '-' . $newProfile);
             return true;
         } catch (Exception $e) {
-            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            Log::info('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
             return false;
         }
     }
