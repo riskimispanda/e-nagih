@@ -14,4 +14,10 @@ class JenisKas extends Model
     {
         return $this->hasMany(Kas::class, 'kas_id');
     }
+
+    public function pengeluaran()
+    {
+        return $this->hasMany(Pengeluaran::class,'kas_id');
+    }
+
 }

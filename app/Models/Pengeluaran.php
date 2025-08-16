@@ -18,7 +18,8 @@ class Pengeluaran extends Model
         'status_id',
         'metode_bayar',
         'alasan',
-        'rab_id'
+        'rab_id',
+        'kas_id'
     ];
 
     public function user()
@@ -32,7 +33,12 @@ class Pengeluaran extends Model
 
     public function rab()
     {
-        return $this->belongsTo(Rab::class);
+        return $this->belongsTo(Rab::class, 'rab_id');
+    }
+
+    public function kas()
+    {
+        return $this->belongsTo(JenisKas::class, 'kas_id');
     }
 
 }

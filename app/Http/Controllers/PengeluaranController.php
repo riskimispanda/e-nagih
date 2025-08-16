@@ -209,4 +209,28 @@ class PengeluaranController extends Controller
         return redirect('/pengeluaran/global')->with('error', 'Data pengeluaran tidak ditemukan');
     }
 
+    public function editPengeluaran($id)
+    {
+        $pengeluaran = Pengeluaran::with('kas', 'rab')->findOrFail($id);
+        $dataRab = Rab::all();
+        $kas = JenisKas::all();
+
+        return view('keuangan.edit-pengeluaran', [
+            'users'       => auth()->user(),
+            'roles'       => auth()->user()->roles,
+            'pengeluaran' => $pengeluaran,
+            'kas'         => $kas,
+            'data'        => $dataRab
+        ]);
+    }
+
+
+    public function updatePengeluaran(Request $request, $id)
+    {
+        $pengeluaran = Pengeluaran::findOrFail($id);
+        // dd($pengeluaran);
+        $pengeluaran->update($request->all());
+        return redirect('/pengeluaran/global')->with('toast_success', 'Pengeluaran Berhasil diperbarui');
+    }
+
 }

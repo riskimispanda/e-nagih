@@ -44,6 +44,68 @@ class MikrotikServices
         return self::$klien[$key];
     }
 
+    public static function gantiProfileAll(Router $router, string $newProfile, string $filterProfile = null)
+    {
+        try {
+            $client = self::connect($router);
+
+            $query = new \RouterOS\Query('/ppp/secret/print');
+            if (!empty($filterProfile)) {
+                $query->where('profile', $filterProfile);
+            }
+
+            $secrets = $client->query($query)->read();
+
+            $updatedCount = 0;
+            $disconnectedCount = 0;
+
+            foreach ($secrets as $secret) {
+                if (isset($secret['profile']) && $secret['profile'] === $newProfile) {
+                    continue;
+                }
+
+                // Ganti profile
+                $updateQuery = (new \RouterOS\Query('/ppp/secret/set'))
+                    ->equal('.id', $secret['.id'])
+                    ->equal('profile', $newProfile);
+
+                $client->query($updateQuery)->read();
+                $updatedCount++;
+
+                // Disconnect jika aktif
+                $activeList = $client->query(
+                    (new \RouterOS\Query('/ppp/active/print'))
+                        ->where('name', $secret['name'])
+                )->read();
+
+                if (!empty($activeList)) {
+                    foreach ($activeList as $active) {
+                        if (isset($active['.id'])) {
+                            $removeQuery = (new \RouterOS\Query('/ppp/active/remove'))
+                                ->equal('.id', $active['.id']);
+                            $client->query($removeQuery)->read();
+                            $disconnectedCount++;
+                        }
+                    }
+                }
+            }
+
+            return [
+                'status' => true,
+                'message' => "Berhasil ganti profile {$updatedCount} PPPoE ke '{$newProfile}' dan disconnect {$disconnectedCount} koneksi aktif"
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'status' => false,
+                'message' => "Gagal: " . $e->getMessage()
+            ];
+        }
+    }
+
+
+
+
     public static function logInformation(Client $client, string $message = ''): void
     {
         try {
@@ -306,7 +368,7 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('comment', 'Created by E-Nagih');
+            $query->where('profile', 'profile-UpTo-5');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());

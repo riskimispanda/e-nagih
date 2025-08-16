@@ -18,11 +18,11 @@ public function index()
     $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
     $client = MikrotikServices::connect($router);
 
-    $inter = MikrotikServices::listInterfaces($client);
+    $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
     $user = MikrotikServices::getPPPSecret($client);
     $logs = MikrotikServices::logInformation($client);
     $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-    dd($logs);
+    dd($user);
 }
 
     public function testKoneksi($id)

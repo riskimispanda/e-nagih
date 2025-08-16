@@ -18,6 +18,7 @@ use App\Models\Pembayaran;
 use App\Models\Metode;
 use App\Services\MikrotikServices;
 use App\Events\UpdateBaru;
+use App\Models\KategoriLogistik;
 use App\Models\ODC;
 
 class Analytics extends Controller
@@ -128,6 +129,7 @@ class Analytics extends Controller
     public function logistik()
     {
       $perangkat = Perangkat::withCount(['customer'])->get();
+      $kategori = KategoriLogistik::all();
       
       foreach ($perangkat as $item) {
         $item->stok_terpakai = $item->customer_count ?? 0;
@@ -143,6 +145,7 @@ class Analytics extends Controller
         "users" => auth()->user(),
         "roles" => auth()->user()->roles,
         "perangkat" => $perangkat,
+        'kategori' => $kategori
       ]);
     }
 

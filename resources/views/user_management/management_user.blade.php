@@ -263,6 +263,15 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-sm-12 mb-4">
+                            <label class="form-label">Password</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-key text-primary"></i></span>
+                                <input type="password" class="form-control" name="password" placeholder="Password">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer mt-5 gap-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>

@@ -336,7 +336,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <a href="#">
+                                        <a href="/edit-pengeluaran/{{ $pengeluaran->id }}">
                                             <button class="btn btn-outline-warning btn-sm mb-1" title="Edit" data-bs-toggle="tooltip" data-bs-placement="bottom">
                                                 <i class="bx bx-edit"></i>
                                             </button>

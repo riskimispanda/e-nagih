@@ -11,11 +11,17 @@ class Perangkat extends Model
         'nama_perangkat',
         'jumlah_stok',
         'harga',
+        'kategori_id'
     ];
 
     public function customer()
     {
         return $this->hasMany(Customer::class, 'perangkat_id');
+    }
+
+    public function kategori()
+    {
+        return $this->belongsTo(KategoriLogistik::class);
     }
 
 }

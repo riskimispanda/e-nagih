@@ -140,4 +140,43 @@ class RabController extends Controller
         return response()->json($kegiatan);
     }
 
+    public function editRab($id)
+    {
+        $rab = Rab::findOrFail($id);
+        return view('rab.edit-rab',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'rab' => $rab,
+        ]);
+    }
+
+    public function updateRab(Request $request, $id)
+    {
+        $rab = Rab::findOrFail($id);
+
+        $rab->jumlah_anggaran = $request->jumlah_anggaran;
+        $rab->tahun_anggaran = $request->tahun_anggaran;
+        $rab->bulan = $request->bulan;
+        $rab->kegiatan = $request->kegiatan;
+        $rab->item = $request->item;
+        $rab->keterangan = $request->keterangan;
+        $rab->save();
+
+        return redirect('/rab')->with('toast_success', 'Update RAB Berhasil');
+    }
+
+    public function hapusRab($id)
+    {
+        $rab = Rab::findOrFail($id);
+        $rab->delete();
+
+        // Pengeluaran
+        $pengeluaran = Pengeluaran::where('rab_id', $id)->get();
+        foreach ($pengeluaran as $peng) {
+            $peng->delete();
+        }
+
+        return redirect('/rab')->with('toast_success', 'Hapus RAB Berhasil');
+    }
+
 }

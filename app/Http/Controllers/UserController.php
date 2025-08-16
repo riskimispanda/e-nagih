@@ -110,10 +110,18 @@ class UserController extends Controller
     }
     public function editRole(Request $request, $id)
     {
-    // dd($request->all());
-        $user = User::find($id);
+        $user = User::findOrFail($id);
+
+        // update role
         $user->roles_id = $request->input('roles_id');
+
+        // cek apakah admin mengisi field password
+        if ($request->filled('password')) {
+            $user->password = bcrypt($request->input('password'));
+        }
+
         $user->save();
+
         return redirect('/user/management')->with('success', 'Role user berhasil diubah');
     }
 

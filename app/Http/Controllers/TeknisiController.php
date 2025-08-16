@@ -22,6 +22,7 @@ use Intervention\Image\ImageManager as Image;
 use Intervention\Image\Drivers\Gd\Driver;
 // use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Log;
+use App\Models\ModemDetail;
 
 
 class TeknisiController extends Controller
@@ -219,6 +220,14 @@ class TeknisiController extends Controller
                 'tagihan'      => $tagihanProrate,
                 'jatuh_tempo'  => $jatuhTempo,
                 'tambahan'     => $tagihanTambahan,
+            ]);
+
+            ModemDetail::create([
+                'serial_number' => $request->serial_number,
+                'mac_address' => $request->mac_address,
+                'logistik_id' => $request->modem,
+                'status_id' => 13,
+                'customer_id' => $customer->id,
             ]);
 
             DB::commit(); // Jika semua sukses, simpan ke DB

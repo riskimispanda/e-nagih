@@ -5,8 +5,8 @@
     .card {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     }
-    /*     
-    .card:hover {
+        
+    /* .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
     } */
@@ -28,7 +28,7 @@
         overflow: hidden;
     }
     
-    .card-body::after {
+    /* .card-body::after {
         content: '';
         position: absolute;
         top: 0;
@@ -37,7 +37,7 @@
         height: 100%;
         background: rgba(255,255,255,0.1);
         transform: skewX(-15deg) translateX(50px);
-    }
+    } */
     
     .bx {
         filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
@@ -453,7 +453,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-sm-3">
+                <div class="col-sm-3 mb-2">
                     <div class="card bg-danger text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
@@ -464,7 +464,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-3">
+                <div class="col-sm-3 mb-2">
                     <div class="card bg-warning text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
@@ -475,7 +475,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-3">
+                <div class="col-sm-3 mb-2">
                     <div class="card bg-success text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">
@@ -486,7 +486,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-sm-3">
+                <div class="col-sm-3 mb-2">
                     <div class="card bg-info text-white shadow rounded-3">
                         <div class="card-body p-4">
                             <div class="d-flex align-items-center mb-2">

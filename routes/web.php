@@ -172,6 +172,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Logistik
     Route::post('/logistik/store', [Logistik::class, 'store']);
+    Route::post('/add-kategori-logistik', [Logistik::class, 'tambahKategori'])->middleware('auth','roles:Super Admin,Admin Logistik');
+    Route::get('/hapus-logistik/{id}', [Logistik::class, 'deleteLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
+    Route::get('/edit-logistik/{id}', [Logistik::class, 'editLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
+    Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
+
+
 
 
     // Teknisi
@@ -265,6 +271,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/riwayatPembayaran/{customerId}', [Customer::class, 'history']);
     Route::get('/edit-pelanggan/{id}',[DataController::class,'editPelanggan'])->middleware('auth','roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik');
     Route::post('/update-pelanggan/{id}', [DataController::class, 'updatePelanggan'])->middleware('auth','roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik');
+    Route::get('/edit-rab/{id}',[RabController::class, 'editRab'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::post('/update-rab/{id}', [RabController::class, 'updateRab'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::get('/delete-rab/{id}',[RabController::class, 'hapusRab'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::get('/edit-pengeluaran/{id}',[PengeluaranController::class, 'editPengeluaran'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::post('/update-pengeluaran/{id}', [PengeluaranController::class, 'updatePengeluaran'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+
+
+
+
 
     // Agen
     Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');

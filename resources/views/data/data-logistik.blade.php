@@ -379,21 +379,6 @@
                     </div>
                     
                     <div class="d-flex align-items-center">
-                        <div class="stats-summary me-4 d-none d-lg-block">
-                            <div class="d-flex gap-4">
-                                <div class="summary-item">
-                                    <span class="text-muted small d-block">Total Stok</span>
-                                    <span class="fw-semibold">{{ $perangkat->sum('stok_tersedia') }} Unit</span>
-                                </div>
-                                <div class="summary-item">
-                                    <span class="text-muted small d-block">Total Nilai</span>
-                                    <span class="fw-semibold text-primary">
-                                        Rp {{ number_format($perangkat->sum('harga') ?? 0, 0, ',', '.') }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="search-container">
                             <div class="input-group">
                                 <span class="input-group-text bg-transparent border-end-0">
@@ -406,25 +391,29 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBoth">
-                        <i class="bx bx-plus me-1"></i> Tambah Stok
+                <div class="d-flex justify-content-start align-items-center mb-4 gap-2">
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#perangkat">
+                        <i class="bx bx-plus me-1"></i>Tambah Stok
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#kategori">
+                        <i class="bx bx-plus me-1"></i>Tambah Kategori
                     </button>
                 </div>
                 
                 <div class="table-responsive">
                     <table id="dataTable" class="table table-hover">
-                        <thead class="table-dark">
+                        <thead class="table-dark text-center">
                             <tr>
                                 <th width="5%">No.</th>
                                 <th width="35%">Nama Perangkat</th>
+                                <th width="20%">Kategori</th>
                                 <th width="20%">Stok Tersedia</th>
                                 <th width="20%">Terpakai</th>
-                                <th width="25%">Total Harga</th>
+                                <th width="35%">Total Harga</th>
                                 <th width="15%" class="text-center">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="text-center">
                             @if (count($perangkat) > 0)
                             @foreach ($perangkat as $p)
                             <tr class="device-row">
@@ -436,25 +425,59 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class='bx bx-devices text-muted me-1'></i>
+                                        <span class="fw-medium">{{ $p->kategori->nama_logistik ?? '-'}}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($p->kategori_id == 2)
+                                    <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
+                                        {{ $p->stok_tersedia }} Meter
+                                    </span>
+                                    @else
                                     <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
                                         {{ $p->stok_tersedia }} Unit
                                     </span>
+                                    @endif
                                 </td>
                                 <td>
+                                    @if($p->kategori_id == 2)
+                                    <span class="badge bg-warning bg-opacity-10 text-warning">
+                                        {{ $p->customer_count }} Meter
+                                    </span>
+                                    @else
                                     <span class="badge bg-warning bg-opacity-10 text-warning">
                                         {{ $p->customer_count }} Unit
                                     </span>
+                                    @endif
                                 </td>
-                                <td>
-                                    <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}
-                                    </div>
+                                @php
+                                    $total_harga = $p->harga * $p->jumlah_stok;
+                                @endphp
+                                <td class="fw-bold">
+                                    {{-- <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}</div> --}}
+                                    @if($p->kategori_id == 1)
+                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
+                                    @elseif($p->kategori_id == 4)
+                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
+                                    @elseif($p->kategori_id == 3)
+                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
+                                    @elseif($p->kategori_id == 2)
+                                    Rp {{ number_format($p->harga, 0, ',', '.') }}
+                                    @endif
+
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <a href="" data-bs-toggle="tooltip" title="Edit Stok" data-bs-placement="bottom">
+                                        <a href="/edit-logistik/{{ $p->id }}" data-bs-toggle="tooltip" title="Edit Stok" data-bs-placement="bottom">
                                             <i class="bx bx-edit text-warning"></i>
                                         </a>|
-                                        <a href="" data-bs-toggle="tooltip" title="Hapus Stok" data-bs-placement="bottom">
+                                        <a href="javascript:void(0);" 
+                                            onclick="hapusLogistik({{ $p->id }})" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Hapus Stok" 
+                                            data-bs-placement="bottom">
                                             <i class="bx bx-trash text-danger"></i>
                                         </a>
                                     </div>
@@ -463,7 +486,7 @@
                             @endforeach
                             @else
                             <tr id="noDataResults">
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class='bx bx-package text-muted mb-2' style="font-size: 2rem;"></i>
                                         <div>Tidak ada data perangkat ditemukan</div>
@@ -480,7 +503,7 @@
 </div>
 
 {{-- Modern Offcanvas Modal --}}
-<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="offcanvasBoth" aria-labelledby="offcanvasBothLabel">
+<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="perangkat" aria-labelledby="offcanvasBothLabel">
     <div class="offcanvas-header" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-bottom: none;">
         <div class="d-flex align-items-center">
             <div class="me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2); border-radius: 8px;">
@@ -505,6 +528,18 @@
                 <div class="form-text">Masukkan nama perangkat yang akan ditambahkan</div>
             </div>
             <div class="mb-4">
+                <label class="form-label fw-medium">
+                    <i class='bx bx-package me-1 text-muted'></i>Kategori
+                </label>
+                <select name="kategori_id" class="form-select">
+                    <option value="" selected disabled>Pilih Kategori</option>
+                    @foreach ($kategori as $kate)
+                        <option value="{{ $kate->id }}">{{$kate->nama_logistik}}</option>
+                    @endforeach
+                </select>
+                <div class="form-text">Pilih Kategori logistik yang anda input</div>
+            </div>
+            <div class="mb-4">
                 <label class="form-label fw-medium" for="jumlah_stok">
                     <i class='bx bx-package me-1 text-muted'></i>Jumlah Stok
                 </label>
@@ -521,12 +556,49 @@
                 </div>
                 <div class="form-text">Masukkan harga per unit perangkat</div>
             </div>
-            <div class="d-flex gap-2 mt-4">
-                <button type="button" class="btn btn-outline-secondary flex-fill" data-bs-dismiss="offcanvas">
+            <div class="d-flex gap-2 mt-4 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">
                     <i class='bx bx-x me-1'></i>Batal
                 </button>
-                <button type="submit" class="btn btn-primary flex-fill">
+                <button type="submit" class="btn btn-primary btn-sm">
                     <i class="bx bx-plus me-1"></i>Tambah Stok
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal Kategori --}}
+<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="kategori" aria-labelledby="offcanvasBothLabel">
+    <div class="offcanvas-header" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-bottom: none;">
+        <div class="d-flex align-items-center">
+            <div class="me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2); border-radius: 8px;">
+                <i class='bx bx-plus text-white fs-5'></i>
+            </div>
+            <div>
+                <h5 id="offcanvasBothLabel" class="offcanvas-title text-white mb-0 fw-semibold">Tambah Kategori Logistik
+                </h5>
+                <small class="text-white-50">Tambahkan kategori baru untuk logistik</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body" style="padding: 1.5rem;">
+        <form action="/add-kategori-logistik" method="POST" id="addDeviceForm">
+            @csrf
+            <div class="mb-4">
+                <label class="form-label fw-medium" for="nama_perangkat">
+                    <i class='bx bx-chip me-1 text-muted'></i>Nama Kategori
+                </label>
+                <input type="text" class="form-control" id="nama_perangkat" placeholder="Contoh: Modem or Kabel or ODP" name="nama_logistik" required>
+                <div class="form-text">Masukkan nama kategori yang akan ditambahkan</div>
+            </div>
+            <div class="d-flex gap-2 mt-4 justify-content-end">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">
+                    <i class='bx bx-x me-1'></i>Batal
+                </button>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bx bx-plus me-1"></i>Tambah Kategori
                 </button>
             </div>
         </form>
@@ -638,4 +710,23 @@
     });
 </script>
 
+<script>
+    function hapusLogistik(id) {
+        Swal.fire({
+            title: 'Yakin hapus data?',
+            text: "Data yang dihapus tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, hapus!',
+            cancelButtonText: 'Batal',
+            topLayer: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/hapus-logistik/" + id;
+            }
+        });
+    }
+</script>
 @endsection
