@@ -151,7 +151,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/tutup-tiket/{id}', [TiketController::class, 'confirmClosedTiket'])->name('confirm-closed-tiket');
 
     //dashboard
-    Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
     Route::get('/data/logistik', [Analytics::class, 'logistik'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('logistik');
     Route::get('/data/antrian', [Analytics::class, 'antrian'])->name('antrian');

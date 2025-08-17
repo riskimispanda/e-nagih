@@ -25,8 +25,8 @@ class LoginBasic extends Controller
     
     if (auth()->attempt($credentials)) {
       $user = auth()->user();
-      if (auth()->user()->roles_id == 8) {
-        return redirect()->intended('/customer')->with('toast_success', 'Selamat Datang di E-Nagih ' .
+      if (auth()->user()->roles_id == 6) {
+        return redirect()->intended('/helpdesk/data-antrian')->with('toast_success', 'Selamat Datang di E-Nagih ' .
         auth()->user()->name);
       }
       activity('user')

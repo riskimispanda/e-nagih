@@ -20,14 +20,40 @@ use App\Services\MikrotikServices;
 use App\Events\UpdateBaru;
 use App\Models\KategoriLogistik;
 use App\Models\ODC;
+use Illuminate\Support\Facades\DB;
+use App\Models\Pendapatan;
+use App\Models\Pengeluaran;
 
 class Analytics extends Controller
 {
   public function index()
   {
+    $newCustomer = Customer::whereYear('tanggal_selesai', now()->year)
+                       ->whereMonth('tanggal_selesai', now()->month)
+                       ->get();
+    $antrian = Customer::whereIn('status_id', [1, 2, 5])->get();
+    $jumlahPelanggan = Customer::whereIn('status_id', [3, 4, 9])->count();
+    $pembayaran = Pembayaran::whereMonth('created_at', now()->month)->get();
+
+    // Total Pendapatan
+    $langganan = Pembayaran::sum('jumlah_bayar');
+    $nonLangganan = Pendapatan::sum('jumlah_pendapatan');
+    $pengeluaran = Pengeluaran::sum('jumlah_pengeluaran'); 
+    $totalPendapatan = $langganan + $nonLangganan - $pengeluaran;
+
+    // Total Pengeluaran 
+    $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+
+
     return view("dashboard.dashboard", [
       "users" => auth()->user(),
       "roles" => Roles::find(auth()->user()->roles_id),
+      'newCustomer' => $newCustomer,
+      'antrian' => $antrian,
+      'paket' => $jumlahPelanggan,
+      'pembayaran' => $pembayaran,
+      'totalPendapatan' => $totalPendapatan,
+      'totalPengeluaran' => $totalPengeluaran,
     ]);
   }
   
