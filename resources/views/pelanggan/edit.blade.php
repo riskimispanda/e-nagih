@@ -104,14 +104,53 @@
                                     <i class="bx bx-terminal"></i>
                                 </span>
                                 <select name="bts" id="bts" class="form-select">
-                                    <option value="" selected >{{$pelanggan->odp->odc->olt->lokasi_server ?? '-'}}</option>
-                                    @foreach ($bts as $item)
-                                    <option value="{{ $item->id }}">{{$item->lokasi_server}}</option>
+                                    {{-- Tampilkan BTS yang sekarang dipakai --}}
+                                    @if($pelanggan->getServer)
+                                        <option value="{{ $pelanggan->getServer->id }}" selected>
+                                            {{ $pelanggan->getServer->lokasi_server }}
+                                        </option>
+                                    @endif
+                                
+                                    {{-- Tampilkan BTS lain selain yang dipilih --}}
+                                    @foreach ($bts->where('id', '!=', $pelanggan->getServer->id ?? null) as $item)
+                                        <option value="{{ $item->id }}">{{ $item->lokasi_server }}</option>
+                                    @endforeach
+                                </select>                                
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Media Koneksi</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text">
+                                    <i class="bx bx-link"></i>
+                                </span>
+                                <select name="media" id="media" class="form-select">
+                                    <option value="{{ $pelanggan->media_id }}" selected >{{$pelanggan->media->nama_media}}</option>
+                                    @foreach ($media as $item)
+                                    @if($pelanggan->media->nama_media != $item->nama_media)
+                                    <option value="{{ $item->id }}">{{$item->nama_media}}</option>
+                                    @endif
                                     @endforeach
                                 </select>
                             </div>
                         </div>
-                        
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Jenis Koneksi</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text">
+                                    <i class="bx bx-link"></i>
+                                </span>
+                                <select name="koneksi" id="koneksi" class="form-select">
+                                    <option value="{{ $pelanggan->koneksi_id }}" selected >{{$pelanggan->koneksi->nama_koneksi}}</option>
+                                    @foreach ($koneksi as $item)
+                                    @if($pelanggan->koneksi->nama_koneksi != $item->nama_koneksi)
+                                    <option value="{{ $item->id }}">{{$item->nama_koneksi}}</option>
+                                    @endif
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                         {{-- OLT --}}
                         @if($pelanggan->media_id == 3)
                         <div class="col-sm-4 mb-2">
@@ -121,7 +160,7 @@
                                     <i class="bx bx-plug"></i>
                                 </span>
                                 <select name="olt" id="olt" class="form-select">
-                                    <option value="" selected >{{$pelanggan->odp->odc->olt->nama_lokasi}}</option>
+                                    <option value="" selected >{{$pelanggan->odp->odc->olt->nama_lokasi ?? '-'}}</option>
                                     @foreach ($olt as $item)
                                     <option value="{{ $item->id }}">{{$item->nama_lokasi}}</option>
                                     @endforeach
@@ -135,7 +174,7 @@
                                     <i class="bx bx-plug"></i>
                                 </span>
                                 <select name="odc" id="odc" class="form-select">
-                                    <option value="" selected >{{$pelanggan->odp->odc->nama_odc}}</option>
+                                    <option value="" selected >{{$pelanggan->odp->odc->nama_odc ?? '-'}}</option>
                                     @foreach ($odc as $item)
                                     <option value="{{ $item->id }}">{{$item->nama_odc}}</option>
                                     @endforeach
@@ -149,7 +188,7 @@
                                     <i class="bx bx-plug"></i>
                                 </span>
                                 <select name="odp" id="odp" class="form-select">
-                                    <option value="{{ $pelanggan->lokasi_id }}" selected >{{$pelanggan->odp->nama_odp}}</option>
+                                    <option value="{{ $pelanggan->lokasi_id }}" selected >{{$pelanggan->odp->nama_odp ?? '-'}}</option>
                                     @foreach ($odp as $item)
                                     <option value="{{ $item->id }}">{{$item->nama_odp}}</option>
                                     @endforeach
@@ -202,38 +241,6 @@
                         </div>
                         @endif
                         
-                        <div class="col-sm-6 mb-2">
-                            <label class="form-label">Media Koneksi</label>
-                            <div class="input-group input-group-merge">
-                                <span class="input-group-text">
-                                    <i class="bx bx-link"></i>
-                                </span>
-                                <select name="media" id="media" class="form-select">
-                                    <option value="{{ $pelanggan->media_id }}" selected >{{$pelanggan->media->nama_media}}</option>
-                                    @foreach ($media as $item)
-                                    @if($pelanggan->media->nama_media != $item->nama_media)
-                                    <option value="{{ $item->id }}">{{$item->nama_media}}</option>
-                                    @endif
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 mb-2">
-                            <label class="form-label">Jenis Koneksi</label>
-                            <div class="input-group input-group-merge">
-                                <span class="input-group-text">
-                                    <i class="bx bx-link"></i>
-                                </span>
-                                <select name="koneksi" id="koneksi" class="form-select">
-                                    <option value="{{ $pelanggan->koneksi_id }}" selected >{{$pelanggan->koneksi->nama_koneksi}}</option>
-                                    @foreach ($koneksi as $item)
-                                    @if($pelanggan->koneksi->nama_koneksi != $item->nama_koneksi)
-                                    <option value="{{ $item->id }}">{{$item->nama_koneksi}}</option>
-                                    @endif
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
                         <div class="col-sm-4 mb-2">
                             <label class="form-label">Local Address</label>
                             <div class="input-group input-group-merge">

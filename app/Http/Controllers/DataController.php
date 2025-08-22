@@ -23,6 +23,8 @@ use App\Models\MediaKoneksi;
 use App\Models\Perangkat;
 use App\Models\Invoice;
 use App\Services\MikrotikServices;
+use App\Imports\CustomerImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DataController extends Controller
 {
@@ -361,13 +363,13 @@ class DataController extends Controller
     {
         $invoice = Invoice::where('customer_id', $id)->latest()->first();
 
-        // dd($paket->paket->paket_name);
         DB::beginTransaction();
 
         try {
             $pelanggan = Customer::findOrFail($id);
 
-            $pelanggan->update([
+            // Ambil data request yang relevan
+            $data = [
                 'nama_customer' => $request->nama,
                 'no_hp' => $request->no_hp,
                 'alamat' => $request->alamat,
@@ -387,22 +389,39 @@ class DataController extends Controller
                 'mac_address' => $request->mac,
                 'usersecret' => $request->usersecret,
                 'pass_secret' => $request->pass_secret
-            ]);
+            ];
 
-            $pelanggan->load('paket');
-            $paket = $pelanggan->paket->paket_name;
-            $router = Router::findOrFail($request->router);
+            // Filter hanya field yang berubah
+            $changes = [];
+            foreach ($data as $key => $value) {
+                if ($pelanggan->$key != $value) {
+                    $changes[$key] = $value;
+                }
+            }
 
-            $invoice->update([
-                'paket_id' => $request->paket,
-                'tagihan' => $pelanggan->paket->harga,
-            ]);
+            // Update hanya jika ada perubahan
+            if (!empty($changes)) {
+                $pelanggan->update($changes);
 
-            $client = MikrotikServices::connect($router);
-            MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
-            MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
-            MikrotikServices::logInformation($client);
-            LOG::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
+                // Kalau paket_id berubah, update juga invoice + mikrotik
+                if (array_key_exists('paket_id', $changes)) {
+                    $pelanggan->load('paket');
+                    $paket = $pelanggan->paket->paket_name;
+                    $router = Router::findOrFail($request->router);
+
+                    $invoice->update([
+                        'paket_id' => $pelanggan->paket_id,
+                        'tagihan' => $pelanggan->paket->harga,
+                    ]);
+
+                    $client = MikrotikServices::connect($router);
+                    MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
+                    MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
+                    MikrotikServices::logInformation($client);
+
+                    Log::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
+                }
+            }
 
             DB::commit();
 
@@ -412,6 +431,20 @@ class DataController extends Controller
             Log::error('Gagal update pelanggan: ' . $e->getMessage());
             return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
         }
+    }
+
+
+    public function Import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        $data = $request->file('file');
+
+        $import = Excel::import(new CustomerImport, $data);
+        Log::info('Berhasil Import Data Customer', ['import' => $import]);
+        return back()->with('success', 'Data Customer berhasil diimport!');
     }
 
 }

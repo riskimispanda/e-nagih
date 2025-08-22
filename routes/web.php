@@ -150,6 +150,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/paket/by-router/{routerId}', [TiketController::class, 'getPaketByRouter']);
     Route::post('/tutup-tiket/{id}', [TiketController::class, 'confirmClosedTiket'])->name('confirm-closed-tiket');
 
+    // Import Customer
+    Route::post('/customer/import', [DataController::class, 'Import']);
+
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');

@@ -431,7 +431,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    @if($p->kategori_id == 2)
+                                    @if($p->kategori->nama_logistik == 'Kabel')
                                     <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
                                         {{ $p->stok_tersedia }} Meter
                                     </span>
@@ -442,7 +442,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($p->kategori_id == 2)
+                                    @if($p->kategori->nama_logistik == 'Kabel')
                                     <span class="badge bg-warning bg-opacity-10 text-warning">
                                         {{ $p->customer_count }} Meter
                                     </span>
@@ -457,13 +457,11 @@
                                 @endphp
                                 <td class="fw-bold">
                                     {{-- <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}</div> --}}
-                                    @if($p->kategori_id == 1)
+                                    @if($p->kategori->nama_logistik == 'Modem' || $p->kategori->nama_logistik == 'Tenda')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori_id == 4)
+                                    @elseif($p->kategori->nama_logistik == 'ODP' || $p->kategori->nama_logistik == 'OLT' || $p->kategori->nama_logistik == 'ODC')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori_id == 3)
-                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori_id == 2)
+                                    @elseif($p->kategori->nama_logistik == 'Kabel')
                                     Rp {{ number_format($p->harga, 0, ',', '.') }}
                                     @endif
 
@@ -486,7 +484,7 @@
                             @endforeach
                             @else
                             <tr id="noDataResults">
-                                <td colspan="6" class="text-center py-4">
+                                <td colspan="7" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center">
                                         <i class='bx bx-package text-muted mb-2' style="font-size: 2rem;"></i>
                                         <div>Tidak ada data perangkat ditemukan</div>
@@ -649,7 +647,7 @@
                     const noResultsRow = document.createElement('tr');
                     noResultsRow.id = 'noResults';
                     noResultsRow.innerHTML = `
-                            <td colspan="5" class="text-center py-4">
+                            <td colspan="7" class="text-center py-4">
                                 <div class="d-flex flex-column align-items-center">
                                     <i class='bx bx-search text-muted mb-2' style="font-size: 2rem;"></i>
                                     <div>Tidak ada perangkat yang cocok dengan pencarian</div>

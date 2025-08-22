@@ -10,8 +10,7 @@
         
         <nav class="breadcrumb-nav">
             <ul class="breadcrumb breadcrumb-transparent breadcrumb-style2 mb-3">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item"><a href="/user-management">User Management</a></li>
+                <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
                 <li class="breadcrumb-item active text-primary" aria-current="page">Manajemen User</li>
             </ul>
         </nav>

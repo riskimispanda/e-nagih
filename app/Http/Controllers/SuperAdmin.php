@@ -199,9 +199,12 @@ class SuperAdmin extends Controller
     {
         $invoices = Invoice::with('customer', 'paket')
                     ->where('status_id', 7)
+                    ->whereMonth('jatuh_tempo', now()->month)
+                    ->whereYear('jatuh_tempo', now()->year)
                     ->get()
-                    ->groupBy('customer_id'); // Group by customer
+                    ->groupBy('customer_id');
 
+        // dd($invoices);
         $chat = new ChatServices();
 
         foreach ($invoices as $customerId => $invoiceGroup) {
@@ -211,9 +214,8 @@ class SuperAdmin extends Controller
                 continue; // Skip jika tidak ada customer atau no_hp
             }
 
-            $chat->kirimInvoiceMassal($customer, $invoiceGroup); // Kirim ke satu customer
+            $chat->kirimInvoiceMassal($customer, $invoiceGroup);
         }
-
         return redirect()->back()->with('success', 'Invoice massal berhasil dikirim.');
     }
 
