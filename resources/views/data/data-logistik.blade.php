@@ -431,7 +431,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    @if($p->kategori->nama_logistik == 'Kabel')
+                                    @if($p->kategori?->nama_logistik == 'Kabel')
                                     <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
                                         {{ $p->stok_tersedia }} Meter
                                     </span>
@@ -442,7 +442,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($p->kategori->nama_logistik == 'Kabel')
+                                    @if($p->kategori?->nama_logistik == 'Kabel')
                                     <span class="badge bg-warning bg-opacity-10 text-warning">
                                         {{ $p->customer_count }} Meter
                                     </span>
@@ -457,11 +457,11 @@
                                 @endphp
                                 <td class="fw-bold">
                                     {{-- <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}</div> --}}
-                                    @if($p->kategori->nama_logistik == 'Modem' || $p->kategori->nama_logistik == 'Tenda')
+                                    @if($p->kategori?->nama_logistik == 'Modem' || $p->kategori?->nama_logistik == 'Tenda')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori->nama_logistik == 'ODP' || $p->kategori->nama_logistik == 'OLT' || $p->kategori->nama_logistik == 'ODC')
+                                    @elseif($p->kategori?->nama_logistik == 'ODP' || $p->kategori?->nama_logistik == 'OLT' || $p->kategori?->nama_logistik == 'ODC')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori->nama_logistik == 'Kabel')
+                                    @elseif($p->kategori?->nama_logistik == 'Kabel')
                                     Rp {{ number_format($p->harga, 0, ',', '.') }}
                                     @endif
 
