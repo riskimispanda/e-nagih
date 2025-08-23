@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Models\Invoice;
 
 
 class ChatServices
@@ -313,5 +314,59 @@ class ChatServices
             'pesan' => $response->body(),
         ];
     }
+
+    public function kirimWarningBayar($customer)
+    {
+        // ambil semua invoice yang belum dibayar untuk customer ini
+        $invoices = Invoice::where('customer_id', $customer->id)
+            ->where('status_id', 7)
+            ->get();
+
+        if ($invoices->isEmpty()) {
+            return [
+                'success' => false,
+                'message' => "Tidak ada invoice tertunggak untuk {$customer->nama_customer}"
+            ];
+        }
+
+        // buat pesan gabungan
+        $pesan  = "⚠️ *Peringatan Tagihan Internet* ⚠️\n\n";
+        $pesan .= "Halo *{$customer->nama_customer}*,\n\n";
+        $pesan .= "Berikut daftar tagihan Anda yang belum dibayarkan:\n\n";
+
+        foreach ($invoices as $invoice) {
+            $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
+
+            $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
+            $pesan .= "💰 Jumlah Tagihan: Rp " . number_format(
+                $invoice->tagihan + ($invoice->tambahan ?? 0) + ($invoice->tunggakan ?? 0) - ($invoice->saldo ?? 0),
+                0, ',', '.'
+            ) . "\n";
+            $pesan .= "🔔 Jatuh Tempo: {$jatuhTempo->translatedFormat('d F Y')}\n";
+            $pesan .= "📊 Status: {$invoice->status->nama_status}\n";
+            $pesan .= "🔗 Link: " . url('/payment/invoice/' . $invoice->id) . "\n\n";
+        }
+
+        $pesan .= "Mohon segera lakukan pembayaran agar layanan tetap aktif.\n";
+        $pesan .= "Jika sudah melakukan pembayaran, abaikan pesan ini 🙏\n\n";
+        $pesan .= "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️";
+
+        // kirim pesan sekali saja (gabungan semua invoice)
+        $response = Http::post("{$this->baseURL}/send-pesan", [
+            'to'   => $customer->no_hp . '@c.us',
+            'pesan'=> $pesan,
+        ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        return [
+            'error'  => true,
+            'status' => $response->status(),
+            'pesan'  => $response->body(),
+        ];
+    }
+
 
 }
