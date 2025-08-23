@@ -583,7 +583,7 @@
                     <span class="badge bg-label-warning">Perlu Konfigurasi</span>
                 </div>
                 <div class="card-body">
-                    <form action="/teknisi/konfirmasi/{{ $customer->id }}" method="POST" enctype="multipart/form-data">
+                    <form action="/teknisi/konfirmasi/{{ $customer->id }}" method="POST" enctype="multipart/form-data" id="konfirmasiForm">
                         @csrf
                         <div class="row g-4">
                             <!-- Documentation Section -->
@@ -753,8 +753,7 @@
                             </div>
                         </div>
                         <div class="card-footer float-end">
-                            <button type="submit"
-                                class="btn btn-outline-primary btn-sm d-flex align-items-center float-end">
+                            <button type="submit" id="btnKonfirmasi" class="btn btn-outline-primary btn-sm d-flex align-items-center float-end">
                                 <i class='bx bx-check-circle me-2'></i>
                                 Konfirmasi
                             </button>
@@ -787,7 +786,14 @@
         });
     </script>
 
-    
+<script>
+    document.getElementById('konfirmasiForm').addEventListener('submit', function() {
+        const btn = document.getElementById('btnKonfirmasi');
+        btn.disabled = true;
+        btn.innerHTML = "<span class='spinner-border spinner-border-sm'></span> Loading...";
+    });
+</script>    
+
     <script>
         let tomOlt, tomOdc, tomOdp;
 

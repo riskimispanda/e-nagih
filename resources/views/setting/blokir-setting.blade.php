@@ -85,7 +85,7 @@
                             <div class="card accordion-item active">
                                 <h2 class="accordion-header mb-5" id="headingThree">
                                     <button type="button" class="accordion-button bg-primary text-white fw-bold" data-bs-toggle="collapse" data-bs-target="#accordionThree" aria-expanded="true" aria-controls="accordionTwo">
-                                    <i class="bx bx-bot me-1"></i>
+                                    <i class="bx bx-download me-1"></i>
                                         Import Data Customer
                                     </button>
                                 </h2>

@@ -11,6 +11,8 @@ use App\Models\MediaKoneksi;
 use Illuminate\Support\Facades\Log;
 use App\Models\Invoice;
 use Carbon\Carbon;
+use App\Models\ModemDetail;
+
 
 class CustomerImport implements ToModel, WithHeadingRow
 {
@@ -97,9 +99,15 @@ class CustomerImport implements ToModel, WithHeadingRow
                     'tanggal_blokir' => 10,
                 ]);
             }
+
+            ModemDetail::create([
+                'customer_id' => $customer->id,
+                'logistik_id' => $customer->perangkat_id ?? 0,
+                'mac_address' => $customer->mac_address,
+                'serial_number' => $customer->seri_perangkat,
+                'status_id' => 13
+            ]);
+
         });
     }
-
-
-
 }
