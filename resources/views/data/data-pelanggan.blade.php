@@ -885,8 +885,7 @@
                             <div class="search-sort-wrapper">
                                 <div class="search-group">
                                     <div class="input-group">
-                                        <input type="text" class="form-control search-input"
-                                        placeholder="Cari pelanggan..." id="searchCustomer">
+                                        <input type="text" class="form-control search-input" placeholder="Cari pelanggan..." id="searchCustomer">
                                         <button class="btn search-button" type="button" id="searchButton">
                                             <i class="bx bx-search"></i>
                                         </button>
@@ -935,7 +934,7 @@
                                 <th>Nama</th>
                                 <th>Alamat</th>
                                 <th>Telp.</th>
-                                <th hidden>BTS Server</th>
+                                <th>ODP</th>
                                 <th>Paket</th>
                                 <th>Status</th>
                                 <th>History Pembayaran</th>
@@ -954,8 +953,8 @@
                                 <td class="customer-name">{{ $item->nama_customer }}</td>
                                 <td class="customer-address">{{ $item->alamat }}</td>
                                 <td class="nomor-hp">{{ $item->no_hp }}</td>
-                                <td hidden>{{ $item->getServer->lokasi_server ?? 'Menunggu' }}</td>
-                                <td>
+                                <td>{{ $item->media_id == 3 ? ($item->odp->nama_odp ?? '-') : '-' }}</td>
+                                <td class="nama-paket">
                                     <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
                                         {{ $item->paket->nama_paket }}
                                     </span>

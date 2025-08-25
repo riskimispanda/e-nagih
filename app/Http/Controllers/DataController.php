@@ -50,7 +50,10 @@ class DataController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('nama_customer', 'like', '%' . $search . '%')
                   ->orWhere('alamat', 'like', '%' . $search . '%')
-                  ->orWhere('no_hp', 'like', '%' . $search . '%');
+                  ->orWhere('no_hp', 'like', '%' . $search . '%')
+                  ->orWhereHas('odp.odc.olt', function($p) use ($search) {
+                        $p->where('nama_odp', 'like', '%' . $search . '%');
+                    });
             });
         }
 

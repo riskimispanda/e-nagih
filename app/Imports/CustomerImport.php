@@ -69,16 +69,6 @@ class CustomerImport implements ToModel, WithHeadingRow
             $jatuhTempo = Carbon::now()->endOfMonth();
 
             if (isset($row['status_bayar']) && $row['status_bayar'] == 1) {
-                // BUAT INVOICE BULAN INI (LUNAS)
-                $invoiceBulanIni = Invoice::create([
-                    'customer_id'    => $customer->id,
-                    'status_id'      => 8,
-                    'paket_id'       => $customer->paket_id,
-                    'jatuh_tempo'    => Carbon::now()->endOfMonth(),
-                    'tagihan'        => $harga,
-                    'tanggal_blokir' => 10,
-                ]);
-
                 // BUAT INVOICE BULAN DEPAN (BELUM LUNAS)
                 Invoice::create([
                     'customer_id'    => $customer->id,
