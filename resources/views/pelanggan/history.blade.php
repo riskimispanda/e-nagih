@@ -43,7 +43,7 @@
                                 <td>
                                     @if($item->pembayaran->isNotEmpty())
                                     @foreach ($item->pembayaran as $cek)
-                                    <span>{{ \Carbon\Carbon::parse($cek->tanggal_bayar)->locale('id')->translatedFormat('D F Y h:m:s') }}</span>
+                                    <span>{{ \Carbon\Carbon::parse($cek->created_at)->locale('id')->translatedFormat('D F Y h:m:s') }}</span>
                                     @endforeach
                                     @else
                                     -
