@@ -953,7 +953,11 @@
                                 <td class="customer-name">{{ $item->nama_customer }}</td>
                                 <td class="customer-address">{{ $item->alamat }}</td>
                                 <td class="nomor-hp">{{ $item->no_hp }}</td>
-                                <td>{{ $item->media_id == 3 ? ($item->odp->nama_odp ?? '-') : '-' }}</td>
+                                <td>
+                                    <span class="badge bg-info bg-opacity-10 status-badge text-info">
+                                        {{ $item->media_id == 3 ? ($item->odp->nama_odp ?? '-') : '-' }}
+                                    </span>
+                                </td>
                                 <td class="nama-paket">
                                     <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
                                         {{ $item->paket->nama_paket }}
