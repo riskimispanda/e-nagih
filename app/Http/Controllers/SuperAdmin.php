@@ -14,6 +14,7 @@ use App\Models\Customer;
 use App\Services\ChatServices;
 use App\Services\MikrotikServices;
 use App\Models\User;
+use App\Models\Roles;
 
 
 class SuperAdmin extends Controller
@@ -169,13 +170,46 @@ class SuperAdmin extends Controller
     
     public function logAktivitas(Request $request)
     {
-        $logs = Activity::with('causer')->latest()->paginate(10);
+        $perPage    = min((int) $request->get('per_page', 10), 500);
+        $filterRole = $request->get('roles');
+        $filterDate = $request->get('date');
+        $search     = $request->get('search');
+
+        $logs = Activity::with('causer')
+            ->when($filterRole, function ($query) use ($filterRole) {
+                $query->whereHas('causer', function ($q) use ($filterRole) {
+                    $q->where('roles_id', $filterRole);
+                });
+            })
+            ->when($filterDate, function ($query) use ($filterDate) {
+                // ganti ke updated_at jika memang mau filter berdasarkan updated_at
+                $query->whereDate('created_at', $filterDate);
+            })
+            ->when($search, function ($query) use ($search) {
+                // Kelompokkan agar orWhere tidak “membatalkan” filter lain
+                $query->where(function ($qq) use ($search) {
+                    $qq->where('description', 'like', "%{$search}%")
+                    ->orWhereHas('causer', function ($c) use ($search) {
+                        $c->where('name', 'like', "%{$search}%");
+                    });
+                });
+            })
+            ->latest('created_at')
+            ->paginate($perPage)
+            ->appends($request->query()); // bawa semua query (?roles, ?date, ?search, ?per_page)
+
+        $role = Roles::whereIn('id', [1,2,3,4,5,7])->get();
+
         return view('log.aktivitas', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'logs' => $logs
+            'logs'  => $logs,
+            'role'  => $role,
         ]);
     }
+
+
+
     
     public function logDetail($id)
     {
