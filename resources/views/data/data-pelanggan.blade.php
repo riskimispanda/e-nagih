@@ -1048,16 +1048,24 @@
                         </div>
                         <div class="page-size-selector">
                             <label for="pageSize">Data per halaman:</label>
-                            <select id="pageSize" class="page-size-select">
+                            {{-- <select id="pageSize" class="page-size-select">
                                 <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                                 <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
                                 <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                            </select> --}}
+                            <select id="pageSize" class="page-size-select">
+                                @foreach([10, 25, 50, 100, 250] as $size)
+                                    <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                        {{ $size }}
+                                    </option>
+                                @endforeach
+                                <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>Semua</option>
                             </select>
                         </div>
                     </div>
                     <div class="pagination-controls">
-                        {{-- {{ $data->links('pagination::bootstrap-4') }} --}}
+                        {{ $data->links('pagination::bootstrap-4') }}
                     </div>
                 </div>
             </div>

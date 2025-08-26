@@ -34,6 +34,7 @@ class DataController extends Controller
         $search = $request->get('search');
         $sort = $request->get('sort', 'default');
         $perPage = $request->get('per_page', 10);
+        $perPage = $perPage > 500 ? 500 : $perPage;
 
         // Build base query
         $query = Customer::with([
@@ -82,8 +83,7 @@ class DataController extends Controller
         }
 
         // Get paginated results
-        $customers = $query->paginate($perPage);
-        $customers->appends($request->query());
+        $customers = $query->paginate($perPage)->appends($request->query());
 
         // Get statistics data (independent of pagination)
         $totalCustomers = Customer::whereIn('status_id', [3, 4, 9])->count();
