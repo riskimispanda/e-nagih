@@ -166,22 +166,25 @@ class KeuanganController extends Controller
                 Carbon::parse($endDate)->endOfDay()
             ]);
         }
-
+        $perki = Invoice::whereIn('status_id', [7, 8]);
+        
         // Clone query for statistics calculation
         $statisticsQuery = clone $query;
         $invoices = $query->paginate(10);
 
-        $base = (clone $statisticsQuery);
-
-        $perkiraanPendapatan = (clone $base)
-            ->with('paket')
-            ->get()
-            ->sum(fn($invoice) => $invoice->paket->harga ?? 0);
-
-        $tambahan = (clone $base)->sum('tambahan');
-        $tunggakan = (clone $base)->sum('tunggakan');
-        $saldo = (clone $base)->sum('saldo');
-
+        if ($bulan) {
+            $perki->whereMonth('jatuh_tempo', $bulan);
+        }
+        
+        // Ambil semua data untuk kalkulasi
+        $allInvoices = $perki->with('paket')->get();
+        
+        // Hitung estimasi
+        $perkiraanPendapatan = $allInvoices->sum(fn($inv) => $inv->tagihan ?? 0);
+        $tambahan           = $allInvoices->sum(fn($inv) => $inv->tambahan ?? 0);
+        $tunggakan          = $allInvoices->sum(fn($inv) => $inv->tunggakan ?? 0);
+        $saldo              = $allInvoices->sum(fn($inv) => $inv->saldo ?? 0);
+        
         $estimasi = $perkiraanPendapatan + $tambahan + $tunggakan - $saldo;
 
         // Calculate revenue statistics based on filtered data

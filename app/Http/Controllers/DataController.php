@@ -300,16 +300,16 @@ class DataController extends Controller
                     ->sum('tambahan') + \App\Models\Invoice::where('status_id', 7)
                     ->sum('tunggakan');
 
-                $totalInvoices = \App\Models\Invoice::where('status_id', 7)->count();
+                $totalInvoices = Invoice::where('status_id', 7)->count();
             }
 
             // Monthly revenue dari Pembayaran
             if ($bulan && $bulan !== '' && $bulan !== null) {
-                $monthlyRevenue = \App\Models\Pembayaran::whereMonth('tanggal_bayar', $bulan)
+                $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $bulan)
                     ->whereYear('tanggal_bayar', \Carbon\Carbon::now()->year)
                     ->sum('jumlah_bayar');
             } else {
-                $monthlyRevenue = \App\Models\Pembayaran::sum('jumlah_bayar');
+                $monthlyRevenue = Pembayaran::sum('jumlah_bayar');
             }
 
             // Return JSON response
@@ -330,7 +330,7 @@ class DataController extends Controller
                         'monthlyRevenue' => $monthlyRevenue,
                         'pendingRevenue' => $pendingRevenue,
                         'totalInvoices' => $totalInvoices,
-                        'perkiraan' => $estimasi, // ✅ sudah ditambahkan
+                        'perkiraan' => $estimasi,
                     ]
                 ]
             ]);
