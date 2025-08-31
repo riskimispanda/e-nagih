@@ -230,9 +230,10 @@ class DataController extends Controller
             $bulan = $request->get('bulan');
 
             // Build query for invoices with relationships
-            $query = \App\Models\Invoice::with(['customer', 'paket', 'status'])
+            $query = Invoice::with(['customer', 'paket', 'status'])
                 ->orderBy('created_at', 'desc')
-                ->whereIn('status_id', [1, 7]); // Exclude 'Dibatalkan' status
+                ->whereIn('status_id', [1, 7]);
+
 
             // Apply search filter
             if ($search) {
@@ -243,6 +244,8 @@ class DataController extends Controller
                 });
             }
 
+            $perki = Invoice::whereIn('status_id', [7, 8]);
+
             // Apply month filter
             if ($bulan && $bulan !== '' && $bulan !== null) {
                 $query->whereMonth('jatuh_tempo', $bulan);
@@ -252,23 +255,19 @@ class DataController extends Controller
             $allFilteredQuery = clone $query;
             $invoices = $query->paginate(10);
 
-            $baseClone = (clone $allFilteredQuery);
-
-            // Hitung perkiraan pendapatan (total harga paket dari invoice yang difilter)
-            $perkiraanPendapatan = (clone $baseClone)
-                ->with('paket')
-                ->get()
-                ->sum(fn($invoice) => $invoice->paket->harga ?? 0);
-
-            $tambahan = (clone $baseClone)
-                ->sum('tambahan');
-
-            $tunggakan = (clone $baseClone)
-                ->sum('tunggakan');
-
-            $saldo = (clone $baseClone)
-                ->sum('saldo');
-
+            if ($bulan) {
+                $perki->whereMonth('jatuh_tempo', $bulan);
+            }
+            
+            // Ambil semua data untuk kalkulasi
+            $allInvoices = $perki->with('paket')->get();
+            
+            // Hitung estimasi
+            $perkiraanPendapatan = $allInvoices->sum(fn($inv) => $inv->tagihan ?? 0);
+            $tambahan           = $allInvoices->sum(fn($inv) => $inv->tambahan ?? 0);
+            $tunggakan          = $allInvoices->sum(fn($inv) => $inv->tunggakan ?? 0);
+            $saldo              = $allInvoices->sum(fn($inv) => $inv->saldo ?? 0);
+            
             $estimasi = $perkiraanPendapatan + $tambahan + $tunggakan - $saldo;
 
             // === Statistik ===
