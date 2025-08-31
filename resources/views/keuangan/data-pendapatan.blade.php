@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-lg-3">
+    {{-- <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -235,7 +235,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
     
     <!-- Monthly Revenue -->
     <div class="col-12 col-sm-6 col-lg-3">
@@ -343,7 +343,8 @@
 <!-- Data Table Personal -->
 <div class="table-card mb-5" id="invoiceTable">
     <div class="p-6 border-bottom">
-        <h5 class="fw-semibold text-dark mb-0">Daftar Invoice Customer</h5>
+        <h5 class="fw-bold text-dark mb-0">Daftar Invoice Customer</h5>
+        <small class="fw-semibold badge bg-danger bg-opacity-10 text-danger mt-3">Estimasi Pendapatan Bulan {{ date('M') }} : Rp {{ number_format($tes ?? 0, 0, ',', '.') }}</small>
     </div>
     
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-4 border-bottom">

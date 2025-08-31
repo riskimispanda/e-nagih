@@ -131,6 +131,24 @@ class KeuanganController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $bulan = $request->get('bulan');
+
+        $sumData = Invoice::whereIn('status_id', [7, 8])
+            ->whereMonth('jatuh_tempo', now()->month)
+            ->whereYear('jatuh_tempo', now()->year)
+            ->selectRaw('
+                SUM(tagihan) as total_tagihan,
+                SUM(tunggakan) as total_tunggakan,
+                SUM(tambahan) as total_tambahan,
+                SUM(saldo) as total_saldo
+            ')
+            ->first();
+
+        $tes = ($sumData->total_tagihan ?? 0) 
+            + ($sumData->total_tunggakan ?? 0) 
+            + ($sumData->total_tambahan ?? 0) 
+            - ($sumData->total_saldo ?? 0);
+
+
         // Default to current month only if no bulan parameter is provided at all (first time load)
         if ($bulan === null && !$request->has('bulan')) {
             $bulan = Carbon::now()->month;
@@ -264,6 +282,7 @@ class KeuanganController extends Controller
             'totalPembayaran' => $totalPembayaran,
             'pembayaran' => $pembayaran,
             'perkiraanPendapatan' => $estimasi,
+            'tes' => $tes
         ]);
     }
 
