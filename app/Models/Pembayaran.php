@@ -16,7 +16,10 @@ class Pembayaran extends Model
         'bukti_bayar',
         'status_id',
         'user_id',
-        'saldo'
+        'saldo',
+        'admin_id',
+        'jumlah_bayar_baru',
+        'ket_edit'
     ];
 
 
@@ -33,6 +36,11 @@ class Pembayaran extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id');
     }
 
 }

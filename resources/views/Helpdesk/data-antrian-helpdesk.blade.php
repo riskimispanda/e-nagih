@@ -666,7 +666,7 @@
                                         </td>
                                         <td>
                                             <span class="badge bg-danger text-white">
-                                                {{ $c->agen->name }}
+                                                {{ $c->agen->name ?? '-'}}
                                             </span>
                                         </td>
                                     </tr>

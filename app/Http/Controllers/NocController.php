@@ -422,4 +422,50 @@ class NocController extends Controller
         $odp->delete();
         return redirect()->back()->with('toast_success', 'ODP berhasil dihapus');
     }
+
+    public function editAntrian($id)
+    {
+        $customer = Customer::findOrFail($id);
+        return view('/NOC/editAntrian',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'antrian' => $customer
+        ]);
+    }
+
+    public function simpanEdit(Request $request, $id)
+    {
+        $customer = Customer::findOrFail($id);
+        $router = Router::findOrFail($customer->router_id);
+        $paket = $customer->paket->paket_name;
+        $koneksi = Koneksi::findOrFail($customer->koneksi_id);
+        $konek = strtolower($koneksi->nama_koneksi);
+        
+        // Update database Laravel
+        $customer->update([
+            'usersecret' => $request->usersecret,
+            'pass_secret' => $request->pass,
+            'remote' => $request->remote,
+            'remote_address' => $request->remote,
+            'local_address' => $request->local_address
+        ]);
+
+        
+        // dd($konek);
+
+        $client = MikrotikServices::connect($router);
+
+        MikrotikServices::addPPPSecret($client, [
+            'name'          => $request->usersecret,
+            'password'      => $request->pass,
+            'remoteAddress' => $request->remote,
+            'localAddress'  => $request->local_address,
+            'profile'       => $paket,
+            'service'       => $konek
+        ]);
+
+        return redirect('/teknisi/antrian')->with('toast_success', 'Berhasil Update Detail');
+    }
+
+
 }

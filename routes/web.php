@@ -238,6 +238,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update/odp/{id}', [NocController::class, 'updateOdp']);
     Route::get('/hapus/odp/{id}', [NocController::class, 'hapusOdp']);
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
+    Route::get('/edit/antrian/{id}/noc', [NocController::class, 'editAntrian']);
+    Route::post('/simpan/noc/{id}', [NocController::class, 'simpanEdit']);
 
 
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');
@@ -279,6 +281,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/delete-rab/{id}',[RabController::class, 'hapusRab'])->middleware('auth','roles:Super Admin,Admin Keuangan');
     Route::get('/edit-pengeluaran/{id}',[PengeluaranController::class, 'editPengeluaran'])->middleware('auth','roles:Super Admin,Admin Keuangan');
     Route::post('/update-pengeluaran/{id}', [PengeluaranController::class, 'updatePengeluaran'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::post('/edit/pembayaran/{id}', [Customer::class, 'editPembayaran'])->middleware('auth','roles:Admin Keuangan,Super Admin');
+    Route::get('/requestEdit/pembayaran', [SuperAdmin::class, 'requestEdit'])->middleware('auth','roles:Super Admin,Admin Keuangan');
+    Route::get('/konfirmasiEditPembayaran/{id}', [SuperAdmin::class, 'konfirmasiEditPembayaran'])->middleware('auth','roles:Super Admin');
+    Route::get('/rejectEditPembayaran/{id}', [SuperAdmin::class, 'rejectEditPembayaran'])->middleware('auth','roles:Super Admin');
 
 
 

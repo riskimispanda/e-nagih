@@ -382,6 +382,24 @@
             </div>
         </div>
     </div>
+    
+    {{-- Request Edit Pembayaran --}}
+    <div class="col-12 col-sm-6 col-lg-3">
+        <a href="/requestEdit/pembayaran" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Daftar Request">
+            <div class="payment-card p-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted small mb-1 fw-medium">Request Edit</p>
+                        <h5 class="fw-bold text-dark mb-0">{{$editPembayaran}}</h5>
+                    </div>
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                        <i class="bx bx-refresh"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+    
 </div>
 
 <!-- Payment Method Statistics -->
@@ -558,6 +576,7 @@
                         <th>Metode Bayar</th>
                         <th>Status</th>
                         <th>Admin / Agen</th>
+                        <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody" style="font-size: 14px">
@@ -622,229 +641,300 @@
                                 <span class="status-badge bg-info bg-opacity-10 text-primary fw-bold">Tripay</span>
                                 @endif
                             </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="8" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="bx bx-money text-muted" style="font-size: 3rem;"></i>
-                                    <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                                    <p class="text-muted mb-0">Belum ada data pembayaran yang tersedia</p>
+                            <td>
+                                @if($payment->status_id == 8)
+                                <div class="d-flex">
+                                    <a class="btn btn-outline-warning btn-sm text-warning" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editModal{{ $payment->id }}">
+                                        <i class="bx bx-pencil"></i>
+                                    </a>
                                 </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <!-- Pagination -->
-        @if (isset($payments) && $payments->hasPages())
-        <div class="p-4 border-top">
-            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
-                <div class="text-muted small">
-                    Menampilkan {{ $payments->firstItem() ?? 0 }} sampai {{ $payments->lastItem() ?? 0 }}
-                    dari {{ $payments->total() ?? 0 }} hasil
-                </div>
-                <div>
-                    {{ $payments->appends(request()->query())->links() }}
-                </div>
-            </div>
-        </div>
-        @endif
-    </div>
-    
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay d-none">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <span class="text-dark">Memuat data...</span>
+                                @else
+                                <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                                    <i class="bx bx-pencil"></i>
+                                </button>
+                                @endif
+                            </td>           
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bx bx-money text-muted" style="font-size: 3rem;"></i>
+                                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                                <p class="text-muted mb-0">Belum ada data pembayaran yang tersedia</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
+    <!-- Pagination -->
+    @if (isset($payments) && $payments->hasPages())
+    <div class="p-4 border-top">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+            <div class="text-muted small">
+                Menampilkan {{ $payments->firstItem() ?? 0 }} sampai {{ $payments->lastItem() ?? 0 }}
+                dari {{ $payments->total() ?? 0 }} hasil
+            </div>
+            <div>
+                {{ $payments->appends(request()->query())->links() }}
+            </div>
+        </div>
+    </div>
+    @endif
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay d-none">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <span class="text-dark">Memuat data...</span>
+    </div>
+</div>
+
+{{-- Modal Edit Pembayaran --}}
+@foreach ($payments as $pembayaran)
+<div class="modal fade" id="editModal{{ $pembayaran->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Pembayaran {{ $pembayaran->invoice->customer->nama_customer }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/edit/pembayaran/{{ $pembayaran->id }}" method="POST" class="editPembayaranForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Nama Customer</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-user"></i></span>
+                                <input type="text" class="form-control" value="{{ $pembayaran->invoice->customer->nama_customer ?? '-' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Total Tagihan</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                <input type="text" class="form-control" value="Rp {{ number_format($pembayaran->invoice->tagihan + $pembayaran->invoice->tunggakan + $pembayaran->invoice->tambahan - $pembayaran->invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-12 mb-2">
+                            <label class="form-label">Jumlah Bayar</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                <input type="text" name="jumlah" id="jumlah{{ $pembayaran->id }}" class="form-control" value="{{ $pembayaran->jumlah_bayar ? 'Rp '.number_format($pembayaran->jumlah_bayar,0,',','.') : 'Rp 0' }}">
+                                <input type="hidden" name="jumlahRaw" id="jumlahRaw{{ $pembayaran->id }}" value="{{ $pembayaran->jumlah_bayar ?? 0 }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-12 mb-2">
+                            <label class="form-label">Keterangan Edit</label>
+                            <textarea name="keterangan" class="form-control" cols="10" rows="5"></textarea>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-warning btn-sm" type="submit">
+                        <i class="bx bx-pencil me-2"></i>
+                        Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
+
+@endsection
+
+@section('page-script')
+<script>
+    let searchTimeout;
+    let isLoading = false;
     
-    @endsection
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeSearch();
+        initializeFilters();
+    });
     
-    @section('page-script')
-    <script>
-        let searchTimeout;
-        let isLoading = false;
+    // Initialize search functionality
+    function initializeSearch() {
+        const searchInput = document.getElementById('searchInput');
         
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSearch();
-            initializeFilters();
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    applyFilters();
+                }, 500); // Debounce search for 500ms
+            });
+        }
+    }
+    
+    // Initialize filter functionality
+    function initializeFilters() {
+        const metodeFilter = document.getElementById('metodeFilter');
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        
+        [metodeFilter, startDate, endDate].forEach(element => {
+            if (element) {
+                element.addEventListener('change', applyFilters);
+            }
         });
+    }
+    
+    // Apply filters and search
+    function applyFilters() {
+        if (isLoading) return;
         
-        // Initialize search functionality
-        function initializeSearch() {
-            const searchInput = document.getElementById('searchInput');
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        applyFilters();
-                    }, 500); // Debounce search for 500ms
-                });
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        for (let [key, value] of formData.entries()) {
+            if (value.trim() !== '') {
+                params.append(key, value);
             }
         }
         
-        // Initialize filter functionality
-        function initializeFilters() {
-            const metodeFilter = document.getElementById('metodeFilter');
-            const startDate = document.getElementById('startDate');
-            const endDate = document.getElementById('endDate');
-            
-            [metodeFilter, startDate, endDate].forEach(element => {
-                if (element) {
-                    element.addEventListener('change', applyFilters);
-                }
-            });
-        }
+        // Show loading
+        showLoading();
         
-        // Apply filters and search
-        function applyFilters() {
-            if (isLoading) return;
+        // Make AJAX request
+        fetch(`{{ route('pembayaran') }}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Parse the response and update the table
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
             
-            const formData = new FormData(document.getElementById('filterForm'));
-            const params = new URLSearchParams();
+            // Update table content
+            const newTableContainer = doc.querySelector('#tableContainer');
+            const currentTableContainer = document.querySelector('#tableContainer');
             
-            for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    params.append(key, value);
+            if (newTableContainer && currentTableContainer) {
+                currentTableContainer.innerHTML = newTableContainer.innerHTML;
+            }
+            
+            // Update pagination if exists
+            const newPagination = doc.querySelector('.p-4.border-top');
+            const currentPagination = document.querySelector('.p-4.border-top');
+            
+            if (newPagination && currentPagination) {
+                currentPagination.innerHTML = newPagination.innerHTML;
+            }
+            
+            // Update URL without page reload
+            const url = new URL(window.location);
+            for (let [key, value] of params.entries()) {
+                url.searchParams.set(key, value);
+            }
+            
+            // Remove empty parameters
+            for (let key of url.searchParams.keys()) {
+                if (!params.has(key)) {
+                    url.searchParams.delete(key);
                 }
             }
             
-            // Show loading
-            showLoading();
-            
-            // Make AJAX request
-            fetch(`{{ route('pembayaran') }}?${params.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'text/html'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.text();
-            })
-            .then(html => {
-                // Parse the response and update the table
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                // Update table content
-                const newTableContainer = doc.querySelector('#tableContainer');
-                const currentTableContainer = document.querySelector('#tableContainer');
-                
-                if (newTableContainer && currentTableContainer) {
-                    currentTableContainer.innerHTML = newTableContainer.innerHTML;
-                }
-                
-                // Update pagination if exists
-                const newPagination = doc.querySelector('.p-4.border-top');
-                const currentPagination = document.querySelector('.p-4.border-top');
-                
-                if (newPagination && currentPagination) {
-                    currentPagination.innerHTML = newPagination.innerHTML;
-                }
-                
-                // Update URL without page reload
-                const url = new URL(window.location);
-                for (let [key, value] of params.entries()) {
-                    url.searchParams.set(key, value);
-                }
-                
-                // Remove empty parameters
-                for (let key of url.searchParams.keys()) {
-                    if (!params.has(key)) {
-                        url.searchParams.delete(key);
-                    }
-                }
-                
-                window.history.pushState({}, '', url);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('Terjadi kesalahan saat memuat data', 'error');
-            })
-            .finally(() => {
-                hideLoading();
-            });
-        }
+            window.history.pushState({}, '', url);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Terjadi kesalahan saat memuat data', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    }
+    
+    // Clear all filters
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('metodeFilter').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
         
-        // Clear all filters
-        function clearFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('metodeFilter').value = '';
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            
-            // Redirect to clean URL
-            window.location.href = '{{ route('pembayaran') }}';
-        }
+        // Redirect to clean URL
+        window.location.href = '{{ route('pembayaran') }}';
+    }
+    
+    // Refresh data
+    function refreshData() {
+        if (isLoading) return;
         
-        // Refresh data
-        function refreshData() {
-            if (isLoading) return;
-            
-            showLoading();
-            
-            // Get current filters
-            const formData = new FormData(document.getElementById('filterForm'));
-            const params = new URLSearchParams();
-            
-            for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    params.append(key, value);
-                }
+        showLoading();
+        
+        // Get current filters
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        for (let [key, value] of formData.entries()) {
+            if (value.trim() !== '') {
+                params.append(key, value);
             }
-            
-            // Reload with current filters
-            window.location.href = `{{ route('pembayaran') }}?${params.toString()}`;
         }
         
-        // View payment details
-        function viewPayment(paymentId) {
-            // You can implement modal or redirect to detail page
-            showNotification('Fitur detail pembayaran akan segera tersedia', 'info');
-        }
+        // Reload with current filters
+        window.location.href = `{{ route('pembayaran') }}?${params.toString()}`;
+    }
+    
+    // View payment details
+    function viewPayment(paymentId) {
+        // You can implement modal or redirect to detail page
+        showNotification('Fitur detail pembayaran akan segera tersedia', 'info');
+    }
+    
+    // View payment proof
+    function viewProof(paymentId) {
+        // You can implement modal to show payment proof
+        showNotification('Fitur lihat bukti pembayaran akan segera tersedia', 'info');
+    }
+    
+    // Show loading overlay
+    function showLoading() {
+        isLoading = true;
+        document.getElementById('loadingOverlay').classList.remove('d-none');
+    }
+    
+    // Hide loading overlay
+    function hideLoading() {
+        isLoading = false;
+        document.getElementById('loadingOverlay').classList.add('d-none');
+    }
+    
+    // Show notification
+    function showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `position-fixed top-0 end-0 p-3`;
+        notification.style.zIndex = '9999';
+        notification.style.marginTop = '20px';
+        notification.style.marginRight = '20px';
         
-        // View payment proof
-        function viewProof(paymentId) {
-            // You can implement modal to show payment proof
-            showNotification('Fitur lihat bukti pembayaran akan segera tersedia', 'info');
-        }
+        const alertClass = type === 'error' ? 'alert-danger' :
+        type === 'success' ? 'alert-success' : 'alert-primary';
         
-        // Show loading overlay
-        function showLoading() {
-            isLoading = true;
-            document.getElementById('loadingOverlay').classList.remove('d-none');
-        }
-        
-        // Hide loading overlay
-        function hideLoading() {
-            isLoading = false;
-            document.getElementById('loadingOverlay').classList.add('d-none');
-        }
-        
-        // Show notification
-        function showNotification(message, type = 'info') {
-            // Create notification element
-            const notification = document.createElement('div');
-            notification.className = `position-fixed top-0 end-0 p-3`;
-            notification.style.zIndex = '9999';
-            notification.style.marginTop = '20px';
-            notification.style.marginRight = '20px';
-            
-            const alertClass = type === 'error' ? 'alert-danger' :
-            type === 'success' ? 'alert-success' : 'alert-primary';
-            
-            notification.innerHTML = `
+        notification.innerHTML = `
                 <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                     <i class="bx ${
                         type === 'error' ? 'bx-error' :
@@ -855,38 +945,122 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Handle pagination clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.pagination a')) {
+            e.preventDefault();
+            const link = e.target.closest('.pagination a');
+            const url = new URL(link.href);
             
-            document.body.appendChild(notification);
+            // Get current form data
+            const formData = new FormData(document.getElementById('filterForm'));
             
-            // Auto remove after 5 seconds
-            setTimeout(() => {
-                if (notification.parentElement) {
-                    notification.remove();
+            // Add form data to pagination URL
+            for (let [key, value] of formData.entries()) {
+                if (value.trim() !== '') {
+                    url.searchParams.set(key, value);
                 }
-            }, 5000);
+            }
+            
+            showLoading();
+            window.location.href = url.toString();
+        }
+    });
+</script>
+
+<script>
+    // Fungsi format rupiah
+    function formatRupiah(angka, prefix = "Rp ") {
+        let number_string = angka.replace(/[^,\d]/g, '').toString(),
+        split = number_string.split(','),
+        sisa = split[0].length % 3,
+        rupiah = split[0].substr(0, sisa),
+        ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        
+        if (ribuan) {
+            let separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
         }
         
-        // Handle pagination clicks
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.pagination a')) {
-                e.preventDefault();
-                const link = e.target.closest('.pagination a');
-                const url = new URL(link.href);
-                
-                // Get current form data
-                const formData = new FormData(document.getElementById('filterForm'));
-                
-                // Add form data to pagination URL
-                for (let [key, value] of formData.entries()) {
-                    if (value.trim() !== '') {
-                        url.searchParams.set(key, value);
-                    }
-                }
-                
-                showLoading();
-                window.location.href = url.toString();
-            }
-        });
-    </script>
-    @endsection
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        return prefix + rupiah;
+    }
     
+    document.addEventListener('DOMContentLoaded', function() {
+        // Loop semua input jumlah
+        document.querySelectorAll('[id^="jumlah"]').forEach(function(jumlahInput) {
+            let id = jumlahInput.id.replace('jumlah','');
+            let jumlahRaw = document.getElementById('jumlahRaw' + id);
+            if (!jumlahRaw) return;
+            
+            // Inisialisasi nilai awal
+            let initialValue = jumlahRaw.value || '0';
+            jumlahInput.value = formatRupiah(initialValue);
+            jumlahRaw.value = initialValue;
+            
+            // Event listener saat mengetik
+            jumlahInput.addEventListener('input', function() {
+                let value = this.value.replace(/\D/g,'');
+                jumlahRaw.value = value;
+                this.value = formatRupiah(value);
+            });
+        });
+        
+        // SweetAlert konfirmasi sebelum submit form
+        document.querySelectorAll('form.editPembayaranForm').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // cegah submit default
+                
+                Swal.fire({
+                    title: 'Apakah kamu yakin?',
+                    text: "Data pembayaran akan diperbarui!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, update sekarang!',
+                    topLayer: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+        
+        // SweetAlert flash message
+        @if(session('success'))
+        Swal.fire({
+            title: "Sukses!",
+            text: "{{ session('success') }}",
+            icon: "success",
+            timer: 2000,
+            showConfirmButton: false,
+            topLayer: true
+        });
+        @elseif(session('error'))
+        Swal.fire({
+            title: "Gagal!",
+            text: "{{ session('error') }}",
+            icon: "error",
+            timer: 3000,
+            showConfirmButton: false,
+            topLayer: true
+        });
+        @endif
+    });
+</script>
+
+
+@endsection

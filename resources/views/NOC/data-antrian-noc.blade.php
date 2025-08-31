@@ -912,15 +912,17 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="/noc/proses-antrian/{{ $item->id }}"
-                                    class="btn btn-action btn-info me-1" data-bs-toggle="tooltip"
-                                    data-bs-placement="top" title="Proses">
-                                    <i class="bx bx-info-circle"></i>
-                                </a>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="/noc/proses-antrian/{{ $item->id }}"
+                                        class="btn btn-action btn-info me-1" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Proses">
+                                        <i class="bx bx-info-circle"></i>
+                                    </a>
+                                </div>
                             </td>
                             <td>
                                 <span class="badge bg-danger bg-opacity-10 text-danger">
-                                    {{ $item->agen->name }}
+                                    {{ $item->agen->name ?? '-'}}
                                 </span>
                             </td>
                         </tr>

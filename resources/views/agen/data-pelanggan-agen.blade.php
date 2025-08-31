@@ -463,8 +463,10 @@
             });
             @endphp
             <span class="text-muted" id="searchResults">
-                Menampilkan <span class="fw-bold text-primary" id="visibleCount">{{ $totalRows }}</span>
-                dari <span class="fw-bold" id="totalCount">{{ $totalRows }}</span> data
+                Menampilkan 
+                <span class="fw-bold text-primary" id="visibleCount">{{ $totalRows }}</span>
+                dari 
+                <span class="fw-bold" id="totalCount">{{ $totalRows }}</span> data
             </span>
             <span class="badge bg-info ms-2" id="filterIndicator" style="display: none;">
                 <i class="bx bx-filter-alt me-1"></i>Filter Aktif
@@ -576,20 +578,25 @@
                     </span>
                 </td>                    
                 <td>
-                    @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar')
-                    <button class="btn btn-outline-success btn-sm mb-1"
-                    data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
-                    data-bs-toggle="modal"
-                    title="Request Pembayaran">
-                    <i class="bx bx-money"></i>
-                </button>
-                @else
-                <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
-                data-bs-toggle="tooltip" data-bs-placement="bottom"
-                title="Sudah Dibayar">
-                <i class="bx bx-check"></i>
-            </span>
-            @endif
+                    <div class="d-flex justify-content-center gap-2">
+                        @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar')
+                        <button class="btn btn-outline-success btn-sm mb-1"
+                        data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
+                        data-bs-toggle="modal"
+                        title="Request Pembayaran">
+                        <i class="bx bx-money"></i>
+                    </button>
+                    @else
+                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
+                    data-bs-toggle="tooltip" data-bs-placement="bottom"
+                    title="Sudah Dibayar">
+                    <i class="bx bx-check"></i>
+                </span>
+                @endif
+                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="btn btn-outline-info btn-sm mb-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Histori pembayaran {{ $invoice->customer->nama_customer }}">
+                    <i class="bx bx-history"></i>
+                </a>
+                    </div>
         </td>
         <td>
             {{ $invoice->pembayaran->first()->keterangan ?? '-' }}
@@ -700,42 +707,73 @@
                     </div>
                     
                     <!-- Detail Tagihan -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label">Tagihan Pokok</label>
-                            <input type="text" class="form-control"
-                            value="Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}"
-                            readonly>
+                    <div class="row">
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label mb-2">Tagihan</label>
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       class="form-check-input pilihan" 
+                                       name="bayar[]" 
+                                       value="tagihan" 
+                                       data-amount="{{ $invoice->tagihan ?? 0 }}" 
+                                       data-id="{{ $invoice->id }}">
+                                <label class="form-check-label">
+                                    Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label">Biaya Tambahan</label>
-                            <input type="text" class="form-control"
-                            value="Rp {{ number_format($invoice->tambahan ?? 0, 0, ',', '.') }}"
-                            readonly>
+                    
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label mb-2">Biaya Tambahan</label>
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       class="form-check-input pilihan" 
+                                       name="bayar[]" 
+                                       value="tambahan" 
+                                       data-amount="{{ $invoice->tambahan ?? 0 }}" 
+                                       data-id="{{ $invoice->id }}">
+                                <label class="form-check-label">
+                                    Rp {{ number_format($invoice->tambahan ?? 0, 0, ',', '.') }}
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label">Tunggakan</label>
-                            <input type="text" class="form-control"
-                            value="Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}"
-                            readonly>
+                    
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label mb-2">Tunggakan</label>
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       class="form-check-input pilihan" 
+                                       name="bayar[]" 
+                                       value="tunggakan" 
+                                       data-amount="{{ $invoice->tunggakan ?? 0 }}" 
+                                       data-id="{{ $invoice->id }}">
+                                <label class="form-check-label">
+                                    Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label">Sisa Saldo</label>
-                            <input type="text" class="form-control"
-                            value="Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}"
-                            readonly>
+                        <div class="col mb-4 col-lg-4">
+                            <label class="form-label mb-2">Sisa Saldo</label>
+                            <div class="form-check">
+                                <input type="checkbox"
+                                    class="form-check-input pilihan"
+                                    name="saldo"
+                                    value="{{ $invoice->saldo }}"
+                                    data-amount="{{ $invoice->saldo ?? 0 }}"
+                                    data-id="{{ $invoice->id }}"
+                                    data-type="saldo">
+                                <label class="form-check-label">
+                                    Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}
+                                </label>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Total -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label fw-bold text-success">Total yang Harus Dibayar</label>
-                            <div class="total-payment">
-                                <input type="text" name="total" class="form-control fw-bold text-success border-0 bg-transparent fs-5"
-                                value="Rp {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo) ?? 0, 0, ',', '.') }}"
-                                readonly>
-                            </div>
+                    <div class="row">
+                        <div class="col-12 mb-4 col-lg-12">
+                            <label class="form-label">Total</label>
+                            <input type="text" id="total{{ $invoice->id }}" class="form-control" name="total" value="Rp 0" readonly>
                         </div>
                     </div>
                     
@@ -1214,6 +1252,50 @@
                 }
             });
         });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+      function toRupiah(n) {
+        return "Rp " + (n || 0).toLocaleString("id-ID");
+      }
+  
+      function recalcTotal(invoiceId) {
+        let total = 0;
+  
+        // 1) Jumlahkan komponen (tagihan, tambahan, tunggakan) yang dicentang
+        document
+          .querySelectorAll('.pilihan[data-id="' + invoiceId + '"]:checked:not([data-type="saldo"])')
+          .forEach(function (item) {
+            const amount = parseInt(item.getAttribute("data-amount")) || 0;
+            total += amount;
+          });
+  
+        // 2) Jika saldo dicentang, kurangi total dengan saldo (ambil dari data-amount atau value)
+        const saldoCb = document.querySelector('.pilihan[data-id="' + invoiceId + '"][data-type="saldo"]');
+        if (saldoCb && saldoCb.checked) {
+          const saldoAmount =
+            parseInt(saldoCb.getAttribute("data-amount")) ||
+            parseInt(saldoCb.value) || 0;
+          total = Math.max(total - saldoAmount, 0);
+        }
+  
+        // Tampilkan
+        const totalInput = document.getElementById("total" + invoiceId);
+        if (totalInput) totalInput.value = toRupiah(total);
+      }
+  
+      // Binding event ke semua checkbox
+      document.querySelectorAll(".pilihan").forEach(function (checkbox) {
+        checkbox.addEventListener("change", function () {
+          recalcTotal(this.getAttribute("data-id"));
+        });
+      });
+  
+      // Hitung awal (optional)
+      const ids = new Set([...document.querySelectorAll(".pilihan")].map(el => el.getAttribute("data-id")));
+      ids.forEach(id => recalcTotal(id));
     });
 </script>
 @endsection

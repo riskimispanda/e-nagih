@@ -229,8 +229,6 @@ class DataController extends Controller
             $search = $request->get('search');
             $bulan = $request->get('bulan');
 
-            // For AJAX requests, don't set default - respect the exact value sent
-
             // Build query for invoices with relationships
             $query = \App\Models\Invoice::with(['customer', 'paket', 'status'])
                 ->orderBy('created_at', 'desc')
@@ -245,18 +243,36 @@ class DataController extends Controller
                 });
             }
 
-            // Apply month filter - only filter by month if bulan is not empty (when "Semua Bulan" is selected, bulan will be empty)
+            // Apply month filter
             if ($bulan && $bulan !== '' && $bulan !== null) {
                 $query->whereMonth('jatuh_tempo', $bulan);
             }
 
-            // Clone the query before pagination to get all filtered invoices for statistics
+            // Clone query sebelum pagination
             $allFilteredQuery = clone $query;
             $invoices = $query->paginate(10);
 
-            // Calculate statistics based on filter
+            $baseClone = (clone $allFilteredQuery);
+
+            // Hitung perkiraan pendapatan (total harga paket dari invoice yang difilter)
+            $perkiraanPendapatan = (clone $baseClone)
+                ->with('paket')
+                ->get()
+                ->sum(fn($invoice) => $invoice->paket->harga ?? 0);
+
+            $tambahan = (clone $baseClone)
+                ->sum('tambahan');
+
+            $tunggakan = (clone $baseClone)
+                ->sum('tunggakan');
+
+            $saldo = (clone $baseClone)
+                ->sum('saldo');
+
+            $estimasi = $perkiraanPendapatan + $tambahan + $tunggakan - $saldo;
+
+            // === Statistik ===
             if ($bulan && $bulan !== '' && $bulan !== null) {
-                // When month filter is applied, calculate from filtered invoices
                 $allFilteredInvoices = $allFilteredQuery->get();
 
                 $totalRevenue = 0;
@@ -264,28 +280,22 @@ class DataController extends Controller
                 $totalInvoices = 0;
 
                 foreach ($allFilteredInvoices as $invoice) {
-                    // Count total invoices with status_id = 7 (Belum Bayar)
                     if ($invoice->status_id == 7) {
                         $totalInvoices++;
                     }
 
-                    // Calculate based on status_id
                     if ($invoice->status_id == 8) { // Sudah Bayar
-                        // For paid invoices: add tagihan + tambahan - tunggakan to total revenue
                         $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
                     } elseif ($invoice->status_id == 7) { // Belum Bayar
-                        // For unpaid invoices: add tagihan + tambahan + tunggakan to pending revenue
                         $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
                     }
                 }
             } else {
-                // When no month filter (Semua Bulan), calculate from all invoices with status_id 8 (Sudah Bayar)
                 $totalRevenue = \App\Models\Invoice::where('status_id', 8)
                     ->sum('tagihan') + \App\Models\Invoice::where('status_id', 8)
                     ->sum('tambahan') - \App\Models\Invoice::where('status_id', 8)
                     ->sum('tunggakan');
 
-                // Calculate pending revenue from status_id 7 (Belum Bayar)
                 $pendingRevenue = \App\Models\Invoice::where('status_id', 7)
                     ->sum('tagihan') + \App\Models\Invoice::where('status_id', 7)
                     ->sum('tambahan') + \App\Models\Invoice::where('status_id', 7)
@@ -294,7 +304,7 @@ class DataController extends Controller
                 $totalInvoices = \App\Models\Invoice::where('status_id', 7)->count();
             }
 
-            // Calculate monthly revenue from Pembayaran based on selected month or all if no month filter
+            // Monthly revenue dari Pembayaran
             if ($bulan && $bulan !== '' && $bulan !== null) {
                 $monthlyRevenue = \App\Models\Pembayaran::whereMonth('tanggal_bayar', $bulan)
                     ->whereYear('tanggal_bayar', \Carbon\Carbon::now()->year)
@@ -303,7 +313,7 @@ class DataController extends Controller
                 $monthlyRevenue = \App\Models\Pembayaran::sum('jumlah_bayar');
             }
 
-            // Return JSON response with updated data
+            // Return JSON response
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -321,6 +331,7 @@ class DataController extends Controller
                         'monthlyRevenue' => $monthlyRevenue,
                         'pendingRevenue' => $pendingRevenue,
                         'totalInvoices' => $totalInvoices,
+                        'perkiraan' => $estimasi, // ✅ sudah ditambahkan
                     ]
                 ]
             ]);
@@ -332,6 +343,7 @@ class DataController extends Controller
             ], 500);
         }
     }
+
 
     public function editPelanggan($id)
     {

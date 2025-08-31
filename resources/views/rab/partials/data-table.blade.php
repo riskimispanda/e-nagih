@@ -2,8 +2,8 @@
     <thead class="table-dark">
         <tr class="text-center">
             <th>No</th>
-            <th>Bulan</th>
-            <th>Tahun</th>
+            <th>Bulan & Tahun</th>
+            <th>Keterangan</th>
             <th>Kegiatan</th>
             <th>Jumlah Anggaran</th>
             <th>Anggaran Terealisasi</th>
@@ -21,9 +21,11 @@
         <tr class="text-center">
             <td>{{$no++}}</td>
             <td>
-                {{ \Carbon\Carbon::createFromFormat('m', $item->bulan)->translatedFormat('F') }}
+                <span class="badge bg-danger bg-opacity-10 text-danger">
+                    {{ \Carbon\Carbon::createFromFormat('m', $item->bulan)->translatedFormat('F') }} / {{ $item->tahun_anggaran }}
+                </span>
             </td>
-            <td>{{ $item->tahun_anggaran }}</td>
+            <td>{{ $item->keterangan }}</td>
             <td>{{ $item->kegiatan }}</td>
             <td>
                 Rp. {{ number_format($item->jumlah_anggaran, 0, ',', '.') }}

@@ -131,7 +131,6 @@ class KeuanganController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $bulan = $request->get('bulan');
-
         // Default to current month only if no bulan parameter is provided at all (first time load)
         if ($bulan === null && !$request->has('bulan')) {
             $bulan = Carbon::now()->month;
@@ -171,6 +170,19 @@ class KeuanganController extends Controller
         // Clone query for statistics calculation
         $statisticsQuery = clone $query;
         $invoices = $query->paginate(10);
+
+        $base = (clone $statisticsQuery);
+
+        $perkiraanPendapatan = (clone $base)
+            ->with('paket')
+            ->get()
+            ->sum(fn($invoice) => $invoice->paket->harga ?? 0);
+
+        $tambahan = (clone $base)->sum('tambahan');
+        $tunggakan = (clone $base)->sum('tunggakan');
+        $saldo = (clone $base)->sum('saldo');
+
+        $estimasi = $perkiraanPendapatan + $tambahan + $tunggakan - $saldo;
 
         // Calculate revenue statistics based on filtered data
         if ($bulan && $bulan !== '' && $bulan !== null) {
@@ -248,6 +260,7 @@ class KeuanganController extends Controller
             'agen' => $agen,
             'totalPembayaran' => $totalPembayaran,
             'pembayaran' => $pembayaran,
+            'perkiraanPendapatan' => $estimasi,
         ]);
     }
 
@@ -299,6 +312,8 @@ class KeuanganController extends Controller
         $metode = $request->get('metode');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
+
+        $editPembayaran = Pembayaran::where('status_id', 1)->count();
 
         // Build query for payments with relationships
         $query = Pembayaran::with(['invoice.customer', 'invoice.paket', 'status', 'user'])
@@ -397,6 +412,7 @@ class KeuanganController extends Controller
             'endDate' => $endDate,
             'tripay' => $tripay,
             'invoicePay' => $invoicePay,
+            'editPembayaran' => $editPembayaran
         ]);
     }
 
@@ -893,20 +909,47 @@ class KeuanganController extends Controller
         $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
 
         DB::beginTransaction();
-
         try {
-            $jumlahBayar = $request->jumlah_bayar ?? 0;
+            $pilihan = $request->input('bayar', []); // ["tagihan","tambahan","tunggakan"]
+            $gunakanSaldo = $request->has('saldo');  // true kalau checkbox saldo dicentang
 
-            // Total yang harus dibayar termasuk tunggakan
-            $tunggakanLama = $invoice->tunggakan ?? 0;
-            $totalTagihan = $invoice->tagihan + $invoice->tambahan + $tunggakanLama;
+            // Nominal yang akan dibayar sesuai pilihan
+            $bayarTagihan   = in_array('tagihan', $pilihan)   ? $invoice->tagihan   : 0;
+            $bayarTambahan  = in_array('tambahan', $pilihan)  ? $invoice->tambahan  : 0;
+            $bayarTunggakan = in_array('tunggakan', $pilihan) ? $invoice->tunggakan : 0;
 
-            // Hitung selisih antara bayar dan tagihan
-            $sisa = $jumlahBayar - $totalTagihan;
-            $tunggakanBaru = max($totalTagihan - $jumlahBayar, 0);
-            $saldoBaru = $sisa > 0 ? $sisa : 0;
+            $totalDipilih = $bayarTagihan + $bayarTambahan + $bayarTunggakan;
 
-            // Upload bukti pembayaran jika ada
+            // Gunakan saldo kalau dicentang
+            $saldoTerpakai = 0;
+            $saldoBaru = $invoice->saldo;
+            if ($gunakanSaldo && $invoice->saldo > 0) {
+                if ($invoice->saldo >= $totalDipilih) {
+                    $saldoTerpakai = $totalDipilih;
+                    $totalDipilih  = 0;
+                    $saldoBaru     = $invoice->saldo - $saldoTerpakai;
+                } else {
+                    $saldoTerpakai = $invoice->saldo;
+                    $totalDipilih  -= $invoice->saldo;
+                    $saldoBaru     = 0;
+                }
+            }
+
+            // Tambahkan pembayaran manual dari form
+            $jumlahBayarManual = (int) $request->input('jumlah_bayar', 0);
+
+            if ($jumlahBayarManual >= $totalDipilih) {
+                $jumlahBayarManual -= $totalDipilih;
+                $totalDipilih = 0;
+            } else {
+                $totalDipilih -= $jumlahBayarManual;
+                $jumlahBayarManual = 0;
+            }
+
+            // Total pembayaran hari ini
+            $jumlahBayar = $saldoTerpakai + (int)$request->input('jumlah_bayar', 0);
+
+            // Upload bukti pembayaran
             $buktiPath = null;
             if ($request->hasFile('bukti_pembayaran')) {
                 $file = $request->file('bukti_pembayaran');
@@ -914,72 +957,93 @@ class KeuanganController extends Controller
                 $buktiPath = $file->storeAs('bukti_pendapatan', $fileName, 'public');
             }
 
+            // ================================
+            // Buat keterangan dinamis
+            // ================================
+            $keteranganArr = [];
+            if ($bayarTagihan > 0)   $keteranganArr[] = "Tagihan Langganan";
+            if ($bayarTambahan > 0)  $keteranganArr[] = "Biaya Tambahan";
+            if ($bayarTunggakan > 0) $keteranganArr[] = "Tunggakan";
+            if ($saldoTerpakai > 0)  $keteranganArr[] = "menggunakan saldo";
+            if ($saldoBaru > 0)      $keteranganArr[] = "menyisakan saldo";
+
+            $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
+                " oleh " . auth()->user()->name .
+                " untuk " . $invoice->customer->nama_customer;
+
             // Simpan pembayaran
             $pembayaran = Pembayaran::create([
-                'invoice_id'    => $request->invoice_id,
+                'invoice_id'    => $invoice->id,
                 'jumlah_bayar'  => $jumlahBayar,
                 'tanggal_bayar' => now(),
                 'metode_bayar'  => $request->metode_id,
-                'keterangan'    => 'Pembayaran oleh admin ' . auth()->user()->name . ' untuk ' . $invoice->customer->nama_customer,
-                'status_id'     => 8, // Langsung disetujui
+                'keterangan'    => $keteranganPembayaran,
+                'status_id'     => 8,
                 'user_id'       => auth()->id(),
                 'bukti_bayar'   => $buktiPath,
                 'saldo'         => $saldoBaru,
             ]);
 
-            // Kirim notifikasi ke customer
+            // Notifikasi
             $chat = new ChatServices();
             $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
 
-            // Unblock user jika sebelumnya diblokir
-            $customer = Customer::find($invoice->customer_id);
-            if ($customer->status_id == 9) {
-                $mikrotik = new MikrotikServices();
-                $client = MikrotikServices::connect($customer->router);
-                $mikrotik->removeActiveConnections($client, $customer->usersecret);
-                $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+            // ================================
+            // Update Invoice
+            // ================================
+            $newTagihan   = in_array('tagihan', $pilihan)   ? 0 : $invoice->tagihan;
+            $newTambahan  = in_array('tambahan', $pilihan)  ? 0 : $invoice->tambahan;
+            $newTunggakan = in_array('tunggakan', $pilihan) ? 0 : $invoice->tunggakan;
 
-                $customer->status_id = 3;
-                $customer->save();
-            }
+            $statusInvoice = ($newTagihan == 0 && $newTambahan == 0 && $newTunggakan == 0)
+                ? 8 : 7;
 
-            // Update invoice lama jadi lunas
             $invoice->update([
-                'status_id' => 8,
-                'saldo'     => 0,
+                'tagihan'   => $newTagihan,
+                'tambahan'  => $newTambahan,
+                'tunggakan' => $newTunggakan,
+                'saldo'     => $saldoBaru,
+                'status_id' => $statusInvoice,
             ]);
 
-            // Buat invoice bulan depan
-            $tanggalJatuhTempoLama = Carbon::parse($invoice->jatuh_tempo);
-            $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
-            $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
+            // ================================
+            // Buat Invoice Bulan Depan
+            // ================================
+            if (in_array('tagihan', $pilihan) && $newTagihan == 0) {
+                $customer = $invoice->customer;
+                $tanggalJatuhTempoLama = Carbon::parse($invoice->jatuh_tempo);
+                $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
+                $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
 
-            $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
-                ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
-                ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
-                ->exists();
+                $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                    ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
+                    ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
+                    ->exists();
 
-            if (!$sudahAda) {
-                Invoice::create([
-                    'customer_id'     => $invoice->customer_id,
-                    'paket_id'        => $customer->paket_id,
-                    'tagihan'         => $customer->paket->harga,
-                    'tambahan'        => 0,
-                    'saldo'           => $saldoBaru,
-                    'status_id'       => 7, // Belum bayar
-                    'created_at'      => $tanggalAwal,
-                    'updated_at'      => $tanggalAwal,
-                    'jatuh_tempo'     => $tanggalJatuhTempo,
-                    'tanggal_blokir'  => $invoice->tanggal_blokir,
-                    'tunggakan'       => $tunggakanBaru,
-                ]);
+                if (!$sudahAda) {
+                    Invoice::create([
+                        'customer_id'     => $invoice->customer_id,
+                        'paket_id'        => $customer->paket_id,
+                        'tagihan'         => $customer->paket->harga,
+                        'tambahan'        => $newTambahan,
+                        'tunggakan'       => $newTunggakan,
+                        'saldo'           => $saldoBaru,
+                        'status_id'       => 7,
+                        'created_at'      => $tanggalAwal,
+                        'updated_at'      => $tanggalAwal,
+                        'jatuh_tempo'     => $tanggalJatuhTempo,
+                        'tanggal_blokir'  => $invoice->tanggal_blokir,
+                    ]);
+                }
             }
 
-            // Tambahkan ke kas
+            // ================================
+            // Catat ke kas
+            // ================================
             Kas::create([
                 'debit'         => $pembayaran->jumlah_bayar,
                 'tanggal_kas'   => $pembayaran->tanggal_bayar,
-                'keterangan'    => 'Pembayaran dari ' . $pembayaran->invoice->customer->nama_customer,
+                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer,
                 'kas_id'        => 1,
                 'user_id'       => auth()->id(),
                 'status_id'     => 3,
@@ -988,17 +1052,17 @@ class KeuanganController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Pembayaran berhasil disimpan dan invoice diperbarui.');
+            return redirect()->back()->with('success', 'Pembayaran berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
         }
     }
 
+
     public function agen(Request $request)
     {
         $query = User::whereIn('roles_id', [6, 7])->withCount('customer');
-
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
@@ -1246,7 +1310,6 @@ class KeuanganController extends Controller
         $subscriptionQuery = Pembayaran::whereYear('tanggal_bayar', $year);
         $nonSubscriptionQuery = Pendapatan::whereYear('tanggal', $year);
         $expensesQuery = Pengeluaran::whereYear('tanggal_pengeluaran', $year);
-
         // Add month filter if specified
         if ($month !== 'all') {
             $subscriptionQuery->whereMonth('tanggal_bayar', $month);

@@ -293,9 +293,9 @@
                                     <i class="bx bx-devices"></i>
                                 </span>
                                 <select name="perangkat" id="perangkat" class="form-select">
-                                    <option value="{{ $pelanggan->perangkat_id }}" selected >{{$pelanggan->perangkat->nama_perangkat}}</option>
+                                    <option value="{{ $pelanggan->perangkat_id ?? '-' }}" selected >{{$pelanggan->perangkat->nama_perangkat ?? '-'}}</option>
                                     @foreach ($perangkat as $item)
-                                    @if($pelanggan->perangkat->nama_perangkat != $item->nama_perangkat)
+                                    @if($pelanggan->perangkat->nama_perangkat ?? '-' != $item->nama_perangkat ?? '-')
                                     <option value="{{ $item->id }}">{{$item->nama_perangkat}}</option>
                                     @endif
                                     @endforeach

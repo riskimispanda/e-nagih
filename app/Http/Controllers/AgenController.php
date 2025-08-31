@@ -253,7 +253,9 @@ class AgenController extends Controller
         foreach ($invoices as $invoice) {
             $tagihan = floatval($invoice->tagihan ?? 0);
             $tambahan = floatval($invoice->tambahan ?? 0);
-            $invoiceTotal = $tagihan + $tambahan;
+            $tunggakan = floatval($invoice->tunggakan ?? 0);
+            $saldo = floatval($invoice->saldo ?? 0);
+            $invoiceTotal = $tagihan + $tambahan + $tunggakan - $saldo;
 
             $totalAmount += $invoiceTotal;
             $countTotal++;
@@ -358,79 +360,100 @@ class AgenController extends Controller
 
     public function requestPembayaran(Request $request, $id)
     {
-        Log::info('requestPembayaran called', [
-            'invoice_id' => $id,
-            'user_id' => Auth::id(),
-            'request_data' => $request->all()
+        $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
+
+        $request->validate([
+            'metode_id'        => 'required|string',
+            'jumlah_bayar'     => 'nullable|numeric|min:0',
+            'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
+        DB::beginTransaction();
         try {
-            // Validasi input
-            $request->validate([
-                'jumlah_bayar' => 'required|numeric|min:1',
-                'metode_id' => 'required|string',
-                'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-            ], [
-                'jumlah_bayar.required' => 'Jumlah pembayaran harus diisi',
-                'jumlah_bayar.numeric' => 'Jumlah pembayaran harus berupa angka',
-                'jumlah_bayar.min' => 'Jumlah pembayaran minimal 1',
-                'metode_id.required' => 'Metode pembayaran harus dipilih',
-                'bukti_pembayaran.image' => 'File bukti pembayaran harus berupa gambar',
-                'bukti_pembayaran.mimes' => 'Format file yang diizinkan: jpeg, png, jpg, gif',
-                'bukti_pembayaran.max' => 'Ukuran file maksimal 2MB'
+            $pilihan = $request->input('bayar', []);
+            $gunakanSaldo = $request->has('saldo');
+
+            // ====== Hitung Nominal ======
+            $bayarTagihan   = in_array('tagihan', $pilihan)   ? $invoice->tagihan   : 0;
+            $bayarTambahan  = in_array('tambahan', $pilihan)  ? $invoice->tambahan  : 0;
+            $bayarTunggakan = in_array('tunggakan', $pilihan) ? $invoice->tunggakan : 0;
+
+            $totalDipilih = $bayarTagihan + $bayarTambahan + $bayarTunggakan;
+
+            $saldoTerpakai = 0;
+            $saldoBaru = $invoice->saldo;
+            if ($gunakanSaldo && $invoice->saldo > 0) {
+                if ($invoice->saldo >= $totalDipilih) {
+                    $saldoTerpakai = $totalDipilih;
+                    $totalDipilih  = 0;
+                    $saldoBaru     = $invoice->saldo - $saldoTerpakai;
+                } else {
+                    $saldoTerpakai = $invoice->saldo;
+                    $totalDipilih  -= $invoice->saldo;
+                    $saldoBaru     = 0;
+                }
+            }
+
+            $jumlahBayar = $saldoTerpakai + (int)$request->input('jumlah_bayar', 0);
+
+            // Upload bukti pembayaran
+            $buktiPath = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $file = $request->file('bukti_pembayaran');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $buktiPath = $file->storeAs('bukti_pembayaran', $fileName, 'public');
+            }
+
+            // ====== Keterangan ======
+            $keteranganArr = [];
+            if ($bayarTagihan > 0)   $keteranganArr[] = "Tagihan";
+            if ($bayarTambahan > 0)  $keteranganArr[] = "Tambahan";
+            if ($bayarTunggakan > 0) $keteranganArr[] = "Tunggakan";
+            if ($saldoTerpakai > 0)  $keteranganArr[] = "pakai saldo";
+
+            $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
+                " oleh " . auth()->user()->name .
+                " untuk " . $invoice->customer->nama_customer;
+
+            // Simpan pembayaran
+            $pembayaran = Pembayaran::create([
+                'invoice_id'    => $invoice->id,
+                'jumlah_bayar'  => $jumlahBayar,
+                'tanggal_bayar' => now(),
+                'metode_bayar'  => $request->metode_id,
+                'keterangan'    => $keteranganPembayaran,
+                'status_id'     => 8,
+                'user_id'       => auth()->id(),
+                'bukti_bayar'   => $buktiPath,
+                'saldo'         => $saldoBaru,
             ]);
 
-            DB::transaction(function () use ($request, $id) {
-                $invoice = Invoice::findOrFail($id);
+            // Notifikasi
+            (new ChatServices())->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
+
+            // Update invoice
+            $newTagihan   = in_array('tagihan', $pilihan)   ? 0 : $invoice->tagihan;
+            $newTambahan  = in_array('tambahan', $pilihan)  ? 0 : $invoice->tambahan;
+            $newTunggakan = in_array('tunggakan', $pilihan) ? 0 : $invoice->tunggakan;
+
+            $statusInvoice = ($newTagihan == 0 && $newTambahan == 0 && $newTunggakan == 0)
+                ? 8 : 7;
+
+            $invoice->update([
+                'tagihan'   => $newTagihan,
+                'tambahan'  => $newTambahan,
+                'tunggakan' => $newTunggakan,
+                'saldo'     => $saldoBaru,
+                'status_id' => $statusInvoice,
+            ]);
+
+            // Buat invoice bulan depan kalau lunas
+            if (in_array('tagihan', $pilihan) && $newTagihan == 0) {
                 $customer = $invoice->customer;
-
-                // Upload bukti pembayaran
-                $buktiPath = null;
-                if ($request->hasFile('bukti_pembayaran')) {
-                    $file = $request->file('bukti_pembayaran');
-                    $fileName = 'bukti_' . time() . '_' . $invoice->id . '.' . $file->getClientOriginalExtension();
-                    $buktiPath = $file->storeAs('bukti_pembayaran', $fileName, 'public');
-                }
-
-                // Buat pembayaran baru
-                $pembayaran = Pembayaran::create([
-                    'invoice_id'   => $invoice->id,
-                    'jumlah_bayar' => $request->jumlah_bayar,
-                    'tanggal_bayar'=> now(),
-                    'metode_bayar' => $request->metode_id,
-                    'keterangan'   => 'Pembayaran dari agen ' . Auth::user()->name . ' untuk pelanggan ' . $customer->nama_customer,
-                    'bukti_bayar'  => $buktiPath,
-                    'status_id'    => 8, // Menunggu konfirmasi
-                    'user_id'      => Auth::id(),
-                ]);
-
-                $tagihanTotal = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
-                $tunggakan = max($tagihanTotal - $pembayaran->jumlah_bayar, 0);
-
-                // Kirim notifikasi pelanggan
-                $chat = new ChatServices();
-                $chat->pembayaranBerhasil($customer->no_hp, $pembayaran);
-
-                // Update status customer
-                $customer->update(['status_id' => 3]);
-
-                // Unblok jaringan jika status sebelumnya 9
-                if ($customer->status_id == 9) {
-                    $mikrotik = new MikrotikServices();
-                    $client = MikrotikServices::connect($customer->router);
-                    $mikrotik->removeActiveConnections($client, $customer->usersecret);
-                    $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
-                }
-
-                // Update status invoice
-                $invoice->update(['status_id' => 8]);
-
-                // Tentukan tanggal invoice baru
-                $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->startOfMonth();
+                $tanggalAwal = Carbon::parse($invoice->jatuh_tempo)->addMonthNoOverflow()->startOfMonth();
                 $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
-                $tanggalBlokir = $invoice->tanggal_blokir;
 
-                // Cek apakah invoice bulan berikutnya sudah ada
+
                 $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
                     ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
                     ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
@@ -441,48 +464,38 @@ class AgenController extends Controller
                         'customer_id'    => $invoice->customer_id,
                         'paket_id'       => $customer->paket_id,
                         'tagihan'        => $customer->paket->harga,
-                        'tambahan'       => 0,
-                        'saldo'          => $pembayaran->saldo,
-                        'status_id'      => 7, // Belum bayar
+                        'tambahan'       => $newTambahan,
+                        'tunggakan'      => $newTunggakan,
+                        'saldo'          => $saldoBaru,
+                        'status_id'      => 7,
                         'created_at'     => $tanggalAwal,
                         'updated_at'     => $tanggalAwal,
                         'jatuh_tempo'    => $tanggalJatuhTempo,
-                        'tanggal_blokir' => $tanggalBlokir,
-                        'tunggakan'      => $tunggakan,
+                        'tanggal_blokir' => $invoice->tanggal_blokir,
                     ]);
                 }
+            }
 
-                // Buat catatan kas
-                $kas = Kas::create([
-                    'debit'       => $pembayaran->jumlah_bayar,
-                    'kas_id'      => 1,
-                    'keterangan'  => 'Pembayaran diterima dari ' . $pembayaran->invoice->customer->nama_customer,
-                    'tanggal_kas' => $pembayaran->tanggal_bayar,
-                    'user_id'     => $pembayaran->user_id,
-                    'status_id'   => 3
-                ]);
+            // Catat ke kas
+            Kas::create([
+                'debit'       => $pembayaran->jumlah_bayar,
+                'tanggal_kas' => $pembayaran->tanggal_bayar,
+                'keterangan'  => 'Pembayaran dari ' . auth()->user()->name .
+                    ' untuk ' . $invoice->customer->nama_customer,
+                'kas_id'      => 1,
+                'user_id'     => auth()->id(),
+                'status_id'   => 3,
+            ]);
 
-                Log::info('Sukses pembayaran', [
-                    'debit'      => $kas->debit,
-                    'kas_id'     => $kas->kas_id,
-                    'keterangan' => $kas->keterangan
-                ]);
-            });
+            DB::commit();
+            return redirect()->back()->with('success', 'Pembayaran berhasil disimpan.');
 
-            return redirect()->back()->with('success', 'Request pembayaran berhasil dikirim dan menunggu konfirmasi admin.');
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return redirect()->back()
-                ->withErrors($e->validator)
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan validasi. Silakan periksa input Anda.');
         } catch (\Exception $e) {
-            Log::error('Error in requestPembayaran: ' . $e->getMessage());
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi atau hubungi administrator.')
-                ->withInput();
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
     }
+
 
     public function pelanggan()
     {

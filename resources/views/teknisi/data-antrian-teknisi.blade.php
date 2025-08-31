@@ -366,12 +366,18 @@
                                 class="badge badge-status bg-label-info">{{ $item->status->nama_status }}</span>
                             </td>
                             <td>
-                                @if (auth()->user()->roles_id == 5)
+                                @if (auth()->user()->roles->name == 'Teknisi')
                                 <a href="/teknisi/selesai/{{ $item->id }}"
                                     class="btn btn-action btn-process" data-bs-toggle="tooltip"
                                     data-bs-placement="top" title="Proses Instalasi">
                                     <i class="bx bx-hard-hat"></i>
                                 </a>
+                                @elseif(auth()->user()->roles->name == 'NOC')
+                                    <a href="/edit/antrian/{{ $item->id }}/noc"
+                                        class="btn btn-action btn-complete" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Edit Detail">
+                                        <i class="bx bx-pencil"></i>
+                                    </a>
                                 @endif
                                 <a href="/teknisi/detail-antrian/{{ $item->id }}"
                                     class="btn btn-action btn-maps" data-bs-toggle="tooltip"
@@ -446,7 +452,7 @@
                     <tbody>
                         @php $progressCount = 0; @endphp
                         @foreach ($data as $key => $item)
-                        @if (auth()->user()->id == $item->teknisi_id)
+                        @if (auth()->user()->id == $item->teknisi_id or auth()->user()->roles->name == 'NOC')
                         @if ($item->status_id == '2')
                         @php $progressCount++; @endphp
                         <tr>
@@ -471,11 +477,21 @@
                                 <span class="badge badge-status badge-progress">Proses</span>
                             </td>
                             <td>
-                                <a href="/teknisi/selesai/{{ $item->id }}/print"
-                                    class="btn btn-action btn-complete" data-bs-toggle="tooltip"
-                                    data-bs-placement="top" title="Selesaikan Instalasi">
-                                    <i class="bx bx-check-circle"></i>
-                                </a>
+                                <div class="d-flex justify-content-between">
+                                    @if(auth()->user()->roles->name == 'Teknisi')
+                                    <a href="/teknisi/selesai/{{ $item->id }}/print"
+                                        class="btn btn-action btn-complete" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Selesaikan Instalasi">
+                                        <i class="bx bx-check-circle"></i>
+                                    </a>
+                                    @elseif(auth()->user()->roles->name == 'NOC')
+                                    <a href="/edit/antrian/{{ $item->id }}/noc"
+                                        class="btn btn-action btn-complete" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Edit Detail">
+                                        <i class="bx bx-pencil"></i>
+                                    </a>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <span

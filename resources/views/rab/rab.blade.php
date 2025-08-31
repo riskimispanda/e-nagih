@@ -514,6 +514,17 @@
                 <div class="table-responsive" id="result-container">
                     @include('rab.partials.data-table', ['data' => $data])
                 </div>
+                <div class="d-flex justify-content-start mt-3 align-items-center gap-2">
+                    <span>Halaman:</span>
+                    <select id="paginationDropdown" class="form-select form-select-sm" style="width: auto;">
+                        @for ($i = 1; $i <= $data->lastPage(); $i++)
+                            <option value="{{ $i }}" {{ $i == $data->currentPage() ? 'selected' : '' }}>
+                                {{ $i }}
+                            </option>
+                        @endfor
+                    </select>
+                    <span>dari {{ $data->lastPage() }} halaman</span>
+                </div>
             </div>
         </div>
     </div>
@@ -908,6 +919,14 @@
     });
     
 </script>
-
+{{-- Pagination dropdown --}}
+<script>
+    document.getElementById('paginationDropdown').addEventListener('change', function () {
+        let page = this.value;
+        let url = new URL(window.location.href);
+        url.searchParams.set('page', page);
+        window.location.href = url.toString();
+    });
+</script>
 
 @endsection

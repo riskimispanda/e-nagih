@@ -269,4 +269,42 @@ class SuperAdmin extends Controller
         return redirect()->back()->with('success', 'User berhasil dihapus');
     }
 
+
+    public function requestEdit()
+    {
+        $pembayaran = Pembayaran::where('status_id', 1)->paginate(10);
+        return view('/keuangan/editPembayaran',[
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'pembayaran' => $pembayaran
+        ]);
+    }
+
+    public function konfirmasiEditPembayaran($id)
+    {
+        $pembayaran = Pembayaran::findOrFail($id);
+        $pembayaran->update([
+            'status_id' => 8,
+            'jumlah_bayar' => $pembayaran->jumlah_bayar_baru
+        ]);
+
+        $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);
+        $kas->update([
+            'debit' => $pembayaran->jumlah_bayar_baru,
+        ]);
+
+        return redirect('/data/pembayaran')->with('toast_success', 'Berhasil Konfirmasi Edit Pembayaran');
+
+    }
+
+    public function rejectEditPembayaran($id)
+    {
+        $pembayaran = Pembayaran::findOrFail($id);
+        $pembayaran->update([
+            'status_id' => 8,
+            'jumlah_bayar' => $pembayaran->jumlah_bayar
+        ]);
+        return redirect('/data/pembayaran')->with('toast_success', 'Berhasil Di Reject');
+    }
+
 }

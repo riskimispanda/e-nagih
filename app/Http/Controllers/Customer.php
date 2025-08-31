@@ -47,7 +47,7 @@ class Customer extends Controller
 
     public function history($customerId)
     {
-        $invoice = Invoice::with('customer','pembayaran','paket')->where('customer_id',$customerId)->get();
+        $invoice = Invoice::with('customer','pembayaran','paket')->where('customer_id',$customerId)->paginate(10);
         // dd($invoice);
         return view('/pelanggan/history',[
             'users' => Auth::user(),
@@ -234,6 +234,23 @@ class Customer extends Controller
         //
     }
 
+    public function editPembayaran(Request $request, $id)
+    {
+        $pembayaran = Pembayaran::findOrFail($id);
+        
+        try {
+            $pembayaran->update([
+                'jumlah_bayar_baru' => $request->jumlahRaw,
+                'status_id' => 1,
+                'ket_edit' => $request->keterangan,
+                'admin_id' => auth()->user()->id
+            ]);
+
+            return redirect()->back()->with('success', 'Pembayaran berhasil diupdate!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
+        }
+    }
 
 
 }

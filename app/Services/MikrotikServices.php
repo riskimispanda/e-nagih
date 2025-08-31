@@ -376,6 +376,31 @@ class MikrotikServices
         }
     }
 
+    public static function editUserSecret(Client $client, string $id, array $data)
+    {
+        // Pastikan data wajib ada
+        if (!$id || empty($data)) {
+            throw new \Exception("ID atau data tidak boleh kosong.");
+        }
+
+        // Buat query set dengan .id
+        $query = new Query('/ppp/secret/set');
+        $query->equal('.id', $id); // filter berdasarkan .id
+
+        // Set semua field yang ingin diupdate
+        if (isset($data['name']))           $query->equal('name', $data['name']);
+        if (isset($data['password']))       $query->equal('password', $data['password']);
+        if (isset($data['remoteAddress']))  $query->equal('remote-address', $data['remoteAddress']);
+        if (isset($data['localAddress']))   $query->equal('local-address', $data['localAddress']);
+        if (isset($data['profile']))        $query->equal('profile', $data['profile']);
+        if (isset($data['service']))        $query->equal('service', $data['service']);
+
+        // Eksekusi query
+        return $client->query($query)->read();
+    }
+
+
+
     public static function trafficPelanggan(Router $router, $usersecret)
     {
         try {
