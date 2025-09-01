@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 Schedule::command('app:cek-payment')->everyMinute();
 Schedule::command('app:generate-invoice')->everyMinute();
-Schedule::command('app:send-warning')->everyMinute();
+Schedule::command('app:send-warning')->dailyAt('08:00');

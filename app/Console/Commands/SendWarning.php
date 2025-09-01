@@ -18,10 +18,10 @@ class SendWarning extends Command
         $today = Carbon::today();
 
         // hanya jalan tanggal 1 - 10
-        if (!in_array($today->day, [1, 5, 10])) {
+        if (!in_array($today->day, [1, 10])) {
             $this->info("Hari ini {$today->format('d F Y')} bukan jadwal kirim warning.");
             return Command::SUCCESS;
-        }     
+        }
 
         $chat = new ChatServices();
 
