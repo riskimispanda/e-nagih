@@ -114,7 +114,10 @@ class CallbackController extends Controller
                 'status' => $data->status
             ]);
             
-            return Response::json(['success' => true]);
+            return Response::json([
+                'success' => true,
+                'reference' => $data->reference
+            ]);
 
         } catch (Exception $e) {
             Log::error('Callback processing error', [
@@ -139,7 +142,7 @@ class CallbackController extends Controller
             DB::beginTransaction();
 
             $totalBayar = $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan;
-            
+
             // Metode Bayar
             $metodeBayar = $data->payment_method
                 ?? $data->payment_name
@@ -186,7 +189,7 @@ class CallbackController extends Controller
                 'jumlah_bayar' => $totalBayar,
                 'tanggal_bayar' => now(),
                 'metode_bayar' => $metodeBayar,
-                'keterangan' => 'Pembayaran Paket Langganan Via Tripay dari: ' . $invoice->customer->nama_customer,
+                'keterangan' => 'Pembayaran Paket Langganan Via ' . $metodeBayar . ' dari: ' . $invoice->customer->nama_customer,
                 'status_id' => 8,
             ]);
 
