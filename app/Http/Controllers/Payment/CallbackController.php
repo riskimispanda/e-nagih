@@ -139,9 +139,19 @@ class CallbackController extends Controller
             DB::beginTransaction();
 
             $totalBayar = $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan;
+            
+            // Metode Bayar
+            $metodeBayar = $data->payment_method
+                ?? $data->payment_name
+                ?? $invoice->metode_bayar
+                ?? 'By Tripay';
 
             // Update status invoice menjadi lunas
-            $invoice->update(['status_id' => 8]);
+            $invoice->update([
+                'status_id' => 8,
+                'reference' => $data->reference ?? $invoice->reference,
+                'metode_bayar' => $metodeBayar
+            ]);
 
             // Ambil data customer dengan eager loading
             $customer = Customer::with('paket')->find($invoice->customer_id);
@@ -175,7 +185,7 @@ class CallbackController extends Controller
                 'invoice_id' => $invoice->id,
                 'jumlah_bayar' => $totalBayar,
                 'tanggal_bayar' => now(),
-                'metode_bayar' => $invoice->metode_bayar,
+                'metode_bayar' => $metodeBayar,
                 'keterangan' => 'Pembayaran Paket Langganan Via Tripay dari: ' . $invoice->customer->nama_customer,
                 'status_id' => 8,
             ]);
@@ -186,7 +196,7 @@ class CallbackController extends Controller
                 'debit' => $totalBayar,
                 'kas_id' => 1,
                 'status_id' => 3,
-                'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $invoice->metode_bayar,
+                'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $metodeBayar,
             ]);
 
             // Generate invoice bulan depan
