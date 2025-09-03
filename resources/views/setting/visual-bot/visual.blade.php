@@ -1,4 +1,3 @@
-
 @extends('layouts.contentNavbarLayout')
 
 @section('title', 'Setting Bot WhatsApp')
@@ -41,7 +40,7 @@
         </div>
     </div>
 
-    <!-- QR Bot (jika ada) -->
+    <!-- QR Bot -->
     <div id="botList" class="row gy-4 mb-4"></div>
 
     <!-- Log Pengiriman -->
@@ -77,6 +76,7 @@
 
     let botTerpilih = null;
 
+    // ambil bot terpilih dari server
     fetch("https://enagih-chat.niscala.net:3000/get-selected-bot")
         .then(res => res.json())
         .then(data => {
@@ -99,6 +99,7 @@
 
     socket.on("connect", () => console.log("✅ Socket terhubung"));
 
+    // Daftar bot
     socket.on("bot-list", (bots) => {
         botTable.innerHTML = "";
         if (bots.length === 0) {
@@ -126,16 +127,18 @@
         tampilkanBotTerpilih();
     });
 
+    // QRCode handler
     socket.on("qr", ({ session, qr }) => {
         if (!qr.startsWith("data:image/")) return;
+
         const existing = document.getElementById("bot-" + session);
         const html = `
             <div class="col-md-4" id="bot-${session}">
                 <div class="card h-100 shadow-sm border-success">
                     <div class="card-body text-center">
                         <h6 class="text-success fw-bold">${session}</h6>
-                        <img src="${qr}" class="img-fluid rounded shadow mb-3" />
-                        <p class="text-muted" id="status-${session}">Menunggu scan QR...</p>
+                        <img src="${qr}" alt="QR ${session}" class="img-fluid rounded shadow mb-3" />
+                        <p class="text-muted" id="status-${session}">📲 Scan QR dengan WhatsApp</p>
                     </div>
                 </div>
             </div>
@@ -180,6 +183,7 @@
         }
     });
 
+    // Log
     socket.on("log", ({ waktu, session, to, pesan, status }) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -196,6 +200,7 @@
         });
     });
 
+    // pilih bot
     function setPilihBotListener() {
         document.querySelectorAll(".pilih-bot").forEach(button => {
             button.addEventListener("click", function () {
@@ -237,6 +242,7 @@
         });
     }
 
+    // tambah bot baru
     document.getElementById("tambahBotBtn").addEventListener("click", () => {
         const sessionName = prompt("Masukkan nama session bot:");
         if (!sessionName) return;
@@ -256,4 +262,3 @@
     });
 </script>
 @endsection
-

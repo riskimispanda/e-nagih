@@ -218,6 +218,7 @@ class SuperAdmin extends Controller
         $prop = $log->properties;
         // dd($prop);
         $paket = Paket::find($prop['paket_id'] ?? null);
+        $agen = User::find($prop['agen_id'] ?? null);
         // dd($paket);
         return view('/log/logs-detail',[
             'users' => auth()->user(),
@@ -225,7 +226,8 @@ class SuperAdmin extends Controller
             'log' => $log,
             'profil' => $profil,
             'prop' => $prop,
-            'paket' => $paket
+            'paket' => $paket,
+            'agen' => $agen
         ]);
     }
 

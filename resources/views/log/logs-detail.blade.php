@@ -203,8 +203,8 @@
                                         </div>
                                         <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                                             <div class="me-2">
-                                                <h6 class="mb-0">Nama Perusahaan</h6>
-                                                <small>{{$prop['nama_perusahaan']}}</small>
+                                                <h6 class="mb-0">Nama Customer Atau Perusahaan</h6>
+                                                <small>{{$prop['nama'] ?? $prop['nama_perusahaan']?? '-'}}</small>
                                             </div>
                                         </div>
                                     </li>
@@ -214,8 +214,8 @@
                                         </div>
                                         <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                                             <div class="me-2">
-                                                <h6 class="mb-0">Nama PIC</h6>
-                                                <small>{{$prop['nama_pic']}}</small>
+                                                <h6 class="mb-0">Nama PIC atau Agen</h6>
+                                                <small>{{$prop['nama_pic'] ?? $agen['name'] ?? '-'}}</small>
                                             </div>
                                         </div>
                                     </li>
@@ -237,7 +237,7 @@
                                         <div class="d-flex w-100 flex-wrap align-items-center justify-content-between gap-2">
                                             <div class="me-2">
                                                 <h6 class="mb-0">Harga Langganan</h6>
-                                                <small>Rp.{{ number_format($props['harga'] ?? 0, 0, ',', '.') }}</small>
+                                                <small>Rp.{{ number_format($paket['harga'] ?? 0, 0, ',', '.') }}</small>
                                             </div>
                                         </div>
                                     </li>
