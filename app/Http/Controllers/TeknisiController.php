@@ -15,6 +15,7 @@ use App\Models\ODC;
 use App\Models\ODP;
 use App\Models\MediaKoneksi;
 use App\Models\Invoice;
+use App\Models\KategoriLogistik;
 use App\Models\Perusahaan;
 use App\Services\ChatServices;
 use App\Models\Router;
@@ -94,6 +95,13 @@ class TeknisiController extends Controller
         $customer->status_id = 2;
         $customer->save();
 
+        $modem = Perangkat::with('kategori')
+            ->whereHas('kategori', function ($q) {
+                $q->whereIn('nama_logistik', ['modem', 'tenda']);
+            })
+            ->where('jumlah_stok', '>', 0)
+            ->get();
+
         $client = MikrotikServices::connect($customer->router);
 
         return view('/teknisi/detail-antrian', [
@@ -103,7 +111,7 @@ class TeknisiController extends Controller
             'mikrotik' => MikrotikServices::getProfile($client), // ✅ benar
             'paket' => MikrotikServices::getProfiles($client),   // ✅ benar
             'koneksi' => Koneksi::all(),
-            'modem' => Perangkat::all(),
+            'modem' => $modem,
             'server' => ServerModels::all(),
             'olt' => Lokasi::all(),
             'odc' => ODC::all(),
