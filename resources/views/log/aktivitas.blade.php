@@ -79,7 +79,7 @@
                         <tr class="text-center">
                             <td>
                                 <span class="badge bg-warning bg-opacity-10 text-dark">
-                                    {{ $log->updated_at }}
+                                    {{ $log->updated_at->format('d-M-Y H:i') }}
                                 </span>
                             </td>
                             <td>{{ $log->causer->name ?? '-' }}</td>
@@ -90,7 +90,7 @@
                             </td>
                             <td>{{ $log->description }}</td>
                             <td>
-                                <a href="/logs-detail/{{ $log->id }}" class="btn btn-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Detail Aktivitas">
+                                <a href="/logs-detail/{{ $log->id }}" class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Detail Aktivitas">
                                     <i class="bx bx-info-circle"></i>
                                 </a>
                             </td>
