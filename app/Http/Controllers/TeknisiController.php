@@ -23,6 +23,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 // use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Log;
 use App\Models\ModemDetail;
+use Spatie\Activitylog\Models\Activity;
 
 
 class TeknisiController extends Controller
@@ -212,16 +213,46 @@ class TeknisiController extends Controller
                 ? $hargaPaket
                 : $this->calculateProrate($hargaPaket, $tanggalSelesai);
 
-            // Buat invoice
-            $invoice = Invoice::create([
-                'customer_id'  => $customer->id,
-                'status_id'    => 7,
-                'paket_id'     => $customer->paket_id,
-                'tagihan'      => $tagihanProrate,
-                'jatuh_tempo'  => $jatuhTempo,
-                'tambahan'     => $tagihanTambahan,
-            ]);
+            // 🔍 Cek apakah sudah ada invoice bulan ini
+            $existingInvoice = Invoice::where('customer_id', $customer->id)
+                ->whereMonth('jatuh_tempo', $jatuhTempo->month)
+                ->whereYear('jatuh_tempo', $jatuhTempo->year)
+                ->first();
 
+            if (!$existingInvoice) {
+                // Buat invoice baru
+                $invoice = Invoice::create([
+                    'customer_id'  => $customer->id,
+                    'status_id'    => 7,
+                    'paket_id'     => $customer->paket_id,
+                    'tagihan'      => $tagihanProrate,
+                    'jatuh_tempo'  => $jatuhTempo,
+                    'tambahan'     => $tagihanTambahan,
+                ]);
+
+                LOG::info('Invoice created', [
+                    'invoice_id' => $invoice->id,
+                    'customer_id' => $customer->id,
+                    'tagihan' => $invoice->tagihan,
+                    'jatuh_tempo' => $invoice->jatuh_tempo,
+                ]);
+
+                // Kirim WA hanya kalau invoice baru dibuat
+                $chat = new ChatServices();
+                $chat->invoiceProrate($customer->no_hp, $invoice);
+
+                LOG::info('WA sent', [
+                    'customer_id' => $customer->id,
+                    'no_hp' => $customer->no_hp,
+                ]);
+            } else {
+                LOG::info('Invoice sudah ada, tidak dibuat ulang', [
+                    'customer_id' => $customer->id,
+                    'invoice_id'  => $existingInvoice->id,
+                ]);
+            }
+
+            // Simpan modem detail
             ModemDetail::create([
                 'serial_number' => $request->serial_number,
                 'mac_address' => $request->mac_address,
@@ -231,21 +262,18 @@ class TeknisiController extends Controller
             ]);
 
             DB::commit(); // Jika semua sukses, simpan ke DB
-            LOG::info('Invoice created', [
-                'invoice_id' => $invoice->id,
-                'customer_id' => $customer->id,
-                'tagihan' => $invoice->tagihan,
-                'jatuh_tempo' => $invoice->jatuh_tempo,
-            ]);
 
-            // Kirim WA di luar transaction (jika gagal, tidak rollback DB)
-            $chat = new ChatServices();
-            $chat->invoiceProrate($customer->no_hp, $invoice);
-
-            LOG::info('WA sent', [
-                'customer_id' => $customer->id,
-                'no_hp' => $customer->no_hp,
-            ]);
+            // ✍️ Tambahkan log activity
+            activity('teknisi')
+                ->causedBy(auth()->user())
+                ->performedOn($customer)
+                ->withProperties([
+                    'nama' => $customer->nama_customer,
+                    'no_hp' => $customer->no_hp,
+                    'email' => $customer->email,
+                    'paket_id' => $customer->paket_id
+                ])
+                ->log('Konfirmasi instalasi pelanggan');
 
             return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
         } catch (\Exception $e) {
@@ -257,6 +285,7 @@ class TeknisiController extends Controller
             return back()->with('toast_error', 'Gagal konfirmasi instalasi. Coba lagi.');
         }
     }
+
 
 
     /**

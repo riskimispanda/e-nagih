@@ -92,7 +92,7 @@ class DataController extends Controller
         
         $metode = Metode::all();
         $pembayaran = Pembayaran::where('status_id', 6)->get();
-        $hariIni = Customer::whereDate('created_at', today())
+        $hariIni = Customer::whereDate('tanggal_selesai', today())
             ->where('status_id', 3)
             ->count();
         $menunggu = Customer::whereDate('created_at', today())
