@@ -114,14 +114,14 @@ class DataController extends Controller
         
 
         $instalasiBulanan = Customer::where('status_id', 3)
-        ->whereMonth('created_at', now()->month)
-        ->whereYear('created_at', now()->year)
-        ->with('teknisi')
-        ->get();
+            ->whereMonth('tanggal_selesai', now()->month)
+            ->whereYear('tanggal_selesai', now()->year)
+            ->with('teknisi')
+            ->get();
 
         $bulananInstallasi = Customer::whereIn('status_id', [3, 4])
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
+            ->whereMonth('tanggal_selesai', now()->month)
+            ->whereYear('tanggal_selesai', now()->year)
             ->count();
 
         $nonAktif = Customer::where('status_id', 9)->get();
