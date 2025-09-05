@@ -284,21 +284,18 @@ class DataController extends Controller
                     }
 
                     if ($invoice->status_id == 8) { // Sudah Bayar
-                        $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
+                        $totalRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
                     } elseif ($invoice->status_id == 7) { // Belum Bayar
                         $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
                     }
                 }
             } else {
-                $totalRevenue = \App\Models\Invoice::where('status_id', 8)
-                    ->sum('tagihan') + \App\Models\Invoice::where('status_id', 8)
-                    ->sum('tambahan') - \App\Models\Invoice::where('status_id', 8)
-                    ->sum('tunggakan');
+                $totalRevenue = Pembayaran::sum('jumlah_bayar');
 
-                $pendingRevenue = \App\Models\Invoice::where('status_id', 7)
-                    ->sum('tagihan') + \App\Models\Invoice::where('status_id', 7)
-                    ->sum('tambahan') + \App\Models\Invoice::where('status_id', 7)
-                    ->sum('tunggakan');
+                $pendingRevenue = Invoice::where('status_id', 7)
+                    ->sum('tagihan') + Invoice::where('status_id', 7)
+                    ->sum('tambahan') + Invoice::where('status_id', 7)
+                    ->sum('tunggakan') -  Invoice::where('status_id', 7)->sum('saldo');
 
                 $totalInvoices = Invoice::where('status_id', 7)->count();
             }
