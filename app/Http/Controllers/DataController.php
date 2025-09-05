@@ -295,7 +295,7 @@ class DataController extends Controller
                 $pendingRevenue = Invoice::where('status_id', 7)
                     ->sum('tagihan') + Invoice::where('status_id', 7)
                     ->sum('tambahan') + Invoice::where('status_id', 7)
-                    ->sum('tunggakan') -  Invoice::where('status_id', 7)->sum('saldo');
+                    ->sum('tunggakan') - Invoice::where('status_id', 7)->sum('saldo');
 
                 $totalInvoices = Invoice::where('status_id', 7)->count();
             }
