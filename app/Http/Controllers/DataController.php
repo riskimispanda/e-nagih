@@ -108,7 +108,7 @@ class DataController extends Controller
             ->get();
         
         $selesai = Customer::where('status_id', 3)
-            ->whereDate('created_at', today())
+            ->whereDate('tanggal_selesai', today())
             ->with('teknisi')
             ->get();
         
