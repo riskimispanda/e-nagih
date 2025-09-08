@@ -73,7 +73,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-end">
+                <div class="d-flex justify-content-end mt-4">
                     {{ $data->links() }}
                 </div>
             </div>
