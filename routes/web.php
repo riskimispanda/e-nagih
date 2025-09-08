@@ -179,6 +179,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hapus-logistik/{id}', [Logistik::class, 'deleteLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
     Route::get('/edit-logistik/{id}', [Logistik::class, 'editLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
     Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
+    Route::get('/tracking', [Logistik::class, 'tracking'])->middleware('auth', 'roles:Super Admin,Admin Logistik')->name('tracking');
 
 
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Perangkat;
 use App\Models\KategoriLogistik;
+use App\Models\ModemDetail;
 use Illuminate\Support\Facades\Log;
 
 class Logistik extends Controller
@@ -125,5 +126,18 @@ class Logistik extends Controller
         }
     }
 
+    public function tracking()
+    {
+        $data = ModemDetail::with('perangkat.kategori', 'status', 'customer')
+            ->whereHas('perangkat.kategori', function ($q) {
+                $q->whereIn('nama_logistik', ['modem', 'tenda']); // Asumsikan kategori_id 1 adalah untuk modem
+            })
+            ->paginate(10);
+        return view('logistik.tracking-tools', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'data' => $data
+        ]);
+    }
 
 }

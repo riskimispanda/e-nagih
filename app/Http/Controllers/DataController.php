@@ -25,6 +25,7 @@ use App\Models\Invoice;
 use App\Services\MikrotikServices;
 use App\Imports\CustomerImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\ModemDetail;
 
 class DataController extends Controller
 {
@@ -433,6 +434,17 @@ class DataController extends Controller
                     Log::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
                 }
             }
+
+            // Update Data Modem
+            ModemDetail::updateOrCreate(
+                ['customer_id' => $pelanggan->id], // kondisi cek
+                [
+                    'logistik_id'   => $request->perangkat,
+                    'serial_number' => $pelanggan->seri_perangkat,
+                    'mac_address'   => $pelanggan->mac_address,
+                    'status_id' => 13
+                ]
+            );
 
             DB::commit();
 

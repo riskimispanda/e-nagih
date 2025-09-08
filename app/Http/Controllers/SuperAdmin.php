@@ -293,7 +293,14 @@ class SuperAdmin extends Controller
         $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);
         $kas->update([
             'debit' => $pembayaran->jumlah_bayar_baru,
+            'status_id' => 3
         ]);
+
+        // Catat Log Aktivitas
+        activity('Super Admin')
+            ->causedBy(auth()->user())
+            ->performedOn($pembayaran)
+            ->log(auth()->user()->name . ' Mengkonfirmasi request edit pembayaran dari ' . $pembayaran->admin->name);
 
         return redirect('/data/pembayaran')->with('toast_success', 'Berhasil Konfirmasi Edit Pembayaran');
 

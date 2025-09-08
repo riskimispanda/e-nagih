@@ -13,6 +13,7 @@ use App\Services\ChatServices;
 use App\Services\MikrotikServices;
 use App\Models\Kas;
 use Illuminate\Support\Facades\DB;
+use Spatie\Activitylog\Models\Activity;
 class AgenController extends Controller
 {
     public function index(Request $request)
@@ -440,7 +441,7 @@ class AgenController extends Controller
                 ? 8 : 7;
 
             $invoice->update([
-                'tagihan'   => $newTagihan,
+                'tagihan'   => $invoice->tagihan,
                 'tambahan'  => $newTambahan,
                 'tunggakan' => $newTunggakan,
                 'saldo'     => $saldoBaru,
@@ -485,7 +486,15 @@ class AgenController extends Controller
                 'kas_id'      => 1,
                 'user_id'     => auth()->id(),
                 'status_id'   => 3,
+                'customer_id' => $invoice->customer_id,
+                'pengeluaran_id' => null,
             ]);
+
+            // Catat Log Aktivitas
+            activity('agen')
+                ->causedBy(auth()->user())
+                ->performedOn($pembayaran)
+                ->log('Pembayaran dari agen ' . auth()->user()->name . ' untuk pelanggan ' . $invoice->customer->nama_customer . ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar, 0, ',', '.'));
 
             DB::commit();
             return redirect()->back()->with('success', 'Pembayaran berhasil disimpan.');

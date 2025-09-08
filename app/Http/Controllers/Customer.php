@@ -11,7 +11,9 @@ use App\Models\Pengaduan;
 use App\Models\Invoice;
 use App\Models\Metode;
 use App\Events\UpdateBaru;
+use App\Models\Kas;
 use App\Models\Pembayaran;
+use Spatie\Activitylog\Models\Activity;
 
 class Customer extends Controller
 {
@@ -236,8 +238,7 @@ class Customer extends Controller
 
     public function editPembayaran(Request $request, $id)
     {
-        $pembayaran = Pembayaran::findOrFail($id);
-        
+        $pembayaran = Pembayaran::with('invoice')->findOrFail($id);
         try {
             $pembayaran->update([
                 'jumlah_bayar_baru' => $request->jumlahRaw,
@@ -245,6 +246,23 @@ class Customer extends Controller
                 'ket_edit' => $request->keterangan,
                 'admin_id' => auth()->user()->id
             ]);
+
+            $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);
+            // Update kas
+            $kas->update([
+                'debit' => $request->jumlahRaw,
+                'status_id' => 1
+            ]);
+
+            // Catat Log Aktivitas
+            activity('keuangan')
+                ->causedBy(auth()->user())
+                ->performedOn($pembayaran)
+                ->log(
+                    'Request Edit Data Pembayaran dari ' . $pembayaran->admin->name .
+                        ' untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer .
+                        ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar_baru, 0, ',', '.')
+                );
 
             return redirect()->back()->with('success', 'Pembayaran berhasil diupdate!');
         } catch (\Exception $e) {

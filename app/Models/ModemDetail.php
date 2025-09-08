@@ -15,7 +15,7 @@ class ModemDetail extends Model
         'customer_id'
     ];
 
-    public function log()
+    public function perangkat()
     {
         return $this->belongsTo(Perangkat::class, 'logistik_id');
     }
