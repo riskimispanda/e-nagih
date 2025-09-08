@@ -14,8 +14,26 @@
         </div>
         <div class="card">
             <div class="card-body">
+                <div class="d-flex justify-content-start mb-5">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="input-group">
+                                <span class="input-group-text" id="basic-addon-search1"><i class="bx bx-search"></i></span>
+                                <input
+                                    type="text"
+                                    id="searchInput"
+                                    class="form-control"
+                                    placeholder="Search..."
+                                    aria-label="Search..."
+                                    aria-describedby="basic-addon-search1"
+                                    onkeyup="searchFunction()"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="dataTable">
                         <thead class="table-dark text-center">
                             <tr class="fw-bold">
                                 <th>No</th>
@@ -28,47 +46,47 @@
                         </thead>
                         <tbody>
                             @php
-                                $no = 1;
+                            $no = 1;
                             @endphp
                             @forelse ($data as $item)
-                                <tr class="text-center">
-                                    <td>{{$no++}}</td>
-                                    <td>
-                                        <span class="badge bg-label-warning">
-                                            {{$item->perangkat->nama_perangkat ?? '-'}}
-                                        </span>
-                                    </td>
-                                    <td>{{$item->customer->nama_customer ?? '-'}}</td>
-                                    <td>
-                                        <span class="badge bg-label-danger">
-                                            {{ $item->mac_address ?? '-' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-label-danger">
-                                            {{ $item->serial_number ?? '-' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($item->status_id == 13)
-                                            <span class="badge bg-label-success">
-                                                {{$item->status->nama_status ?? '-'}}
-                                            </span>
-                                        @elseif($item->status_id == 14)
-                                            <span class="badge bg-label-warning">
-                                                {{$item->status->nama_status ?? '-'}}
-                                            </span>
-                                        @else
-                                            <span class="badge bg-label-danger">
-                                                {{$item->status->nama_status ?? '-'}}
-                                            </span>
-                                        @endif
-                                    </td>
-                                </tr>
+                            <tr class="text-center">
+                                <td>{{$no++}}</td>
+                                <td>
+                                    <span class="badge bg-label-warning">
+                                        {{$item->perangkat->nama_perangkat ?? '-'}}
+                                    </span>
+                                </td>
+                                <td>{{$item->customer->nama_customer ?? '-'}}</td>
+                                <td>
+                                    <span class="badge bg-label-danger">
+                                        {{ $item->mac_address ?? '-' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-danger">
+                                        {{ $item->serial_number ?? '-' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if($item->status_id == 13)
+                                    <span class="badge bg-label-success">
+                                        {{$item->status->nama_status ?? '-'}}
+                                    </span>
+                                    @elseif($item->status_id == 14)
+                                    <span class="badge bg-label-warning">
+                                        {{$item->status->nama_status ?? '-'}}
+                                    </span>
+                                    @else
+                                    <span class="badge bg-label-danger">
+                                        {{$item->status->nama_status ?? '-'}}
+                                    </span>
+                                    @endif
+                                </td>
+                            </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="text-center">Data Tidak Ditemukan</td>
-                                </tr>
+                            <tr>
+                                <td colspan="6" class="text-center">Data Tidak Ditemukan</td>
+                            </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -80,5 +98,31 @@
         </div>
     </div>
 </div>
+
+{{-- Script Javascript --}}
+<script>
+    function searchFunction() {
+        var input, filter, table, tr, td, i, j, txtValue;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("dataTable");
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 1; i < tr.length; i++) { // mulai dari 1 biar header tidak ikut
+            let found = false;
+            td = tr[i].getElementsByTagName("td");
+            for (j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            tr[i].style.display = found ? "" : "none";
+        }
+    }
+</script>
 
 @endsection
