@@ -126,11 +126,25 @@ class Logistik extends Controller
         }
     }
 
-    public function tracking()
+    public function tracking(Request $request)
     {
+        $search = $request->input('search');
+
         $data = ModemDetail::with('perangkat.kategori', 'status', 'customer')
             ->whereHas('perangkat.kategori', function ($q) {
-                $q->whereIn('nama_logistik', ['modem', 'tenda']); // Asumsikan kategori_id 1 adalah untuk modem
+                $q->whereIn('nama_logistik', ['modem', 'tenda']);
+            })
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('customer', function ($qc) use ($search) {
+                        $qc->where('nama_customer', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('perangkat', function ($qp) use ($search) {
+                            $qp->where('nama_perangkat', 'like', "%{$search}%");
+                        })
+                        ->orWhere('mac_address', 'like', "%{$search}%")
+                        ->orWhere('serial_number', 'like', "%{$search}%");
+                });
             })
             ->paginate(10);
         return view('logistik.tracking-tools', [

@@ -17,18 +17,20 @@
                 <div class="d-flex justify-content-start mb-5">
                     <div class="row">
                         <div class="col-sm-12">
-                            <div class="input-group">
-                                <span class="input-group-text" id="basic-addon-search1"><i class="bx bx-search"></i></span>
-                                <input
-                                    type="text"
-                                    id="searchInput"
-                                    class="form-control"
-                                    placeholder="Search..."
-                                    aria-label="Search..."
-                                    aria-describedby="basic-addon-search1"
-                                    onkeyup="searchFunction()"
-                                />
-                            </div>
+                            <form method="GET" action="/tracking" id="searchForm">
+                                <div class="input-group mb-3">
+                                    <input
+                                        type="text"
+                                        id="searchInput"
+                                        name="search"
+                                        class="form-control"
+                                        placeholder="Search..."
+                                        value="{{ request('search') }}"
+                                        onkeyup="clientSearch()" {{-- filter instan --}}
+                                    />
+                                    <button class="btn btn-primary" type="submit">Cari</button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -92,7 +94,7 @@
                     </table>
                 </div>
                 <div class="d-flex justify-content-end mt-4">
-                    {{ $data->links() }}
+                    {{ $data->appends(['search' => request('search')])->links() }}
                 </div>
             </div>
         </div>
@@ -107,7 +109,7 @@
         filter = input.value.toUpperCase();
         table = document.getElementById("dataTable");
         tr = table.getElementsByTagName("tr");
-
+        
         for (i = 1; i < tr.length; i++) { // mulai dari 1 biar header tidak ikut
             let found = false;
             td = tr[i].getElementsByTagName("td");
@@ -124,5 +126,27 @@
         }
     }
 </script>
-
+<script>
+    function clientSearch() {
+        let input = document.getElementById("searchInput").value.toUpperCase();
+        let table = document.getElementById("dataTable");
+        let tr = table.getElementsByTagName("tr");
+    
+        for (let i = 1; i < tr.length; i++) { // skip header
+            let td = tr[i].getElementsByTagName("td");
+            let found = false;
+            for (let j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    let txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toUpperCase().indexOf(input) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            tr[i].style.display = found ? "" : "none";
+        }
+    }
+</script>
+    
 @endsection
