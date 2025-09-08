@@ -44,6 +44,7 @@
                                 <th>Mac Address</th>
                                 <th>Seri Perangkat</th>
                                 <th>Status</th>
+                                <th>Teknisi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -83,6 +84,11 @@
                                         {{$item->status->nama_status ?? '-'}}
                                     </span>
                                     @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-info fw-bold" style="text-transform: uppercase;">
+                                        {{$item->customer->teknisi->name ?? '-'}}
+                                    </span>
                                 </td>
                             </tr>
                             @empty
