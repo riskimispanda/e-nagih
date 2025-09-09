@@ -1077,7 +1077,7 @@ class KeuanganController extends Controller
             activity('keuangan')
                 ->causedBy(auth()->user())
                 ->performedOn($pembayaran)
-                ->log('Pembayaran dari admin keuangan ' . auth()->user()->name . ' untuk pelanggan ' . $invoice->customer->nama_customer . ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar_baru, 0, ',', '.'));
+                ->log('Pembayaran dari admin keuangan ' . auth()->user()->name . ' untuk pelanggan ' . $invoice->customer->nama_customer . ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar, 0, ',', '.'));
 
             DB::commit();
 
