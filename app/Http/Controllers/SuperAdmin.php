@@ -313,6 +313,11 @@ class SuperAdmin extends Controller
             'status_id' => 8,
             'jumlah_bayar' => $pembayaran->jumlah_bayar
         ]);
+        // Catat Log Aktivitas
+        activity('Super Admin')
+            ->causedBy(auth()->user())
+            ->performedOn($pembayaran)
+            ->log(auth()->user()->name . ' Mengkonfirmasi request edit pembayaran dari ' . $pembayaran->admin->name);
         return redirect('/data/pembayaran')->with('toast_success', 'Berhasil Di Reject');
     }
 

@@ -312,16 +312,20 @@ class TripayController extends Controller
                     return response()->json(['success' => true, 'message' => 'Invoice already paid']);
                 }
 
+                $metodePembayaran = $data->payment_method ?? 'Tripay';
+                $namaMetode       = $data->payment_name ?? $metodePembayaran;
+
                 // Tandai lunas
                 $invoice->status_id = 8;
+                $invoice->metode_bayar = $namaMetode;
+                $invoice->reference = $reference ?? $invoice->reference;
                 $invoice->save();
                 LOG::info('Invoice marked as paid via Tripay callback', [
                     'invoice_id' => $invoice->id,
                     'payment_status' => $paymentStatus,
                     'amount' => $invoice->tagihan
                 ]);
-                $metodePembayaran = $data->payment_method ?? 'Tripay';
-                $namaMetode       = $data->payment_name ?? $metodePembayaran;
+
                 // Buat pembayaran
                 $pembayaran = Pembayaran::create([
                     'invoice_id' => $invoice->id,
