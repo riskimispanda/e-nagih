@@ -4,7 +4,12 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use App\Models\Pembayaran;
-
+use App\Models\Invoice;
+use App\Models\Customer;
+use App\Models\Kas;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 class TripayServices
 {
     /**
@@ -262,4 +267,79 @@ class TripayServices
     }
 
 
+    public static function replayPayment(array $data)
+    {
+        $reference = $data['reference'] ?? null;
+        $merchantRef = $data['merchant_ref'] ?? null;
+        $status = $data['status'] ?? null;
+        $paymentMethod = $data['payment_method'] ?? 'Tripay';
+        $paymentName = $data['payment_name'] ?? $paymentMethod;
+
+        $invoice = Invoice::where('reference', $reference)
+            ->orWhere('merchant_ref', $merchantRef)
+            ->first();
+
+        if (!$invoice) {
+            Log::warning('Invoice not found', ['reference' => $reference, 'merchant_ref' => $merchantRef]);
+            return false;
+        }
+
+        if ($status !== 'PAID') {
+            Log::info('Payment status not PAID', ['reference' => $reference, 'status' => $status]);
+            return false;
+        }
+
+        if ($invoice->status_id == 8) {
+            Log::info('Invoice already paid', ['invoice_id' => $invoice->id]);
+            return true;
+        }
+
+        DB::transaction(function () use ($invoice, $paymentName) {
+            // Update invoice jadi lunas
+            $invoice->update([
+                'status_id' => 8,
+                'metode_bayar' => $paymentName,
+            ]);
+
+            // Simpan pembayaran
+            $pembayaran = Pembayaran::create([
+                'invoice_id' => $invoice->id,
+                'jumlah_bayar' => $invoice->tagihan,
+                'tanggal_bayar' => now(),
+                'metode_bayar' => $paymentName,
+                'status_id' => 8,
+            ]);
+
+            // Catat kas
+            Kas::create([
+                'tanggal_kas' => now(),
+                'debit' => $invoice->tagihan,
+                'kas_id' => 1,
+                'pembayaran_id' => $pembayaran->id,
+                'status_id' => 3,
+                'keterangan' => 'Pembayaran invoice #' . $invoice->id,
+            ]);
+
+            // Buat invoice bulan depan
+            $jatuhTempo = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->endOfMonth();
+            $existsNext = Invoice::where('customer_id', $invoice->customer_id)
+                ->whereMonth('jatuh_tempo', $jatuhTempo->month)
+                ->whereYear('jatuh_tempo', $jatuhTempo->year)
+                ->exists();
+
+            if (!$existsNext) {
+                Invoice::create([
+                    'customer_id' => $invoice->customer_id,
+                    'paket_id' => $invoice->paket_id,
+                    'tagihan' => $invoice->paket->harga,
+                    'status_id' => 7,
+                    'jatuh_tempo' => $jatuhTempo,
+                    'tanggal_blokir' => $jatuhTempo->copy()->addDays(3),
+                ]);
+            }
+        });
+
+        Log::info('Payment processed via TripayService', ['invoice_id' => $invoice->id]);
+        return true;
+    }
 }
