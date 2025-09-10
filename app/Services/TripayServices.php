@@ -269,77 +269,124 @@ class TripayServices
 
     public static function replayPayment(array $data)
     {
-        $reference = $data['reference'] ?? null;
-        $merchantRef = $data['merchant_ref'] ?? null;
-        $status = $data['status'] ?? null;
-        $paymentMethod = $data['payment_method'] ?? 'Tripay';
-        $paymentName = $data['payment_name'] ?? $paymentMethod;
+        DB::beginTransaction();
 
-        $invoice = Invoice::where('reference', $reference)
-            ->orWhere('merchant_ref', $merchantRef)
-            ->first();
+        try {
+            $reference   = $data['reference'] ?? null;
+            $merchantRef = $data['merchant_ref'] ?? null;
+            $status      = strtoupper($data['status'] ?? '');
+            $metodeBayar = $data['payment_method'] ?? $data['payment_name'] ?? 'Tripay';
 
-        if (!$invoice) {
-            Log::warning('Invoice not found', ['reference' => $reference, 'merchant_ref' => $merchantRef]);
-            return false;
-        }
+            // Ambil invoice berdasarkan merchant_ref
+            $invoice = Invoice::where('merchant_ref', $merchantRef)
+                ->orWhere('reference', $reference)
+                ->first();
 
-        if ($status !== 'PAID') {
-            Log::info('Payment status not PAID', ['reference' => $reference, 'status' => $status]);
-            return false;
-        }
-
-        if ($invoice->status_id == 8) {
-            Log::info('Invoice already paid', ['invoice_id' => $invoice->id]);
-            return true;
-        }
-
-        DB::transaction(function () use ($invoice, $paymentName) {
-            // Update invoice jadi lunas
-            $invoice->update([
-                'status_id' => 8,
-                'metode_bayar' => $paymentName,
-            ]);
-
-            // Simpan pembayaran
-            $pembayaran = Pembayaran::create([
-                'invoice_id' => $invoice->id,
-                'jumlah_bayar' => $invoice->tagihan,
-                'tanggal_bayar' => now(),
-                'metode_bayar' => $paymentName,
-                'status_id' => 8,
-            ]);
-
-            // Catat kas
-            Kas::create([
-                'tanggal_kas' => now(),
-                'debit' => $invoice->tagihan,
-                'kas_id' => 1,
-                'pembayaran_id' => $pembayaran->id,
-                'status_id' => 3,
-                'keterangan' => 'Pembayaran invoice #' . $invoice->id,
-            ]);
-
-            // Buat invoice bulan depan
-            $jatuhTempo = Carbon::parse($invoice->jatuh_tempo)->addMonthsNoOverflow()->endOfMonth();
-            $existsNext = Invoice::where('customer_id', $invoice->customer_id)
-                ->whereMonth('jatuh_tempo', $jatuhTempo->month)
-                ->whereYear('jatuh_tempo', $jatuhTempo->year)
-                ->exists();
-
-            if (!$existsNext) {
-                Invoice::create([
-                    'customer_id' => $invoice->customer_id,
-                    'paket_id' => $invoice->paket_id,
-                    'tagihan' => $invoice->paket->harga,
-                    'status_id' => 7,
-                    'jatuh_tempo' => $jatuhTempo,
-                    'tanggal_blokir' => $jatuhTempo->copy()->addDays(3),
-                ]);
+            if (!$invoice) {
+                Log::warning('Invoice not found', $data);
+                return ['success' => false, 'message' => 'Invoice tidak ditemukan'];
             }
-        });
 
-        Log::info('Payment processed via TripayService', ['invoice_id' => $invoice->id]);
-        return true;
+            // Jika sudah lunas, skip
+            if ($invoice->status_id == 8) {
+                return ['success' => true, 'message' => 'Invoice sudah dibayar'];
+            }
+
+            if ($status === 'PAID') {
+                // Update invoice
+                $invoice->update([
+                    'status_id' => 8,
+                    'reference' => $reference ?? $invoice->reference,
+                    'metode_bayar' => $metodeBayar,
+                ]);
+
+                // Ambil customer
+                $customer = Customer::with('paket')->find($invoice->customer_id);
+                if (!$customer) throw new Exception('Customer tidak ditemukan');
+
+                // Buka blokir jika diblokir
+                if ($customer->status_id == 9) {
+                    try {
+                        $mikrotik = new MikrotikServices();
+                        $client = MikrotikServices::connect($customer->router);
+                        $mikrotik->removeActiveConnections($client, $customer->usersecret);
+                        $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+
+                        $customer->update(['status_id' => 3]);
+                    } catch (Exception $e) {
+                        Log::error('Gagal buka blokir customer', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                $totalBayar = $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan;
+
+                // Simpan pembayaran
+                $pembayaran = Pembayaran::create([
+                    'invoice_id' => $invoice->id,
+                    'jumlah_bayar' => $totalBayar,
+                    'tanggal_bayar' => now(),
+                    'metode_bayar' => $metodeBayar,
+                    'keterangan' => 'Pembayaran via ' . $metodeBayar . ' untuk ' . $customer->nama_customer,
+                    'status_id' => 8,
+                ]);
+
+                // Simpan ke kas
+                Kas::create([
+                    'tanggal_kas' => now(),
+                    'debit' => $totalBayar,
+                    'kas_id' => 1,
+                    'status_id' => 3,
+                    'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $metodeBayar,
+                ]);
+
+                // Buat invoice bulan depan
+                self::generateNextMonthInvoice($invoice, $customer);
+
+                DB::commit();
+
+                // Kirim WA notifikasi
+                try {
+                    $pembayaran->load('invoice.customer');
+                    $chat = new ChatServices();
+                    $chat->pembayaranBerhasil($customer->no_hp, $pembayaran);
+                } catch (Exception $e) {
+                    Log::error('Gagal kirim WA notifikasi', ['error' => $e->getMessage()]);
+                }
+
+                return ['success' => true, 'message' => 'Invoice berhasil dibayar'];
+            }
+
+            return ['success' => false, 'message' => 'Status bukan PAID'];
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal proses payment', ['error' => $e->getMessage()]);
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    protected static function generateNextMonthInvoice($invoice, $customer)
+    {
+        $jatuhTempo = $invoice->jatuh_tempo;
+        if (!$jatuhTempo) return;
+
+        $bulanDepan = \Carbon\Carbon::parse($jatuhTempo)->addMonthsNoOverflow(1);
+
+        $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+            ->whereMonth('jatuh_tempo', $bulanDepan->month)
+            ->whereYear('jatuh_tempo', $bulanDepan->year)
+            ->exists();
+
+        if (!$sudahAda) {
+            Invoice::create([
+                'customer_id' => $invoice->customer_id,
+                'paket_id' => $customer->paket_id,
+                'tagihan' => $customer->paket->harga,
+                'tambahan' => 0,
+                'status_id' => 7,
+                'jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
+                'tanggal_blokir' => $bulanDepan->copy()->endOfMonth()->addDays(3),
+                'metode_bayar' => $invoice->metode_bayar,
+            ]);
+        }
     }
 }
