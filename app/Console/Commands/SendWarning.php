@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Customer;
 use App\Models\Invoice;
 use App\Services\ChatServices;
 use Carbon\Carbon;
@@ -18,36 +17,33 @@ class SendWarning extends Command
         $today = Carbon::today();
 
         // hanya jalan tanggal 1 - 10
-        if (!in_array($today->day, [1, 10])) {
+        if (!in_array($today->day, range(1, 10))) {
             $this->info("Hari ini {$today->format('d F Y')} bukan jadwal kirim warning.");
             return Command::SUCCESS;
         }
 
         $chat = new ChatServices();
 
-        // ambil semua customer
-        $customers = Customer::all();
+        // Ambil invoice terakhir (jatuh tempo terbaru) yang belum bayar per customer
+        $invoices = Invoice::with('customer')
+            ->where('status_id', 7) // Belum bayar
+            ->whereDate('jatuh_tempo', '<', $today) // Sudah lewat jatuh tempo
+            ->latestOfMany('jatuh_tempo') // hanya ambil 1 per customer
+            ->get();
 
-        foreach ($customers as $customer) {
-            // cari invoice yang BELUM BAYAR dan SUDAH LEWAT JATUH TEMPO
-            $invoice = Invoice::where('customer_id', $customer->id)
-                ->where('status_id', 7) // 7 = BELUM BAYAR
-                ->whereDate('jatuh_tempo', '<', $today) // sudah lewat jatuh tempo
-                ->latest('jatuh_tempo') // ambil invoice jatuh tempo paling baru
-                ->first();
-
-            if (!$invoice) {
-                continue; // skip kalau tidak ada invoice lewat jatuh tempo
+        foreach ($invoices as $invoice) {
+            if (!$invoice->customer) {
+                continue;
             }
 
-            $hasil = $chat->kirimWarningBayar($customer, $invoice);
+            $hasil = $chat->kirimWarningBayar($invoice->customer, $invoice);
 
             if (isset($hasil['success']) && $hasil['success'] === false) {
                 $this->warn("⚠️ {$hasil['message']}");
             } elseif (isset($hasil['error']) && $hasil['error'] === true) {
-                $this->error("❌ Gagal kirim ke {$customer->nama_customer} untuk invoice {$invoice->id}: {$hasil['pesan']}");
+                $this->error("❌ Gagal kirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}: {$hasil['pesan']}");
             } else {
-                $this->info("✅ Warning terkirim ke {$customer->nama_customer} untuk invoice {$invoice->id}");
+                $this->info("✅ Warning terkirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}");
             }
         }
 
