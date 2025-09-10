@@ -785,7 +785,7 @@
                             id="revenueAmount{{ $invoice->id }}"
                             name="revenueAmount"
                             oninput="formatRupiah(this, {{ $invoice->id }})"
-                            placeholder="Masukkan jumlah bayar">
+                            placeholder="Masukkan jumlah bayar" required>
                             <input type="hidden" id="raw{{ $invoice->id }}" name="jumlah_bayar" value="0">
                         </div>
                         <div class="col-12 col-lg-6">
