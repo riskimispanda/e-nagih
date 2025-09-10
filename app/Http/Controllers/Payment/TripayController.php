@@ -219,33 +219,38 @@ class TripayController extends Controller
         try {
             \Log::info('Payment callback received', [
                 'headers' => $request->headers->all(),
-                'body' => $request->getContent(),
-                'all' => $request->all(),
+                'body'    => $request->getContent(),
+                'all'     => $request->all(),
             ]);
 
-            $isSandbox = env('APP_ENV') !== 'production';
+            $isSandbox         = env('APP_ENV') !== 'production';
             $callbackSignature = $request->header('X-Callback-Signature');
-            $data = null;
-            $invoiceId = null;
-            $reference = null;
-            $merchantRef = null;
+            $privateKey        = config('tripay.private_key');
 
-            // TEST MODE
+            $data        = null;
+            $invoiceId   = null;
+            $reference   = null;
+            $merchantRef = null;
+            $paymentStatus = null;
+
+            // === TEST MODE ===
             if ($request->has('test_mode')) {
-                $data = (object) $request->all();
-                $invoiceId = $request->input('invoice_id');
-                $reference = $request->input('reference');
+                $data        = (object) $request->all();
+                $invoiceId   = $request->input('invoice_id');
+                $reference   = $request->input('reference');
                 $merchantRef = $request->input('merchant_ref');
+                $paymentStatus = 'PAID';
             } else {
                 $json = $request->getContent();
 
                 if (empty($json)) {
-                    $data = (object) $request->all();
-                    $reference = $request->input('reference');
+                    $data        = (object) $request->all();
+                    $reference   = $request->input('reference');
                     $merchantRef = $request->input('merchant_ref');
+                    $paymentStatus = $request->input('status');
                 } else {
+                    // ✅ Validasi Signature (hanya di production)
                     if ($callbackSignature && !$isSandbox) {
-                        $privateKey = config('tripay.private_key');
                         $signature = hash_hmac('sha256', $json, $privateKey);
                         if ($signature !== $callbackSignature) {
                             return response()->json(['success' => false, 'message' => 'Invalid signature'], 400);
@@ -253,31 +258,31 @@ class TripayController extends Controller
                     }
 
                     $data = json_decode($json);
-                    if (!$data) {
-                        $data = (object) $request->all();
-                        $reference = $request->input('reference');
-                        $merchantRef = $request->input('merchant_ref');
+
+                    // ✅ Ambil data dari payload Tripay
+                    if (isset($data->payload)) {
+                        $reference     = $data->payload->reference ?? null;
+                        $merchantRef   = $data->payload->merchant_ref ?? null;
+                        $paymentStatus = $data->payload->status ?? null;
                     } else {
-                        $reference = $data->reference ?? null;
-                        $merchantRef = $data->merchant_ref ?? null;
+                        $reference     = $data->reference ?? null;
+                        $merchantRef   = $data->merchant_ref ?? null;
+                        $paymentStatus = $data->status ?? null;
                     }
                 }
             }
 
-            // Cari invoice
+            // === Cari Invoice ===
             $invoice = null;
             if ($invoiceId) {
                 $invoice = Invoice::find($invoiceId);
             }
-
-            if (!$invoice && $reference) {
-                $invoice = Invoice::where('reference', $reference)->first();
-            }
-
             if (!$invoice && $merchantRef) {
                 $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
             }
-
+            if (!$invoice && $reference) {
+                $invoice = Invoice::where('reference', $reference)->first();
+            }
             if (!$invoice && $merchantRef) {
                 $parts = explode('-', $merchantRef);
                 if (isset($parts[1]) && is_numeric($parts[1])) {
@@ -295,19 +300,18 @@ class TripayController extends Controller
             }
 
             if (!$invoice) {
+                \Log::warning('Invoice not found in callback', [
+                    'reference'   => $reference,
+                    'merchantRef' => $merchantRef,
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Invoice not found'
                 ], 404);
             }
 
-            // Ambil status pembayaran
-            $paymentStatus = $data->status ?? $request->input('status');
-            if ($request->has('test_mode')) {
-                $paymentStatus = 'PAID';
-            }
-
-            if ($paymentStatus === 'PAID') {
+            // === Proses status pembayaran ===
+            if (strtoupper($paymentStatus) === 'PAID') {
                 if ($invoice->status_id == 8) {
                     return response()->json(['success' => true, 'message' => 'Invoice already paid']);
                 }
@@ -316,32 +320,40 @@ class TripayController extends Controller
                 $namaMetode       = $data->payment_name ?? $metodePembayaran;
 
                 // Tandai lunas
-                $invoice->status_id = 8;
+                $invoice->status_id    = 8;
                 $invoice->metode_bayar = $namaMetode;
-                $invoice->reference = $reference ?? $invoice->reference;
+                $invoice->reference    = $reference ?? $invoice->reference;
+
+                // ✅ update merchant_ref kalau belum ada
+                if (!$invoice->merchant_ref && $merchantRef) {
+                    $invoice->merchant_ref = $merchantRef;
+                }
+
                 $invoice->save();
-                LOG::info('Invoice marked as paid via Tripay callback', [
-                    'invoice_id' => $invoice->id,
+
+                \Log::info('Invoice marked as paid via Tripay callback', [
+                    'invoice_id'     => $invoice->id,
                     'payment_status' => $paymentStatus,
-                    'amount' => $invoice->tagihan
+                    'amount'         => $invoice->tagihan
                 ]);
 
-                // Buat pembayaran
+                // Simpan ke tabel pembayaran
                 $pembayaran = Pembayaran::create([
-                    'invoice_id' => $invoice->id,
-                    'user_id'    => $invoice->customer->user_id ?? null,
-                    'jumlah_bayar'     => $invoice->tagihan,
-                    'tanggal_bayar'    => now(),
-                    'metode_bayar'     => $namaMetode,
-                    'keterangan' => 'Pembayaran otomatis via ' . $namaMetode,
-                    'status_id' => 8,
+                    'invoice_id'    => $invoice->id,
+                    'user_id'       => $invoice->customer->user_id ?? null,
+                    'jumlah_bayar'  => $invoice->tagihan,
+                    'tanggal_bayar' => now(),
+                    'metode_bayar'  => $namaMetode,
+                    'keterangan'    => 'Pembayaran otomatis via ' . $namaMetode,
+                    'status_id'     => 8,
                 ]);
-                
-                LOG::info('Payment record created', [
+
+                \Log::info('Payment record created', [
                     'payment_id' => $pembayaran->id,
                     'invoice_id' => $invoice->id,
-                    'amount' => $invoice->tagihan
+                    'amount'     => $invoice->tagihan
                 ]);
+
                 // Catat kas
                 Kas::create([
                     'debit'         => $invoice->tagihan,
@@ -353,15 +365,9 @@ class TripayController extends Controller
                     'status_id'     => 3
                 ]);
 
-                LOG::info('Invoice marked as paid via Tripay callback', [
-                    'invoice_id' => $invoice->id,
-                    'payment_status' => $paymentStatus,
-                    'amount' => $invoice->tagihan
-                ]);
-
-                // Buat invoice baru untuk bulan depan
+                // === Buat invoice baru bulan depan ===
                 $tanggalJatuhTempoLama = \Carbon\Carbon::parse($invoice->jatuh_tempo);
-                $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
+                $tanggalAwal       = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
                 $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
 
                 $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
@@ -371,23 +377,23 @@ class TripayController extends Controller
 
                 if (!$sudahAda) {
                     Invoice::create([
-                        'customer_id'     => $invoice->customer_id,
-                        'paket_id'        => $invoice->paket_id,
-                        'tagihan'         => $invoice->paket->harga,
-                        'tambahan'        => 0,
-                        'saldo'           => 0,
-                        'status_id'       => 7, // Belum bayar
-                        'created_at'      => $tanggalAwal,
-                        'updated_at'      => $tanggalAwal,
-                        'jatuh_tempo'     => $tanggalJatuhTempo,
-                        'tanggal_blokir'  => $tanggalJatuhTempo->copy()->addDays(3),
+                        'customer_id'    => $invoice->customer_id,
+                        'paket_id'       => $invoice->paket_id,
+                        'tagihan'        => $invoice->paket->harga,
+                        'tambahan'       => 0,
+                        'saldo'          => 0,
+                        'status_id'      => 7, // Belum bayar
+                        'created_at'     => $tanggalAwal,
+                        'updated_at'     => $tanggalAwal,
+                        'jatuh_tempo'    => $tanggalJatuhTempo,
+                        'tanggal_blokir' => $tanggalJatuhTempo->copy()->addDays(3),
                     ]);
                 }
 
                 return response()->json([
                     'success' => true,
                     'message' => 'Pembayaran berhasil dan invoice berikutnya dibuat',
-                    'data' => [
+                    'data'    => [
                         'invoice_id'     => $invoice->id,
                         'payment_status' => $paymentStatus,
                         'amount'         => $invoice->tagihan
@@ -407,6 +413,7 @@ class TripayController extends Controller
             ], 500);
         }
     }
+
 
 
     /**

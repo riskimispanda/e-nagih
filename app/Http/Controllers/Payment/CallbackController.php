@@ -57,8 +57,8 @@ class CallbackController extends Controller
                 return $this->jsonError('Unrecognized callback event, no action was taken');
             }
 
-            // Decode JSON
-            $data = json_decode($json);
+            // Decode JSON ke array
+            $data = json_decode($json, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 Log::error('Invalid JSON from Tripay', [
                     'json_error' => json_last_error_msg(),
@@ -67,56 +67,63 @@ class CallbackController extends Controller
                 return $this->jsonError('Invalid JSON data sent by Tripay');
             }
 
-            // Validasi data yang diperlukan
-            if (!isset($data->reference) || !isset($data->status)) {
+            // Validasi field penting
+            if (!isset($data['payload']['reference']) || !isset($data['payload']['status'])) {
                 return $this->jsonError('Missing required fields in callback data');
             }
 
-            // Ambil invoice berdasarkan reference Tripay
-            $invoice = Invoice::where('reference', $data->reference)->first();
+            $reference   = $data['payload']['reference'];     // ID unik dari Tripay
+            $merchantRef = $data['payload']['merchant_ref'];  // ID invoice lokal
+            $status      = strtoupper((string) $data['payload']['status']);
+
+            // Ambil invoice berdasarkan merchant_ref (pastikan kolom sesuai DB: merchant_ref / kode_invoice)
+            $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
             if (!$invoice) {
-                Log::warning('Invoice not found', ['reference' => $data->reference]);
-                return $this->jsonError('No invoice found: ' . $data->reference);
+                Log::warning('Invoice not found', [
+                    'merchant_ref' => $merchantRef,
+                    'reference' => $reference
+                ]);
+                return $this->jsonError('No invoice found: ' . $merchantRef);
             }
 
-            // Cek apakah sudah diproses (untuk menghindari duplicate processing)
-            if ($invoice->status_id == 8) { // Sudah lunas
-                Log::info('Invoice already processed', ['reference' => $data->reference]);
+            // Cek apakah sudah diproses
+            if ($invoice->status_id == 8) {
+                Log::info('Invoice already processed', ['reference' => $reference]);
                 return Response::json(['success' => true, 'message' => 'Already processed']);
             }
 
-            // Proses berdasarkan status pembayaran
-            switch (strtoupper((string) $data->status)) {
+            // Proses status pembayaran
+            switch ($status) {
                 case 'PAID':
-                    $this->handlePaid($invoice, $data);
+                    $this->handlePaid($invoice, (object) $data['payload']);
                     break;
 
                 case 'EXPIRED':
                     $invoice->update(['status_id' => 7]);
-                    Log::info('Invoice expired', ['reference' => $data->reference]);
+                    Log::info('Invoice expired', ['reference' => $reference]);
                     break;
 
                 case 'FAILED':
                     $invoice->update(['status_id' => 10]);
-                    Log::info('Payment failed', ['reference' => $data->reference]);
+                    Log::info('Payment failed', ['reference' => $reference]);
                     break;
 
                 default:
                     Log::warning('Unrecognized payment status', [
-                        'status' => $data->status,
-                        'reference' => $data->reference
+                        'status' => $status,
+                        'reference' => $reference
                     ]);
                     return $this->jsonError('Unrecognized payment status');
             }
 
             Log::info('Tripay Callback Success', [
-                'reference' => $data->reference,
-                'status' => $data->status
+                'reference' => $reference,
+                'status' => $status
             ]);
-            
+
             return Response::json([
                 'success' => true,
-                'reference' => $data->reference
+                'reference' => $reference
             ]);
 
         } catch (Exception $e) {
@@ -135,7 +142,7 @@ class CallbackController extends Controller
             'message' => $message,
         ], 400);
     }
-    
+
     protected function handlePaid($invoice, $data)
     {
         try {
@@ -153,6 +160,7 @@ class CallbackController extends Controller
             $invoice->update([
                 'status_id' => 8,
                 'reference' => $data->reference ?? $invoice->reference,
+                'merchant_ref' => $data->merchant_ref ?? $invoice->merchant_ref,
                 'metode_bayar' => $metodeBayar
             ]);
 
@@ -162,7 +170,7 @@ class CallbackController extends Controller
                 throw new Exception('Customer not found');
             }
 
-            // Cek apakah customer sedang diblokir, lalu buka blokir
+            // Jika customer diblokir, buka blokir
             if ($customer->status_id == 9) {
                 try {
                     $mikrotik = new MikrotikServices();
@@ -170,20 +178,18 @@ class CallbackController extends Controller
                     $mikrotik->removeActiveConnections($client, $customer->usersecret);
                     $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
 
-                    // Update status customer menjadi aktif
                     $customer->update(['status_id' => 3]);
-                    
+
                     Log::info('Customer unblocked', ['customer_id' => $customer->id]);
                 } catch (Exception $e) {
                     Log::error('Failed to unblock customer', [
                         'customer_id' => $customer->id,
                         'error' => $e->getMessage()
                     ]);
-                    // Jangan throw exception, biarkan proses pembayaran tetap lanjut
                 }
             }
 
-            // Simpan data pembayaran (hapus duplikasi invoice_id)
+            // Simpan pembayaran
             $pembayaran = Pembayaran::create([
                 'invoice_id' => $invoice->id,
                 'jumlah_bayar' => $totalBayar,
@@ -202,12 +208,17 @@ class CallbackController extends Controller
                 'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $metodeBayar,
             ]);
 
-            // Generate invoice bulan depan
+            // Buat invoice bulan depan
             $this->generateNextMonthInvoice($invoice, $customer);
+
+            activity('payment')
+                ->causedBy('Tripay')
+                ->performedOn($invoice)
+                ->log('Pembayaran berhasil diproses untuk ' . $customer->nama_customer . ' sebesar Rp ' . number_format($totalBayar, 0, ',', '.') . ' via ' . $metodeBayar);
 
             DB::commit();
 
-            // Kirim notifikasi WhatsApp (di luar transaction untuk menghindari rollback jika gagal)
+            // Kirim notifikasi WhatsApp
             try {
                 $pembayaran->load('invoice.customer');
                 $chat = new ChatServices();
@@ -238,7 +249,6 @@ class CallbackController extends Controller
 
     protected function generateNextMonthInvoice($invoice, $customer)
     {
-        // Hitung bulan depan
         $jatuhTempo = $invoice->jatuh_tempo;
         if (!$jatuhTempo) {
             Log::warning('No due date found in invoice', ['invoice_id' => $invoice->id]);
@@ -246,8 +256,7 @@ class CallbackController extends Controller
         }
 
         $bulanDepan = \Carbon\Carbon::parse($jatuhTempo)->addMonthsNoOverflow(1);
-        
-        // Cek apakah invoice bulan depan sudah ada
+
         $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
             ->whereMonth('jatuh_tempo', $bulanDepan->month)
             ->whereYear('jatuh_tempo', $bulanDepan->year)
