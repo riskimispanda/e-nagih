@@ -71,13 +71,13 @@ class CekPayment extends Command
 
             // ========================= 🔒 BLOKIR OTOMATIS ========================= //
             $tanggalBlokir = Carbon::parse($invoice->jatuh_tempo)
-                ->addMonth()
-                ->day((int) ($invoice->tanggal_blokir ?? 10)) // fallback ke tanggal 10
-                ->setTime(23, 59);
+                ->addMonthNoOverflow() // +1 bulan tapi tetap di bulan berikutnya yang valid
+                ->day((int) ($invoice->tanggal_blokir ?? 10))
+                ->endOfDay();
 
             Log::info("🕒 Cek Blokir - Invoice #{$invoice->id} | Sekarang: {$tanggalHariIni} | Blokir pada: {$tanggalBlokir}");
 
-            if ($tanggalHariIni > $tanggalBlokir) {
+            if ($tanggalHariIni >= $tanggalBlokir) {
                 if ($customer->status_id == 9) {
                     $this->info("⚠️ Customer sudah diblokir: {$customer->nama_customer}");
                     Log::info("⏭ Lewat: {$customer->nama_customer} sudah status diblokir.");

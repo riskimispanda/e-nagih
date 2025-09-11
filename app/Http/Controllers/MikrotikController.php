@@ -15,8 +15,8 @@ class MikrotikController extends Controller
 
 public function index()
 {
-    $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
-    $client = MikrotikServices::connect($router);
+        $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
+        $client = MikrotikServices::connect($router);
 
     $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
     $user = MikrotikServices::getPPPSecret($client);

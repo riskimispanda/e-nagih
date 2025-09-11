@@ -577,6 +577,7 @@
                         <th>Status</th>
                         <th>Admin / Agen</th>
                         <th>Aksi</th>
+                        <th>Keterangan</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody" style="font-size: 14px">
@@ -655,7 +656,12 @@
                                     <i class="bx bx-pencil"></i>
                                 </button>
                                 @endif
-                            </td>           
+                            </td>
+                            <td>
+                                <span class="fw-bold">
+                                    <small>{{$payment->keterangan}}</small>
+                                </span>
+                            </td>
                     </tr>
                     @empty
                     <tr>

@@ -413,7 +413,7 @@ class AgenController extends Controller
             if ($saldoTerpakai > 0)  $keteranganArr[] = "pakai saldo";
 
             $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
-                " oleh " . auth()->user()->name .
+                " dari " . auth()->user()->name .
                 " untuk " . $invoice->customer->nama_customer;
 
             // Simpan pembayaran
@@ -481,14 +481,26 @@ class AgenController extends Controller
             Kas::create([
                 'debit'       => $pembayaran->jumlah_bayar,
                 'tanggal_kas' => $pembayaran->tanggal_bayar,
-                'keterangan'  => 'Pembayaran dari ' . auth()->user()->name .
-                    ' untuk ' . $invoice->customer->nama_customer,
+                'keterangan'  => 'Pembayaran dari ' . auth()->user()->name . ' untuk ' . $invoice->customer->nama_customer,
                 'kas_id'      => 1,
                 'user_id'     => auth()->id(),
                 'status_id'   => 3,
                 'customer_id' => $invoice->customer_id,
                 'pengeluaran_id' => null,
             ]);
+            // Update status jika di blokir
+            if ($customer->status_id == 9) {
+                try {
+                    $mikrotik = new MikrotikServices();
+                    $client = $mikrotik->connect($customer->router);
+                    $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+                    $mikrotik->removeActiveConnections($client, $customer->usersecret);
+                    $customer->update(['status_id' => 3]);
+                    Log::info("Berhasil Unblokir User {$customer->nama_customer} setelah pembayaran.");
+                } catch (\Exception $e) {
+                    Log::error("❌ Gagal mengubah status customer {$customer->nama_customer} (ID: {$customer->id}): " . $e->getMessage());
+                }
+            }
 
             // Catat Log Aktivitas
             activity('agen')

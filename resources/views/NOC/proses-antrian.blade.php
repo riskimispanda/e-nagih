@@ -61,9 +61,9 @@
                         <label class="form-label">Titik lokasi</label>
                         <div class="input-group">
                             @php
-                                $gps = $customer->gps;
-                                $isLink = Str::startsWith($gps, ['http://', 'https://']);
-                                $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
+                            $gps = $customer->gps;
+                            $isLink = Str::startsWith($gps, ['http://', 'https://']);
+                            $url = $isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps);
                             @endphp
                             
                             <a href="{{ $url }}" target="_blank" class="btn btn-outline-warning btn-sm"
@@ -83,7 +83,7 @@
                         </a>
                     </div>
                 </div>
-                <div class="col-sm-6 mb-4">
+                <div class="col-sm-4 mb-4">
                     <label class="form-label">Paket</label>
                     <div class="input-group">
                         <span class="input-group-text" id="basic-addon11"><i class="bx bx-package"></i></span>
@@ -91,12 +91,25 @@
                         value="{{ $customer->paket->nama_paket }}" name="paket_id">
                     </div>
                 </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Profile Paket</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bx bx-package"></i></span>
+                        <input type="text" class="form-control" readonly value="{{ $customer->paket->paket_name }}">
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <label class="form-label">Router</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bx bx-package"></i></span>
+                        <input type="text" class="form-control" readonly value="{{ $customer->paket->router->nama_router }}">
+                    </div>
+                </div>
                 <div class="col-sm-6 mb-4">
                     <label class="form-label">Tagihan</label>
                     <div class="input-group">
                         <span class="input-group-text" id="basic-addon11"><i class="bx bx-money"></i></span>
-                        <input type="text" class="form-control" readonly
-                        value="Rp. {{ number_format($customer->paket->harga, 0, ',', '.') }}">
+                        <input type="text" class="form-control" readonly value="Rp. {{ number_format($customer->paket->harga, 0, ',', '.') }}">
                     </div>
                 </div>
                 <div class="col-sm-6 mb-4">
@@ -107,7 +120,7 @@
                         value="{{ $customer->status->nama_status }}">
                     </div>
                 </div>
-                <div class="col-sm-6 mb-4">
+                <div class="col-sm-12 mb-4">
                     <label class="form-label">Tanggal Registrasi</label>
                     <div class="input-group">
                         <span class="input-group-text" id="basic-addon11"><i class="bx bx-calendar"></i></span>
@@ -135,24 +148,20 @@
                     <div class="col-sm-6 mb-4">
                         <label class="form-label">Router</label>
                         <div class="input-group">
-                            <span class="input-group-text" id="basic-addon11"><i
-                                class="bx bx-network-chart"></i></span>
-                                <select name="router_id" class="form-select">
-                                    <option value="" selected disabled>Pilih Router</option>
-                                    @foreach ($router as $r)
-                                    <option value="{{ $r->id }}">{{ $r->nama_router }}</option>
-                                    @endforeach
-                                </option>
+                            <span class="input-group-text" id="basic-addon11"><i class="bx bx-network-chart"></i></span>
+                            <select name="router_id" class="form-select">
+                                <option value="" selected disabled>Pilih Router</option>
+                                @foreach ($router as $r)
+                                <option value="{{ $r->id }}">{{ $r->nama_router }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
                     <div class="col-sm-6 mb-4">
                         <label class="form-label">Koneksi</label>
                         <div class="input-group">
-                            <span class="input-group-text" id="koneksi-addon"><i
-                                class="bx bx-link-alt"></i></span>
-                                <select name="koneksi_id" class="form-select" id="koneksi"
-                                onchange="togglePPPoEFields()">
+                            <span class="input-group-text" id="koneksi-addon"><i class="bx bx-link-alt"></i></span>
+                            <select name="koneksi_id" class="form-select" id="koneksi" onchange="togglePPPoEFields()">
                                 <option value="" selected disabled>Pilih Koneksi</option>
                                 @foreach ($koneksi as $k)
                                 <option value="{{ $k->id }}">{{ $k->nama_koneksi }}</option>
@@ -164,8 +173,7 @@
                         <label class="form-label">User Secret</label>
                         <div class="input-group">
                             <span class="input-group-text" id="basic-addon11"><i class="bx bx-lock"></i></span>
-                            <input type="text" class="form-control" name="usersecret"
-                            placeholder="coba@niscala.com" required>
+                            <input type="text" class="form-control" name="usersecret" placeholder="coba@niscala.com" required>
                         </div>
                     </div>
                     <div class="col-sm-6 mb-4">
@@ -187,31 +195,28 @@
                         <label class="form-label">Local Address</label>
                         <div class="input-group">
                             <span class="input-group-text" id="basic-addon11"><i class="bx bx-math"></i></span>
-                            <input type="text" class="form-control" name="local_address"
-                            placeholder="192.168.1.1">
+                            <input type="text" class="form-control" name="local_address" placeholder="192.168.1.1">
                         </div>
                     </div>
                     <div class="col-sm-6 mb-4 pppoe-field" style="display: none">
                         <label class="form-label">Remote Address</label>
                         <div class="input-group">
-                            <span class="input-group-text" id="basic-addon11"><i
-                                class="bx bx-devices"></i></span>
-                                <input type="text" class="form-control" name="remote_address"
-                                placeholder="10.10.10.1">
-                            </div>
+                            <span class="input-group-text" id="basic-addon11"><i class="bx bx-devices"></i></span>
+                            <input type="text" class="form-control" name="remote_address" placeholder="10.10.10.1">
                         </div>
-                        <hr class="my-1 pppoe-field mb-2" style="display: none">
                     </div>
-                    <div class="col-sm-12 mt-3">
-                        <button type="submit" class="btn btn-outline-info btn-sm float-end">
-                            <i class='bx bx-save me-1'></i>
-                            Assigment
-                        </button>
-                    </div>
-                </form>
-            </div>
+                    <hr class="my-1 pppoe-field mb-2" style="display: none">
+                </div>
+                <div class="col-sm-12 mt-3">
+                    <button type="submit" class="btn btn-outline-info btn-sm float-end">
+                        <i class='bx bx-save me-1'></i>
+                        Assigment
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 </div>
 
 <script>

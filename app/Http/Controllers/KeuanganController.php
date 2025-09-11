@@ -22,6 +22,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Services\ChatServices;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 
 
@@ -990,8 +992,8 @@ class KeuanganController extends Controller
             if ($saldoBaru > 0)      $keteranganArr[] = "menyisakan saldo";
 
             $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
-                " oleh " . auth()->user()->name .
-                " untuk " . $invoice->customer->nama_customer;
+                " dari " . auth()->user()->name .
+                " untuk pelanggan " . $invoice->customer->nama_customer . " PIC : " . $invoice->customer->agen->name ?? '-';
 
             // Simpan pembayaran
             $pembayaran = Pembayaran::create([
@@ -1065,13 +1067,35 @@ class KeuanganController extends Controller
             Kas::create([
                 'debit'         => $pembayaran->jumlah_bayar,
                 'tanggal_kas'   => $pembayaran->tanggal_bayar,
-                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer,
+                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer . ' PIC : ' . $invoice->customer->agen->name ?? '-',
                 'kas_id'        => 1,
                 'user_id'       => auth()->id(),
                 'status_id'     => 3,
                 'customer_id' => $invoice->customer_id,
                 'pengeluaran_id'=> null,
             ]);
+
+            // ================================
+            // Update Status Customer jika perlu
+            // ================================
+            // Jika customer diblokir, buka blokir
+            if ($customer->status_id == 9) {
+                try {
+                    $mikrotik = new MikrotikServices();
+                    $client = MikrotikServices::connect($customer->router);
+                    $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
+                    $mikrotik->removeActiveConnections($client, $customer->usersecret);
+
+                    $customer->update(['status_id' => 3]);
+
+                    Log::info('Customer ' . $customer->nama_customer . 'berhasil di unblock', ['customer_id' => $customer->id]);
+                } catch (Exception $e) {
+                    Log::error('Failed to unblock customer', [
+                        'customer_id' => $customer->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
 
             // Catat Log Aktivitas
             activity('keuangan')

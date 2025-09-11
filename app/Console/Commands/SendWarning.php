@@ -26,10 +26,12 @@ class SendWarning extends Command
 
         // Ambil invoice terakhir (jatuh tempo terbaru) yang belum bayar per customer
         $invoices = Invoice::with('customer')
-            ->where('status_id', 7) // Belum bayar
-            ->whereDate('jatuh_tempo', '<', $today) // Sudah lewat jatuh tempo
-            ->latestOfMany('jatuh_tempo') // hanya ambil 1 per customer
-            ->get();
+            ->where('status_id', 7)
+            ->whereDate('jatuh_tempo', '<', $today)
+            ->orderBy('jatuh_tempo', 'desc')
+            ->get()
+            ->groupBy('customer_id')
+            ->map->first();
 
         foreach ($invoices as $invoice) {
             if (!$invoice->customer) {
