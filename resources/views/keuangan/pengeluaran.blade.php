@@ -361,6 +361,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-flex justify-content-start mt-4">
+                    {{ $pengeluarans->links() }}
+                </div>
             </div> <!-- card-body -->
         </div> <!-- card -->
     </div> <!-- col -->

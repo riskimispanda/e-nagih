@@ -29,7 +29,7 @@ class PengeluaranController extends Controller
             ->orderBy('created_at', 'desc')
             ->orderBy('tanggal_pengeluaran', 'desc')
             ->where('status_id', 3)
-            ->get();
+            ->paginate(10);
 
         $totalPengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
         $dailyPengeluaran = Pengeluaran::where('status_id', 3)->whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran');
