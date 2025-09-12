@@ -460,7 +460,7 @@
                                 @endphp
                                 <td class="fw-bold">
                                     {{-- <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}</div> --}}
-                                    @if($p->kategori?->nama_logistik == 'Modem' || $p->kategori?->nama_logistik == 'Tenda')
+                                    @if($p->kategori?->nama_logistik == 'Modem' || $p->kategori?->nama_logistik == 'Tenda' || $p->kategori?->nama_logistik == 'SFP')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
                                     @elseif($p->kategori?->nama_logistik == 'ODP' || $p->kategori?->nama_logistik == 'OLT' || $p->kategori?->nama_logistik == 'ODC')
                                     Rp {{ number_format($total_harga, 0, ',', '.') }}
