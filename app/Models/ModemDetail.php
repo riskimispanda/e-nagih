@@ -12,7 +12,8 @@ class ModemDetail extends Model
         'serial_number',
         'mac_address',
         'status_id',
-        'customer_id'
+        'customer_id',
+        'cek'
     ];
 
     public function perangkat()

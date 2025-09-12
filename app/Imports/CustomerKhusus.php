@@ -2,24 +2,17 @@
 
 namespace App\Imports;
 
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\ToCollection;
+use App\Models\ModemDetail;
 use App\Models\Customer;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use App\Models\Router;
-use App\Models\Perangkat;
-use App\Models\MediaKoneksi;
-use Illuminate\Support\Facades\Log;
-use App\Models\Invoice;
-use Carbon\Carbon;
-use App\Models\ModemDetail;
 
-
-class CustomerImport implements ToModel, WithHeadingRow
+class CustomerKhusus implements ToModel, WithHeadingRow
 {
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
+    * @param Collection $collection
     */
     public function model(array $row)
     {
@@ -60,48 +53,17 @@ class CustomerImport implements ToModel, WithHeadingRow
             'access_point'   => $row['access_point'] ?? null,
             'station'        => $row['station'] ?? null,
             'remote'         => $row['remote'] ?? null,
-            'cek'   => 'Imported'
+            'cek'            => 'Imported'
         ]), function ($customer) use ($row) {
             $customer->save();
-
-            $harga = $customer->paket->harga ?? 0;
-
-            // default invoice bulan ini
-            $jatuhTempo = Carbon::now()->endOfMonth();
-
-            if (isset($row['status_bayar']) && $row['status_bayar'] == 1) {
-                // BUAT INVOICE BULAN DEPAN (BELUM LUNAS)
-                Invoice::create([
-                    'customer_id'    => $customer->id,
-                    'status_id'      => 7,
-                    'paket_id'       => $customer->paket_id,
-                    'jatuh_tempo'    => Carbon::now()->addMonth()->endOfMonth(),
-                    'tagihan'        => $harga,
-                    'tanggal_blokir' => 10,
-                    'cek' => 'Imported'
-                ]);
-            } else {
-                // BUAT INVOICE BULAN INI (BELUM LUNAS)
-                Invoice::create([
-                    'customer_id'    => $customer->id,
-                    'status_id'      => 7,
-                    'paket_id'       => $customer->paket_id,
-                    'jatuh_tempo'    => $jatuhTempo,
-                    'tagihan'        => $harga,
-                    'tanggal_blokir' => 10,
-                    'cek' => 'Imported'
-                ]);
-            }
-
             ModemDetail::create([
-                'customer_id' => $customer->id,
-                'logistik_id' => $customer->perangkat_id ?? 0,
-                'mac_address' => $customer->mac_address,
+                'customer_id'   => $customer->id,
+                'logistik_id'   => $customer->perangkat_id ?? 0,
+                'mac_address'   => $customer->mac_address,
                 'serial_number' => $customer->seri_perangkat,
-                'status_id' => 13,
-                'cek' => 'Imported'
+                'status_id'     => 13,
+                'cek'           => 'Imported'
             ]);
-
         });
     }
 }

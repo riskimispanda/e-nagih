@@ -381,10 +381,7 @@
                     <div class="d-flex align-items-center">
                         <div class="search-container">
                             <div class="input-group">
-                                <span class="input-group-text bg-transparent border-end-0">
-                                    <i class='bx bx-search text-muted'></i>
-                                </span>
-                                <input type="text" id="search" class="form-control border-start-0 ps-0" placeholder="Cari perangkat..." aria-label="Search" />
+                                <input type="text" id="search" class="form-control" placeholder="Cari perangkat..." aria-label="Search" />
                             </div>
                         </div>
                     </div>
@@ -409,6 +406,7 @@
                                 <th width="20%">Kategori</th>
                                 <th width="20%">Stok Tersedia</th>
                                 <th width="20%">Terpakai</th>
+                                <th>Bulan</th>
                                 <th width="35%">Total Harga</th>
                                 <th width="15%" class="text-center">Aksi</th>
                             </tr>
@@ -452,6 +450,11 @@
                                     </span>
                                     @endif
                                 </td>
+                                <td>
+                                    <span class="badge bg-label-info">
+                                        {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('F-Y-d') }}
+                                    </span>
+                                </td>
                                 @php
                                     $total_harga = $p->harga * $p->jumlah_stok;
                                 @endphp
@@ -464,7 +467,6 @@
                                     @elseif($p->kategori?->nama_logistik == 'Kabel')
                                     Rp {{ number_format($p->harga, 0, ',', '.') }}
                                     @endif
-
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">

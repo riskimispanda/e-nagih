@@ -19,7 +19,8 @@ class Invoice extends Model
         'tambahan',
         'tanggal_blokir',
         'saldo',
-        'tunggakan'
+        'tunggakan',
+        'cek'
     ];
 
     public function pembayaran()

@@ -20,7 +20,7 @@ class CekPayment extends Command
         Log::info('🚀 Memulai pengecekan invoice');
 
         $tanggalHariIni = now('Asia/Jakarta');
-        $query = Invoice::where('status_id', 7); // status_id 7 = Belum Bayar
+        $query = Invoice::where('status_id', 7)->where('paket_id', '!=', 11); // status_id 7 = Belum Bayar
 
         if (!$this->option('force')) {
             $this->info("🔍 Mode normal: proses semua invoice belum bayar.");

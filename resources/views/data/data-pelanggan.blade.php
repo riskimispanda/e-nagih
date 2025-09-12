@@ -840,6 +840,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-sm-6 col-lg-3 mb-3">
+                        <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
+                            <div class="data-card-icon secondary">
+                                <i class="bx bx-error-circle"></i>
+                            </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Data Import</div>
+                                <div class="data-value">
+                                    <span class="badge bg-secondary rounded-pill">
+                                        {{ $importData }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

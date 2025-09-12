@@ -152,6 +152,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Import Customer
     Route::post('/customer/import', [DataController::class, 'Import']);
+    Route::post('/customer/import/khusus', [DataController::class, 'ImportKhusus']);
+    Route::get('/hapus/dataImport', [DataController::class, 'hapusImport'])->name('hapus-import');
 
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');

@@ -45,6 +45,7 @@
                                 <th>Seri Perangkat</th>
                                 <th>Status</th>
                                 <th>Teknisi</th>
+                                <th>Tanggal Terpakai</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -88,6 +89,11 @@
                                 <td>
                                     <span class="badge bg-label-info fw-bold" style="text-transform: uppercase;">
                                         {{$item->customer->teknisi->name ?? '-'}}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-danger fw-bold">
+                                        {{ $item->created_at->translatedFormat('F-Y-d') ?? '-' }}
                                     </span>
                                 </td>
                             </tr>

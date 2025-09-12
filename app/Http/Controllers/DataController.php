@@ -24,6 +24,7 @@ use App\Models\Perangkat;
 use App\Models\Invoice;
 use App\Services\MikrotikServices;
 use App\Imports\CustomerImport;
+use App\Imports\CustomerKhusus;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\ModemDetail;
 
@@ -46,6 +47,8 @@ class DataController extends Controller
             'getServer',
             'odp.odc.olt'
         ])->whereIn('status_id', [3, 4, 9]);
+
+        $import = Customer::where('cek', 'Imported')->count();
 
         // Apply search filter
         if ($search) {
@@ -209,6 +212,7 @@ class DataController extends Controller
             'bulananInstallasi' => $bulananInstallasi,
             'installasiBulanan' => $instalasiBulanan,
             'nonAktif' => $nonAktif,
+            'importData' => $import,
         ]);
     }
 
@@ -470,4 +474,32 @@ class DataController extends Controller
         return back()->with('success', 'Data Customer berhasil diimport!');
     }
 
+    public function ImportKhusus(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        $data = $request->file('file');
+
+        $import = Excel::import(new CustomerKhusus, $data);
+        Log::info('Berhasil Import Data Customer Khusus', ['import' => $import]);
+        return back()->with('success', 'Data Customer Khusus berhasil diimport!');
+    }
+
+    public function hapusImport()
+    {
+        try {
+            $invoice = Invoice::where('cek', 'Imported')->delete();
+            $deletedRows = Customer::where('cek', 'Imported')->delete();
+            $modem = ModemDetail::where('cek', 'Imported')->delete();
+
+            Log::info('Berhasil menghapus data import sementara.', ['deleted_rows' => $deletedRows, 'deleted_invoice' => $invoice, 'deleted_modem' => $modem]);
+
+            return redirect('/setting')->with('success', 'Data import sementara berhasil dihapus.');
+        } catch (\Exception $e) {
+            Log::error('Gagal menghapus data import sementara: ' . $e->getMessage());
+            return redirect('/data/pelanggan')->with('error', 'Terjadi kesalahan saat menghapus data import sementara.');
+        }
+    }
 }

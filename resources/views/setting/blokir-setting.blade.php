@@ -25,8 +25,7 @@
                                         Update Tanggal Blokir
                                     </button>
                                 </h2>
-                                
-                                <div id="accordionOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                                <div id="accordionOne" class="accordion-collapse collapse " data-bs-parent="#accordionExample">
                                     <div class="accordion-body">
                                         <form action="/sett/blokir" method="POST">
                                             @csrf
@@ -68,7 +67,7 @@
                                         Bot Chat Setting
                                     </button>
                                 </h2>
-                                <div id="accordionTwo" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                                <div id="accordionTwo" class="accordion-collapse collapse " data-bs-parent="#accordionExample">
                                     <div class="accordion-body">
                                         <a href="/visual" class="btn btn-warning btn-sm">
                                             <i class="bx bx-cog me-1"></i>
@@ -80,7 +79,7 @@
                         </div>
                     </div>
                     <div class="col-sm-6">
-                        <small class="text-light fw-medium">Pengaturan</small>
+                        <small class="text-light fw-medium">Import Data</small>
                         <div class="accordion mt-4" id="accordionExample">
                             <div class="card accordion-item active">
                                 <h2 class="accordion-header mb-5" id="headingThree">
@@ -89,7 +88,7 @@
                                         Import Data Customer
                                     </button>
                                 </h2>
-                                <div id="accordionThree" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+                                <div id="accordionThree" class="accordion-collapse collapse " data-bs-parent="#accordionExample">
                                     <div class="accordion-body">
                                         <form action="/customer/import" method="POST" enctype="multipart/form-data">
                                             @csrf
@@ -111,6 +110,54 @@
                                         </form>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-light fw-medium">Import Khusus Paket Fasum</small>
+                        <div class="accordion mt-4" id="accordionExample">
+                            <div class="card accordion-item active">
+                                <h2 class="accordion-header mb-5" id="headingFour">
+                                    <button type="button" class="accordion-button bg-primary text-white fw-bold" data-bs-toggle="collapse" data-bs-target="#accordionFour" aria-expanded="true" aria-controls="accordionTwo">
+                                    <i class="bx bx-download me-1"></i>
+                                        Import Data Customer Khusus Paket Fasum
+                                    </button>
+                                </h2>
+                                <div id="accordionFour" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">
+                                        <form action="/customer/import/khusus" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="form-label">Import Data</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text"><i class="bx bx-file"></i></span>
+                                                        <input type="file" name="file" class="form-control" required>
+                                                    </div>
+                                                    <small class="text-muted">File: xlsx, xls, csv</small>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="d-flex justify-content-end">
+                                                    <button type="submit" class="btn btn-warning btn-sm"><i class="bx bx-file me-1"></i>Import</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="col-sm-12">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="d-flex justify-content-start mb-4">
+                                <a href="/hapus/dataImport" method="GET">
+                                    <button class="btn btn-danger btn-sm"><i class="bx bx-trash me-1"></i>Hapus Data Import</button>
+                                </a>
                             </div>
                         </div>
                     </div>

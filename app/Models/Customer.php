@@ -39,7 +39,8 @@ class Customer extends Model
         'tanggal_selesai',
         'access_point',
         'station',
-        'remote'
+        'remote',
+        'cek'
     ];
 
 
