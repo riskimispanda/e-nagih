@@ -219,7 +219,6 @@ class CallbackController extends Controller
             $this->generateNextMonthInvoice($invoice, $customer);
 
             activity('payment')
-                ->causedBy('Tripay')
                 ->performedOn($invoice)
                 ->log('Pembayaran berhasil diproses untuk ' . $customer->nama_customer . ' sebesar Rp ' . number_format($totalBayar, 0, ',', '.') . ' via ' . $metodeBayar);
 
