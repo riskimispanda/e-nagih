@@ -80,13 +80,13 @@ class CekPayment extends Command
             if ($invoice->tagihan != $invoice->paket->harga) {
                 //Prorate
                 $tanggalBlokir = $jatuhTempo->copy()->addMonthNoOverflow()
-                    ->day((int) ($invoice->tanggal_blokir ?? 13))
+                    ->day((int) ($invoice->tanggal_blokir ?? 10))
                     ->endOfDay();
                 Log::info("Tagihan: " . $invoice->tagihan . " != " . $invoice->paket->harga . " (Prorate)");
             } else {
                 // jika full, blokir bulan yang sama
                 $tanggalBlokir = $jatuhTempo->copy()
-                    ->day((int) ($invoice->tanggal_blokir ?? 13))
+                    ->day((int) ($invoice->tanggal_blokir ?? 10))
                     ->endOfDay();
                 Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full)");
             }

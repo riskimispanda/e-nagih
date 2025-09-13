@@ -556,11 +556,28 @@
     </div>
     
     <div class="d-flex justify-content-start p-2">
-        <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i class="bx bx-export me-1"></i>Export</button>
-        <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{{ route('pembayaran.export', ['filter' => 'harian']) }}"><i class="bx bx-file me-1"></i>Harian</a></li>
-            <li><a class="dropdown-item" href="{{ route('pembayaran.export', ['filter' => 'bulanan']) }}"><i class="bx bx-file me-1"></i>Bulanan</a></li>
-        </ul>
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bx bx-export me-1"></i>Export
+            </button>
+            <ul class="dropdown-menu">
+                <li>
+                    <a class="dropdown-item" href="#" onclick="exportData('harian')">
+                        <i class="bx bx-file me-1"></i>Harian
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="exportData('bulanan')">
+                        <i class="bx bx-file me-1"></i>Bulanan
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="showExportModal()">
+                        <i class="bx bx-calendar me-1"></i>Custom Range
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
     
     <div class="table-responsive p-2">
@@ -646,22 +663,22 @@
                                 @if($payment->status_id == 8)
                                 <div class="d-flex">
                                     <a class="btn btn-outline-warning btn-sm text-warning" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#editModal{{ $payment->id }}">
-                                        <i class="bx bx-pencil"></i>
-                                    </a>
-                                </div>
-                                @else
-                                <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editModal{{ $payment->id }}">
                                     <i class="bx bx-pencil"></i>
-                                </button>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="fw-bold">
-                                    <small>{{$payment->keterangan}}</small>
-                                </span>
-                            </td>
+                                </a>
+                            </div>
+                            @else
+                            <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                                <i class="bx bx-pencil"></i>
+                            </button>
+                            @endif
+                        </td>
+                        <td>
+                            <span class="fw-bold">
+                                <small>{{$payment->keterangan}}</small>
+                            </span>
+                        </td>
                     </tr>
                     @empty
                     <tr>
@@ -743,7 +760,7 @@
                             <label class="form-label">Keterangan Edit</label>
                             <textarea name="keterangan" class="form-control" cols="10" rows="5"></textarea>
                         </div>
-
+                        
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -757,7 +774,36 @@
     </div>
 </div>
 @endforeach
-
+<!-- Modal Export -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Data Custom Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Rentang Tanggal</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="date" id="exportStartDate" class="form-control" title="Tanggal Mulai">
+                            </div>
+                            <div class="col-6">
+                                <input type="date" id="exportEndDate" class="form-control" title="Tanggal Akhir">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer gap-2">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="exportCustomRange()">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('page-script')
@@ -1068,5 +1114,40 @@
     });
 </script>
 
+<script>
+    function showExportModal() {
+        const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+        modal.show();
+    }
+    
+    function exportData(filter) {
+        window.location.href = `{{ route('pembayaran.export', '') }}/${filter}`;
+    }
+    
+    function exportCustomRange() {
+        const startDate = document.getElementById('exportStartDate').value;
+        const endDate = document.getElementById('exportEndDate').value;
+        
+        if (!startDate || !endDate) {
+            showNotification('Silakan pilih rentang tanggal', 'error');
+            return;
+        }
+        
+        if (new Date(startDate) > new Date(endDate)) {
+            showNotification('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
+            return;
+        }
+        
+        const url = new URL(`{{ route('pembayaran.export', 'custom') }}`);
+        url.searchParams.append('start_date', startDate);
+        url.searchParams.append('end_date', endDate);
+        
+        window.location.href = url.toString();
+        
+        // Tutup modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+        modal.hide();
+    }
+</script>
 
 @endsection

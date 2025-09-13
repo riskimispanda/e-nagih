@@ -70,6 +70,7 @@ use App\Http\Controllers\TiketController;
 use App\Http\Controllers\MapController;
 use App\Exports\PembayaranExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\Request;
 
 
 // Main Page Route
@@ -141,8 +142,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
     Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth','roles:Super Admin,NOC,Helpdesk,Admin Keuangan');
     Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk')->name('tiket-closed');
-    Route::get('/export/pembayaran/{filter}', function ($filter) {
-        return Excel::download(new PembayaranExport($filter), "pembayaran_export_{$filter}.xlsx");
+    Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+        return Excel::download(
+            new PembayaranExport($filter, $startDate, $endDate),
+            "pembayaran_export_{$filter}.xlsx"
+        );
     })->name('pembayaran.export');
 
     // Konfirmasi Tiket Open
