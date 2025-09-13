@@ -68,14 +68,17 @@ class CallbackController extends Controller
             }
 
             // Validasi field penting
-            if (!isset($data['payload']['reference']) || !isset($data['payload']['status'])) {
-                Log::info('Missing required fields in callback data', ['payload' => $data['payload']]);
+            $payload = $data['payload'] ?? $data; // gunakan payload jika ada, kalau tidak pakai root
+
+            if (!isset($payload['reference']) || !isset($payload['status'])) {
+                Log::info('Missing required fields in callback data', ['payload' => $payload]);
                 return $this->jsonError('Missing required fields in callback data');
             }
 
-            $reference   = $data['payload']['reference'];     // ID unik dari Tripay
-            $merchantRef = $data['payload']['merchant_ref'];  // ID invoice lokal
-            $status      = strtoupper((string) $data['payload']['status']);
+            $reference   = $payload['reference'];     // ID unik dari Tripay
+            $merchantRef = $payload['merchant_ref'];  // ID invoice lokal
+            $status      = strtoupper((string) $payload['status']);
+
 
             // Ambil invoice berdasarkan merchant_ref (pastikan kolom sesuai DB: merchant_ref / kode_invoice)
             $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
