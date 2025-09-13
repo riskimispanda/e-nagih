@@ -68,7 +68,7 @@ class CallbackController extends Controller
             }
 
             // Validasi field penting
-            $payload = $data['payload'] ?? $data; // gunakan payload jika ada, kalau tidak pakai root
+            $payload = $data;
 
             if (!isset($payload['reference']) || !isset($payload['status'])) {
                 Log::info('Missing required fields in callback data', ['payload' => $payload]);
