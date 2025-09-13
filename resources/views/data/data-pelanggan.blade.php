@@ -918,9 +918,6 @@
                                 <option value="name-desc">Nama Z-A</option>
                                 <option value="status-active">Status Aktif</option>
                                 <option value="status-inactive">Status Non-Aktif</option>
-                                <option value="package">Paket</option>
-                                <option value="payment-paid">Sudah Bayar</option>
-                                <option value="payment-unpaid">Belum Bayar</option>
                             </select>
                         </div>
                     </div>
@@ -947,7 +944,7 @@
                             <tr class="text-center">
                                 <th>No</th>
                                 <th>Nama</th>
-                                <th>Alamat</th>
+                                {{-- <th>Alamat</th> --}}
                                 <th>Telp.</th>
                                 <th>ODP</th>
                                 <th>Paket</th>
@@ -965,8 +962,15 @@
                                 data-invoice-id="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}"
                                 data-tagihan-tambahan="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->tambahan : '' }}">
                                 <td class="text-center">{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
-                                <td class="customer-name">{{ $item->nama_customer }}</td>
-                                <td class="customer-address">{{ $item->alamat }}</td>
+                                <td class="customer-name">
+                                    <div class="fw-bold">
+                                    {{ $item->nama_customer }}
+                                    </div>
+                                    <span class="d-block text-muted">
+                                        <small>{{$item->alamat}}</small>
+                                    </span>
+                                </td>
+                                {{-- <td class="customer-address">{{ $item->alamat }}</td> --}}
                                 <td class="nomor-hp">{{ $item->no_hp }}</td>
                                 <td>
                                     <span class="badge bg-info bg-opacity-10 status-badge text-info">

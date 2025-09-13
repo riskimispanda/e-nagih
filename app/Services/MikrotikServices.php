@@ -133,6 +133,47 @@ class MikrotikServices
         }
     }
 
+    public static function getUserSpeed($client, $usersecret)
+    {
+        // Cari PPP active
+        $query = (new Query('/ppp/active/print'))
+            ->where('name', $usersecret);
+
+        $active = $client->query($query)->read();
+
+        if (empty($active)) {
+            return ['error' => "User {$usersecret} tidak aktif di PPPoE"];
+        }
+
+        // Bangun nama interface
+        $iface = "pppoe-{$usersecret}";
+
+        // Query monitor traffic (gunakan =once=true)
+        $query = new Query('/interface/monitor-traffic');
+        $query->equal('interface', $iface);
+        $query->equal('once', 'true');
+
+        $traffic = $client->query($query)->read();
+
+        if (empty($traffic)) {
+            return ['error' => "Data traffic kosong untuk {$iface}"];
+        }
+
+        $result = [
+            'user'      => $usersecret,
+            'interface' => $iface,
+            'rx_bps'    => (int)($traffic[0]['rx-bits-per-second'] ?? 0),
+            'tx_bps'    => (int)($traffic[0]['tx-bits-per-second'] ?? 0),
+        ];
+
+        Log::info("Speed user", $result);
+
+        return $result;
+    }
+
+
+
+
 
     public static function status(Router $router): array
     {

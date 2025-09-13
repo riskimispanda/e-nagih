@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\MikrotikServices;
 use App\Models\Router;
 use RouterOS\Query;
+use Illuminate\Support\Facades\Log;
 
 class MikrotikController extends Controller
 {
@@ -19,6 +20,12 @@ class MikrotikController extends Controller
         $client = MikrotikServices::connect($router);
 
         $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
+        $traffic = MikrotikServices::getUserSpeed($client, '');
+        if (isset($traffic['error'])) {
+            Log::warning("Cek speed gagal", $traffic);
+        } else {
+            Log::info("Speed user", $traffic);
+        }
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
         dd($user);

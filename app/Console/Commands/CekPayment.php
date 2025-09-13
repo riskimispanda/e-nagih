@@ -83,12 +83,12 @@ class CekPayment extends Command
                     ->day((int) ($invoice->tanggal_blokir ?? 10))
                     ->endOfDay();
                 Log::info("Tagihan: " . $invoice->tagihan . " != " . $invoice->paket->harga . " (Prorate)");
-            } else {
+            } elseif ($invoice->tagihan == $invoice->paket->harga) {
                 // jika full, blokir bulan yang sama
                 $tanggalBlokir = $jatuhTempo->copy()
                     ->day((int) ($invoice->tanggal_blokir ?? 10))
                     ->endOfDay();
-                Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full)");
+                Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full) | Berhasil Blokir Customer: " . $customer->nama_customer);
             }
 
             Log::info("🕒 Cek Blokir - Invoice #{$invoice->id} | Sekarang: {$tanggalHariIni} | Blokir pada: {$tanggalBlokir}");

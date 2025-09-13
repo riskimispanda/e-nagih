@@ -10,6 +10,7 @@ use App\Models\Invoice;
 use App\Models\Pembayaran;
 use App\Models\Kas;
 use App\Services\ChatServices;
+use Illuminate\Support\Facades\Log;
 
 class TripayController extends Controller
 {
@@ -92,7 +93,7 @@ class TripayController extends Controller
                     $transaction = $transactionDetails['data'];
                 }
             } catch (\Exception $e) {
-                \Log::error('Error getting transaction details for payment detail page', [
+                Log::error('Error getting transaction details for payment detail page', [
                     'reference' => $reference,
                     'error' => $e->getMessage()
                 ]);
@@ -113,7 +114,7 @@ class TripayController extends Controller
                 'roles' => auth()->user()->roles,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in showPaymentDetail', [
+            Log::error('Error in showPaymentDetail', [
                 'reference' => $reference,
                 'error' => $e->getMessage()
             ]);
@@ -153,7 +154,7 @@ class TripayController extends Controller
             // Process the payment
             $paymentMethod = $request->payment_method;
             // Log the payment attempt
-            \Log::info('Payment attempt', [
+            Log::info('Payment attempt', [
                 'invoice_id' => $id,
                 'payment_method' => $paymentMethod,
                 'amount' => $invoice->tagihan + $invoice->tambahan - $invoice->saldo
@@ -186,7 +187,7 @@ class TripayController extends Controller
             }
 
             // Log the error
-            \Log::error('Payment processing error', [
+            Log::error('Payment processing error', [
                 'invoice_id' => $id,
                 'payment_method' => $paymentMethod,
                 'response' => $transaction
@@ -199,7 +200,7 @@ class TripayController extends Controller
 
             return redirect()->back()->with('error', $errorMessage);
         } catch (\Exception $e) {
-            \Log::error('Exception in payment processing', [
+            Log::error('Exception in payment processing', [
                 'invoice_id' => $id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -217,7 +218,7 @@ class TripayController extends Controller
     public function paymentCallback(Request $request)
     {
         try {
-            \Log::info('Payment callback received', [
+            Log::info('Payment callback received', [
                 'headers' => $request->headers->all(),
                 'body'    => $request->getContent(),
                 'all'     => $request->all(),
@@ -300,7 +301,7 @@ class TripayController extends Controller
             }
 
             if (!$invoice) {
-                \Log::warning('Invoice not found in callback', [
+                Log::warning('Invoice not found in callback', [
                     'reference'   => $reference,
                     'merchantRef' => $merchantRef,
                 ]);
@@ -331,7 +332,7 @@ class TripayController extends Controller
 
                 $invoice->save();
 
-                \Log::info('Invoice marked as paid via Tripay callback', [
+                Log::info('Invoice marked as paid via Tripay callback', [
                     'invoice_id'     => $invoice->id,
                     'payment_status' => $paymentStatus,
                     'amount'         => $invoice->tagihan
@@ -348,7 +349,7 @@ class TripayController extends Controller
                     'status_id'     => 8,
                 ]);
 
-                \Log::info('Payment record created', [
+                Log::info('Payment record created', [
                     'payment_id' => $pembayaran->id,
                     'invoice_id' => $invoice->id,
                     'amount'     => $invoice->tagihan
@@ -406,7 +407,7 @@ class TripayController extends Controller
                 'message' => 'Status pembayaran bukan PAID'
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in paymentCallback', ['error' => $e->getMessage()]);
+            Log::error('Error in paymentCallback', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error'
@@ -455,7 +456,7 @@ class TripayController extends Controller
             $invoice->save();
 
 
-            \Log::info('Invoice marked as paid via test callback', ['invoice_id' => $invoice->id]);
+            Log::info('Invoice marked as paid via test callback', ['invoice_id' => $invoice->id]);
 
             // Check if the request is coming from the invoice page
             $referer = request()->headers->get('referer');
@@ -467,7 +468,7 @@ class TripayController extends Controller
             // Otherwise, redirect back to the callback tester page
             return redirect()->back()->with('success', 'Callback test successful! Invoice #' . $invoice->id . ' marked as paid.');
         } catch (\Exception $e) {
-            \Log::error('Error in callback test', ['error' => $e->getMessage()]);
+            Log::error('Error in callback test', ['error' => $e->getMessage()]);
             return redirect()->back()->with('error', 'Callback test failed: ' . $e->getMessage());
         }
     }
@@ -482,7 +483,7 @@ class TripayController extends Controller
             $invoice = Invoice::find($invoiceId);
 
             if (!$invoice) {
-                \Log::error('Invoice not found for sandbox simulation', ['invoice_id' => $invoiceId]);
+                Log::error('Invoice not found for sandbox simulation', ['invoice_id' => $invoiceId]);
                 return response()->json(['success' => false, 'message' => 'Invoice not found'], 404);
             }
 
@@ -513,7 +514,7 @@ class TripayController extends Controller
                 'test_mode' => true
             ];
 
-            \Log::info('Simulating sandbox payment', [
+            Log::info('Simulating sandbox payment', [
                 'invoice_id' => $invoiceId,
                 'reference' => $invoice->reference,
                 'merchant_ref' => $invoice->merchant_ref,
@@ -529,7 +530,7 @@ class TripayController extends Controller
 
             return $response;
         } catch (\Exception $e) {
-            \Log::error('Error in sandbox payment simulation', [
+            Log::error('Error in sandbox payment simulation', [
                 'invoice_id' => $invoiceId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -552,13 +553,13 @@ class TripayController extends Controller
             $invoice = Invoice::where('reference', $reference)->first();
 
             if (!$invoice) {
-                \Log::error('Invoice not found for reference simulation', ['reference' => $reference]);
+                Log::error('Invoice not found for reference simulation', ['reference' => $reference]);
                 return response()->json(['success' => false, 'message' => 'Invoice not found'], 404);
             }
 
             return $this->simulateSandboxPayment($invoice->id);
         } catch (\Exception $e) {
-            \Log::error('Error in reference payment simulation', [
+            Log::error('Error in reference payment simulation', [
                 'reference' => $reference,
                 'error' => $e->getMessage()
             ]);
@@ -577,7 +578,7 @@ class TripayController extends Controller
     public function handleTripayTestCallback(Request $request)
     {
         try {
-            \Log::info('Tripay test callback received', [
+            Log::info('Tripay test callback received', [
                 'all_data' => $request->all(),
                 'headers' => $request->headers->all(),
                 'body' => $request->getContent(),
@@ -592,7 +593,7 @@ class TripayController extends Controller
             $amount = $request->input('amount');
 
             if (!$reference && !$merchantRef) {
-                \Log::error('No reference or merchant_ref in test callback');
+                Log::error('No reference or merchant_ref in test callback');
                 return response()->json([
                     'success' => false,
                     'message' => 'Missing reference or merchant_ref'
@@ -604,12 +605,12 @@ class TripayController extends Controller
 
             if ($reference) {
                 $invoice = Invoice::where('reference', $reference)->first();
-                \Log::info('Looking for invoice by reference', ['reference' => $reference, 'found' => $invoice ? 'yes' : 'no']);
+                Log::info('Looking for invoice by reference', ['reference' => $reference, 'found' => $invoice ? 'yes' : 'no']);
             }
 
             if (!$invoice && $merchantRef) {
                 $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
-                \Log::info('Looking for invoice by merchant_ref', ['merchant_ref' => $merchantRef, 'found' => $invoice ? 'yes' : 'no']);
+                Log::info('Looking for invoice by merchant_ref', ['merchant_ref' => $merchantRef, 'found' => $invoice ? 'yes' : 'no']);
             }
 
             // Try to extract invoice ID from merchant_ref pattern
@@ -618,7 +619,7 @@ class TripayController extends Controller
                 if (isset($parts[1]) && is_numeric($parts[1])) {
                     $extractedId = $parts[1];
                     $invoice = Invoice::find($extractedId);
-                    \Log::info('Extracted invoice ID from merchant_ref', [
+                    Log::info('Extracted invoice ID from merchant_ref', [
                         'merchant_ref' => $merchantRef,
                         'extracted_id' => $extractedId,
                         'found' => $invoice ? 'yes' : 'no'
@@ -627,7 +628,7 @@ class TripayController extends Controller
             }
 
             if (!$invoice) {
-                \Log::error('Invoice not found in test callback', [
+                Log::error('Invoice not found in test callback', [
                     'reference' => $reference,
                     'merchant_ref' => $merchantRef
                 ]);
@@ -647,14 +648,14 @@ class TripayController extends Controller
                     $invoice->status_id = 8; // Mark as paid
                     $invoice->save();
 
-                    \Log::info('Invoice marked as paid via Tripay test callback', [
+                    Log::info('Invoice marked as paid via Tripay test callback', [
                         'invoice_id' => $invoice->id,
                         'reference' => $reference,
                         'merchant_ref' => $merchantRef,
                         'amount' => $amount
                     ]);
                 } else {
-                    \Log::info('Invoice already paid', ['invoice_id' => $invoice->id]);
+                    Log::info('Invoice already paid', ['invoice_id' => $invoice->id]);
                 }
             }
 
@@ -671,7 +672,7 @@ class TripayController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in Tripay test callback', [
+            Log::error('Error in Tripay test callback', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all()
@@ -704,7 +705,7 @@ class TripayController extends Controller
             $tripay = new TripayServices();
             $transactionDetails = $tripay->getTransactionDetails($invoice->reference);
 
-            \Log::info('Checking payment status from Tripay API', [
+            Log::info('Checking payment status from Tripay API', [
                 'invoice_id' => $invoiceId,
                 'reference' => $invoice->reference,
                 'response' => $transactionDetails
@@ -720,7 +721,7 @@ class TripayController extends Controller
                         $invoice->status_id = 8; // Paid status
                         $invoice->save();
 
-                        \Log::info('Invoice status updated to PAID from Tripay API check', [
+                        Log::info('Invoice status updated to PAID from Tripay API check', [
                             'invoice_id' => $invoiceId,
                             'tripay_status' => $status
                         ]);
@@ -748,7 +749,7 @@ class TripayController extends Controller
                 ], 400);
             }
         } catch (\Exception $e) {
-            \Log::error('Error checking payment status', [
+            Log::error('Error checking payment status', [
                 'invoice_id' => $invoiceId,
                 'error' => $e->getMessage()
             ]);
