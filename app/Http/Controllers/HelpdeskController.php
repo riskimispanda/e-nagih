@@ -12,6 +12,7 @@ use App\Services\ChatServices;
 use App\Models\Perusahaan;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Log;
 use App\Models\ODP;
 
 
@@ -101,7 +102,7 @@ class HelpdeskController extends Controller
                 $rules = array_merge($rules, [
                     'nama_customer' => 'required',
                     'no_hp' => 'required',
-                    'email' => 'required|email|unique:customer,email',
+                    'email' => 'required|email',
                     'no_identitas' => 'required',
                     'alamat' => 'required',
                     'gps' => 'required',
@@ -225,12 +226,12 @@ class HelpdeskController extends Controller
                     $chat->kirimNotifikasiNoc($nomor, $n, $data);
                 }
             } catch (\Throwable $e) {
-                \Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
+                Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
             }
 
             return redirect()->back()->with('success', 'Antrian berhasil ditambahkan');
         } catch (\Throwable $e) {
-            \Log::error('Gagal tambah antrian: ' . $e->getMessage(), [
+            Log::error('Gagal tambah antrian: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
             return redirect()->back()->with('error', 'Gagal menambahkan antrian. Cek log server.');

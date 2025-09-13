@@ -13,17 +13,16 @@ class MikrotikController extends Controller
      * Display a listing of the resource.
      */
 
-public function index()
-{
+    public function index()
+    {
         $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
         $client = MikrotikServices::connect($router);
 
-    $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
-    $user = MikrotikServices::getPPPSecret($client);
-    $logs = MikrotikServices::logInformation($client);
-    $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-    dd($user);
-}
+        $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
+        $user = MikrotikServices::getPPPSecret($client);
+        $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
+        dd($user);
+    }
 
     public function testKoneksi($id)
     {
