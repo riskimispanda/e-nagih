@@ -199,6 +199,7 @@ class CallbackController extends Controller
                 'metode_bayar' => $metodeBayar,
                 'keterangan' => 'Pembayaran Paket Langganan Via ' . $metodeBayar . ' dari: ' . $invoice->customer->nama_customer,
                 'status_id' => 8,
+                'saldo' => $invoice->saldo
             ]);
 
             // Simpan ke kas
@@ -207,7 +208,8 @@ class CallbackController extends Controller
                 'debit' => $totalBayar,
                 'kas_id' => 1,
                 'status_id' => 3,
-                'keterangan' => 'Pembayaran langganan dari ' . $customer->nama_customer . ' via ' . $metodeBayar,
+                'keterangan' => 'Pembayaran langganan dari ' . $invoice->customer->nama_customer . ' via ' . $metodeBayar,
+                'pengeluaran_id' => null,
             ]);
 
             // Buat invoice bulan depan
