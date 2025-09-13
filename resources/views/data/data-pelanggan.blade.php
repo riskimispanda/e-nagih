@@ -975,7 +975,7 @@
                                 </td>
                                 <td class="nama-paket">
                                     <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
-                                        {{ $item->paket->nama_paket }}
+                                        {{ $item->paket->nama_paket ?? '-'}}
                                     </span>
                                 </td>
                                 <td class="text-center">
