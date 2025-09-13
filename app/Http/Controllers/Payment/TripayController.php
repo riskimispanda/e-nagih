@@ -461,8 +461,7 @@ class TripayController extends Controller
             $referer = request()->headers->get('referer');
             if (strpos($referer, 'payment/invoice') !== false) {
                 // If coming from invoice page, redirect to the same page to show updated status
-                return redirect()->route('payment.show', $invoice->id)
-                    ->with('success', 'Pembayaran berhasil! Invoice #' . $invoice->id . ' telah ditandai sebagai lunas.');
+                return redirect()->route('payment.show', $invoice->id)->with('success', 'Pembayaran berhasil! Invoice #' . $invoice->id . ' telah ditandai sebagai lunas.');
             }
 
             // Otherwise, redirect back to the callback tester page

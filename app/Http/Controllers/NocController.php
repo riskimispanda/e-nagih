@@ -136,8 +136,6 @@ class NocController extends Controller
             'service' => $konek,
         ]);
 
-        MikrotikServices::logInformation($client);
-
         // Notif Ke Teknisi
         $chat = new ChatServices();
         foreach ($teknisi as $tek) {
