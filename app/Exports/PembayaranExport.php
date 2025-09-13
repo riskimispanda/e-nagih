@@ -65,13 +65,15 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles
                 'keterangan' => $pembayaran->keterangan,
                 'metode_bayar' => $pembayaran->metode_bayar,
                 'periode' => $periode,
+                'admin' => 'Di Input Oleh: ' . $pembayaran->user->name,
+                'agen' => $pembayaran->agen->name ?? '-',
             ];
         });
     }
 
     public function headings(): array
     {
-        return ['ID', 'Nama Pelanggan', 'Paket', 'Jumlah Bayar', 'Tanggal Pembayaran', 'Keterangan', ' Metode Bayar', 'Periode'];
+        return ['ID', 'Nama Pelanggan', 'Paket', 'Jumlah Bayar', 'Tanggal Pembayaran', 'Keterangan', ' Metode Bayar', 'Periode', 'Admin', 'PIC/Agen'];
     }
 
     public function styles(Worksheet $sheet)
@@ -80,7 +82,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles
         $lastRow = $sheet->getHighestRow();
 
         // Style header (baris 1)
-        $sheet->getStyle('A1:H1')->applyFromArray([
+        $sheet->getStyle('A1:J1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['argb' => Color::COLOR_WHITE],
@@ -96,7 +98,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles
         ]);
 
         // Style seluruh data termasuk keterangan (A1 sampai F terakhir)
-        $sheet->getStyle("A1:H{$lastRow}")->applyFromArray([
+        $sheet->getStyle("A1:J{$lastRow}")->applyFromArray([
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
