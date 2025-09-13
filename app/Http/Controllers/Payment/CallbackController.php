@@ -99,7 +99,7 @@ class CallbackController extends Controller
             // Proses status pembayaran
             switch ($status) {
                 case 'PAID':
-                    $this->handlePaid($invoice, (object) $data['payload']);
+                    $this->handlePaid($invoice, (object) $data);
                     Log::info('Invoice marked as paid', ['reference' => $reference, 'Nama Customer' => $invoice->customer->nama_customer]);
                     break;
 
