@@ -19,7 +19,8 @@ class CekPayment extends Command
         $startTime = microtime(true);
         Log::info('🚀 Memulai pengecekan invoice');
 
-        $tanggalHariIni = now('Asia/Jakarta');
+        $tanggalHariIni = now('Asia/Jakarta')->endOfDay();
+        Log::info("📅 Tanggal hari ini: {$tanggalHariIni}");
         $query = Invoice::where('status_id', 7)->where('paket_id', '!=', 11); // status_id 7 = Belum Bayar
 
         if (!$this->option('force')) {
@@ -70,10 +71,25 @@ class CekPayment extends Command
             }
 
             // ========================= 🔒 BLOKIR OTOMATIS ========================= //
-            $tanggalBlokir = Carbon::parse($invoice->jatuh_tempo)
-                ->addMonthNoOverflow() // +1 bulan tapi tetap di bulan berikutnya yang valid
-                ->day((int) ($invoice->tanggal_blokir ?? 10))
-                ->endOfDay();
+            // $tanggalBlokir = Carbon::parse($invoice->jatuh_tempo)
+            //     ->addMonthNoOverflow()
+            //     ->day((int) ($invoice->tanggal_blokir ?? 10))
+            //     ->endOfDay();
+
+            $jatuhTempo = Carbon::parse($invoice->jatuh_tempo);
+            if ($invoice->tagihan != $invoice->paket->harga) {
+                //Prorate
+                $tanggalBlokir = $jatuhTempo->copy()->addMonthNoOverflow()
+                    ->day((int) ($invoice->tanggal_blokir ?? 13))
+                    ->endOfDay();
+                Log::info("Tagihan: " . $invoice->tagihan . " != " . $invoice->paket->harga . " (Prorate)");
+            } else {
+                // jika full, blokir bulan yang sama
+                $tanggalBlokir = $jatuhTempo->copy()
+                    ->day((int) ($invoice->tanggal_blokir ?? 13))
+                    ->endOfDay();
+                Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full)");
+            }
 
             Log::info("🕒 Cek Blokir - Invoice #{$invoice->id} | Sekarang: {$tanggalHariIni} | Blokir pada: {$tanggalBlokir}");
 

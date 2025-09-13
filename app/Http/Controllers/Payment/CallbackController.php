@@ -69,6 +69,7 @@ class CallbackController extends Controller
 
             // Validasi field penting
             if (!isset($data['payload']['reference']) || !isset($data['payload']['status'])) {
+                Log::info('Missing required fields in callback data', ['payload' => $data['payload']]);
                 return $this->jsonError('Missing required fields in callback data');
             }
 
@@ -96,6 +97,7 @@ class CallbackController extends Controller
             switch ($status) {
                 case 'PAID':
                     $this->handlePaid($invoice, (object) $data['payload']);
+                    Log::info('Invoice marked as paid', ['reference' => $reference, 'Nama Customer' => $invoice->customer->nama_customer]);
                     break;
 
                 case 'EXPIRED':

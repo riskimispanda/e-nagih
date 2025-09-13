@@ -24,14 +24,15 @@ class SendWarning extends Command
 
         $chat = new ChatServices();
 
-        // Ambil invoice terakhir (jatuh tempo terbaru) yang belum bayar per customer
+        // Get unpaid invoices grouped by customer with latest due date
         $invoices = Invoice::with('customer')
             ->where('status_id', 7)
             ->whereDate('jatuh_tempo', '<', $today)
-            ->orderBy('jatuh_tempo', 'desc')
             ->get()
             ->groupBy('customer_id')
-            ->map->first();
+            ->map(function ($customerInvoices) {
+                return $customerInvoices->sortByDesc('jatuh_tempo')->first();
+            });
 
         foreach ($invoices as $invoice) {
             if (!$invoice->customer) {
