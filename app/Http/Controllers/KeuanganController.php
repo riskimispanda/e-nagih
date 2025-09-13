@@ -1108,6 +1108,7 @@ class KeuanganController extends Controller
             return redirect()->back()->with('success', 'Pembayaran berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::info('Gagal menyimpan pembayaran: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal menyimpan pembayaran: ' . $e->getMessage());
         }
     }
