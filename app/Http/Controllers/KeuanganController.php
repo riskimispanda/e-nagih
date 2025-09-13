@@ -1067,7 +1067,7 @@ class KeuanganController extends Controller
             Kas::create([
                 'debit'         => $pembayaran->jumlah_bayar,
                 'tanggal_kas'   => $pembayaran->tanggal_bayar,
-                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer . ' PIC : ' . $invoice->customer->agen->name ?? '-',
+                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer . ' PIC : ' . ($invoice->customer->agen->name ?? '-'),
                 'kas_id'        => 1,
                 'user_id'       => auth()->id(),
                 'status_id'     => 3,
