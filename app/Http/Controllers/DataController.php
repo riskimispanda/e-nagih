@@ -27,6 +27,7 @@ use App\Imports\CustomerImport;
 use App\Imports\CustomerKhusus;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\ModemDetail;
+use App\Models\User;
 
 class DataController extends Controller
 {
@@ -361,6 +362,7 @@ class DataController extends Controller
         $koneksi = Koneksi::all();
         $media = MediaKoneksi::all();
         $perangkat = Perangkat::all();
+        $agen = User::where('roles_id', 6)->get();
 
         return view('/pelanggan/edit',[
             'users' => auth()->user(),
@@ -374,7 +376,8 @@ class DataController extends Controller
             'odp' => $odp,
             'koneksi' => $koneksi,
             'media' => $media,
-            'perangkat' => $perangkat
+            'perangkat' => $perangkat,
+            'agen' => $agen,
         ]);
     }
 
@@ -407,7 +410,8 @@ class DataController extends Controller
                 'seri_perangkat' => $request->seri,
                 'mac_address' => $request->mac,
                 'usersecret' => $request->usersecret,
-                'pass_secret' => $request->pass_secret
+                'pass_secret' => $request->pass_secret,
+                'agen_id' => $request->agen_id,
             ];
 
             // Filter hanya field yang berubah

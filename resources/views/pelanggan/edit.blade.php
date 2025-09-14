@@ -54,13 +54,30 @@
                                 <input type="text" class="form-control" id="nama_customer" name="gps" value="{{ $pelanggan->gps }}">
                             </div>
                         </div>
-                        <div class="col-sm-12 mb-2">
+                        <div class="col-sm-6 mb-2">
                             <label class="form-label">No Identitas</label>
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text">
                                     <i class="bx bx-math"></i>
                                 </span>
                                 <input type="text" class="form-control" id="nama_customer" name="no_identitas" value="{{ $pelanggan->no_identitas }}">
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Agen/PIC</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text">
+                                    <i class="bx bx-user-check"></i>
+                                </span>
+                                <select name="agen_id" class="form-select" id="pic">
+                                    <option value="" disabled {{ $pelanggan->agen_id ? '' : 'selected' }}>Pilih Agen</option>
+                                    @foreach ($agen as $pic)
+                                        <option value="{{ $pic->id }}" 
+                                            {{ $pelanggan->agen_id == $pic->id ? 'selected' : '' }}>
+                                            {{ $pic->name }}
+                                        </option>
+                                    @endforeach
+                                </select>                                
                             </div>
                         </div>
                     </div>
@@ -365,6 +382,12 @@
                 e.target.submit(); // submit form kalau user klik "Ya"
             }
         });
+    });
+</script>
+
+<script>
+    new TomSelect('#pic',{
+        create: false,
     });
 </script>
 @endsection
