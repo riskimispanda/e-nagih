@@ -32,7 +32,7 @@
                         </div>
                         <p class="mb-1 fw-semibold">Total Aset</p>
                         <h4 class="card-title mb-3">{{$perangkat->count()}}</h4>
-                        <small class="fw-medium"> Rp {{ number_format($perangkat->sum('harga'), 0, ',', '.') }}</small>
+                        <small class="fw-medium">Rp {{ number_format($perangkat->sum(fn($item) => $item->harga * $item->jumlah_stok), 0, ',', '.') }}</small>
                     </div>
                 </div>
             </div>
