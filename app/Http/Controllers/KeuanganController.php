@@ -993,7 +993,9 @@ class KeuanganController extends Controller
 
             $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
                 " dari " . auth()->user()->name .
-                " untuk pelanggan " . $invoice->customer->nama_customer . " PIC : " . $invoice->customer->agen->name ?? '-';
+                " untuk pelanggan " . $invoice->customer->nama_customer .
+                " PIC : " . ($invoice->customer->agen->name ?? '-');
+
 
             // Simpan pembayaran
             $pembayaran = Pembayaran::create([
