@@ -188,6 +188,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/edit-logistik/{id}', [Logistik::class, 'editLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
     Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
     Route::get('/tracking', [Logistik::class, 'tracking'])->middleware('auth', 'roles:Super Admin,Admin Logistik')->name('tracking');
+    Route::get('/dashboard-logistik', [Logistik::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('dashboard-logistik');
 
 
 

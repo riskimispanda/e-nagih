@@ -7,6 +7,7 @@ use App\Models\Perangkat;
 use App\Models\KategoriLogistik;
 use App\Models\ModemDetail;
 use Illuminate\Support\Facades\Log;
+use App\Models\Customer;
 
 class Logistik extends Controller
 {
@@ -15,7 +16,16 @@ class Logistik extends Controller
      */
     public function index()
     {
-        //
+        $perangkat = Perangkat::all();
+        $terpakai = Customer::with('perangkat')->count();
+        $tersedia = Perangkat::sum('jumlah_stok');
+        return view('dashboard.dashboard-logistik', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'perangkat' => $perangkat,
+            'terpakai' => $terpakai,
+            'tersedia' => $tersedia
+        ]);
     }
 
     public function tambahKategori(Request $request)

@@ -71,7 +71,6 @@
                             <th class="text-white">User</th>
                             <th class="text-white">Role</th>
                             <th class="text-white">Aktivitas</th>
-                            <th class="text-white">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -89,11 +88,6 @@
                                 </span>
                             </td>
                             <td>{{ $log->description }}</td>
-                            <td>
-                                <a href="/logs-detail/{{ $log->id }}" class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Detail Aktivitas">
-                                    <i class="bx bx-info-circle"></i>
-                                </a>
-                            </td>
                         </tr>
                         @empty
                         <tr>

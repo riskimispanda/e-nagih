@@ -39,6 +39,17 @@
       ]
     },
     {
+      "url": "/dashboard-logistik",
+      "name": "Dashboard Logistik",
+      "icon": "menu-icon tf-icons bx bx-package",
+      "slug": "dashboard-logistik",
+      "roles": [
+        "Super Admin",
+        "Admin Keuangan",
+        "Admin Logistik"
+      ]
+    },
+    {
       "url": "/laporan",
       "name": "Laporan",
       "icon": "menu-icon tf-icons bx bxs-report",
@@ -67,16 +78,6 @@
       "roles": [
         "Super Admin",
         "Admin Keuangan"
-      ]
-    },
-    {
-      "url": "/tracking",
-      "name": "Tracking Tools",
-      "icon": "menu-icon tf-icons bx bx-search",
-      "slug": "tracking",
-      "roles": [
-        "Super Admin",
-        "Admin Logistik"
       ]
     },
     {
@@ -165,15 +166,35 @@
             "Super Admin",
             "Admin Keuangan"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "url": "#",
+      "name": "Master Logistik",
+      "icon": "menu-icon tf-icons bx bx-clipboard",
+      "slug": "master-aset",
+      "roles": [
+        "Admin Logistik",
+        "Super Admin"
+      ],
+      "submenu": [
         {
           "url": "/data/logistik",
           "name": "Data Logistik",
           "slug": "logistik",
           "roles": [
-            "Super Admin",
             "Admin Logistik",
-            "Admin Keuangan"
+            "Super Admin"
+          ]
+        },
+        {
+          "url": "/tracking",
+          "name": "Tracking Tools",
+          "slug": "tracking",
+          "roles": [
+            "Admin Logistik",
+            "Super Admin"
           ]
         }
       ]
