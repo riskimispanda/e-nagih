@@ -88,7 +88,7 @@ class CekPayment extends Command
                 $tanggalBlokir = $jatuhTempo->copy()
                     ->day((int) ($invoice->tanggal_blokir ?? 10))
                     ->endOfDay();
-                Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full) | Berhasil Blokir Customer: " . $customer->nama_customer);
+                Log::info("Tagihan: " . $invoice->tagihan . " == " . $invoice->paket->harga . " (Full) ");
             }
 
             Log::info("🕒 Cek Blokir - Invoice #{$invoice->id} | Sekarang: {$tanggalHariIni} | Blokir pada: {$tanggalBlokir}");
