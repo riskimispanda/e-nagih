@@ -1003,9 +1003,16 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-outline-warning action-btn" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
-                                        <i class="bx bx-cloud"></i>
-                                    </a>
+                                    <div class="row">
+                                        <div class="d-flex justify-content-center">
+                                            <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-warning action-btn" data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
+                                                <i class="bx bx-cloud"></i>
+                                            </a>
+                                            <a href="/traffic-pelanggan/{{ $item->id }}" class="btn btn-info action-btn" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Traffic {{ $item->nama_customer }}">
+                                                <i class="bx bx-chart"></i>
+                                            </a>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     <div class="row">

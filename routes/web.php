@@ -296,6 +296,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/konfirmasiEditPembayaran/{id}', [SuperAdmin::class, 'konfirmasiEditPembayaran'])->middleware('auth','roles:Super Admin');
     Route::get('/rejectEditPembayaran/{id}', [SuperAdmin::class, 'rejectEditPembayaran'])->middleware('auth','roles:Super Admin');
 
+    Route::get('/traffic-pelanggan/{id}', [MikrotikController::class, 'trafficPelanggan'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Helpdesk,Admin Logistik')->name('pelanggan-traffic');
+    Route::get('/pelanggan/{id}/traffic/data', [MikrotikController::class, 'trafficData'])->name('pelanggan-traffic-data');
+
 
 
 

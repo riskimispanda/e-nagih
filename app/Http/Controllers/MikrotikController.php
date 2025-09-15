@@ -7,6 +7,7 @@ use App\Services\MikrotikServices;
 use App\Models\Router;
 use RouterOS\Query;
 use Illuminate\Support\Facades\Log;
+use App\Models\Customer;
 
 class MikrotikController extends Controller
 {
@@ -19,7 +20,7 @@ class MikrotikController extends Controller
         $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
         $client = MikrotikServices::connect($router);
 
-        $inter = MikrotikServices::gantiProfileAll($router, 'profile-UpTo-5');
+        $inter = MikrotikServices::trafficPelanggan($router, '0110171120235.Yunus-Jetis@megaroute.net.id');
         $traffic = MikrotikServices::getUserSpeed($client, '');
         if (isset($traffic['error'])) {
             Log::warning("Cek speed gagal", $traffic);
@@ -28,7 +29,7 @@ class MikrotikController extends Controller
         }
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-        dd($user);
+        dd($inter);
     }
 
     public function testKoneksi($id)
@@ -106,5 +107,35 @@ class MikrotikController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function trafficPelanggan($id)
+    {
+        $pelanggan = Customer::findOrFail($id);
+        $router    = Router::findOrFail($pelanggan->router_id);
+        $result = MikrotikServices::trafficPelanggan($router, $pelanggan->usersecret);
+        // dd($result);
+        return view('pelanggan.traffic-pelanggan', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'pelanggan' => $pelanggan
+        ]);
+    }
+
+    // 🔹 Endpoint untuk AJAX polling
+    public function trafficData($id)
+    {
+        $pelanggan = Customer::findOrFail($id);
+        $router    = Router::findOrFail($pelanggan->router_id);
+
+        $result = MikrotikServices::trafficPelanggan($router, $pelanggan->usersecret);
+
+        return response()->json([
+            'rx'     => $result['rx'] ?? 0,
+            'tx'     => $result['tx'] ?? 0,
+            'uptime' => $result['uptime'] ?? null,
+            'status' => $result['status'] ?? 'offline',
+            'msg'    => $result['message'] ?? '-',
+        ]);
     }
 }
