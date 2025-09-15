@@ -11,6 +11,8 @@ use App\Models\Pembayaran;
 use App\Models\Kas;
 use App\Services\ChatServices;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
+use App\Services\MikrotikServices;
 
 class TripayController extends Controller
 {
@@ -759,5 +761,151 @@ class TripayController extends Controller
                 'message' => 'Error checking payment status: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function syncPayment(Request $request, $invoiceId)
+    {
+        $invoice = Invoice::with('customer', 'paket')->find($invoiceId);
+
+        if (!$invoice) {
+            return redirect()->back()->with('error', 'Invoice tidak ditemukan');
+        }
+
+        $apiKey = config('tripay.api_key');
+        $url = "https://tripay.co.id/api/transaction/detail?reference={$invoice->reference}";
+
+        $client = new \GuzzleHttp\Client();
+
+        try {
+            $response = $client->get($url, [
+                'headers' => [
+                    'Authorization' => "Bearer {$apiKey}",
+                    'Accept'        => 'application/json',
+                ],
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+            $trx  = $data['data'] ?? null;
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghubungi Tripay: ' . $e->getMessage());
+        }
+
+        if (!$trx || empty($trx['status'])) {
+            return redirect()->back()->with('error', 'Tidak bisa mendapatkan status transaksi dari Tripay');
+        }
+        // dd($trx);
+        // Update reference jika berbeda
+        if (
+            $invoice->merchant_ref !== ($trx['merchant_ref'] ?? $invoice->merchant_ref) ||
+            $invoice->reference    !== ($trx['reference'] ?? $invoice->reference)
+        ) {
+
+            $invoice->merchant_ref = $trx['merchant_ref'] ?? $invoice->merchant_ref;
+            $invoice->reference    = $trx['reference'] ?? $invoice->reference;
+            $invoice->save();
+
+            Log::info('Invoice reference/merchant_ref diperbarui dari Tripay', [
+                'invoice_id' => $invoice->id,
+                'merchant_ref' => $invoice->merchant_ref,
+                'reference'    => $invoice->reference,
+            ]);
+        }
+
+        $status = strtoupper($trx['status']);
+
+        // Hanya proses jika pembayaran PAID
+        if ($status === 'PAID' && $invoice->status_id != 8) {
+            $invoice->update([
+                'status_id'    => 8,
+                'metode_bayar' => $trx['payment_method'] ?? 'Tripay',
+            ]);
+
+            // Buat pembayaran
+            $pembayaran = Pembayaran::create([
+                'invoice_id'   => $invoice->id,
+                'status_id'    => 8,
+                'jumlah_bayar' => $trx['amount_received'] ?? 0,
+                'metode_bayar' => $trx['payment_method'] ?? 'Tripay',
+                'keterangan'   => 'Pembayaran dari pelanggan: ' . $invoice->customer->nama_customer . ' Via ' . $trx['payment_method'],
+                'tanggal_bayar' => !empty($trx['paid_at']) ? Carbon::createFromTimestamp($trx['paid_at']) : now(),
+            ]);
+
+            // Catat kas
+            Kas::create([
+                'debit'       => $trx['amount_received'] ?? 0,
+                'kas_id'      => 1,
+                'tanggal_kas' => !empty($trx['paid_at']) ? Carbon::createFromTimestamp($trx['paid_at']) : now(),
+                'keterangan'  => 'Pembayaran dari pelanggan: ' . $invoice->customer->nama_customer . ' Via ' . $trx['payment_method'],
+                'status_id'   => 3,
+            ]);
+
+            // Generate invoice bulan depan
+            $jatuhTempo = $invoice->jatuh_tempo;
+            if ($jatuhTempo) {
+                $bulanDepan = Carbon::parse($jatuhTempo)->addMonthNoOverflow();
+
+                $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                    ->whereMonth('jatuh_tempo', $bulanDepan->month)
+                    ->whereYear('jatuh_tempo', $bulanDepan->year)
+                    ->exists();
+
+                if (!$sudahAda) {
+                    $nextInvoice = Invoice::create([
+                        'customer_id'    => $invoice->customer_id,
+                        'tagihan'        => $invoice->paket->harga ?? 0,
+                        'paket_id'       => $invoice->customer->paket_id,
+                        'tambahan'       => 0,
+                        'status_id'      => 7, // Belum bayar
+                        'jatuh_tempo'    => $bulanDepan->endOfMonth()->setTime(23, 59, 59),
+                        'tanggal_blokir' => $invoice->tanggal_blokir,
+                        'metode_bayar'   => $invoice->metode_bayar,
+                    ]);
+
+                    Log::info('Invoice bulan depan dibuat', [
+                        'invoice_id' => $nextInvoice->id,
+                        'customer_id' => $invoice->customer_id,
+                    ]);
+                }
+            }
+
+            // Unblock user jika masih terblokir
+            if ($invoice->customer->status_id == 9) {
+                try {
+                    $mikrotik = new MikrotikServices();
+                    $client   = MikrotikServices::connect($invoice->customer->router);
+
+                    $mikrotik->removeActiveConnections($client, $invoice->customer->usersecret);
+                    $mikrotik->unblokUser($client, $invoice->customer->usersecret, $invoice->customer->paket->paket_name);
+
+                    $invoice->customer->update(['status_id' => 3]);
+
+                    Log::info('Customer berhasil di-unblock', ['customer_id' => $invoice->customer->id]);
+                } catch (\Exception $e) {
+                    Log::error('Gagal unblock customer', [
+                        'customer_id' => $invoice->customer->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Kirim WA notif
+            try {
+                $chat = new ChatServices();
+                $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
+            } catch (\Exception $e) {
+                Log::error('Gagal kirim notifikasi WhatsApp', [
+                    'customer_id' => $invoice->customer->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            activity('payment')
+                ->performedOn($invoice)
+                ->log('Pembayaran berhasil disinkronisasi via button IPN Tripay oleh: ' . auth()->user()->name);
+
+            return redirect()->back()->with('success', 'Invoice berhasil disinkronisasi dari Tripay');
+        }
+
+        return redirect()->back()->with('info', 'Status invoice sudah sesuai atau belum dibayar di Tripay');
     }
 }

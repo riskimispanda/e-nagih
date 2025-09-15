@@ -462,6 +462,12 @@
                                     <a href="/kirim/invoice/{{ $invoice->id }}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                                         <i class="bx bx-message"></i>
                                     </a>
+                                    <form action="{{ url('/tripay/sync-payment/'.$invoice->id) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        <button type="submit" class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync Payment">
+                                            <i class="bx bx-cart"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -1052,6 +1058,12 @@
             <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                 <i class="bx bx-message"></i>
             </a>
+            <form action="{{ url('/tripay/sync-payment/'.$invoice->id) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        <button type="submit" class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync Payment">
+                                            <i class="bx bx-cart"></i>
+                                        </button>
+                                    </form>
         `;
         
         return buttons;
@@ -1203,4 +1215,34 @@
     });
     
 </script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.sync-payment-btn').click(function(e) {
+        e.preventDefault(); // cegah link default
+
+        var invoiceId = $(this).data('invoice-id');
+
+        $.ajax({
+            url: '/tripay/sync-payment/' + invoiceId,
+            type: 'POST',
+            data: {
+                _token: '{{ csrf_token() }}'
+            },
+            beforeSend: function() {
+                // opsional: tampilkan loading
+            },
+            success: function(response) {
+                alert(response.message || 'Sync berhasil!');
+                // opsional: reload atau update row invoice
+            },
+            error: function(xhr) {
+                alert(xhr.responseJSON.message || 'Terjadi error saat sync');
+            }
+        });
+    });
+});
+</script>
+
 @endsection

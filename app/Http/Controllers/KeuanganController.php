@@ -1193,10 +1193,8 @@ class KeuanganController extends Controller
             'pembayaran.user' // Tambahan
         ])->whereHas('customer.agen', function($query) use ($id) {
             $query->where('agen_id', $id)
-                  ->where('status_id', 3);
+                ->whereIn('status_id', [3, 9]);
         });
-        
-        
 
         // Filter berdasarkan bulan (format sederhana: 01-12)
         $filterMonth = $request->get('month', now()->format('m')); // Default ke bulan sekarang
@@ -1227,7 +1225,7 @@ class KeuanganController extends Controller
         // Calculate totals for ALL invoices (not just paginated ones) dengan filter yang sama
         $allInvoicesQuery = Invoice::with(['customer', 'status'])
             ->whereHas('customer', function($q) use ($id) {
-                $q->where('agen_id', $id)->where('status_id', 3);
+            $q->where('agen_id', $id)->whereIn('status_id', [3, 9]);
             });
 
         // Terapkan filter bulan yang sama untuk perhitungan total
