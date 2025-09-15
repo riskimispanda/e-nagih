@@ -1182,103 +1182,72 @@ class KeuanganController extends Controller
         // Get agen info
         $agen = User::findOrFail($id);
 
-        // Dapatkan bulan saat ini dalam format angka (01-12)
+        // Bulan saat ini
         $currentMonth = now()->format('m');
-        $filterMonth = $request->get('month', $currentMonth); // Default ke bulan sekarang
+        $filterMonth = $request->get('month', $currentMonth);
 
-        // Get all invoices from customers under this agent
-        $invoicesQuery = Invoice::with([
-            'customer.paket',
-            'status',
-            'pembayaran.user' // Tambahan
-        ])->whereHas('customer.agen', function($query) use ($id) {
-            $query->where('agen_id', $id)
-                ->whereIn('status_id', [3, 9]);
-        });
-
-        // Filter berdasarkan bulan (format sederhana: 01-12)
-        $filterMonth = $request->get('month', now()->format('m')); // Default ke bulan sekarang
-
-        if ($filterMonth !== 'all') {
-            // Filter berdasarkan bulan yang dipilih (format: 01, 02, 03, dst)
-            $invoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
-        }
-        // Jika month = 'all', tidak ada filter tambahan
-
-        // Filter berdasarkan status tagihan
-        $filterStatus = $request->get('status');
-        if ($filterStatus) {
-            // Gunakan pendekatan yang lebih fleksibel untuk filter status
-            if ($filterStatus == 'Sudah Bayar') {
-                $invoicesQuery->whereHas('status', function($q) {
-                    $q->where('nama_status', 'Sudah Bayar');
-                });
-            } elseif ($filterStatus == 'Belum Bayar') {
-                $invoicesQuery->whereHas('status', function($q) {
-                    $q->where('nama_status', 'Belum Bayar');
-                });
-            }
-        }
-
-        $invoices = $invoicesQuery->orderBy('jatuh_tempo', 'desc')->paginate(10);
-
-        // Calculate totals for ALL invoices (not just paginated ones) dengan filter yang sama
-        $allInvoicesQuery = Invoice::with(['customer', 'status'])
-            ->whereHas('customer', function($q) use ($id) {
-            $q->where('agen_id', $id)->whereIn('status_id', [3, 9]);
+        // Ambil hanya 1 invoice terakhir per customer (subquery)
+        $latestInvoicesQuery = Invoice::select('invoice.*')
+            ->join(DB::raw('(
+                SELECT customer_id, MAX(jatuh_tempo) as latest_jatuh_tempo 
+                FROM invoice 
+                WHERE MONTH(jatuh_tempo) = ' . intval($filterMonth) . ' 
+                AND YEAR(jatuh_tempo) = ' . date('Y') . '
+                GROUP BY customer_id
+            ) as latest'), function ($join) {
+                $join->on('invoice.customer_id', '=', 'latest.customer_id')
+                    ->on('invoice.jatuh_tempo', '=', 'latest.latest_jatuh_tempo');
+            })
+            ->with(['customer.paket', 'status', 'pembayaran.user'])
+            ->whereHas('customer', function ($q) use ($id) {
+                $q->where('agen_id', $id)->whereIn('status_id', [3, 9]);
             });
 
-        // Terapkan filter bulan yang sama untuk perhitungan total
+
+        // Filter bulan
         if ($filterMonth !== 'all') {
-            $allInvoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
+            $latestInvoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
         }
 
-        // Terapkan filter status yang sama untuk perhitungan total
+        // Filter status
+        $filterStatus = $request->get('status');
         if ($filterStatus) {
             if ($filterStatus == 'Sudah Bayar') {
-                $allInvoicesQuery->whereHas('status', function($q) {
-                    $q->where('nama_status', 'Sudah Bayar');
-                });
+                $latestInvoicesQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
             } elseif ($filterStatus == 'Belum Bayar') {
-                $allInvoicesQuery->whereHas('status', function($q) {
-                    $q->where('nama_status', 'Belum Bayar');
-                });
+                $latestInvoicesQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
             }
         }
 
-        $allInvoices = $allInvoicesQuery->get();
+        $invoices = (clone $latestInvoicesQuery)->orderBy('jatuh_tempo', 'desc')->paginate(10);
 
-        // Calculate statistics for all data
-        $totalPaid = 0;
-        $totalUnpaid = 0;
-        $totalAmount = 0;
+        // Hitung total semua invoice sesuai filter
+        $allInvoices = (clone $latestInvoicesQuery)->get();
 
-        foreach ($allInvoices as $invoice) {
-            $tagihan = $invoice->tagihan ?? 0;
-            $totalAmount += $tagihan;
-
-            if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
-                $totalPaid += $tagihan;
-            } else {
-                $totalUnpaid += $tagihan;
-            }
-        }
-
-        if (!$agen) {
-            abort(404, 'Agen not found');
-        }
+        $totalPaid = $allInvoices->where('status.nama_status', 'Sudah Bayar')->sum('tagihan');
+        $totalUnpaid = $allInvoices->where('status.nama_status', 'Belum Bayar')->sum('tagihan');
+        $totalAmount = $allInvoices->sum('tagihan');
 
         // Data untuk view
         $monthNames = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember'
         ];
 
         $currentMonthNum = now()->format('m');
         $currentMonthName = $monthNames[$currentMonthNum];
 
-        return view('keuangan.data-pelanggan-agen',[
+        return view('keuangan.data-pelanggan-agen', [
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
             'invoices' => $invoices,
@@ -1294,6 +1263,7 @@ class KeuanganController extends Controller
             'currentMonthName' => $currentMonthName,
         ]);
     }
+
 
     public function laporan(Request $request)
     {
