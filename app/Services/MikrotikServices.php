@@ -306,47 +306,54 @@ class MikrotikServices
         }
     }
 
-    public static function UpgradeDowngrade(Client $client, $usersecret, $newProfile)
+    public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile): bool
     {
         try {
-            // Validasi awal
             if (empty($usersecret) || empty($newProfile)) {
-                Log::warning("UpgradeDowngrade dibatalkan: usersecret atau profile kosong. usersecret='{$usersecret}', profile='{$newProfile}'");
+                Log::warning("UpgradeDowngrade: usersecret atau profile kosong", [
+                    'usersecret' => $usersecret,
+                    'newProfile' => $newProfile
+                ]);
                 return false;
             }
 
-            // Cari user berdasarkan usersecret (name)
+            // Cari user
             $query = new Query('/ppp/secret/print');
             $query->where('name', $usersecret);
-            Log::info('MikrotikServices::UpgradeDowngrade: Mencari usersecret ' . $usersecret);
-            $user = $client->query($query)->read()[0] ?? null;
+            $users = $client->query($query)->read();
+            $user = $users[0] ?? null;
 
             if (!$user) {
-                // Jika user tidak ada → buat baru
-                $addQuery = new Query('/ppp/secret/add');
-                $addQuery->equal('name', $usersecret);
-                $addQuery->equal('password', $usersecret); // default password sama dengan username (bisa diganti)
-                $addQuery->equal('service', 'pppoe'); // default service pppoe (ubah sesuai kebutuhan)
-                $addQuery->equal('profile', $newProfile);
-                $client->query($addQuery)->read();
-
-                Log::info("MikrotikServices::UpgradeDowngrade CREATE: user '{$usersecret}' dibuat dengan profile '{$newProfile}'");
-                return true;
+                Log::warning("UpgradeDowngrade: user tidak ditemukan", [
+                    'usersecret' => $usersecret
+                ]);
+                return false;
             }
 
-            // Jika user ada → update profile
+            // Update profile
             $setQuery = new Query('/ppp/secret/set');
             $setQuery->equal('.id', $user['.id']);
             $setQuery->equal('profile', $newProfile);
-            $client->query($setQuery)->read();
+            $client->query($setQuery);
 
-            Log::info("MikrotikServices::UpgradeDowngrade UPDATE: {$usersecret} -> {$newProfile}");
+            Log::info("UpgradeDowngrade: profile updated", [
+                'usersecret' => $usersecret,
+                'oldProfile' => $user['profile'] ?? null,
+                'newProfile' => $newProfile,
+            ]);
+
             return true;
         } catch (Exception $e) {
-            Log::error("MikrotikServices::UpgradeDowngrade ERROR: " . $e->getMessage());
+            Log::error("UpgradeDowngrade ERROR", [
+                'usersecret' => $usersecret,
+                'newProfile' => $newProfile,
+                'error'      => $e->getMessage(),
+            ]);
             return false;
         }
     }
+
+
 
 
 

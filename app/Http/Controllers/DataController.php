@@ -390,7 +390,7 @@ class DataController extends Controller
         try {
             $pelanggan = Customer::findOrFail($id);
 
-            // Ambil data request yang relevan
+            // Data request langsung diassign ke pelanggan
             $data = [
                 'nama_customer' => $request->nama,
                 'no_hp' => $request->no_hp,
@@ -414,36 +414,27 @@ class DataController extends Controller
                 'agen_id' => $request->agen_id,
             ];
 
-            // Filter hanya field yang berubah
-            $changes = [];
-            foreach ($data as $key => $value) {
-                if ($pelanggan->$key != $value) {
-                    $changes[$key] = $value;
-                }
+            // Update langsung tanpa filter
+            $pelanggan->update($data);
+
+            // Tentukan router & paket (selalu ambil dari request)
+            $router = Router::findOrFail($request->router);
+            $paket  = Paket::findOrFail($request->paket);
+
+            // Update invoice
+            if ($invoice) {
+                $invoice->update([
+                    'paket_id' => $paket->id,
+                    'tagihan'  => $paket->harga,
+                ]);
             }
 
-            // Update hanya jika ada perubahan
-            if (!empty($changes)) {
-                $pelanggan->update($changes);
+            // Update profile di MikroTik
+            $client = MikrotikServices::connect($router);
+            MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket->paket_name);
+            MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
 
-                // Kalau paket_id berubah, update juga invoice + mikrotik
-                if (array_key_exists('paket_id', $changes)) {
-                    $pelanggan->load('paket');
-                    $paket = $pelanggan->paket->paket_name;
-                    $router = Router::findOrFail($request->router);
-
-                    $invoice->update([
-                        'paket_id' => $pelanggan->paket_id,
-                        'tagihan' => $pelanggan->paket->harga,
-                    ]);
-
-                    $client = MikrotikServices::connect($router);
-                    MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket);
-                    MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
-
-                    Log::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket);
-                }
-            }
+            Log::info('Success update profile Pelanggan: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket->paket_name);
 
             // Update Data Modem
             ModemDetail::updateOrCreate(
@@ -452,7 +443,7 @@ class DataController extends Controller
                     'logistik_id'   => $request->perangkat,
                     'serial_number' => $pelanggan->seri_perangkat,
                     'mac_address'   => $pelanggan->mac_address,
-                    'status_id' => 13
+                    'status_id'     => 13
                 ]
             );
 
@@ -465,6 +456,7 @@ class DataController extends Controller
             return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
         }
     }
+
 
 
     public function Import(Request $request)
