@@ -315,29 +315,40 @@ class MikrotikServices
                 return false;
             }
 
+            // Cari user berdasarkan usersecret (name)
             $query = new Query('/ppp/secret/print');
             $query->where('name', $usersecret);
-            $users = $client->query($query)->read();
+            Log::info('MikrotikServices::UpgradeDowngrade: Mencari usersecret ' . $usersecret);
+            $user = $client->query($query)->read()[0] ?? null;
 
-            if (empty($users)) {
-                Log::warning("UpgradeDowngrade dibatalkan: user '{$usersecret}' tidak ditemukan di MikroTik");
-                return false;
+            if (!$user) {
+                // Jika user tidak ada → buat baru
+                $addQuery = new Query('/ppp/secret/add');
+                $addQuery->equal('name', $usersecret);
+                $addQuery->equal('password', $usersecret); // default password sama dengan username (bisa diganti)
+                $addQuery->equal('service', 'pppoe'); // default service pppoe (ubah sesuai kebutuhan)
+                $addQuery->equal('profile', $newProfile);
+                $client->query($addQuery)->read();
+
+                Log::info("MikrotikServices::UpgradeDowngrade CREATE: user '{$usersecret}' dibuat dengan profile '{$newProfile}'");
+                return true;
             }
 
-            foreach ($users as $user) {
-                $setQuery = new Query('/ppp/secret/set');
-                $setQuery->equal('.id', $user['.id']);
-                $setQuery->equal('profile', $newProfile);
-                $client->query($setQuery)->read();
-            }
+            // Jika user ada → update profile
+            $setQuery = new Query('/ppp/secret/set');
+            $setQuery->equal('.id', $user['.id']);
+            $setQuery->equal('profile', $newProfile);
+            $client->query($setQuery)->read();
 
-            Log::info("MikrotikServices::changeUserProfile Success: {$usersecret} -> {$newProfile}");
+            Log::info("MikrotikServices::UpgradeDowngrade UPDATE: {$usersecret} -> {$newProfile}");
             return true;
         } catch (Exception $e) {
-            Log::error("MikrotikServices::changeUserProfile error: " . $e->getMessage());
+            Log::error("MikrotikServices::UpgradeDowngrade ERROR: " . $e->getMessage());
             return false;
         }
     }
+
+
 
 
 
