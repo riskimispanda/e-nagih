@@ -768,7 +768,7 @@ class TripayController extends Controller
         $invoice = Invoice::with('customer', 'paket')->find($invoiceId);
 
         if (!$invoice) {
-            return redirect()->back()->with('error', 'Invoice tidak ditemukan');
+            return redirect()->back()->with('error', 'Merchant Ref atau Reference tidak match!!!');
         }
 
         $apiKey = config('tripay.api_key');
