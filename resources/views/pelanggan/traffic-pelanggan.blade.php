@@ -129,8 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch("{{ route('pelanggan-traffic-data', $pelanggan->id) }}")
             .then(res => res.json())
             .then(data => {
-                document.getElementById("rx").textContent = formatBits(data.rx);
-                document.getElementById("tx").textContent = formatBits(data.tx);
+                document.getElementById("rx").textContent = formatBits(data.tx);
+                document.getElementById("tx").textContent = formatBits(data.rx);
                 document.getElementById("uptime").textContent = data.uptime ?? '-';
                 document.getElementById("status").textContent = data.status ?? '-';
 
