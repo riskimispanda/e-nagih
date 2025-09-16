@@ -25,6 +25,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Log;
 use App\Models\ModemDetail;
 use Spatie\Activitylog\Models\Activity;
+use Carbon\Carbon;
 
 
 class TeknisiController extends Controller
@@ -209,6 +210,7 @@ class TeknisiController extends Controller
             LOG::info('Customer updated', [
                 'customer_id' => $customer->id,
                 'tanggal_selesai' => $tanggalSelesai,
+                'Nama Customer' => $customer->nama_customer,
             ]);
 
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
@@ -217,9 +219,10 @@ class TeknisiController extends Controller
             $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
 
             $hargaPaket = $customer->paket->harga;
-            $tagihanProrate = ($tanggalSelesai->day == 1)
+            $tanggalMulaiLangganan = Carbon::parse($customer->tanggal_selesai);
+            $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
                 ? $hargaPaket
-                : $this->calculateProrate($hargaPaket, $tanggalSelesai);
+                : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
 
             // 🔍 Cek apakah sudah ada invoice bulan ini
             $existingInvoice = Invoice::where('customer_id', $customer->id)
@@ -275,13 +278,7 @@ class TeknisiController extends Controller
             activity('teknisi')
                 ->causedBy(auth()->user())
                 ->performedOn($customer)
-                ->withProperties([
-                    'nama' => $customer->nama_customer,
-                    'no_hp' => $customer->no_hp,
-                    'email' => $customer->email,
-                    'paket_id' => $customer->paket_id
-                ])
-                ->log('Konfirmasi instalasi pelanggan');
+                ->log(auth()->user()->name . ' Mengkonfirmasi instalasi pelanggan ' . $customer->nama_customer . ' Pada Tanggal ' . $tanggalSelesai);
 
             return redirect()->route('teknisi')->with('toast_success', 'Instalasi Selesai');
         } catch (\Exception $e) {

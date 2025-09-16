@@ -29,7 +29,7 @@ class MikrotikController extends Controller
         }
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-        dd($inter);
+        dd($user);
     }
 
     public function testKoneksi($id)
