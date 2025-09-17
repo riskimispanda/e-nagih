@@ -895,8 +895,8 @@
                 </div>
                 @endif
                 <div class="row">
-                    <div class="col-12 col-md-4">
-                        <div class="search-container">
+                    <div class="col-12 col-md-3 mb-4">
+                        {{-- <div class="search-container">
                             <div class="search-sort-wrapper">
                                 <div class="search-group">
                                     <div class="input-group">
@@ -907,9 +907,18 @@
                                     </div>
                                 </div>
                             </div>
+                        </div> --}}
+                        <div class="sort-group col-sm-12">
+                            <div class="sort-label">Pencarian</div>
+                            <div class="input-group">
+                                <input type="text" class="form-control search-input" placeholder="Cari pelanggan..." id="searchCustomer">
+                                <button class="btn search-button" type="button" id="searchButton">
+                                    <i class="bx bx-search"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3 mb-4">
                         <div class="sort-group col-sm-12">
                             <div class="sort-label">Urutkan Berdasarkan</div>
                             <select class="sort-select" id="sortSelect">
@@ -919,6 +928,29 @@
                                 <option value="status-active">Status Aktif</option>
                                 <option value="status-inactive">Status Non-Aktif</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="sort-group col-sm-12">
+                            <div class="sort-label">Halaman</div>
+                            <div class="pagination-info">
+                                <div class="page-size-selector">
+                                    <label for="pageSize">Data per halaman:</label>
+                                    <select id="pageSize" class="page-size-select">
+                                        @foreach([10, 25, 50, 100, 250] as $size)
+                                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                                                {{ $size }}
+                                            </option>
+                                        @endforeach
+                                        <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>Semua</option>
+                                    </select>
+                                </div>
+                                <div class="data-count-info">
+                                    Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
+                                    <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
+                                    <span class="count-highlight">{{ $data->total() }}</span> data
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1066,30 +1098,6 @@
                 
                 <!-- Pagination Container -->
                 <div class="pagination-container" id="paginationContainer">
-                    <div class="pagination-info">
-                        <div class="data-count-info">
-                            Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
-                            <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
-                            <span class="count-highlight">{{ $data->total() }}</span> data
-                        </div>
-                        <div class="page-size-selector">
-                            <label for="pageSize">Data per halaman:</label>
-                            {{-- <select id="pageSize" class="page-size-select">
-                                <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
-                            </select> --}}
-                            <select id="pageSize" class="page-size-select">
-                                @foreach([10, 25, 50, 100, 250] as $size)
-                                    <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
-                                        {{ $size }}
-                                    </option>
-                                @endforeach
-                                <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>Semua</option>
-                            </select>
-                        </div>
-                    </div>
                     <div class="pagination-controls">
                         {{ $data->links('pagination::bootstrap-4') }}
                     </div>
