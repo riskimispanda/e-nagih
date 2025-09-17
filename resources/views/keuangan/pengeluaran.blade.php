@@ -362,7 +362,7 @@
                     </table>
                 </div>
                 <div class="d-flex justify-content-start mt-4">
-                    {{ $pengeluarans->links() }}
+                    {{ $pengeluarans->links('pagination::bootstrap-5') }}
                 </div>
             </div> <!-- card-body -->
         </div> <!-- card -->
