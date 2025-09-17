@@ -534,7 +534,7 @@
                         </tr>
                         @empty
                         <tr class="empty-state-row">
-                            <td colspan="9" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center">
                                     <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-dark mt-3 mb-2">Tidak ada data invoice</h5>
@@ -698,7 +698,7 @@
         const tableBody = document.querySelector('#customerTable tbody');
         tableBody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center py-5">
+                <td colspan="10" class="text-center py-5">
                     <div class="d-flex flex-column align-items-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
