@@ -392,7 +392,13 @@ class KeuanganController extends Controller
         $cashPayments = Pembayaran::where(function($q) {
             $q->where('metode_bayar', 'like', '%cash%')
               ->orWhere('metode_bayar', 'like', '%tunai%');
-        })->count(); // Kosongkan dulu sesuai permintaan
+        })->sum('jumlah_bayar');
+        $CashCount = Pembayaran::where(function ($q) {
+            $q->where('metode_bayar', 'like', '%cash%')
+                ->orWhere('metode_bayar', 'like', '%tunai%');
+        })->count();
+
+
         $transferPayments = Pembayaran::where(function($q) {
             $q->where('metode_bayar', 'like', '%transfer%')
               ->orWhere('metode_bayar', 'like', '%bank%')
@@ -400,6 +406,14 @@ class KeuanganController extends Controller
               ->orWhere('metode_bayar', 'like', '%bniva%')
               ->orWhere('metode_bayar', 'like', '%bcava%')
               ->orWhere('metode_bayar', 'like', '%transfer bank%');
+        })->sum('jumlah_bayar');
+        $transferCount = Pembayaran::where(function ($q) {
+            $q->where('metode_bayar', 'like', '%transfer%')
+                ->orWhere('metode_bayar', 'like', '%bank%')
+                ->orWhere('metode_bayar', 'like', '%briva%')
+                ->orWhere('metode_bayar', 'like', '%bniva%')
+                ->orWhere('metode_bayar', 'like', '%bcava%')
+                ->orWhere('metode_bayar', 'like', '%transfer bank%');
         })->count();
 
         $tripay = Pembayaran::where(function($q) {
@@ -416,6 +430,15 @@ class KeuanganController extends Controller
               ->orWhere('metode_bayar', 'like', '%dana%')
               ->orWhere('metode_bayar', 'like', '%qris%')
               ->orWhere('metode_bayar', 'like', '%shopeepay%');
+        })->sum('jumlah_bayar');
+        $ewalletCount = Pembayaran::where(function ($q) {
+            $q->where('metode_bayar', 'like', '%ewallet%')
+                ->orWhere('metode_bayar', 'like', '%e-wallet%')
+                ->orWhere('metode_bayar', 'like', '%gopay%')
+                ->orWhere('metode_bayar', 'like', '%ovo%')
+                ->orWhere('metode_bayar', 'like', '%dana%')
+                ->orWhere('metode_bayar', 'like', '%qris%')
+                ->orWhere('metode_bayar', 'like', '%shopeepay%');
         })->count();
 
         return view('/keuangan/data-pembayaran',[
@@ -436,7 +459,10 @@ class KeuanganController extends Controller
             'endDate' => $endDate,
             'tripay' => $tripay,
             'invoicePay' => $invoicePay,
-            'editPembayaran' => $editPembayaran
+            'editPembayaran' => $editPembayaran,
+            'cashCount' => $CashCount,
+            'transferCount' => $transferCount,
+            'ewalletCount' => $ewalletCount,
         ]);
     }
 

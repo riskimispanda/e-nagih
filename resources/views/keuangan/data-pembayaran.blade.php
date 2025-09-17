@@ -237,7 +237,7 @@
     }
     
     .stat-number {
-        font-size: 1.75rem;
+        font-size: 1.45rem;
         font-weight: 700;
         line-height: 1.2;
     }
@@ -414,22 +414,22 @@
             <div class="payment-card method-card cash-card p-4">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <div class="stat-label mb-2">Pembayaran Cash</div>
-                        <div class="stat-number text-success">{{ number_format($cashPayments ?? 0, 0, ',', '.') }}</div>
-                        <div class="stat-sublabel">Total transaksi</div>
+                        <div class="stat-label mb-2 fw-bold">Pembayaran Cash</div>
+                        <div class="stat-number text-success mb-4">Rp {{ number_format($cashPayments ?? 0, 0, ',', '.') }}</div>
+                        <div class="stat-sublabel">Total Transaksi</div>
                     </div>
                     <div class="stat-icon bg-success bg-opacity-10 text-success">
                         <i class="bx bx-money"></i>
                     </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-2">
                     @if ($cashPayments == 0)
                     <span class="method-badge bg-secondary bg-opacity-10 text-secondary">
                         <i class="bx bx-info-circle me-1"></i>Belum ada data
                     </span>
                     @else
                     <span class="method-badge bg-success bg-opacity-10 text-success">
-                        <i class="bx bx-check-circle me-1"></i>{{ $cashPayments }} Pembayaran
+                        <i class="bx bx-check-circle me-1"></i>{{ $cashCount }} Pembayaran
                     </span>
                     @endif
                 </div>
@@ -441,8 +441,8 @@
             <div class="payment-card method-card transfer-card p-4">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <div class="stat-label mb-2">Transfer Bank</div>
-                        <div class="stat-number text-primary">{{ number_format($transferPayments ?? 0, 0, ',', '.') }}
+                        <div class="stat-label mb-2 fw-bold">Transfer Bank</div>
+                        <div class="stat-number text-primary mb-3">Rp {{ number_format($transferPayments ?? 0, 0, ',', '.') }}
                         </div>
                         <div class="stat-sublabel">Total transaksi</div>
                     </div>
@@ -450,14 +450,14 @@
                         <i class="bx bx-transfer"></i>
                     </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-2">
                     @if ($transferPayments == 0)
                     <span class="method-badge bg-secondary bg-opacity-10 text-secondary">
                         <i class="bx bx-info-circle me-1"></i>Belum ada data
                     </span>
                     @else
                     <span class="method-badge bg-danger bg-opacity-10 text-danger">
-                        <i class="bx bx-check-circle me-1"></i>{{$transferPayments}} Pembayaran
+                        <i class="bx bx-check-circle me-1"></i>{{$transferCount}} Pembayaran
                     </span>
                     @endif
                 </div>
@@ -469,8 +469,8 @@
             <div class="payment-card method-card ewallet-card p-4">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <div class="stat-label mb-2">E-Wallet</div>
-                        <div class="stat-number text-warning">{{ number_format($ewalletPayments ?? 0, 0, ',', '.') }}
+                        <div class="stat-label mb-2 fw-bold">E-Wallet</div>
+                        <div class="stat-number text-warning mb-3">Rp {{ number_format($ewalletPayments ?? 0, 0, ',', '.') }}
                         </div>
                         <div class="stat-sublabel">Total transaksi</div>
                     </div>
@@ -478,10 +478,10 @@
                         <i class="bx bx-wallet"></i>
                     </div>
                 </div>
-                <div class="mt-3">
+                <div class="mt-2">
                     @if ($ewalletPayments > 0)
                     <span class="method-badge bg-success bg-opacity-10 text-success">
-                        <i class="bx bx-check-circle me-1"></i>{{ $ewalletPayments }} Pembayaran
+                        <i class="bx bx-check-circle me-1"></i>{{ $ewalletCount }} Pembayaran
                     </span>
                     @else
                     <span class="method-badge bg-secondary bg-opacity-10 text-secondary">
