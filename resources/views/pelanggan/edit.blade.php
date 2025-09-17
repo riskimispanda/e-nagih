@@ -145,11 +145,9 @@
                                 <select name="media" id="media" class="form-select">
                                     <option value="{{ $pelanggan->media_id ?? '-'}}" selected >{{$pelanggan->media->nama_media ?? '-'}}</option>
                                     @foreach ($media as $item)
-                                    @if($pelanggan->media->nama_media != $item->nama_media)
-                                    <option value="{{ $item->id }}">{{$item->nama_media}}</option>
-                                    @else
-                                    <option value="{{ $item->id }}">{{$item->nama_media}}</option>
-                                    @endif
+                                        @if (optional($pelanggan->media)->nama_media != $item->nama_media)
+                                            <option value="{{ $item->id }}">{{ $item->nama_media }}</option>
+                                        @endif                                
                                     @endforeach
                                 </select>
                             </div>
