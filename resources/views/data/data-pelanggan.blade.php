@@ -1099,7 +1099,7 @@
                 <!-- Pagination Container -->
                 <div class="pagination-container" id="paginationContainer">
                     <div class="pagination-controls">
-                        {{ $data->links('pagination::bootstrap-4') }}
+                        {{ $data->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
             </div>
