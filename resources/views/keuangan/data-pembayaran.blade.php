@@ -624,7 +624,7 @@
                             <td>
                                 <div class="d-flex justify-content-between">
                                     <i class="bx bx-calendar text-primary me-1"></i>
-                                    {{ \Carbon\Carbon::parse($payment->created_at)->format('d-m-Y h:m:s') }}
+                                    {{ \Carbon\Carbon::parse($payment->tanggal_bayar.' '.\Carbon\Carbon::parse($payment->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}
                                 </div>
                             </td>
                             <td>
