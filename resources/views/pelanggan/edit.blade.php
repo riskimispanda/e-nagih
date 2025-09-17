@@ -147,6 +147,8 @@
                                     @foreach ($media as $item)
                                     @if($pelanggan->media->nama_media != $item->nama_media)
                                     <option value="{{ $item->id }}">{{$item->nama_media}}</option>
+                                    @else
+                                    <option value="{{ $item->id }}">{{$item->nama_media}}</option>
                                     @endif
                                     @endforeach
                                 </select>
