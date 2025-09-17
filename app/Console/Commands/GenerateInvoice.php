@@ -45,13 +45,15 @@ class GenerateInvoice extends Command
                 $this->info("✅ Invoice bulan depan sudah ada untuk {$customer->nama_customer}. Lewati.");
                 continue;
             }
-
+            // Generate Merchant Reference 
+            $merchant = 'INV-' . $customer->id . '-' . time();
             // Buat invoice bulan depan
             $invoice = Invoice::create([
                 'customer_id' => $customer->id,
                 'paket_id'    => $customer->paket_id,
                 'status_id'   => 7, // Belum Dibayar
                 'tagihan'     => $customer->paket->harga,
+                'merchant_ref' => $merchant,
                 'jatuh_tempo' => $jatuhTempoBulanDepan,
             ]);
 
