@@ -20,7 +20,7 @@ class MikrotikController extends Controller
         $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
         $client = MikrotikServices::connect($router);
 
-        $inter = MikrotikServices::trafficPelanggan($router, '0110171120235.Yunus-Jetis@megaroute.net.id');
+        $inter = MikrotikServices::trafficPelanggan($router, 'SAHID-Office@niscala.net.id');
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
         dd($user);

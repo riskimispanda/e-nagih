@@ -209,7 +209,7 @@
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
     <!-- Total Revenue -->
-    <div class="col-12 col-sm-6 col-lg-3">
+    {{-- <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -221,7 +221,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
 
     {{-- <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
@@ -238,7 +238,7 @@
     </div> --}}
     
     <!-- Monthly Revenue -->
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <a href="/data/pembayaran" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat detail pembayaran">
             <div class="revenue-card p-4">
                 <div class="d-flex justify-content-between align-items-center">
@@ -256,7 +256,7 @@
     </div>
     
     <!-- Pending Revenue -->
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -272,7 +272,7 @@
     </div>
     
     <!-- Total Invoices -->
-    <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>

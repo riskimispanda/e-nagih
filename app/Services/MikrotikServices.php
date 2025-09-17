@@ -427,8 +427,8 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('comment', 'Created by E-Nagih');
-            // $query->where('name', 'Rani-Ayu-F517@niscala.net.id');
+            // $query->where('comment', 'Created by E-Nagih');
+            $query->where('name', 'SAHID-Office@niscala.net.id');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());

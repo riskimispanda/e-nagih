@@ -310,7 +310,7 @@
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
     <!-- Total Payments -->
-    <div class="col-12 col-sm-6 col-lg-3">
+    {{-- <div class="col-12 col-sm-6 col-lg-3">
         <div class="payment-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -322,7 +322,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> --}}
     
     <!-- Today's Payments -->
     <div class="col-12 col-sm-6 col-lg-3">
