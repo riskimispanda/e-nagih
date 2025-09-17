@@ -106,7 +106,7 @@
                     </table>
                 </div>
                 <div class="d-flex justify-content-end mt-4">
-                    {{ $data->appends(['search' => request('search')])->links() }}
+                    {{ $data->appends(['search' => request('search')])->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>
