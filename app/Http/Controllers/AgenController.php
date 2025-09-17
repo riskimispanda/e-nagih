@@ -460,6 +460,9 @@ class AgenController extends Controller
                     ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
                     ->exists();
 
+                // Generate Merchant Reference
+                $merchant = 'INV-' . $customer->id . '-' . time();
+
                 if (!$sudahAda) {
                     Invoice::create([
                         'customer_id'    => $invoice->customer_id,
@@ -468,6 +471,7 @@ class AgenController extends Controller
                         'tambahan'       => $newTambahan,
                         'tunggakan'      => $newTunggakan,
                         'saldo'          => $saldoBaru,
+                        'merchant_ref' => $merchant,
                         'status_id'      => 7,
                         'created_at'     => $tanggalAwal,
                         'updated_at'     => $tanggalAwal,

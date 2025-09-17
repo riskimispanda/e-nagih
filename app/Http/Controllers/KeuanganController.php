@@ -1072,6 +1072,9 @@ class KeuanganController extends Controller
                     ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
                     ->exists();
 
+                // Generate Merchant Reference
+                $merchant = 'INV-' . $customer->id . '-' . time();
+
                 if (!$sudahAda) {
                     Invoice::create([
                         'customer_id'     => $invoice->customer_id,
@@ -1081,6 +1084,7 @@ class KeuanganController extends Controller
                         'tunggakan'       => $newTunggakan,
                         'saldo'           => $saldoBaru,
                         'status_id'       => 7,
+                        'merchant_ref' => $merchant,
                         'created_at'      => $tanggalAwal,
                         'updated_at'      => $tanggalAwal,
                         'jatuh_tempo'     => $tanggalJatuhTempo,

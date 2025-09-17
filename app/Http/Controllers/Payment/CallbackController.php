@@ -82,12 +82,11 @@ class CallbackController extends Controller
 
             // Ambil invoice berdasarkan merchant_ref (pastikan kolom sesuai DB: merchant_ref / kode_invoice)
             $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
-            $nama = $invoice->nama_customer;
             if (!$invoice) {
                 Log::warning('Invoice not found', [
                     'merchant_ref' => $merchantRef,
                     'reference' => $reference,
-                    'Nama Customer' => $nama
+                    'Nama Customer' => $payload['customer_name'] ?? null,
                 ]);
                 return $this->jsonError('No invoice found: ' . $merchantRef);
             }
@@ -165,9 +164,8 @@ class CallbackController extends Controller
 
             // Update status invoice menjadi lunas
             $invoice->update([
-                'status_id' => 8,
-                'reference' => $data->reference ?? $invoice->reference,
-                'merchant_ref' => $data->merchant_ref ?? $invoice->merchant_ref,
+                'status_id'   => 8,
+                'reference'   => $data->reference ?? $invoice->reference,
                 'metode_bayar' => $metodeBayar
             ]);
 
@@ -270,12 +268,16 @@ class CallbackController extends Controller
             ->whereYear('jatuh_tempo', $bulanDepan->year)
             ->exists();
 
+        // Generate Merchant Reference
+        $merchant = 'INV-' . $invoice->customer_id . '-' . time();
+
         if (!$sudahAda) {
             $nextInvoice = Invoice::create([
                 'customer_id' => $invoice->customer_id,
                 'tagihan' => $customer->paket->harga,
                 'paket_id' => $customer->paket_id,
                 'tambahan' => 0,
+                'merchant_ref' => $merchant,
                 'status_id' => 7, // Belum bayar
                 'jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
                 'tanggal_blokir' => $invoice->tanggal_blokir,

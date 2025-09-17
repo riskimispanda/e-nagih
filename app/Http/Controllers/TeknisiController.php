@@ -230,6 +230,9 @@ class TeknisiController extends Controller
                 ->whereYear('jatuh_tempo', $jatuhTempo->year)
                 ->first();
 
+            // Generate Merchant Reference
+            $merchant = 'INV-' . $customer->id . '-' . time();
+
             if (!$existingInvoice) {
                 // Buat invoice baru
                 $invoice = Invoice::create([
@@ -237,6 +240,7 @@ class TeknisiController extends Controller
                     'status_id'    => 7,
                     'paket_id'     => $customer->paket_id,
                     'tagihan'      => $tagihanProrate,
+                    'merchant_ref' => $merchant,
                     'jatuh_tempo'  => $jatuhTempo,
                     'tambahan'     => $tagihanTambahan,
                 ]);
@@ -245,6 +249,7 @@ class TeknisiController extends Controller
                     'invoice_id' => $invoice->id,
                     'customer_id' => $customer->id,
                     'tagihan' => $invoice->tagihan,
+                    'merchant_ref' => $merchant,
                     'jatuh_tempo' => $invoice->jatuh_tempo,
                 ]);
 

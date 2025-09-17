@@ -152,7 +152,7 @@ class TripayServices
         $merchantCode = config('tripay.merchant_code');
         $baseUrl      = rtrim(config('tripay.base_url'), '/');
 
-        $merchantRef = 'INV-' . $invoice->id . '-' . time();
+        $merchantRef = $invoice->merchant_ref;
 
         $customer = [
             'name'  => $invoice->customer->nama_customer,
@@ -204,7 +204,7 @@ class TripayServices
 
         $payload = [
             'method'         => $method,
-            'merchant_ref'   => $merchantRef,
+            'merchant_ref'   => $invoice->merchant_ref,
             'amount'         => $totalAmount,
             'customer_name'  => $customer['name'],
             'customer_email' => $customer['email'],
@@ -245,14 +245,14 @@ class TripayServices
             try {
                 $invoice->update([
                     'reference'     => $decoded['data']['reference'] ?? null,
-                    'merchant_ref'  => $merchantRef,
+                    'merchant_ref'  => $invoice->merchant_ref,
                     'metode_bayar'  => $method,
                 ]);
-
+                $finalMerchantRef = $invoice->fresh()->merchant_ref;
                 \Log::info('Invoice updated with Tripay reference', [
                     'invoice_id'    => $invoice->id,
                     'reference'     => $invoice->reference,
-                    'merchant_ref'  => $merchantRef,
+                    'merchant_ref'  => $finalMerchantRef,
                     'metode_bayar'  => $method,
                 ]);
             } catch (\Exception $e) {
