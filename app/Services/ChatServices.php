@@ -84,10 +84,18 @@ class ChatServices
         $hariBlokir = (int) $invoice->tanggal_blokir;
 
         // Buat tanggal lengkap: tanggal 10 bulan depan
-        $tanggalLengkap = now()
-            ->addMonthNoOverflow()
-            ->setDay($hariBlokir)
-            ->format('d-m-Y');
+        if ($invoice->tagihan !== $invoice->paket->harga) {
+            $tanggalLengkap = now()
+                ->addMonthNoOverflow()
+                ->setDay($hariBlokir)
+                ->format('d-m-Y');
+        } else {
+            $tanggalLengkap = now()
+                ->setDay($hariBlokir)
+                ->format('d-m-Y');
+        }
+
+
 
         // Hitung total tagihan
         $totalTagihan = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;

@@ -21,12 +21,6 @@ class MikrotikController extends Controller
         $client = MikrotikServices::connect($router);
 
         $inter = MikrotikServices::trafficPelanggan($router, '0110171120235.Yunus-Jetis@megaroute.net.id');
-        $traffic = MikrotikServices::getUserSpeed($client, '');
-        if (isset($traffic['error'])) {
-            Log::warning("Cek speed gagal", $traffic);
-        } else {
-            Log::info("Speed user", $traffic);
-        }
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
         dd($user);
