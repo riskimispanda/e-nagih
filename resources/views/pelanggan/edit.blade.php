@@ -339,7 +339,10 @@
                         </div>
                     </div>
                     <div class="row mt-3">
-                        <div class="d-flex justify-content-end">
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="javascript:window.history.back()" class="btn btn-secondary btn-sm">
+                                Kembali
+                            </a>
                             <button class="btn btn-outline-warning btn-sm">
                                 <i class="bx bx-save me-1"></i>Update
                             </button>
