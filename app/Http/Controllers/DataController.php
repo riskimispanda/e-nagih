@@ -47,7 +47,8 @@ class DataController extends Controller
             'invoice',
             'getServer',
             'odp.odc.olt'
-        ])->whereIn('status_id', [3, 4, 9]);
+        ])->whereIn('status_id', [3, 4, 9])
+            ->orderBy('updated_at', 'desc');
 
         $import = Customer::where('cek', 'Imported')->count();
 
