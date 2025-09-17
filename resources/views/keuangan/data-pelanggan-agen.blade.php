@@ -495,7 +495,7 @@
                             <td>
                                 @if($invoice->pembayaran->isNotEmpty())
                                     @foreach ($invoice->pembayaran as $item)
-                                        <span class="badge bg-info">{{$item->updated_at}}</span>
+                                        <span class="badge bg-info">{{ \Carbon\Carbon::parse($item->tanggal_bayar.' '.\Carbon\Carbon::parse($item->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}</span>
                                     @endforeach
                                 @else
                                 <span>-</span>
