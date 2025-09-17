@@ -1245,7 +1245,7 @@ class KeuanganController extends Controller
             }
         }
 
-        $invoices = (clone $latestInvoicesQuery)->orderBy('updated_at', 'desc')->paginate(10);
+        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate(10);
 
         // Hitung total semua invoice sesuai filter
         $allInvoices = (clone $latestInvoicesQuery)->get();
