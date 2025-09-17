@@ -156,6 +156,7 @@ class Logistik extends Controller
                         ->orWhere('serial_number', 'like', "%{$search}%");
                 });
             })
+            ->orderBy('created_at', 'desc')
             ->paginate(10);
         return view('logistik.tracking-tools', [
             'users' => auth()->user(),
