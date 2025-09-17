@@ -82,10 +82,12 @@ class CallbackController extends Controller
 
             // Ambil invoice berdasarkan merchant_ref (pastikan kolom sesuai DB: merchant_ref / kode_invoice)
             $invoice = Invoice::where('merchant_ref', $merchantRef)->first();
+            $nama = $invoice->nama_customer;
             if (!$invoice) {
                 Log::warning('Invoice not found', [
                     'merchant_ref' => $merchantRef,
-                    'reference' => $reference
+                    'reference' => $reference,
+                    'Nama Customer' => $nama
                 ]);
                 return $this->jsonError('No invoice found: ' . $merchantRef);
             }
