@@ -56,8 +56,11 @@
     {{-- Chart Download/Upload --}}
     <div class="col-sm-12 mt-4">
         <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-center">
+            <div class="card-header d-flex justify-content-between">
                 <h6 class="card-title fw-bold" style="text-transform: uppercase">Upload & Download</h6>
+                <div class="row">
+                    <a href="javascript:window.history.back()" class="btn btn-secondary btn-sm">Kembali</a>
+                </div>
             </div>
             <div class="card-body">
                 <canvas id="trafficChart" height="100"></canvas>
