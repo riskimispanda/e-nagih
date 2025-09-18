@@ -466,6 +466,7 @@ class MikrotikServices
         try {
             $client = self::connect($router);
 
+            // Ambil data aktif PPPoE user
             $active = $client->query(
                 (new Query('/ppp/active/print'))->where('name', $usersecret)
             )->read();
@@ -475,41 +476,67 @@ class MikrotikServices
                     'message' => 'PPP tidak ditemukan untuk user: ' . $usersecret,
                     'rx' => 0,
                     'tx' => 0,
+                    'total_rx' => 0,
+                    'total_tx' => 0,
                     'uptime' => null,
+                    'ip_remote' => null,
+                    'ip_local' => null,
+                    'mac_address' => null,
+                    'profile' => null,
                     'status' => 'offline',
                 ];
             }
 
             $interfaceName = $active[0]['interface'] ?? '<pppoe-' . $usersecret . '>';
 
+            // Ambil trafik realtime (upload/download)
             $trafficData = $client->query(
                 (new Query('/interface/monitor-traffic'))
                     ->equal('interface', $interfaceName)
                     ->equal('once', 'true')
             )->read();
 
+            // Ambil profile dari secret
+            $secret = $client->query(
+                (new Query('/ppp/secret/print'))->where('name', $usersecret)
+            )->read();
+
+            $profile = $secret[0]['profile'] ?? null;
+
             return [
-                'message' => 'Berhasil mendapatkan trafik',
-                'rx' => (int) ($trafficData[0]['rx-bits-per-second'] ?? 0),
-                'tx' => (int) ($trafficData[0]['tx-bits-per-second'] ?? 0),
-                'uptime' => $active[0]['uptime'] ?? null,
-                'status' => 'online',
+                'message'     => 'Berhasil mendapatkan trafik',
+                'rx'          => (int) ($trafficData[0]['rx-bits-per-second'] ?? 0), // Download realtime
+                'tx'          => (int) ($trafficData[0]['tx-bits-per-second'] ?? 0), // Upload realtime
+                'total_rx'    => (int) ($active[0]['bytes-in'] ?? 0),  // Total download selama sesi
+                'total_tx'    => (int) ($active[0]['bytes-out'] ?? 0), // Total upload selama sesi
+                'uptime'      => $active[0]['uptime'] ?? null,
+                'ip_remote'   => $active[0]['address'] ?? null,        // IP pelanggan
+                'ip_local'    => $active[0]['local-address'] ?? null,  // IP Mikrotik
+                'mac_address' => $active[0]['caller-id'] ?? null,      // biasanya MAC modem/router pelanggan
+                'profile'     => $profile ?? null,        // paket/profile pelanggan
+                'service'     => $active[0]['service'] ?? null,        // service type (pppoe/ovpn/l2tp)
+                'encoding'    => $active[0]['encoding'] ?? null,       // metode enkripsi/auth
+                'status'      => 'online',
             ];
         } catch (\Throwable $e) {
-            \Log::error('Gagal ambil trafik pelanggan: ' . $e->getMessage());
+            Log::error('Gagal ambil trafik pelanggan: ' . $e->getMessage());
             return [
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
                 'rx' => 0,
                 'tx' => 0,
+                'total_rx' => 0,
+                'total_tx' => 0,
                 'uptime' => null,
+                'ip_remote' => null,
+                'ip_local' => null,
+                'mac_address' => null,
+                'profile' => null,
+                'service' => null,
+                'encoding' => null,
                 'status' => 'error',
             ];
         }
     }
-
-
-
-
 
     public static function getInterfacePelanggan(Client $client, string $usersecret = null): array
     {

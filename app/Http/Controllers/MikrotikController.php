@@ -23,7 +23,7 @@ class MikrotikController extends Controller
         $inter = MikrotikServices::trafficPelanggan($router, 'SAHID-Office@niscala.net.id');
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-        dd($user);
+        dd($inter);
     }
 
     public function testKoneksi($id)
@@ -130,6 +130,12 @@ class MikrotikController extends Controller
             'uptime' => $result['uptime'] ?? null,
             'status' => $result['status'] ?? 'offline',
             'msg'    => $result['message'] ?? '-',
+            'mac_address' => $result['mac_address'] ?? null,
+            'ip_local' => $result['ip_local'] ?? null,
+            'ip_remote' => $result['ip_remote'] ?? null,
+            'profile' => $result['profile'] ?? null,
+            'total_rx' => $result['total_rx'] ?? null,
+            'total_tx' => $result['total_tx'] ?? null
         ]);
     }
 }
