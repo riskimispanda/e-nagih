@@ -56,8 +56,8 @@
     {{-- Chart Download/Upload --}}
     <div class="col-sm-12 mt-4">
         <div class="card shadow-sm">
-            <div class="card-header">
-                <h6 class="card-title fw-bold">Upload & Download</h6>
+            <div class="card-header d-flex justify-content-center">
+                <h6 class="card-title fw-bold" style="text-transform: uppercase">Upload & Download</h6>
             </div>
             <div class="card-body">
                 <canvas id="trafficChart" height="100"></canvas>
@@ -151,6 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     loadTraffic();
-    setInterval(loadTraffic, 2000);
+    setInterval(loadTraffic, 1000);
 });
 </script>
