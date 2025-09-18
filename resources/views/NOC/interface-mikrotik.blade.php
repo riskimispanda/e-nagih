@@ -315,16 +315,16 @@
                 chart.update('none');
 
                 // Update current values
-                document.getElementById('currentRx').textContent = formatBytes(data.rx) + '/s';
-                document.getElementById('currentTx').textContent = formatBytes(data.tx) + '/s';
+                document.getElementById('currentRx').textContent = formatBytes(data.tx) + '/s';
+                document.getElementById('currentTx').textContent = formatBytes(data.rx) + '/s';
 
                 // Update max values
-                if (data.rx > maxRxValue) {
-                    maxRxValue = data.rx;
+                if (data.tx > maxRxValue) {
+                    maxRxValue = data.tx;
                     document.getElementById('maxRx').textContent = formatBytes(maxRxValue) + '/s';
                 }
-                if (data.tx > maxTxValue) {
-                    maxTxValue = data.tx;
+                if (data.rx > maxTxValue) {
+                    maxTxValue = data.rx;
                     document.getElementById('maxTx').textContent = formatBytes(maxTxValue) + '/s';
                 }
 
