@@ -310,8 +310,8 @@
                 }
 
                 chart.data.labels.push(now);
-                chart.data.datasets[0].data.push(data.rx);
-                chart.data.datasets[1].data.push(data.tx);
+                chart.data.datasets[0].data.push(data.tx);
+                chart.data.datasets[1].data.push(data.rx);
                 chart.update('none');
 
                 // Update current values
