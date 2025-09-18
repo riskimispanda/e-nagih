@@ -48,7 +48,7 @@ class DataController extends Controller
             'getServer',
             'odp.odc.olt'
         ])->whereIn('status_id', [3, 4, 9])
-            ->orderBy('updated_at', 'desc');
+            ->orderBy('tanggal_selesai', 'desc');
 
         $import = Customer::where('cek', 'Imported')->count();
 
