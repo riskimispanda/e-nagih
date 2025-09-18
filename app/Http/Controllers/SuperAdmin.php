@@ -198,7 +198,7 @@ class SuperAdmin extends Controller
             ->paginate($perPage)
             ->appends($request->query()); // bawa semua query (?roles, ?date, ?search, ?per_page)
 
-        $role = Roles::whereIn('id', [1,2,3,4,5,7])->get();
+        $role = Roles::whereIn('id', [1, 2, 3, 4, 5, 6, 7])->get();
 
         return view('log.aktivitas', [
             'users' => auth()->user(),
