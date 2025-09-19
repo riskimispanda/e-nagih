@@ -1147,19 +1147,21 @@ class KeuanganController extends Controller
 
     public function agen(Request $request)
     {
-        $query = User::whereIn('roles_id', [6, 7])->withCount('customer');
+        $agen = User::whereIn('roles_id', [6, 7])
+            ->with(['customer'])
+            ->withCount('customer')
+            ->paginate(10);
+
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $agen->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
                   ->orWhere('email', 'LIKE', "%{$search}%")
                   ->orWhere('alamat', 'LIKE', "%{$search}%")
                   ->orWhere('no_hp', 'LIKE', "%{$search}%");
             });
         }
-
-        $agen = $query->paginate(10);
 
         // If this is an AJAX request, return JSON
         if ($request->ajax()) {

@@ -1053,17 +1053,20 @@
                                     </a>
             `;
         }
-        
+        let csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         buttons += `
             <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                 <i class="bx bx-message"></i>
             </a>
-            <form action="{{ url('/tripay/sync-payment/'.$invoice->id) }}" method="POST" style="display:inline">
-                                        @csrf
-                                        <button type="submit" class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync Payment">
-                                            <i class="bx bx-cart"></i>
-                                        </button>
-                                    </form>
+            <form action="/tripay/sync-payment/${invoice.id}" method="POST" style="display:inline">
+                <input type="hidden" name="_token" value="${csrf}">
+                <button type="submit" 
+                    class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" 
+                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                    title="Sync Payment">
+                    <i class="bx bx-cart"></i>
+                </button>
+            </form>
         `;
         
         return buttons;
