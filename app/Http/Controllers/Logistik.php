@@ -50,6 +50,22 @@ class Logistik extends Controller
     /**
      * Show the form for creating a new resource.
      */
+
+    public function TiketBarang()
+    {
+        $kategori = KategoriLogistik::whereNotIn('nama_logistik', ['Modem', 'Tenda', 'HTB', 'Kabel'])->get();
+        $perangkat = Perangkat::with('kategori')
+            ->whereHas('kategori', function ($q) {
+                $q->whereNotIn('nama_logistik', ['Tenda', 'Modem', 'Kabel', 'HTB']);
+            })->get();
+        return view('logistik.tiket-barang-keluar', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'kategori' => $kategori,
+            'perangkat' => $perangkat
+        ]);
+    }
+
     public function create()
     {
         //

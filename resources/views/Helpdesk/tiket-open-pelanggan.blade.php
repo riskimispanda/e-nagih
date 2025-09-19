@@ -13,6 +13,13 @@
         </div>
         <div class="card">
             <div class="card-body">
+                <div class="row mb-5">
+                    <div class="d-flex justify-content-start">
+                        <a href="/tiket-barang" class="btn btn-outline-danger btn-sm rounded" data-bs-toggle="tooltip" data-bs-placement="top" title="Khusus Logistik">
+                            <i class="bx bx-devices me-2"></i>Tiket Barang Keluar
+                        </a>
+                    </div>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead class="table-dark text-center">

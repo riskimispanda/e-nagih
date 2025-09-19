@@ -441,7 +441,6 @@ class AgenController extends Controller
                 ? 8 : 7;
 
             $invoice->update([
-                'tagihan'   => $invoice->tagihan,
                 'tambahan'  => $newTambahan,
                 'tunggakan' => $newTunggakan,
                 'saldo'     => $saldoBaru,

@@ -268,7 +268,9 @@
       "roles": [
         "Super Admin",
         "NOC",
-        "Helpdesk"
+        "Helpdesk",
+        "Admin Logistik",
+        "Admin Keuangan"
       ]
     },
     {
@@ -280,6 +282,7 @@
         "NOC",
         "Super Admin",
         "Helpdesk",
+        "Admin Logistik",
         "Admin Keuangan"
       ],
       "submenu": [
@@ -291,6 +294,7 @@
             "NOC",
             "Super Admin",
             "Helpdesk",
+            "Admin Logistik",
             "Admin Keuangan"
           ]
         },
@@ -301,6 +305,8 @@
           "roles": [
             "NOC",
             "Super Admin",
+            "Admin Logistik",
+            "Admin Keuangan",
             "Helpdesk"
           ]
         }

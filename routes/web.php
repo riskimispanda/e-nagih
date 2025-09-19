@@ -142,8 +142,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
     Route::get('/peta', [MapController::class, 'index']);
     Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
-    Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth','roles:Super Admin,NOC,Helpdesk,Admin Keuangan');
-    Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk')->name('tiket-closed');
+    Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware('auth', 'roles:Super Admin,NOC,Helpdesk,Admin Keuangan,Admin Logistik');
+    Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk,Admin Logistik,Admin Keuangan')->name('tiket-closed');
     Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
         $startDate = $request->start_date;
         $endDate = $request->end_date;
@@ -154,7 +154,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('pembayaran.export');
 
     // Konfirmasi Tiket Open
-    Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi')->name('tutup-tiket');
+    Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan')->name('tutup-tiket');
     Route::get('/api/paket/by-router/{routerId}', [TiketController::class, 'getPaketByRouter']);
     Route::post('/tutup-tiket/{id}', [TiketController::class, 'confirmClosedTiket'])->name('confirm-closed-tiket');
 
@@ -191,7 +191,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware('auth','roles:Super Admin,Admin Logistik');
     Route::get('/tracking', [Logistik::class, 'tracking'])->middleware('auth', 'roles:Super Admin,Admin Logistik')->name('tracking');
     Route::get('/dashboard-logistik', [Logistik::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('dashboard-logistik');
-
+    Route::get('/tiket-barang', [Logistik::class, 'TiketBarang'])->middleware('auth', 'roles:Admin Logistik,Super Admin');
 
 
 
@@ -325,7 +325,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
     Route::get('/helpdesk/hapus-antrian/{id}', [HelpdeskController::class, 'hapusAntrian'])->name('hapus-antrian-helpdesk');
-    Route::get('/tiket-open', [TiketController::class, 'TiketOpen'])->name('tiket-open');
+    Route::get('/tiket-open', [TiketController::class, 'TiketOpen'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Admin Logistik')->name('tiket-open');
     Route::get('/open-tiket/{id}', [TiketController::class, 'formOpenTiket'])->name('open-tiket');
 });
 

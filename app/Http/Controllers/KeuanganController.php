@@ -1051,7 +1051,6 @@ class KeuanganController extends Controller
                 ? 8 : 7;
 
             $invoice->update([
-                'tagihan'   => $newTagihan,
                 'tambahan'  => $newTambahan,
                 'tunggakan' => $newTunggakan,
                 'saldo'     => $saldoBaru,
