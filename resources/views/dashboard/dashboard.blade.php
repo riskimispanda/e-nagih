@@ -33,7 +33,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-12 col-md-4 order-1">
+        <div class="col-lg-12 col-md-12 order-1">
             <div class="row">
                 <div class="col-lg-4 col-md-12 col-6 mb-6">
                     <div class="card h-100">
