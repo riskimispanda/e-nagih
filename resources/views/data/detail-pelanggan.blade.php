@@ -772,10 +772,40 @@
                                             <div class="col-md-6">
                                                 <div class="info-group">
                                                     <span class="info-label">
-                                                        <i class="bx bx-broadcast text-primary me-1"></i> BTS Server
+                                                        <i class="bx bx-broadcast text-primary me-1"></i> Server
                                                     </span>
                                                     <div class="info-value">
                                                         {{ $customer->odp->odc->olt->server->lokasi_server ?? 'Tidak ada' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-broadcast text-primary me-1"></i> OLT
+                                                    </span>
+                                                    <div class="info-value">
+                                                        {{ $customer->odp->odc->olt->nama_lokasi ?? 'Tidak ada' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-broadcast text-primary me-1"></i> ODC
+                                                    </span>
+                                                    <div class="info-value">
+                                                        {{ $customer->odp->odc->nama_odc ?? 'Tidak ada' }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-broadcast text-primary me-1"></i> ODP
+                                                    </span>
+                                                    <div class="info-value">
+                                                        {{ $customer->odp->nama_odp ?? 'Tidak ada' }}
                                                     </div>
                                                 </div>
                                             </div>
