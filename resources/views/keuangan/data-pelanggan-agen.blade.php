@@ -550,7 +550,7 @@
             <!-- Pagination -->
             @if($invoices->hasPages())
             <div class="d-flex justify-content-center mt-4">
-                {{ $invoices->links() }}
+                {{ $invoices->appends(request()->all())->links() }}
             </div>
             @endif
         </div>

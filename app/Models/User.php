@@ -59,7 +59,7 @@ class User extends Authenticatable
 
   public function customer()
   {
-    return $this->hasMany(Customer::class, 'agen_id');
+    return $this->hasMany(Customer::class, 'agen_id', 'id');
   }
 
 }

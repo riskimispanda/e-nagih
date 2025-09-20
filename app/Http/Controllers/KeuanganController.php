@@ -1147,22 +1147,21 @@ class KeuanganController extends Controller
 
     public function agen(Request $request)
     {
-        $agen = User::whereIn('roles_id', [6, 7])
+        $agenQuery = User::whereIn('roles_id', [6, 7])
             ->with(['customer'])
-            ->withCount('customer')
-            ->paginate(10);
+            ->withCount('customer');
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $agen->where(function ($q) use ($search) {
+            $agenQuery->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%{$search}%")
                   ->orWhere('email', 'LIKE', "%{$search}%")
                   ->orWhere('alamat', 'LIKE', "%{$search}%")
                   ->orWhere('no_hp', 'LIKE', "%{$search}%");
             });
         }
-
+        $agen = $agenQuery->paginate(10);
         // If this is an AJAX request, return JSON
         if ($request->ajax()) {
             return response()->json([
@@ -1234,7 +1233,7 @@ class KeuanganController extends Controller
                 $q->where('agen_id', $id)->whereIn('status_id', [3, 9]);
             });
 
-
+        // dd($latestInvoicesQuery->get());
         // Filter bulan
         if ($filterMonth !== 'all') {
             $latestInvoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
@@ -1250,8 +1249,8 @@ class KeuanganController extends Controller
             }
         }
 
-        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate(10);
-
+        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate(10)->appends($request->all());
+        // dd($invoices);
         // Hitung total semua invoice sesuai filter
         $allInvoices = (clone $latestInvoicesQuery)->get();
 
