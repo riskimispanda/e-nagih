@@ -869,15 +869,15 @@
                                                     </span>
                                                     <div class="info-value">
                                                         @if ($customer->status_id)
-                                                        @if ($customer->status_id == 3)
-                                                        <span class="badge bg-label-success">
-                                                            <i class="bx bx-check-circle me-1"></i> Aktif
-                                                        </span>
-                                                        @elseif($customer->status_id == 8)
-                                                        <span class="badge bg-label-danger">
-                                                            <i class="bx bx-x-circle me-1"></i> Nonaktif
-                                                        </span>
-                                                        @endif
+                                                            @if ($customer->status_id == 3)
+                                                            <span class="badge bg-label-success">
+                                                                <i class="bx bx-check-circle me-1"></i> Aktif
+                                                            </span>
+                                                            @elseif($customer->status_id == 8)
+                                                            <span class="badge bg-label-danger">
+                                                                <i class="bx bx-x-circle me-1"></i> Nonaktif
+                                                            </span>
+                                                            @endif
                                                         @else
                                                         Tidak ada
                                                         @endif
@@ -935,18 +935,16 @@
                                                             Pembayaran
                                                         </span>
                                                         <div class="info-value">
-                                                            @if ($invoice->status_id)
-                                                            @if ($invoice->status_id == 7)
-                                                            <span class="badge bg-label-danger">
-                                                                <i class="bx bx-x-circle me-1"></i> Belum Bayar
-                                                            </span>
-                                                            @elseif($invoice->status_id == 8)
-                                                            <span class="badge bg-label-success">
-                                                                <i class="bx bx-check-circle me-1"></i> Sudah Bayar
-                                                            </span>
-                                                            @endif
+                                                            @if (optional($invoice)->status_id == 7)
+                                                                <span class="badge bg-label-danger">
+                                                                    <i class="bx bx-x-circle me-1"></i> Belum Bayar
+                                                                </span>
+                                                            @elseif(optional($invoice)->status_id == 8)
+                                                                <span class="badge bg-label-success">
+                                                                    <i class="bx bx-check-circle me-1"></i> Sudah Bayar
+                                                                </span>
                                                             @else
-                                                            Tidak ada
+                                                                Tidak ada
                                                             @endif
                                                         </div>
                                                     </div>
