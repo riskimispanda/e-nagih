@@ -1422,7 +1422,7 @@ class KeuanganController extends Controller
         $totalKasSaldo = $totalKasDebit - $totalKasKredit;
 
         // Calculate customer statistics
-        $totalCustomers = Customer::where('status_id', 3)->count(); // Active customers
+        $totalCustomers = Customer::whereIn('status_id', [3, 9])->count(); // Active customers
 
         // Determine month for customer statistics
         $customerMonth = $month !== 'all' ? $month : date('m');
