@@ -288,6 +288,141 @@ class KeuanganController extends Controller
         ]);
     }
 
+    public function getAjaxData(Request $request)
+    {
+        try {
+            // Get filter parameters
+            $search = $request->get('search');
+            $status = $request->get('status');
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+            $bulan = $request->get('bulan');
+            $perPage = $request->get('per_page', 25);
+            $page = $request->get('page', 1);
+
+            // Build query for invoices with relationships
+            $query = Invoice::with(['customer', 'paket', 'status'])
+                ->orderBy('created_at', 'desc')
+                ->whereIn('status_id', [1, 7]); // Exclude 'Dibatalkan' status
+
+            // Apply search filter
+            if ($search) {
+                $query->whereHas('customer', function($q) use ($search) {
+                    $q->where('nama_customer', 'like', '%' . $search . '%');
+                })->orWhereHas('paket', function($q) use ($search) {
+                    $q->where('nama_paket', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Apply status filter
+            if ($status) {
+                $query->where('status_id', $status);
+            }
+
+            // Apply month filter
+            if ($bulan && $bulan !== '' && $bulan !== null) {
+                $query->whereMonth('jatuh_tempo', $bulan);
+            }
+
+            // Apply date range filter
+            if ($startDate && $endDate) {
+                $query->whereBetween('jatuh_tempo', [
+                    Carbon::parse($startDate)->startOfDay(),
+                    Carbon::parse($endDate)->endOfDay()
+                ]);
+            }
+
+            // Get paginated results
+            if ($perPage === 'all') {
+                $invoices = $query->get();
+                $paginationData = [
+                    'total' => $invoices->count(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $invoices->count(),
+                    'from' => 1,
+                    'to' => $invoices->count(),
+                ];
+            } else {
+                // Set current page for pagination
+                \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($page) {
+                    return $page;
+                });
+                
+                $invoicesPaginated = $query->paginate((int)$perPage);
+                $invoices = $invoicesPaginated->items();
+                $paginationData = [
+                    'current_page' => $invoicesPaginated->currentPage(),
+                    'last_page' => $invoicesPaginated->lastPage(),
+                    'per_page' => $invoicesPaginated->perPage(),
+                    'total' => $invoicesPaginated->total(),
+                    'from' => $invoicesPaginated->firstItem(),
+                    'to' => $invoicesPaginated->lastItem(),
+                ];
+            }
+
+            // Calculate statistics based on filtered data
+            $statisticsQuery = clone $query;
+            
+            if ($bulan && $bulan !== '' && $bulan !== null) {
+                $filteredInvoices = $statisticsQuery->get();
+                $totalRevenue = 0;
+                $pendingRevenue = 0;
+                $totalInvoices = 0;
+
+                foreach ($filteredInvoices as $invoice) {
+                    if ($invoice->status_id == 7) {
+                        $totalInvoices++;
+                    }
+                    if ($invoice->status_id == 8) {
+                        $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
+                    } elseif ($invoice->status_id == 7) {
+                        $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
+                    }
+                }
+            } else {
+                $totalRevenue = Invoice::where('status_id', 8)
+                    ->sum('tagihan') + Invoice::where('status_id', 8)
+                    ->sum('tambahan') - Invoice::where('status_id', 8)
+                    ->sum('tunggakan');
+                $pendingRevenue = Invoice::where('status_id', 7)
+                    ->sum('tagihan') + Invoice::where('status_id', 7)
+                    ->sum('tambahan') + Invoice::where('status_id', 7)
+                    ->sum('tunggakan');
+                $totalInvoices = Invoice::where('status_id', 7)->count();
+            }
+
+            // Monthly revenue from payments
+            if ($bulan && $bulan !== '' && $bulan !== null) {
+                $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $bulan)
+                    ->whereYear('tanggal_bayar', Carbon::now()->year)
+                    ->sum('jumlah_bayar');
+            } else {
+                $monthlyRevenue = Pembayaran::sum('jumlah_bayar');
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'invoices' => $invoices,
+                    'pagination' => $paginationData,
+                    'statistics' => [
+                        'totalRevenue' => $totalRevenue,
+                        'monthlyRevenue' => $monthlyRevenue,
+                        'pendingRevenue' => $pendingRevenue,
+                        'totalInvoices' => $totalInvoices,
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getRevenueData(Request $request)
     {
         // For AJAX requests to get updated data
@@ -464,6 +599,134 @@ class KeuanganController extends Controller
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
         ]);
+    }
+
+    public function getPembayaranAjaxData(Request $request)
+    {
+        try {
+            // Get filter parameters
+            $search = $request->get('search');
+            $metode = $request->get('metode');
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+            $perPage = $request->get('per_page', 10);
+            $page = $request->get('page', 1);
+
+            // Build query for payments with relationships
+            $query = Pembayaran::with(['invoice.customer', 'invoice.paket', 'status', 'user'])
+                ->orderBy('created_at', 'desc');
+
+            // Apply search filter
+            if ($search) {
+                $query->whereHas('invoice.customer', function($q) use ($search) {
+                    $q->where('nama_customer', 'like', '%' . $search . '%');
+                })->orWhereHas('invoice.paket', function($q) use ($search) {
+                    $q->where('nama_paket', 'like', '%' . $search . '%');
+                })->orWhere('metode_bayar', 'like', '%' . $search . '%');
+            }
+
+            // Apply payment method filter
+            if ($metode) {
+                $query->where('metode_bayar', $metode);
+            }
+
+            // Apply date range filter
+            if ($startDate) {
+                $query->whereDate('tanggal_bayar', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('tanggal_bayar', '<=', $endDate);
+            }
+
+            // Get paginated results
+            if ($perPage === 'all') {
+                $payments = $query->get();
+                $paginationData = [
+                    'total' => $payments->count(),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $payments->count(),
+                    'from' => 1,
+                    'to' => $payments->count(),
+                ];
+            } else {
+                // Set current page for pagination
+                \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($page) {
+                    return $page;
+                });
+                
+                $paymentsPaginated = $query->paginate((int)$perPage);
+                $payments = $paymentsPaginated->items();
+                $paginationData = [
+                    'current_page' => $paymentsPaginated->currentPage(),
+                    'last_page' => $paymentsPaginated->lastPage(),
+                    'per_page' => $paymentsPaginated->perPage(),
+                    'total' => $paymentsPaginated->total(),
+                    'from' => $paymentsPaginated->firstItem(),
+                    'to' => $paymentsPaginated->lastItem(),
+                ];
+            }
+
+            // Calculate statistics based on filtered data
+            $statisticsQuery = clone $query;
+            $allPayments = $statisticsQuery->get();
+
+            // Calculate payment statistics
+            $totalPayments = $allPayments->sum('jumlah_bayar');
+            $todayPayments = $allPayments->where('tanggal_bayar', Carbon::today()->format('Y-m-d'))->sum('jumlah_bayar');
+            $monthlyPayments = $allPayments->filter(function($payment) {
+                return Carbon::parse($payment->tanggal_bayar)->month == Carbon::now()->month &&
+                       Carbon::parse($payment->tanggal_bayar)->year == Carbon::now()->year;
+            })->sum('jumlah_bayar');
+            $totalTransactions = $allPayments->count();
+
+            // Calculate payment method statistics
+            $cashPayments = $allPayments->filter(function($payment) {
+                return stripos($payment->metode_bayar, 'cash') !== false ||
+                       stripos($payment->metode_bayar, 'tunai') !== false;
+            })->sum('jumlah_bayar');
+
+            $transferPayments = $allPayments->filter(function($payment) {
+                return stripos($payment->metode_bayar, 'transfer') !== false ||
+                       stripos($payment->metode_bayar, 'bank') !== false ||
+                       stripos($payment->metode_bayar, 'briva') !== false ||
+                       stripos($payment->metode_bayar, 'bniva') !== false ||
+                       stripos($payment->metode_bayar, 'bcava') !== false;
+            })->sum('jumlah_bayar');
+
+            $ewalletPayments = $allPayments->filter(function($payment) {
+                return stripos($payment->metode_bayar, 'ewallet') !== false ||
+                       stripos($payment->metode_bayar, 'e-wallet') !== false ||
+                       stripos($payment->metode_bayar, 'gopay') !== false ||
+                       stripos($payment->metode_bayar, 'ovo') !== false ||
+                       stripos($payment->metode_bayar, 'dana') !== false ||
+                       stripos($payment->metode_bayar, 'qris') !== false ||
+                       stripos($payment->metode_bayar, 'shopeepay') !== false;
+            })->sum('jumlah_bayar');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'payments' => $payments,
+                    'pagination' => $paginationData,
+                    'statistics' => [
+                        'totalPayments' => $totalPayments,
+                        'todayPayments' => $todayPayments,
+                        'monthlyPayments' => $monthlyPayments,
+                        'totalTransactions' => $totalTransactions,
+                        'cashPayments' => $cashPayments,
+                        'transferPayments' => $transferPayments,
+                        'ewalletPayments' => $ewalletPayments,
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getDashboardData()

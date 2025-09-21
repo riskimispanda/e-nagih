@@ -92,7 +92,12 @@ class Customer extends Model
     {
         return $this->hasMany(Invoice::class,'customer_id');
     }
-    
+
+    public function berita()
+    {
+        return $this->hasOne(BeritaAcara::class, 'customer_id');
+    }
+
     public function tiket()
     {
         return $this->hasMany(TiketOpen::class,'customer_id');

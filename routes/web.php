@@ -152,6 +152,12 @@ Route::middleware(['auth'])->group(function () {
             "pembayaran_export_{$filter}.xlsx"
         );
     })->name('pembayaran.export');
+    Route::get('/berita-acara', [SuperAdmin::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC')->name('berita-acara');
+    Route::get('/buat-berita-acara/{id}', [SuperAdmin::class, 'FormBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC');
+    Route::post('/berita-acara-store/{id}', [SuperAdmin::class, 'StoreBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
+    Route::get('/preview/berita-acara/{id}', [SuperAdmin::class, 'PreviewBeritaAcara'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan');
+    Route::get('/customer-berita-acara', [SuperAdmin::class, 'viewBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
+    Route::get('/approve-berita-acara/{id}', [SuperAdmin::class, 'ApproveBeritaAcara'])->middleware('auth', 'roles:NOC,Super Admin');
 
     // Konfirmasi Tiket Open
     Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan')->name('tutup-tiket');
@@ -259,7 +265,9 @@ Route::middleware(['auth'])->group(function () {
     // Keuangan
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
     Route::get('/data/pendapatan/filter', [DataController::class, 'filterPendapatan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan.filter');
+    Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getAjaxData'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan.ajax');
     Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pembayaran');
+    Route::get('/data/pembayaran/ajax', [KeuanganController::class, 'getPembayaranAjaxData'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pembayaran.ajax');
     Route::get('/dashboard/keuangan', [KeuanganController::class, 'dashboardKeuangan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('dashboard-keuangan');
     Route::get('/api/dashboard/keuangan', [KeuanganController::class, 'getDashboardData'])->name('api.dashboard.keuangan');
     Route::post('/konfirmasi/pembayaran/{customerId}', [KeuanganController::class, 'approvePayment'])->name('approve-payment');
@@ -300,6 +308,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/traffic-pelanggan/{id}', [MikrotikController::class, 'trafficPelanggan'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Helpdesk,Admin Logistik')->name('pelanggan-traffic');
     Route::get('/pelanggan/{id}/traffic/data', [MikrotikController::class, 'trafficData'])->name('pelanggan-traffic-data');
+    
+    // WiFi Scanning Routes
+    Route::get('/pelanggan/{id}/wifi-clients', [MikrotikController::class, 'getWifiClients'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan,Helpdesk')->name('pelanggan-wifi-clients');
+    Route::post('/pelanggan/bulk-wifi-scan', [MikrotikController::class, 'bulkWifiScan'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('bulk-wifi-scan');
+    Route::get('/pelanggan/{id}/network-info', [MikrotikController::class, 'getNetworkInfo'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('pelanggan-network-info');
 
 
 

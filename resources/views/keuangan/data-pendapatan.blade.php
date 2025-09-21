@@ -2,6 +2,10 @@
 
 @section('title', 'Data Pendapatan')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('page-style')
 <style>
     .revenue-card {
@@ -353,6 +357,17 @@
                 <i class="bx bx-message"></i>
             </a>
         </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small">Tampilkan:</label>
+            <select id="entriesPerPage" class="form-select form-select-sm" style="width: auto;">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">Semua</option>
+            </select>
+            <span class="text-muted small">Entri</span>
+        </div>
     </div>
     
     <div class="table-responsive p-3">
@@ -488,15 +503,73 @@
         </div>
         
         <!-- Pagination -->
-        @if (isset($invoices) && $invoices->hasPages())
         <div class="p-4 border-top">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                <div class="text-muted small">
+                    Menampilkan data {{ $invoices->firstItem() ?? 1 }} sampai {{ $invoices->lastItem() ?? ($invoices->count() ?? 0) }} dari {{ number_format($invoices->total() ?? $invoices->count() ?? 0, 0, ',', '.') }} data
+                </div>
                 <div>
-                    {{ $invoices->appends(request()->query())->links() }}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            @if ($invoices->onFirstPage())
+                                <li class="page-item disabled">
+                                    <span class="page-link">‹ Previous</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link ajax-pagination" href="#" data-page="{{ $invoices->currentPage() - 1 }}">‹ Previous</a>
+                                </li>
+                            @endif
+
+                            @php
+                                $start = max(1, $invoices->currentPage() - 2);
+                                $end = min($invoices->lastPage(), $invoices->currentPage() + 2);
+                            @endphp
+
+                            @if ($start > 1)
+                                <li class="page-item">
+                                    <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
+                                </li>
+                                @if ($start > 2)
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                @endif
+                            @endif
+
+                            @for ($i = $start; $i <= $end; $i++)
+                                @if ($i == $invoices->currentPage())
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ $i }}</span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link ajax-pagination" href="#" data-page="{{ $i }}">{{ $i }}</a>
+                                    </li>
+                                @endif
+                            @endfor
+
+                            @if ($end < $invoices->lastPage())
+                                @if ($end < $invoices->lastPage() - 1)
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                @endif
+                                <li class="page-item">
+                                    <a class="page-link ajax-pagination" href="#" data-page="{{ $invoices->lastPage() }}">{{ $invoices->lastPage() }}</a>
+                                </li>
+                            @endif
+
+                            @if ($invoices->hasMorePages())
+                                <li class="page-item">
+                                    <a class="page-link ajax-pagination" href="#" data-page="{{ $invoices->currentPage() + 1 }}">Next ›</a>
+                                </li>
+                            @else
+                                <li class="page-item disabled">
+                                    <span class="page-link">Next ›</span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
-        @endif
     </div>
 </div>
 
@@ -777,6 +850,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initializeSearch();
         initializeFilters();
+        initializeEntriesPerPage();
     });
     
     // Initialize search functionality
@@ -804,7 +878,320 @@
         }
     }
     
-    // Apply filters using AJAX
+    // Initialize entries per page functionality
+    function initializeEntriesPerPage() {
+        const entriesSelect = document.getElementById('entriesPerPage');
+        
+        if (entriesSelect) {
+            entriesSelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                loadDataWithAjax(selectedValue);
+            });
+        }
+    }
+    
+    // Load data using AJAX with entries per page
+    function loadDataWithAjax(perPage = 25, page = 1) {
+        if (isLoading) return;
+        
+        showLoading();
+        
+        // Get current filter values
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        // Add form data to params
+        for (let [key, value] of formData.entries()) {
+            if (value.trim() !== '') {
+                params.append(key, value);
+            }
+        }
+        
+        // Add per_page and page parameters
+        params.append('per_page', perPage);
+        if (page > 1) {
+            params.append('page', page);
+        }
+        
+        // Make AJAX request
+        fetch(`{{ route('pendapatan.ajax') }}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateTableWithAjax(data.data.invoices, data.data.pagination);
+                updateStatistics(data.data.statistics);
+                updatePaginationWithAjax(data.data.pagination, perPage);
+                
+                // Show notification
+                const totalVisible = perPage === 'all' ? data.data.invoices.length : Math.min(parseInt(perPage), data.data.invoices.length);
+                showNotification(`Menampilkan ${totalVisible} entri`, 'success');
+            } else {
+                showNotification(data.message || 'Terjadi kesalahan', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Terjadi kesalahan saat memuat data', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    }
+    
+    // Update table with AJAX data
+    function updateTableWithAjax(invoices, pagination) {
+        const tableBody = document.getElementById('tableBody');
+        
+        if (!tableBody) return;
+        
+        if (invoices.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                            <p class="text-muted mb-0">Belum ada data invoice yang tersedia</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let tableHTML = '';
+        invoices.forEach((invoice, index) => {
+            let rowNumber;
+            if (pagination) {
+                const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
+                rowNumber = startIndex + index;
+            } else {
+                rowNumber = index + 1;
+            }
+            
+            tableHTML += `
+                <tr>
+                    <td class="fw-medium">${rowNumber}</td>
+                    <td>
+                        <div>
+                            <div class="fw-medium text-dark">${invoice.customer?.nama_customer || 'N/A'}</div>
+                            <small class="text-muted">${invoice.customer?.alamat ? invoice.customer.alamat.substring(0, 30) + (invoice.customer.alamat.length > 30 ? '...' : '') : ''}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-info bg-opacity-10 text-primary">
+                            ${invoice.paket?.nama_paket || 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-money text-secondary me-2"></i>
+                            <span class="fw-bold text-secondary">
+                                Rp ${formatNumber(invoice.tagihan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-plus-circle text-warning me-2"></i>
+                            <span class="fw-semibold text-warning">
+                                Rp ${formatNumber(invoice.tambahan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-plus-circle text-warning me-2"></i>
+                            <span class="fw-semibold text-warning">
+                                Rp ${formatNumber(invoice.tunggakan || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-wallet text-success me-2"></i>
+                            <span class="fw-semibold text-dark">
+                                Rp ${formatNumber(invoice.saldo || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td style="font-size: 14px;">
+                        <div class="d-flex align-items-center">
+                            <i class="bx bx-calendar text-danger me-2"></i>
+                            ${formatDate(invoice.jatuh_tempo)}
+                        </div>
+                    </td>
+                    <td>
+                        ${getStatusBadge(invoice.status)}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            ${getActionButtons(invoice)}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableBody.innerHTML = tableHTML;
+    }
+    
+    // Update pagination with AJAX data
+    function updatePaginationWithAjax(pagination, perPage) {
+        const paginationContainer = document.querySelector('.p-4.border-top');
+        
+        if (!paginationContainer) return;
+        
+        if (perPage === 'all') {
+            // Show info for all entries but hide pagination controls
+            paginationContainer.style.display = 'block';
+            const totalRecords = pagination ? pagination.total : 0;
+            paginationContainer.innerHTML = `
+                <div class="d-flex justify-content-center">
+                    <div class="text-muted small">
+                        Menampilkan semua ${formatNumber(totalRecords)} data
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        if (!pagination) {
+            // Hide pagination when no pagination data
+            paginationContainer.style.display = 'none';
+            return;
+        }
+        
+        // Show pagination container
+        paginationContainer.style.display = 'block';
+        
+        // Generate pagination info
+        const fromRecord = pagination.from || 0;
+        const toRecord = pagination.to || 0;
+        const totalRecords = pagination.total || 0;
+        
+        // Generate pagination HTML with info
+        let paginationHTML = `
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                <div class="text-muted small">
+                    Menampilkan data ${fromRecord} sampai ${toRecord} dari ${formatNumber(totalRecords)} data
+                </div>
+                <div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+        `;
+        
+        // Previous button
+        if (pagination.current_page > 1) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
+            </li>`;
+        } else {
+            paginationHTML += `<li class="page-item disabled">
+                <span class="page-link">‹ Previous</span>
+            </li>`;
+        }
+        
+        // Page numbers
+        const startPage = Math.max(1, pagination.current_page - 2);
+        const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
+        
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
+            </li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === pagination.current_page) {
+                paginationHTML += `<li class="page-item active">
+                    <span class="page-link">${i}</span>
+                </li>`;
+            } else {
+                paginationHTML += `<li class="page-item">
+                    <a class="page-link ajax-pagination" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            }
+        }
+        
+        if (endPage < pagination.last_page) {
+            if (endPage < pagination.last_page - 1) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a>
+            </li>`;
+        }
+        
+        // Next button
+        if (pagination.current_page < pagination.last_page) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
+            </li>`;
+        } else {
+            paginationHTML += `<li class="page-item disabled">
+                <span class="page-link">Next ›</span>
+            </li>`;
+        }
+        
+        paginationHTML += `
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        `;
+        
+        // Update pagination container
+        paginationContainer.innerHTML = paginationHTML;
+        
+        // Add event listeners to pagination links
+        const paginationLinks = paginationContainer.querySelectorAll('.ajax-pagination');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = this.getAttribute('data-page');
+                loadDataWithAjax(getCurrentPerPage(), page);
+            });
+        });
+    }
+    
+    // Update pagination visibility based on entries selection
+    function updatePaginationVisibility(entriesCount) {
+        const paginationContainer = document.querySelector('.p-4.border-top');
+        
+        if (paginationContainer) {
+            if (entriesCount === 'all') {
+                // Hide pagination when showing all entries
+                paginationContainer.style.display = 'none';
+            } else {
+                // Show pagination for limited entries
+                paginationContainer.style.display = 'block';
+            }
+        }
+    }
+    
+    // Get current per page value
+    function getCurrentPerPage() {
+        const entriesSelect = document.getElementById('entriesPerPage');
+        return entriesSelect ? entriesSelect.value : 25;
+    }
+    
+    // Apply filters using form submission (server-side)
     function applyFilters() {
         if (isLoading) return;
         
@@ -819,35 +1206,9 @@
             }
         }
         
-        fetch('{{ route("pendapatan.filter") }}?' + params.toString(), {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateTable(data.data.invoices, data.data.pagination);
-                updateStatistics(data.data.statistics);
-                
-                // Update URL without page reload
-                const newUrl = `${window.location.pathname}?${params.toString()}`;
-                window.history.pushState({}, '', newUrl);
-                
-                showNotification('Data berhasil diperbarui', 'success');
-            } else {
-                showNotification(data.message || 'Terjadi kesalahan', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Terjadi kesalahan saat memuat data', 'error');
-        })
-        .finally(() => {
-            hideLoading();
-        });
+        // Redirect to same page with filters
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.location.href = newUrl;
     }
     
     // Update table with new data
@@ -1159,23 +1520,38 @@
     
     // Handle pagination clicks
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.pagination a')) {
+        if (e.target.closest('.ajax-pagination')) {
+            e.preventDefault();
+            const link = e.target.closest('.ajax-pagination');
+            const page = link.getAttribute('data-page');
+            
+            // Use AJAX for pagination navigation
+            loadDataWithAjax(getCurrentPerPage(), page);
+        } else if (e.target.closest('.pagination a')) {
             e.preventDefault();
             const link = e.target.closest('.pagination a');
-            const url = new URL(link.href);
             
-            // Get current form data
-            const formData = new FormData(document.getElementById('filterForm'));
-            
-            // Add form data to pagination URL
-            for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    url.searchParams.set(key, value);
+            // Check if it's an AJAX pagination link
+            if (link.classList.contains('ajax-pagination')) {
+                const page = link.getAttribute('data-page');
+                loadDataWithAjax(getCurrentPerPage(), page);
+            } else {
+                // Handle regular pagination (fallback to page reload)
+                const url = new URL(link.href);
+                
+                // Get current form data
+                const formData = new FormData(document.getElementById('filterForm'));
+                
+                // Add form data to pagination URL
+                for (let [key, value] of formData.entries()) {
+                    if (value.trim() !== '') {
+                        url.searchParams.set(key, value);
+                    }
                 }
+                
+                showLoading();
+                window.location.href = url.toString();
             }
-            
-            showLoading();
-            window.location.href = url.toString();
         }
     });
 </script>

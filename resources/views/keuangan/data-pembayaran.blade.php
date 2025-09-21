@@ -555,28 +555,41 @@
         <h5 class="fw-semibold text-dark mb-0">Daftar Pembayaran Customer</h5>
     </div>
     
-    <div class="d-flex justify-content-start p-2">
-        <div class="dropdown">
-            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bx bx-export me-1"></i>Export
-            </button>
-            <ul class="dropdown-menu">
-                <li>
-                    <a class="dropdown-item" href="#" onclick="exportData('harian')">
-                        <i class="bx bx-file me-1"></i>Harian
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="#" onclick="exportData('bulanan')">
-                        <i class="bx bx-file me-1"></i>Bulanan
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="#" onclick="showExportModal()">
-                        <i class="bx bx-calendar me-1"></i>Custom Range
-                    </a>
-                </li>
-            </ul>
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-4 border-bottom">
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <div class="dropdown">
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-export me-1"></i>Export
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="exportData('harian')">
+                            <i class="bx bx-file me-1"></i>Harian
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="exportData('bulanan')">
+                            <i class="bx bx-file me-1"></i>Bulanan
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" onclick="showExportModal()">
+                            <i class="bx bx-calendar me-1"></i>Custom Range
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small">Tampilkan:</label>
+            <select id="entriesPerPage" class="form-select form-select-sm" style="width: auto;">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="all">Semua</option>
+            </select>
+            <span class="text-muted small">Entri</span>
         </div>
     </div>
     
@@ -697,14 +710,77 @@
     </div>
     <!-- Pagination -->
     @if (isset($payments) && $payments->hasPages())
-    <div class="p-4 border-top">
+    <div class="p-4 border-top" id="paginationContainer">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
             <div class="text-muted small">
                 Menampilkan {{ $payments->firstItem() ?? 0 }} sampai {{ $payments->lastItem() ?? 0 }}
                 dari {{ $payments->total() ?? 0 }} hasil
             </div>
             <div>
-                {{ $payments->appends(request()->query())->links() }}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {{-- Previous Page Link --}}
+                        @if ($payments->onFirstPage())
+                            <li class="page-item disabled">
+                                <span class="page-link">‹ Previous</span>
+                            </li>
+                        @else
+                            <li class="page-item">
+                                <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->currentPage() - 1 }}">‹ Previous</a>
+                            </li>
+                        @endif
+
+                        {{-- Pagination Elements --}}
+                        @php
+                            $start = max(1, $payments->currentPage() - 2);
+                            $end = min($payments->lastPage(), $payments->currentPage() + 2);
+                        @endphp
+
+                        {{-- First Page --}}
+                        @if ($start > 1)
+                            <li class="page-item">
+                                <a class="page-link ajax-pagination-old" href="#" data-page="1">1</a>
+                            </li>
+                            @if ($start > 2)
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            @endif
+                        @endif
+
+                        {{-- Page Numbers --}}
+                        @for ($i = $start; $i <= $end; $i++)
+                            @if ($i == $payments->currentPage())
+                                <li class="page-item active">
+                                    <span class="page-link">{{ $i }}</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link ajax-pagination-old" href="#" data-page="{{ $i }}">{{ $i }}</a>
+                                </li>
+                            @endif
+                        @endfor
+
+                        {{-- Last Page --}}
+                        @if ($end < $payments->lastPage())
+                            @if ($end < $payments->lastPage() - 1)
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            @endif
+                            <li class="page-item">
+                                <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->lastPage() }}">{{ $payments->lastPage() }}</a>
+                            </li>
+                        @endif
+
+                        {{-- Next Page Link --}}
+                        @if ($payments->hasMorePages())
+                            <li class="page-item">
+                                <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->currentPage() + 1 }}">Next ›</a>
+                            </li>
+                        @else
+                            <li class="page-item disabled">
+                                <span class="page-link">Next ›</span>
+                            </li>
+                        @endif
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>
@@ -815,6 +891,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initializeSearch();
         initializeFilters();
+        initializeEntriesPerPage();
     });
     
     // Initialize search functionality
@@ -842,6 +919,374 @@
                 element.addEventListener('change', applyFilters);
             }
         });
+    }
+    
+    // Initialize entries per page functionality
+    function initializeEntriesPerPage() {
+        const entriesSelect = document.getElementById('entriesPerPage');
+        
+        if (entriesSelect) {
+            entriesSelect.addEventListener('change', function() {
+                const selectedValue = this.value;
+                loadDataWithAjax(selectedValue);
+            });
+        }
+    }
+    
+    // Load data using AJAX with entries per page
+    function loadDataWithAjax(perPage = 25, page = 1) {
+        if (isLoading) return;
+        
+        showLoading();
+        
+        // Get current filter values
+        const formData = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        
+        // Add form data to params
+        for (let [key, value] of formData.entries()) {
+            if (value.trim() !== '') {
+                params.append(key, value);
+            }
+        }
+        
+        // Add per_page and page parameters
+        params.append('per_page', perPage);
+        if (page > 1) {
+            params.append('page', page);
+        }
+        
+        // Make AJAX request
+        fetch(`{{ route('pembayaran.ajax') }}?${params.toString()}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                updateTableWithAjax(data.data.payments, data.data.pagination);
+                updateStatistics(data.data.statistics);
+                updatePaginationWithAjax(data.data.pagination, perPage);
+                
+                // Show notification
+                const totalVisible = perPage === 'all' ? data.data.payments.length : Math.min(parseInt(perPage), data.data.payments.length);
+                showNotification(`Menampilkan ${totalVisible} entri`, 'success');
+            } else {
+                showNotification(data.message || 'Terjadi kesalahan', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Terjadi kesalahan saat memuat data', 'error');
+        })
+        .finally(() => {
+            hideLoading();
+        });
+    }
+    
+    // Update table with AJAX data
+    function updateTableWithAjax(payments, pagination) {
+        const tableBody = document.getElementById('tableBody');
+        
+        if (!tableBody) return;
+        
+        if (payments.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="10" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center">
+                            <i class="bx bx-money text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                            <p class="text-muted mb-0">Belum ada data pembayaran yang tersedia</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let tableHTML = '';
+        payments.forEach((payment, index) => {
+            let rowNumber;
+            if (pagination) {
+                const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
+                rowNumber = startIndex + index;
+            } else {
+                rowNumber = index + 1;
+            }
+            
+            tableHTML += `
+                <tr>
+                    <td class="fw-medium">${rowNumber}</td>
+                    <td>
+                        <div>
+                            <div class="fw-medium text-dark">${payment.invoice?.customer?.nama_customer || 'N/A'}</div>
+                            <small class="text-muted">${payment.invoice?.customer?.alamat ? payment.invoice.customer.alamat.substring(0, 30) + (payment.invoice.customer.alamat.length > 30 ? '...' : '') : ''}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-info bg-opacity-10 text-primary">
+                            ${payment.invoice?.paket?.nama_paket || 'N/A'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-semibold text-danger">
+                                Rp ${formatNumber(payment.jumlah_bayar || 0)}
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex justify-content-between">
+                            <i class="bx bx-calendar text-primary me-1"></i>
+                            ${formatDateTime(payment.tanggal_bayar, payment.created_at)}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="payment-method-badge bg-info bg-opacity-10 text-primary">
+                            <i class="bx bx-credit-card"></i>
+                            ${payment.metode_bayar}
+                        </span>
+                    </td>
+                    <td>
+                        ${getStatusBadge(payment.status)}
+                    </td>
+                    <td>
+                        ${getUserBadge(payment.user)}
+                    </td>
+                    <td>
+                        ${getActionButtons(payment)}
+                    </td>
+                    <td>
+                        <span class="fw-bold">
+                            <small>${payment.keterangan || ''}</small>
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableBody.innerHTML = tableHTML;
+    }
+    
+    // Update pagination with AJAX data
+    function updatePaginationWithAjax(pagination, perPage) {
+        const paginationContainer = document.querySelector('.p-4.border-top');
+        
+        if (!paginationContainer) return;
+        
+        if (perPage === 'all') {
+            // Show info for all entries but hide pagination controls
+            paginationContainer.style.display = 'block';
+            const totalRecords = pagination ? pagination.total : 0;
+            paginationContainer.innerHTML = `
+                <div class="d-flex justify-content-center">
+                    <div class="text-muted small">
+                        Menampilkan semua ${formatNumber(totalRecords)} data
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        if (!pagination) {
+            // Hide pagination when no pagination data
+            paginationContainer.style.display = 'none';
+            return;
+        }
+        
+        // Show pagination container
+        paginationContainer.style.display = 'block';
+        
+        // Generate pagination info
+        const fromRecord = pagination.from || 0;
+        const toRecord = pagination.to || 0;
+        const totalRecords = pagination.total || 0;
+        
+        // Generate pagination HTML with info
+        let paginationHTML = `
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                <div class="text-muted small">
+                    Menampilkan ${fromRecord} sampai ${toRecord} dari ${formatNumber(totalRecords)} hasil
+                </div>
+                <div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+        `;
+        
+        // Previous button
+        if (pagination.current_page > 1) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
+            </li>`;
+        } else {
+            paginationHTML += `<li class="page-item disabled">
+                <span class="page-link">‹ Previous</span>
+            </li>`;
+        }
+        
+        // Page numbers
+        const startPage = Math.max(1, pagination.current_page - 2);
+        const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
+        
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
+            </li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            if (i === pagination.current_page) {
+                paginationHTML += `<li class="page-item active">
+                    <span class="page-link">${i}</span>
+                </li>`;
+            } else {
+                paginationHTML += `<li class="page-item">
+                    <a class="page-link ajax-pagination" href="#" data-page="${i}">${i}</a>
+                </li>`;
+            }
+        }
+        
+        if (endPage < pagination.last_page) {
+            if (endPage < pagination.last_page - 1) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a>
+            </li>`;
+        }
+        
+        // Next button
+        if (pagination.current_page < pagination.last_page) {
+            paginationHTML += `<li class="page-item">
+                <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
+            </li>`;
+        } else {
+            paginationHTML += `<li class="page-item disabled">
+                <span class="page-link">Next ›</span>
+            </li>`;
+        }
+        
+        paginationHTML += `
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        `;
+        
+        // Update pagination container
+        paginationContainer.innerHTML = paginationHTML;
+        
+        // Add event listeners to pagination links
+        const paginationLinks = paginationContainer.querySelectorAll('.ajax-pagination');
+        paginationLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = this.getAttribute('data-page');
+                loadDataWithAjax(getCurrentPerPage(), page);
+            });
+        });
+    }
+    
+    // Get current per page value
+    function getCurrentPerPage() {
+        const entriesSelect = document.getElementById('entriesPerPage');
+        return entriesSelect ? entriesSelect.value : 10;
+    }
+    
+    // Update statistics cards
+    function updateStatistics(stats) {
+        // Update statistics if needed
+        console.log('Statistics updated:', stats);
+    }
+    
+    // Helper function to format numbers
+    function formatNumber(number) {
+        return new Intl.NumberFormat('id-ID').format(number);
+    }
+    
+    // Helper function to format date and time
+    function formatDateTime(tanggalBayar, createdAt) {
+        if (!tanggalBayar || !createdAt) return '';
+        
+        const date = new Date(tanggalBayar + ' ' + new Date(createdAt).toTimeString().split(' ')[0]);
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+    
+    // Helper function to get status badge
+    function getStatusBadge(status) {
+        if (!status) return '<span class="status-badge bg-secondary bg-opacity-10 text-secondary">N/A</span>';
+        
+        if (status.nama_status === 'Sudah Bayar') {
+            return `
+                <span class="status-badge bg-success bg-opacity-10 text-success">
+                    <i class="bx bx-check-circle"></i>
+                    ${status.nama_status}
+                </span>
+            `;
+        } else {
+            return `
+                <span class="status-badge bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bx bx-time-five"></i>
+                    ${status.nama_status}
+                </span>
+            `;
+        }
+    }
+    
+    // Helper function to get user badge
+    function getUserBadge(user) {
+        if (user) {
+            return `
+                <span class="status-badge bg-danger bg-opacity-10 text-danger fw-bold">
+                    ${user.name}
+                </span>
+            `;
+        } else {
+            return `
+                <span class="status-badge bg-info bg-opacity-10 text-primary fw-bold">Tripay</span>
+            `;
+        }
+    }
+    
+    // Helper function to get action buttons
+    function getActionButtons(payment) {
+        if (payment.status_id == 8) {
+            return `
+                <div class="d-flex">
+                    <a class="btn btn-outline-warning btn-sm text-warning" 
+                       data-bs-toggle="modal" 
+                       data-bs-target="#editModal${payment.id}">
+                        <i class="bx bx-pencil"></i>
+                    </a>
+                </div>
+            `;
+        } else {
+            return `
+                <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                    <i class="bx bx-pencil"></i>
+                </button>
+            `;
+        }
     }
     
     // Apply filters and search
@@ -1008,25 +1453,28 @@
         }, 5000);
     }
     
-    // Handle pagination clicks
+    // Handle pagination clicks - Updated to use AJAX
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.pagination a')) {
+        // Handle old pagination (Laravel generated)
+        if (e.target.closest('.ajax-pagination-old')) {
+            e.preventDefault();
+            const link = e.target.closest('.ajax-pagination-old');
+            const page = link.getAttribute('data-page');
+            
+            // Use AJAX pagination with current per_page setting
+            loadDataWithAjax(getCurrentPerPage(), page);
+        }
+        
+        // Handle new pagination (AJAX generated) - already handled in updatePaginationWithAjax
+        // This is for fallback compatibility
+        if (e.target.closest('.pagination a:not(.ajax-pagination):not(.ajax-pagination-old)')) {
             e.preventDefault();
             const link = e.target.closest('.pagination a');
             const url = new URL(link.href);
+            const page = url.searchParams.get('page') || 1;
             
-            // Get current form data
-            const formData = new FormData(document.getElementById('filterForm'));
-            
-            // Add form data to pagination URL
-            for (let [key, value] of formData.entries()) {
-                if (value.trim() !== '') {
-                    url.searchParams.set(key, value);
-                }
-            }
-            
-            showLoading();
-            window.location.href = url.toString();
+            // Use AJAX pagination with current per_page setting
+            loadDataWithAjax(getCurrentPerPage(), page);
         }
     });
 </script>

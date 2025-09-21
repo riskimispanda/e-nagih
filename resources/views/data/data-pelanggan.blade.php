@@ -1027,6 +1027,14 @@
                                     <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
                                         Maintenance
                                     </span>
+                                    @elseif($item->status_id == 16)
+                                    <span class="badge bg-secondary status-badge bg-opacity-10 text-secondary">
+                                        Request BA
+                                    </span>
+                                    @elseif($item->status_id == 17)
+                                    <span class="badge bg-warning status-badge bg-opacity-10 text-dark">
+                                        Aktivasi Sementara
+                                    </span>
                                     @endif
                                 </td>
                                 <td>

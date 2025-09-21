@@ -23,7 +23,7 @@ class MikrotikController extends Controller
         $inter = MikrotikServices::trafficPelanggan($router, 'SAHID-Office@niscala.net.id');
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-        dd($inter);
+        dd($user);
     }
 
     public function testKoneksi($id)
@@ -116,13 +116,16 @@ class MikrotikController extends Controller
         ]);
     }
 
-    // 🔹 Endpoint untuk AJAX polling
+    // �� Endpoint untuk AJAX polling
     public function trafficData($id)
     {
         $pelanggan = Customer::findOrFail($id);
         $router    = Router::findOrFail($pelanggan->router_id);
 
         $result = MikrotikServices::trafficPelanggan($router, $pelanggan->usersecret);
+        
+        // Get WiFi clients data
+        $wifiData = MikrotikServices::getCustomerWifiClients($router, $pelanggan->usersecret);
 
         return response()->json([
             'rx'     => $result['rx'] ?? 0,
@@ -135,7 +138,140 @@ class MikrotikController extends Controller
             'ip_remote' => $result['ip_remote'] ?? null,
             'profile' => $result['profile'] ?? null,
             'total_rx' => $result['total_rx'] ?? null,
-            'total_tx' => $result['total_tx'] ?? null
+            'total_tx' => $result['total_tx'] ?? null,
+            // WiFi scanning data
+            'wifi_clients' => $wifiData['wifi_clients'] ?? 0,
+            'wifi_status' => $wifiData['status'] ?? 'unknown',
+            'wifi_method' => $wifiData['method'] ?? 'unknown',
+            'wifi_message' => $wifiData['message'] ?? '',
+            'customer_ip' => $wifiData['customer_ip'] ?? null,
+            'wifi_devices' => $wifiData['devices'] ?? []
         ]);
+    }
+
+    /**
+     * Get WiFi clients count for specific customer
+     */
+    public function getWifiClients($id)
+    {
+        try {
+            $pelanggan = Customer::findOrFail($id);
+            $router = Router::findOrFail($pelanggan->router_id);
+
+            $result = MikrotikServices::getCustomerWifiClients($router, $pelanggan->usersecret);
+
+            return response()->json([
+                'success' => true,
+                'customer_name' => $pelanggan->nama_customer,
+                'customer_ip' => $result['customer_ip'] ?? null,
+                'wifi_clients' => $result['wifi_clients'] ?? 0,
+                'status' => $result['status'] ?? 'unknown',
+                'method' => $result['method'] ?? 'unknown',
+                'message' => $result['message'] ?? '',
+                'devices' => $result['devices'] ?? []
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'wifi_clients' => 0
+            ]);
+        }
+    }
+
+    /**
+     * Bulk scan WiFi clients for multiple customers
+     */
+    public function bulkWifiScan(Request $request)
+    {
+        try {
+            $customerIds = $request->input('customer_ids', []);
+            
+            if (empty($customerIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No customers selected'
+                ]);
+            }
+
+            $results = [];
+            
+            foreach ($customerIds as $customerId) {
+                $pelanggan = Customer::find($customerId);
+                
+                if (!$pelanggan || !$pelanggan->router_id) {
+                    $results[] = [
+                        'customer_id' => $customerId,
+                        'customer_name' => $pelanggan->nama_customer ?? 'Unknown',
+                        'wifi_clients' => 0,
+                        'status' => 'error',
+                        'message' => 'Customer or router not found'
+                    ];
+                    continue;
+                }
+
+                $router = Router::find($pelanggan->router_id);
+                if (!$router) {
+                    $results[] = [
+                        'customer_id' => $customerId,
+                        'customer_name' => $pelanggan->nama_customer,
+                        'wifi_clients' => 0,
+                        'status' => 'error',
+                        'message' => 'Router not found'
+                    ];
+                    continue;
+                }
+
+                $wifiData = MikrotikServices::getCustomerWifiClients($router, $pelanggan->usersecret);
+                
+                $results[] = [
+                    'customer_id' => $customerId,
+                    'customer_name' => $pelanggan->nama_customer,
+                    'customer_ip' => $wifiData['customer_ip'] ?? null,
+                    'wifi_clients' => $wifiData['wifi_clients'] ?? 0,
+                    'status' => $wifiData['status'] ?? 'unknown',
+                    'method' => $wifiData['method'] ?? 'unknown',
+                    'message' => $wifiData['message'] ?? ''
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'results' => $results,
+                'total_scanned' => count($results)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bulk scan error: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get comprehensive network information for customer
+     */
+    public function getNetworkInfo($id)
+    {
+        try {
+            $pelanggan = Customer::findOrFail($id);
+            $router = Router::findOrFail($pelanggan->router_id);
+
+            $networkInfo = MikrotikServices::getCustomerNetworkInfo($router, $pelanggan->usersecret);
+
+            return response()->json([
+                'success' => true,
+                'customer_name' => $pelanggan->nama_customer,
+                'network_info' => $networkInfo
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error getting network info: ' . $e->getMessage()
+            ]);
+        }
     }
 }

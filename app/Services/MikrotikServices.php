@@ -427,8 +427,8 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            // $query->where('comment', 'Created by E-Nagih');
-            $query->where('name', 'SAHID-Office@niscala.net.id');
+            $query->where('comment', 'Created by E-Nagih');
+            // $query->where('name', 'cobas2@niscala.net.id');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
@@ -830,6 +830,128 @@ class MikrotikServices
         }
     }
 
+    public static function getCustomerWifiClients(Router $router, string $usersecret): array
+    {
+        try {
+            $client = self::connect($router);
 
+            // Get active PPPoE connection
+            $active = $client->query(
+                (new Query('/ppp/active/print'))->where('name', $usersecret)
+            )->read();
+
+            if (empty($active)) {
+                return [
+                    'status' => 'offline',
+                    'message' => 'Customer not connected',
+                    'customer_ip' => null,
+                    'wifi_clients' => 0,
+                    'method' => 'pppoe_check'
+                ];
+            }
+
+            $customerIP = $active[0]['address'] ?? null;
+
+            if (!$customerIP) {
+                return [
+                    'status' => 'error',
+                    'message' => 'Customer IP not found',
+                    'customer_ip' => null,
+                    'wifi_clients' => 0,
+                    'method' => 'pppoe_check'
+                ];
+            }
+
+            // Try to get DHCP leases from customer's network
+            $dhcpQuery = new Query('/ip/dhcp-server/lease/print');
+            $leases = $client->query($dhcpQuery)->read();
+
+            $wifiClients = 0;
+            $customerNetwork = substr($customerIP, 0, strrpos($customerIP, '.'));
+
+            foreach ($leases as $lease) {
+                $leaseIP = $lease['address'] ?? '';
+                if (strpos($leaseIP, $customerNetwork) === 0 && $leaseIP !== $customerIP) {
+                    $wifiClients++;
+                }
+            }
+
+            return [
+                'status' => 'online',
+                'message' => 'WiFi clients detected',
+                'customer_ip' => $customerIP,
+                'wifi_clients' => $wifiClients,
+                'method' => 'dhcp_lease_scan'
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Error getting WiFi clients: ' . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Error: ' . $e->getMessage(),
+                'customer_ip' => null,
+                'wifi_clients' => 0,
+                'method' => 'error'
+            ];
+        }
+    }
+
+    public static function getCustomerConnectionLogs(Client $client, string $usersecret, int $limit = 10): array
+    {
+        try {
+            $query = new Query('/log/print');
+            $logs = $client->query($query)->read();
+
+            $customerLogs = collect($logs)
+                ->filter(function ($log) use ($usersecret) {
+                    $message = $log['message'] ?? '';
+                    return stripos($message, $usersecret) !== false;
+                })
+                ->sortByDesc(function ($log) {
+                    return $log['time'] ?? '';
+                })
+                ->take($limit)
+                ->values()
+                ->toArray();
+
+            return $customerLogs;
+        } catch (\Throwable $e) {
+            Log::error('Error getting customer logs: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public static function getCustomerNetworkInfo(Router $router, string $usersecret): array
+    {
+        try {
+            $client = self::connect($router);
+
+            // Get traffic data
+            $trafficData = self::trafficPelanggan($router, $usersecret);
+
+            // Get WiFi clients
+            $wifiData = self::getCustomerWifiClients($router, $usersecret);
+
+            // Get connection history/logs
+            $logs = self::getCustomerConnectionLogs($client, $usersecret);
+
+            return [
+                'status' => 'success',
+                'traffic' => $trafficData,
+                'wifi_clients' => $wifiData,
+                'connection_logs' => $logs,
+                'timestamp' => now()->toISOString()
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Error getting network info: ' . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Error: ' . $e->getMessage(),
+                'traffic' => null,
+                'wifi_clients' => null,
+                'connection_logs' => null,
+                'timestamp' => now()->toISOString()
+            ];
+        }
+    }
 
 }

@@ -309,6 +309,16 @@
             "Admin Keuangan",
             "Helpdesk"
           ]
+        },
+        {
+          "url": "/berita-acara",
+          "name": "Berita Acara",
+          "slug": "berita-acara",
+          "roles": [
+            "NOC",
+            "Super Admin",
+            "Admin Keuangan"
+          ]
         }
       ]
     },

@@ -10,4 +10,9 @@ class KategoriTiket extends Model
     protected $fillable = [
         'nama_kategori',
     ];
+
+    public function beritaAcara()
+    {
+        return $this->hasMany(BeritaAcara::class);
+    }
 }

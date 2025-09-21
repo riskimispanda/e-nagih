@@ -62,4 +62,8 @@ class User extends Authenticatable
     return $this->hasMany(Customer::class, 'agen_id', 'id');
   }
 
+  public function berita()
+  {
+    return $this->hasMany(BeritaAcara::class, 'admin_id');
+  }
 }
