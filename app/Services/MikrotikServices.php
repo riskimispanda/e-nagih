@@ -153,8 +153,6 @@ class MikrotikServices
     }
 
 
-
-
     public static function logInformation(Client $client, string $message = ''): void
     {
         try {
