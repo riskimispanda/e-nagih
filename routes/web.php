@@ -71,6 +71,7 @@ use App\Http\Controllers\MapController;
 use App\Exports\PembayaranExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Request;
+use RouterOS\Client;
 
 
 // Main Page Route
@@ -95,7 +96,25 @@ Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])
 Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
 Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
 Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
+Route::get('/test-mikrotik', function () {
+    try {
+        $client = new Client([
+            'host' => '203.190.43.100',
+            'user' => 'panda',
+            'pass' => 'panda',
+            'port' => 1411,
+        ]);
 
+        $identity = $client->query('/system/identity/print')->read();
+
+        return response()->json($identity);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ], 500);
+    }
+});
 // Debug
 Route::get('/router/{id}/test', [MikrotikController::class, 'testKoneksi']);
 Route::get('/test-router/{id}', function ($id) {
