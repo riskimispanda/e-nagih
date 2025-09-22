@@ -102,7 +102,7 @@ Route::get('/test-mikrotik', function () {
             'host' => '203.190.43.100',
             'user' => 'panda',
             'pass' => 'panda',
-            'port' => 1411,
+            'port' => 5000,
         ]);
 
         $identity = $client->query('/system/identity/print')->read();
