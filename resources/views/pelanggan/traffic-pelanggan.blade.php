@@ -228,7 +228,8 @@
                                 <i class="bx bx-wifi me-2"></i>Traffic Monitor
                             </h4>
                             <h5 class="mb-1 opacity-90">{{ $pelanggan->nama_customer }}</h5>
-                            <p class="mb-0 opacity-75">
+                            <small class="card-subtitle fw-semibold">{{$pelanggan->usersecret}}</small>
+                            <p class="mb-0 opacity-75 mt-2">
                                 <i class="bx bx-time me-1"></i>Real-time network traffic monitoring
                             </p>
                         </div>
