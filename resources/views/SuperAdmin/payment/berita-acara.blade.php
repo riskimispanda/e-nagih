@@ -118,7 +118,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center">
+                                <td colspan="8" class="text-center">
                                     <div class="d-flex flex-column align-items-center justify-content-center py-4">
                                         <i class="bx bx-user-x fs-1 text-muted mb-2"></i>
                                         <span class="fw-semibold text-secondary">Tidak ada data pelanggan</span>
