@@ -96,13 +96,22 @@ Route::post('/tripay-payment/{id}', [TripayController::class, 'processPayment'])
 Route::post('/payment/callback', [CallbackController::class, 'handle'])->name('payment.callback');
 Route::get('/payment/instructions/{code}', [TripayController::class, 'getPaymentInstructions'])->name('payment.instructions');
 Route::get('/isolir', [Loginbasic::class, 'isolir'])->name('isolir');
-Route::get('/test-mikrotik', function () {
+Route::get('/test-mikrotik/{id}', function ($id) {
+    // ambil data login dari database
+    $login = Router::find($id);
+
+    if (!$login) {
+        return response()->json([
+            'error' => 'Login data tidak ditemukan'
+        ], 404);
+    }
+
     try {
         $client = new Client([
-            'host' => '203.190.43.100',
-            'user' => 'panda',
-            'pass' => 'panda',
-            'port' => 5000,
+            'host' => $login->host,
+            'user' => $login->username,
+            'pass' => $login->password,
+            'port' => $login->port ?? 8728, // default port 8728 jika null
         ]);
 
         $identity = $client->query('/system/identity/print')->read();
