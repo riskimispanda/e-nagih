@@ -111,7 +111,7 @@ Route::get('/test-mikrotik/{id}', function ($id) {
             'host' => $login->ip_address,
             'user' => $login->username,
             'pass' => $login->password,
-            'port' => $login->port ?? 8728, // default port 8728 jika null
+            'port' => (int) $login->port ?? 8728, // default port 8728 jika null
         ]);
 
         $identity = $client->query('/system/identity/print')->read();
