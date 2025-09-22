@@ -26,7 +26,7 @@ class SuperAdmin extends Controller
     public function index()
     {
         $data = BeritaAcara::with('invoice', 'customer', 'tiket')->orderBy('updated_at', 'desc')->get();
-        $countCustomer = Customer::where('status_id', 3)->count();
+        $countCustomer = Customer::whereIn('status_id', [3, 9])->count();
         $countBeritaAcara = BeritaAcara::with('customer')->whereHas('customer', function ($q) {
             $q->whereIn('status_id', [16, 17]);
         })->count();
