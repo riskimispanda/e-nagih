@@ -23,7 +23,8 @@ class MikrotikController extends Controller
         $inter = MikrotikServices::trafficPelanggan($router, 'SAHID-Office@niscala.net.id');
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
-        dd($user);
+        $firewall = MikrotikServices::getFirewallRules($router);
+        dd($firewall);
     }
 
     public function testKoneksi($id)

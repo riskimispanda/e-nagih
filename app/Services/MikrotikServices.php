@@ -44,6 +44,55 @@ class MikrotikServices
         return self::$klien[$key];
     }
 
+    public static function getFirewallRules(Router $router)
+    {
+        $client = new Client([
+            'host' => $router->ip_address,
+            'user' => $router->username,
+            'pass' => $router->password,
+            'port' => (int) $router->port,
+        ]);
+
+        // 1. cek ip service untuk api / api-ssl
+        $q1 = new Query('/ip/service/print');
+        $services = $client->query($q1)->read();
+
+        // filter service api / api-ssl
+        $apiServices = array_filter($services, function ($s) {
+            return isset($s['name']) && in_array($s['name'], ['api', 'api-ssl']);
+        });
+
+        // 2. cek firewall input rule yang menyentuh port 8728/8729
+        $q2 = new Query('/ip/firewall/filter/print');
+        $filters = $client->query($q2)->read();
+
+        $apiFilters = array_filter($filters, function ($f) {
+            return (isset($f['dst-port']) && in_array($f['dst-port'], ['8728', '8729']))
+                || (isset($f['comment']) && stripos($f['comment'], 'api') !== false);
+        });
+
+        // 3. ambil semua address-list yang dipakai oleh rule di atas
+        $lists = [];
+        foreach ($apiFilters as $f) {
+            if (isset($f['src-address-list'])) $lists[] = $f['src-address-list'];
+            if (isset($f['dst-address-list'])) $lists[] = $f['dst-address-list'];
+        }
+        $lists = array_values(array_unique(array_filter($lists)));
+
+        // 4. ambil isi address-list
+        $addressLists = [];
+        foreach ($lists as $listName) {
+            $q = (new Query('/ip/firewall/address-list/print'))->where('list', $listName);
+            $addressLists[$listName] = $client->query($q)->read();
+        }
+
+        return response()->json([
+            'api_services' => array_values($apiServices),
+            'firewall_rules_touching_api_ports' => array_values($apiFilters),
+            'address_list_entries' => $addressLists,
+        ]);
+    }
+
     public static function gantiProfileAll(Router $router, string $newProfile, string $filterProfile = null)
     {
         try {
