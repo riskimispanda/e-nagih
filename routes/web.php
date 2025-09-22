@@ -107,16 +107,13 @@ Route::get('/test-mikrotik/{id}', function ($id) {
     }
 
     try {
-        $client = new Client([
-            'host' => $login->ip_address,
-            'user' => $login->username,
-            'pass' => $login->password,
-            'port' => (int) $login->port ?? 8728, // default port 8728 jika null
-        ]);
+        // hubungkan ke MikroTik menggunakan service
+        $client = MikrotikServices::connect($login);
 
-        $identity = $client->query('/system/identity/print')->read();
+        // ambil data PPP Secret
+        $user = MikrotikServices::getPPPSecret($client);
 
-        return response()->json($identity);
+        return response()->json($user);
     } catch (\Throwable $e) {
         return response()->json([
             'error' => $e->getMessage(),
@@ -124,6 +121,7 @@ Route::get('/test-mikrotik/{id}', function ($id) {
         ], 500);
     }
 });
+
 // Debug
 Route::get('/router/{id}/test', [MikrotikController::class, 'testKoneksi']);
 Route::get('/test-router/{id}', function ($id) {
