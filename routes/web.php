@@ -108,7 +108,7 @@ Route::get('/test-mikrotik/{id}', function ($id) {
 
     try {
         $client = new Client([
-            'host' => $login->host,
+            'host' => $login->ip_address,
             'user' => $login->username,
             'pass' => $login->password,
             'port' => $login->port ?? 8728, // default port 8728 jika null
