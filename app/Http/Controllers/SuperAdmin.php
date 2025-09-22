@@ -27,15 +27,13 @@ class SuperAdmin extends Controller
     {
         $data = BeritaAcara::with('invoice', 'customer', 'tiket')->orderBy('updated_at', 'desc')->get();
         $countCustomer = Customer::whereIn('status_id', [3, 9])->count();
-        $countBeritaAcara = BeritaAcara::with('customer')->whereHas('customer', function ($q) {
-            $q->whereIn('status_id', [16, 17]);
-        })->count();
+        $countBeritaAcara = BeritaAcara::with('customer', 'invoice')->count();
         return view('SuperAdmin.payment.berita-acara', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'data' => $data,
             'countCustomer' => $countCustomer,
-            'countBerita' => $countBeritaAcara
+            'countBerita' => $countBeritaAcara,
         ]);
     }
 
@@ -371,21 +369,16 @@ class SuperAdmin extends Controller
             BeritaAcara::create([
                 'customer_id'       => $customer->id,
                 'invoice_id'        => $invoice->id,
-                'tanggal_ba'        => $request->tanggal_mulai,
-                'tanggal_selesai_ba' => $request->tanggal_selesai,
+                'tanggal_ba'        => Carbon::parse($request->tanggal_mulai),
+                'tanggal_selesai_ba' => Carbon::parse($request->tanggal_selesai),
                 'keterangan'        => $request->keterangan,
                 'kategori_tiket'    => $request->kategori,
                 'admin_id'          => auth()->user()->id,
             ]);
 
-            // Update Status Customer Menjadi Menunggu
-            $customer->update([
-                'status_id' => 16
-            ]);
-
             DB::commit();
             LOG::info('Berhasil Membuat Berita Acara Untuk Customer: ' . $customer->nama_customer);
-            return redirect('/customer-berita-acara')->with('success', 'Berhasil Membuat Berita Acara');
+            return redirect('/berita-acara')->with('success', 'Berhasil Membuat Berita Acara');
         } catch (\Exception $e) {
             DB::rollBack();
             LOG::error('Gagal Membuat Berita Acara Untuk Customer: ' . $customer->nama_customer . ' Error: ' . $e->getMessage());
@@ -407,7 +400,7 @@ class SuperAdmin extends Controller
 
     public function viewBeritaAcara()
     {
-        $data = Customer::with('invoice')->whereIn('status_id', [3, 9])->get();
+        $data = Customer::with('latestInvoice')->whereIn('status_id', [3, 9])->get();
         return view('SuperAdmin.payment.view-berita-acara', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -418,36 +411,46 @@ class SuperAdmin extends Controller
     public function ApproveBeritaAcara($id)
     {
         $data = Customer::findOrFail($id);
-        $invoice = Invoice::where('customer_id', $id)->latest()->first();
         $berita = BeritaAcara::where('customer_id', $id)->latest()->first();
         $blokir = Carbon::parse($berita->tanggal_selesai_ba)->format('d-m-Y H:i:s');
 
         // Update Berita acara
         $berita->update([
             'noc_id' => auth()->user()->id,
-        ]);
-
-        // Update Status Customer Menjadi Aktivasi Sementara
-        $data->update([
-            'status_id' => 17
-        ]);
-
-        // Update Tanggal Blokir Invoice Sesuai Berita Acara
-        $invoice->update([
-            'tanggal_blokir' => $blokir,
+            'tanggal_selesai_ba' => $blokir
         ]);
 
         // Update Mikrotik Profile sesuai Usersecret
-        $mikrotik = new MikrotikServices();
-        $client = MikrotikServices::connect($data->router);
-        $mikrotik->unblokUser($client, $data->usersecret, $data->paket->paket_name);
-        $mikrotik->removeActiveConnections($client, $data->usersecret);
+        if ($data->status_id == 9) {
+            $mikrotik = new MikrotikServices();
+            $client = MikrotikServices::connect($data->router);
+            $mikrotik->unblokUser($client, $data->usersecret, $data->paket->paket_name);
+            $mikrotik->removeActiveConnections($client, $data->usersecret);
+
+            // Update Status Id ke 3
+            $data->update([
+                'status_id' => 3
+            ]);
+        }
 
         // Catat Log Aktivitas
         activity('NOC')
             ->causedBy(auth()->user())
-            ->log(auth()->user()->name . ' Menyetujui pengajuan Aktivasi sementara dari ' . $berita->admin->name);
+            ->log(auth()->user()->name . ' Menyetujui pengajuan Aktivasi sementara dari ' . $berita->admin->name . ' Untuk pelanggan ' . $berita->customer->nama_customer);
 
         return redirect('/berita-acara')->with('toast_success', 'Berhasil Menyetujui');
+    }
+
+    public function hapusBeritaAcara($id)
+    {
+        $data = BeritaAcara::findOrFail($id);
+        $data->delete();
+
+        // Catat Log Aktivitas
+        activity('Hapus BA')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' Menghapus Berita Acara');
+
+        return redirect('/berita-acara')->with('toast_success', 'Berhasil Menghapus Berita Acara');
     }
 }

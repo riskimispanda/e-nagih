@@ -158,6 +158,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/preview/berita-acara/{id}', [SuperAdmin::class, 'PreviewBeritaAcara'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan');
     Route::get('/customer-berita-acara', [SuperAdmin::class, 'viewBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
     Route::get('/approve-berita-acara/{id}', [SuperAdmin::class, 'ApproveBeritaAcara'])->middleware('auth', 'roles:NOC,Super Admin');
+    Route::get('/hapus-berita-acara/{id}', [SuperAdmin::class, 'hapusBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
 
     // Konfirmasi Tiket Open
     Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan')->name('tutup-tiket');
@@ -308,7 +309,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/traffic-pelanggan/{id}', [MikrotikController::class, 'trafficPelanggan'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Helpdesk,Admin Logistik')->name('pelanggan-traffic');
     Route::get('/pelanggan/{id}/traffic/data', [MikrotikController::class, 'trafficData'])->name('pelanggan-traffic-data');
-    
+    // Add these routes to your existing web.php file
     // WiFi Scanning Routes
     Route::get('/pelanggan/{id}/wifi-clients', [MikrotikController::class, 'getWifiClients'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan,Helpdesk')->name('pelanggan-wifi-clients');
     Route::post('/pelanggan/bulk-wifi-scan', [MikrotikController::class, 'bulkWifiScan'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('bulk-wifi-scan');

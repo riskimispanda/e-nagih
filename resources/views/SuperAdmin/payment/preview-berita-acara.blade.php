@@ -62,10 +62,6 @@
                             <td><strong>Lama Aktivasi</strong></td>
                             <td>: Hingga Tanggal <strong>{{ \Carbon\Carbon::parse($data->tanggal_selesai_ba)->translatedFormat('d F Y') }}</strong></td>
                         </tr>
-                        <tr>
-                            <td><strong>Status Berita Acara</strong></td>
-                            <td>: <strong>@if($data->customer->status_id == 16) Menunggu @elseif($data->customer->status_id == 17) Approved @endif</strong></td>
-                        </tr>
                     </tbody>
                 </table>
                 <hr>

@@ -3,12 +3,12 @@
 
 @section('content')
 <div class="row">
-    <div class="col-lg-4 col-md-12 col-6 mb-6">
+    <div class="col-lg-6 col-md-12 col-6 mb-6">
         <div class="card h-100">
             <div class="card-body">
                 <div class="card-title d-flex align-items-start justify-content-between mb-4">
-                    <div class="avatar flex-shrink-0 bg-warning bg-opacity-10 rounded d-flex justify-content-center align-items-center" style="width:40px; height:40px;">
-                        <i class="bx bx-user text-warning"></i>
+                    <div class="avatar flex-shrink-0 bg-warning bg-opacity-10 rounded d-flex justify-content-center align-items-center" style="width:50px; height:50px;">
+                        <i class="bx bx-user fs-4 text-warning"></i>
                     </div>
                 </div>
                 <p class="mb-1 fw-bold">Jumlah Pelanggan</p>
@@ -16,15 +16,15 @@
             </div>
         </div>
     </div>
-    <div class="col-lg-4 col-md-12 col-6 mb-6">
+    <div class="col-lg-6 col-md-12 col-6 mb-6">
         <div class="card h-100">
             <div class="card-body">
                 <div class="card-title d-flex align-items-start justify-content-between mb-4">
-                    <div class="avatar flex-shrink-0 bg-danger bg-opacity-10 rounded d-flex justify-content-center align-items-center" style="width:40px; height:40px;">
-                        <i class="bx bx-clipboard text-danger"></i>
+                    <div class="avatar flex-shrink-0 bg-info bg-opacity-10 rounded d-flex justify-content-center align-items-center" style="width:50px; height:50px;">
+                        <i class="bx bx-clipboard fs-4 text-info"></i>
                     </div>
                 </div>
-                <p class="mb-1 fw-bold">Request Berita Acara</p>
+                <p class="mb-1 fw-bold">Berita Acara</p>
                 <h4 class="card-title mb-3">{{ $countBerita }}</h4>
             </div>
         </div>
@@ -57,7 +57,10 @@
                                 <th>No</th>
                                 <th>Pelanggan</th>
                                 <th>Paket</th>
-                                <th>Status</th>
+                                <th>Status Koneksi</th>
+                                <th>Status Tagihan</th>
+                                <th>Tanggal Mulai</th>
+                                <th>Tanggal Selesai</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -83,39 +86,44 @@
                                     <span class="badge bg-label-success fw-bold">AKTIF</span>
                                     @elseif($item->customer->status_id == 9)
                                     <span class="badge bg-label-danger fw-bold">BLOKIR</span>
-                                    @elseif($item->customer->status_id == 16)
-                                    <span class="badge bg-label-warning fw-bold">Request BA</span>
-                                    @elseif($item->customer->status_id == 17)
-                                    <span class="badge bg-label-secondary fw-bold">Aktivasi Sementara</span>
                                     @endif
                                 </td>
                                 <td>
+                                    @if($item->invoice->status_id == 7)
+                                    <span class="badge bg-label-danger fw-bold">Belum Bayar</span>
+                                    @elseif($item->invoice->status_id == 8)
+                                    <span class="badge bg-label-success fw-bold">Sudah Bayar</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-info fw-bold">{{ $item->tanggal_ba->format('d-M-Y H:i:s') }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-warning fw-bold">{{ $item->tanggal_selesai_ba->format('d-M-Y H:i:s') }}</span>
+                                </td>
+                                <td>
                                     <div class="d-flex gap-2 justify-content-center">
-                                        @if($item->customer->status_id == 16 || $item->customer->status_id == 17)
-                                        <button class="btn btn-outline-danger btn-sm" disabled>
-                                            <i class="bx bx-clipboard"></i>
-                                        </button>
                                         <a href="/preview/berita-acara/{{ $item->customer->id }}">
                                             <button class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" title="Lihat Berita Acara">
                                                 <i class="bx bx-info-circle"></i>
                                             </button>
                                         </a>
-                                        @else
-                                        <a href="/buat-berita-acara/{{ $item->customer->id }}">
-                                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Buat BA {{ $item->customer->nama_customer }}">
-                                                <i class="bx bx-clipboard"></i>
+                                        <a href="/hapus-berita-acara/{{ $item->id }}">
+                                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" title="Hapus Berita Acara">
+                                                <i class="bx bx-trash"></i>
                                             </button>
                                         </a>
-                                        <button class="btn btn-outline-secondary btn-sm" disabled data-bs-toggle="tooltip" title="Belum tersedia">
-                                            <i class="bx bx-info-circle"></i>
-                                        </button>
-                                        @endif
                                     </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted">Tidak ada data pelanggan</td>
+                                <td colspan="5" class="text-center">
+                                    <div class="d-flex flex-column align-items-center justify-content-center py-4">
+                                        <i class="bx bx-user-x fs-1 text-muted mb-2"></i>
+                                        <span class="fw-semibold text-secondary">Tidak ada data pelanggan</span>
+                                    </div>
+                                </td>
                             </tr>
                             @endforelse
                         </tbody>

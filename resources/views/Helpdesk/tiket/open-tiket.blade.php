@@ -78,50 +78,100 @@
                                     <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->paket->nama_paket }}" readonly>
                                 </div>
                             </div>
-                            <div class="mb-6 col-sm-6">
-                                <label class="form-label" for="basic-icon-default-phone">Server</label>
-                                <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->server->lokasi_server }}" readonly>
-                                    <span class="input-group-text">
-                                        <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
-                                            <i class='bx bx-map text-danger'></i>
-                                        </a>
-                                    </span>
+                            @if($customer->media_id == 3)
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">Server</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->server->lokasi_server ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mb-6 col-sm-6">
-                                <label class="form-label" for="basic-icon-default-phone">OLT</label>
-                                <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->nama_lokasi }}" readonly>
-                                    <span class="input-group-text">
-                                        <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
-                                            <i class='bx bx-map text-danger'></i>
-                                        </a>
-                                    </span>
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">OLT</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->olt->nama_lokasi }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mb-6 col-sm-6">
-                                <label class="form-label" for="basic-icon-default-phone">ODC</label>
-                                <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->nama_odc ?? '-' }}" readonly>
-                                    <span class="input-group-text">
-                                        <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
-                                            <i class='bx bx-map text-danger'></i>
-                                        </a>
-                                    </span>
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">ODC</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->odc->nama_odc ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="mb-6 col-sm-6">
-                                <label class="form-label" for="basic-icon-default-phone">ODP</label>
-                                <div class="input-group">
-                                    <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->nama_odp ?? '-' }}" readonly>
-                                    <span class="input-group-text">
-                                        <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
-                                            <i class='bx bx-map text-danger'></i>
-                                        </a>
-                                    </span>
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">ODP</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->odp->nama_odp ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
+                            @if($customer->media_id == 1)
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">Transiver</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->transiver ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">Reciver</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->receiver }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                            @endif
+                            @if($customer->media_id == 2)
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">Access Point</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->access_point ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="mb-6 col-sm-6">
+                                    <label class="form-label" for="basic-icon-default-phone">Station</label>
+                                    <div class="input-group">
+                                        <input type="text" id="basic-icon-default-phone" class="form-control phone-mask" value="{{ $customer->station ?? '-' }}" readonly>
+                                        <span class="input-group-text">
+                                            <a href="{{ $url }}" target="_blank" data-bs-toggle="tooltip" title="Lihat di Google Maps" data-bs-placement="top">
+                                                <i class='bx bx-map text-danger'></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>

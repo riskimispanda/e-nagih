@@ -93,9 +93,9 @@ class Customer extends Model
         return $this->hasMany(Invoice::class,'customer_id');
     }
 
-    public function berita()
+    public function beritaAcara()
     {
-        return $this->hasOne(BeritaAcara::class, 'customer_id');
+        return $this->hasMany(BeritaAcara::class, 'customer_id');
     }
 
     public function tiket()
@@ -103,4 +103,55 @@ class Customer extends Model
         return $this->hasMany(TiketOpen::class,'customer_id');
     }
 
+    public function activeBeritaAcara()
+    {
+        return $this->hasOne(BeritaAcara::class, 'customer_id')
+            ->where('tanggal_selesai_ba', '>=', now()->toDateString())
+            ->orderBy('tanggal_selesai_ba', 'desc');
+    }
+
+    /**
+     * Check if customer has active BeritaAcara
+     */
+    public function hasActiveBeritaAcara(): bool
+    {
+        return $this->activeBeritaAcara()->exists();
+    }
+
+    /**
+     * Get the latest active BeritaAcara
+     */
+    public function getActiveBeritaAcaraAttribute()
+    {
+        return $this->activeBeritaAcara()->first();
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->status_id == 9;
+    }
+
+    /**
+     * Check if customer is active
+     */
+    public function isActive(): bool
+    {
+        return $this->status_id == 1; // Adjust status ID as needed
+    }
+
+    /**
+     * Get customer's unpaid invoices
+     */
+    public function unpaidInvoices()
+    {
+        return $this->invoice()->where('status_id', 7); // Adjust status ID as needed
+    }
+
+    /**
+     * Get customer's latest invoice
+     */
+    public function latestInvoice()
+    {
+        return $this->hasOne(Invoice::class, 'customer_id')->latest('created_at');
+    }
 }
