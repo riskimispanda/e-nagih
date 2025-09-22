@@ -407,7 +407,7 @@ class SuperAdmin extends Controller
 
     public function viewBeritaAcara()
     {
-        $data = Customer::with('invoice')->get();
+        $data = Customer::with('invoice')->whereIn('status_id', [3, 9])->get();
         return view('SuperAdmin.payment.view-berita-acara', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
