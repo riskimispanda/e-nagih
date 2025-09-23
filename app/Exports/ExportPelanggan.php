@@ -35,9 +35,9 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
 
         switch ($this->type) {
             case 'aktif':
-                return $query->where('status', 1)->get();
+                return $query->where('status_id', 3)->get();
             case 'nonaktif':
-                return $query->where('status', 0)->get();
+                return $query->where('status_id', 5)->get();
             case 'paket':
                 return $query->where('paket_id', $this->paketId)->get();
             case 'ringkasan':
