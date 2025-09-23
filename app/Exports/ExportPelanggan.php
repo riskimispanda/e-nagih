@@ -57,6 +57,19 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             ];
         }
 
+        $tanggalSelesai = '-';
+        if (!empty($customer->tanggal_selesai)) {
+            try {
+                $ts = $customer->tanggal_selesai;
+                // Pastikan string bisa di-parse
+                if (strtotime($ts) !== false) {
+                    $tanggalSelesai = Carbon::parse($ts)->format('d-M-y H:i:s');
+                }
+            } catch (\Exception $e) {
+                $tanggalSelesai = '-';
+            }
+        }
+
         return [
             $customer->id,
             $customer->nama_customer,
@@ -81,7 +94,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             $customer->access_point ?? '-',
             $customer->station ?? '-',
             $customer->created_at?->format('d-m-Y H:i:s') ?? '-',
-            Carbon::parse($customer->tanggal_selesai)->format('d-M-y H:i:s') ?? '-'
+            $tanggalSelesai
         ];
     }
 
