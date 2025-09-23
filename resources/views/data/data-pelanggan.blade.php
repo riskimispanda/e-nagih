@@ -1032,7 +1032,7 @@
                                     <i class="bx bx-file me-1"></i>
                                     Export Excel
                                 </button>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu dropdown-menu-scrollable" style="max-height: 300px; overflow-y: auto;">
                                     <li><h6 class="dropdown-header">Export Semua Data</h6></li>
                                     <li>
                                         <a class="dropdown-item" href="/semua">
