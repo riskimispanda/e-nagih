@@ -242,7 +242,9 @@ class Analytics extends Controller
         "profile_result" => $profileResult,
         "disconnect_result" => $disconnectResult,
       ]);
-
+      activity('Blokir')
+        ->causedBy(auth()->user()->id)
+        ->log(auth()->user()->name . ' Melakukan Blokir Kepada Pelanggan ' . $customer->nama_customer);
       return redirect()->back()->with("success", "Pelanggan berhasil diblokir");
     } catch (\Exception $e) {
       \Log::error("❌ Gagal blokir pelanggan: " . $e->getMessage(), [
@@ -300,7 +302,9 @@ class Analytics extends Controller
         "restored_profile" => $originalProfile,
         "unblock_result" => $unblockResult,
       ]);
-
+      activity('Unblokir')
+        ->causedBy(auth()->user()->id)
+        ->log(auth()->user()->name . ' Melakukan Unblokir kepada Pelanggan ' . $customer->nama_customer);
       return redirect()->back()->with("toast_success", "Pelanggan berhasil diaktifkan kembali");
     } catch (\Exception $e) {
       \Log::error("❌ Gagal unblock pelanggan: " . $e->getMessage(), [

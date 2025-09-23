@@ -425,17 +425,8 @@ class CekPayment extends Command
                     $customer->status_id = 9;
                     $customer->save();
 
-                    Log::info("🔒 Customer diblokir", [
-                        'customer_id' => $customer->id,
-                        'invoice_id' => $invoice->id,
-                        'nama_customer' => $customer->nama_customer,
-                        'had_berita_acara' => $beritaAcara ? true : false,
-                        'berita_acara_id' => $beritaAcara ? $beritaAcara->id : null,
-                        'blocking_reason' => $beritaAcara ? 'BA expired' : 'Normal blocking date reached',
-                        'is_prorate' => $invoice->tagihan != $invoice->paket->harga,
-                        'tagihan' => $invoice->tagihan,
-                        'harga_paket' => $invoice->paket->harga
-                    ]);
+                    activity('Sistem')
+                        ->log($customer->nama_customer . ' Di blokir oleh sistem karena belum melakukan pembayaran bulanan');
                 });
 
                 // Send blocking notification
