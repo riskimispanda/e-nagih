@@ -245,6 +245,84 @@
         padding: 0.5rem;
     }
     
+    /* Export Dropdown Styles */
+    .export-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    /* .export-dropdown .dropdown-toggle {
+        background-color: #2dce89;
+        border: none;
+        color: white;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    } */
+    
+    .export-dropdown .dropdown-toggle:hover {
+        background-color: #24a46d;
+    }
+    
+    .export-dropdown .dropdown-toggle:focus {
+        box-shadow: 0 0 0 0.15rem rgba(45, 206, 137, 0.25);
+        outline: none;
+    }
+    
+    .export-dropdown .dropdown-menu {
+        min-width: 200px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        padding: 0.5rem 0;
+        margin-top: 0.25rem;
+    }
+    
+    .export-dropdown .dropdown-item {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        color: #495057;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .export-dropdown .dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #2dce89;
+    }
+    
+    .export-dropdown .dropdown-item i {
+        font-size: 1rem;
+        width: 16px;
+        text-align: center;
+    }
+    
+    .export-dropdown .dropdown-divider {
+        height: 1px;
+        background-color: #e9ecef;
+        margin: 0.5rem 0;
+        border: none;
+    }
+    
+    .export-dropdown .dropdown-header {
+        padding: 0.5rem 1rem;
+        font-size: 0.75rem;
+        color: #8898aa;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f8f9fa;
+        margin-bottom: 0.25rem;
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .search-sort-wrapper {
@@ -256,6 +334,11 @@
         .sort-group {
             width: 100%;
             min-width: unset;
+        }
+        
+        .export-dropdown .dropdown-toggle {
+            width: 100%;
+            justify-content: center;
         }
     }
     
@@ -896,18 +979,6 @@
                 @endif
                 <div class="row">
                     <div class="col-12 col-md-3 mb-4">
-                        {{-- <div class="search-container">
-                            <div class="search-sort-wrapper">
-                                <div class="search-group">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control search-input" placeholder="Cari pelanggan..." id="searchCustomer">
-                                        <button class="btn search-button" type="button" id="searchButton">
-                                            <i class="bx bx-search"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> --}}
                         <div class="sort-group col-sm-12">
                             <div class="sort-label">Pencarian</div>
                             <div class="input-group">
@@ -930,7 +1001,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-6 mb-4">
                         <div class="sort-group col-sm-12">
                             <div class="sort-label">Halaman</div>
                             <div class="pagination-info">
@@ -950,6 +1021,68 @@
                                     <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
                                     <span class="count-highlight">{{ $data->total() }}</span> data
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="d-flex justify-content-start">
+                            <!-- Export Dropdown -->
+                            <div class="export-dropdown">
+                                <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bx bx-file me-1"></i>
+                                    Export Excel
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><h6 class="dropdown-header">Export Semua Data</h6></li>
+                                    <li>
+                                        <a class="dropdown-item" href="/semua">
+                                            <i class="bx bx-download"></i>
+                                            Semua Pelanggan
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/aktif">
+                                            <i class="bx bx-check-circle"></i>
+                                            Pelanggan Aktif
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/nonaktif">
+                                            <i class="bx bx-x-circle"></i>
+                                            Pelanggan Non-Aktif
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">Export Berdasarkan Paket</h6></li>
+                                    @php
+                                        $pakets = \App\Models\Paket::orderBy('nama_paket')->get();
+                                    @endphp
+                                    @forelse($pakets as $paket)
+                                    <li>
+                                        <a class="dropdown-item" href="/paket/{{ $paket->id }}">
+                                            <i class="bx bx-package"></i>
+                                            {{ $paket->nama_paket }}
+                                            <small class="text-muted">({{ $paket->customer->count() }} pelanggan)</small>
+                                        </a>
+                                    </li>
+                                    @empty
+                                    <li>
+                                        <span class="dropdown-item text-muted">
+                                            <i class="bx bx-info-circle"></i>
+                                            Tidak ada paket tersedia
+                                        </span>
+                                    </li>
+                                    @endforelse
+                                    @if($pakets->count() > 0)
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="/ringkasan-per-paket">
+                                            <i class="bx bx-chart"></i>
+                                            Ringkasan Per Paket
+                                        </a>
+                                    </li>
+                                    @endif
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -976,11 +1109,12 @@
                             <tr class="text-center">
                                 <th>No</th>
                                 <th>Nama</th>
-                                {{-- <th>Alamat</th> --}}
                                 <th>Telp.</th>
+                                <th>PIC</th>
                                 <th>ODP</th>
                                 <th>Paket</th>
                                 <th>Status</th>
+                                <th>Tanggal Installasi</th>
                                 <th>History Pembayaran</th>
                                 <th>Remote IP</th>
                                 <th>Aksi</th>
@@ -1002,8 +1136,8 @@
                                         <small>{{$item->alamat}}</small>
                                     </span>
                                 </td>
-                                {{-- <td class="customer-address">{{ $item->alamat }}</td> --}}
                                 <td class="nomor-hp">{{ $item->no_hp }}</td>
+                                <td class="fw-bold">{{$item->agen->name ?? '-'}}</td>
                                 <td>
                                     <span class="badge bg-info bg-opacity-10 status-badge text-info">
                                         {{ $item->media_id == 3 ? ($item->odp->nama_odp ?? '-') : '-' }}
@@ -1027,15 +1161,12 @@
                                     <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
                                         Maintenance
                                     </span>
-                                    @elseif($item->status_id == 16)
-                                    <span class="badge bg-secondary status-badge bg-opacity-10 text-secondary">
-                                        Request BA
-                                    </span>
-                                    @elseif($item->status_id == 17)
-                                    <span class="badge bg-warning status-badge bg-opacity-10 text-dark">
-                                        Aktivasi Sementara
-                                    </span>
                                     @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-info">
+                                        {{ \Carbon\Carbon::parse($item->tanggal_selesai)->format('d-M-Y H:i:s') ?? '-'}}
+                                    </span>
                                 </td>
                                 <td>
                                     <a href="/riwayatPembayaran/{{ $item->id }}" class="btn btn-outline-info action-btn" data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}" data-bs-placement="top">
