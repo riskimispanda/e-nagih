@@ -70,12 +70,19 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             }
         }
 
+        $status = '-';
+        if ($customer->status_id == 3) {
+            $status = 'Aktif';
+        } elseif ($customer->status_id == 9) {
+            $status = 'Blokir';
+        }
+
         return [
             $customer->id,
             $customer->nama_customer,
             $customer->no_hp,
             $customer->email,
-            $customer->status?->nama_status ?? '-',
+            $status,
             $customer->paket?->nama_paket ?? '-',
             $customer->odp?->nama_odp ?? '-',
             $customer->router?->nama_router ?? '-',
