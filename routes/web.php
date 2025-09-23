@@ -205,6 +205,23 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customer/import/khusus', [DataController::class, 'ImportKhusus']);
     Route::get('/hapus/dataImport', [DataController::class, 'hapusImport'])->name('hapus-import');
 
+    // Debug
+
+    Route::get('/data/customer', function (Request $request) {
+        try {
+            return app(DataController::class)->pelanggan($request);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTrace()
+            ], 500);
+        }
+    })->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')
+        ->name('pelanggan');
+
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
