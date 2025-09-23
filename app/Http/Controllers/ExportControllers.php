@@ -48,4 +48,12 @@ class ExportControllers extends Controller
             ->log(auth()->user()->name . ' Melakukan Export Ringkasan Paket');
         return Excel::download(new ExportPelanggan('ringkasan'), 'ringkasan-per-paket.xlsx');
     }
+
+    public function exportBulan($month, $year)
+    {
+        activity('Export')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Melakukan Export data pelanggan bulan ' . $month . ' Tahun ' . $year);
+        return Excel::download(new ExportPelanggan('bulan', ['month' => $month, 'year' => $year]), 'pelanggan-' . $month . '-' . $year . '.xlsx');
+    }
 }

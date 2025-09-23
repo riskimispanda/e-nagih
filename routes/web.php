@@ -144,6 +144,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/nonaktif', [ExportControllers::class, 'exportNonAktif'])->name('export.nonaktif');
     Route::get('/paket/{id}', [ExportControllers::class, 'exportPaket'])->name('export.paket');
     Route::get('/ringkasan-per-paket', [ExportControllers::class, 'exportRingkasanPaket'])->name('export.ringkasan');
+    Route::get('/export/bulan/{month}/{year}', [ExportControllers::class, 'exportBulan'])->name('export.bulan');
+
 
     // Setting
     Route::get('/setting', [SettingController::class, 'blokirSetting'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('setting');

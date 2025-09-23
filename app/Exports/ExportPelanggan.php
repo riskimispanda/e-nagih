@@ -42,6 +42,12 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
                 return $query->where('paket_id', $this->paketId)->get();
             case 'ringkasan':
                 return Paket::withCount('customer')->get();
+            case 'bulan':
+                $month = $this->paketId['month']; // bulan dikirim di constructor
+                $year = $this->paketId['year'];   // tahun dikirim di constructor
+                return $query->whereYear('tanggal_selesai', $year)
+                    ->whereMonth('tanggal_selesai', $month)
+                    ->get();
             default:
                 return $query->get();
         }
