@@ -6,531 +6,427 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
 <style>
-    .custom-card {
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        border-radius: 12px;
-        margin: 20px 0;
-        background: #fff;
-        border: none;
-    }
-    .filter-section {
-        padding: 20px;
-        border-bottom: 1px solid #edf2f7;
-        display: flex;
-        gap: 15px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .year-filter {
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        min-width: 140px;
-        font-size: 14px;
-        transition: all 0.2s;
-    }
-    .year-filter:focus {
-        border-color: #63b3ed;
-        box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
-    }
-    .search-input {
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        outline: none;
-        min-width: 200px;
-        font-size: 14px;
-        transition: all 0.2s;
-    }
-    .search-input:focus {
-        border-color: #63b3ed;
-        box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
-    }
-    .custom-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 14px;
-    }
-    .custom-table th {
-        background-color: black;
-        font-weight: bold;
-        text-align: center;
-        padding: 16px;
-        border-bottom: 2px solid #edf2f7;
-        color: white;
-        transition: background-color 0.2s;
-        position: sticky;
+    .loading-overlay {
+        position: absolute;
         top: 0;
-        z-index: 10;
-        min-width: 120px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        border-radius: 0.375rem;
     }
-    .custom-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid #edf2f7;
-        color: #2d3748;
-        transition: all 0.2s;
-        text-align: center;;
+
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #696cff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
     }
-    .custom-table tbody tr:hover {
-        background-color: #f7fafc;
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
-    .table-container {
-        margin: 0;
-        overflow-x: auto;
-        border-radius: 0 0 12px 12px;
+
+    .table-wrapper {
+        position: relative;
     }
-    .text-right {
-        text-align: right;
-    }
-    .nama-column {
-        white-space: nowrap;
-        min-width: 200px;
-    }
+
+    /* Amount cell styling */
     .amount-cell {
-        font-family: monospace;
-        font-size: 13px;
-    }
-    .hidden-row {
-        display: none;
-    }
-    .modern-card-header {
-        background: linear-gradient(to right, #f8f9fa, #ffffff);
-        padding: 25px 30px;
-        border-bottom: 1px solid #edf2f7;
-        margin-bottom: 10px;
-    }
-    
-    .modern-card-header .card-title {
-        color: #2d3748;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 8px;
-        letter-spacing: -0.5px;
-    }
-    
-    .modern-card-header .card-text {
-        color: #718096;
-        font-size: 0.95rem;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .header-icon {
-        color: #4299e1;
-        margin-right: 5px;
-    }
-    
-    .section-header {
-        background: #f8fafc;
-        padding: 20px 25px;
-        border-bottom: 1px solid #edf2f7;
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        white-space: nowrap;
     }
 
-    .section-header .title {
-        color: #1a365d;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+    .summary-cards {
+        margin-bottom: 1.5rem;
     }
 
-    .section-header .badge {
-        background: #ebf5ff;
-        color: #2b6cb0;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
+    /* Clean table styling */
+    .category-cell {
+        font-weight: 600;
     }
-    
-    .export-buttons {
-        margin-left: auto;
-        display: flex;
-        gap: 10px;
+
+    .total-cell {
+        font-weight: 700;
+        background-color: #343a40 !important;
+        color: white !important;
     }
-    
-    .export-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-    }
-    
-    .export-btn.excel {
-        background-color: #0d6d3c;
-        color: white;
-    }
-    
-    .export-btn.pdf {
-        background-color: #dc2626;
-        color: white;
-    }
-    
-    .export-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
-    
-    @media (max-width: 768px) {
-        .custom-table {
-            font-size: 13px;
-        }
-        .custom-table td, .custom-table th {
-            padding: 12px 10px;
-        }
-        .filter-section {
-            padding: 15px;
-        }
-        .modern-card-header {
-            padding: 20px;
-        }
-        .export-buttons {
-            width: 100%;
-            justify-content: stretch;
-        }
-        .export-btn {
-            flex: 1;
-            justify-content: center;
-        }
+
+    /* Dark header for total column */
+    .total-header {
+        background-color: #212529 !important;
+        color: white !important;
     }
 </style>
 
-<div class="modern-card-header">
-    <h5 class="card-title">
-        <i class="bx bx-line-chart header-icon"></i>
-        Pendapatan Global Pertahun
-    </h5>
-    <p class="card-text">
-        <i class='bx bx-info-circle header-icon'></i>
-        Lihat pendapatan global berdasarkan tahun dan nama
-    </p>
+<h4 class="py-3 mb-4">
+    <span class="text-muted fw-light">Dashboard /</span> Pendapatan Global
+</h4>
+
+<!-- Summary Cards -->
+<div class="row summary-cards">
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="card-title d-flex align-items-start justify-content-between">
+                    <div class="avatar bg-label-success rounded d-flex justify-content-center align-items-center" style="width:50px; height:50px;">
+                        <i class="bx bx-trending-up fs-4 bx-sm text-success"></i>
+                    </div>                    
+                </div>
+                <span class="fw-medium d-block mb-1">Total Pendapatan Langganan</span>
+                <h5 class="card-title fw-bold mb-2" id="totalSubscription">{{ 'Rp ' . number_format($summaryData['totalSubscription'], 0, ',', '.') }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="card-title d-flex align-items-start justify-content-between">
+                    <div class="avatar bg-label-danger rounded d-flex justify-content-center align-items-center" style="width:50px; height:50px;">
+                        <i class="bx bx-dollar fs-4 bx-sm text-danger"></i>
+                    </div>
+                </div>
+                <span class="fw-medium d-block mb-1">Total Pendapatan Non-Langganan</span>
+                <h5 class="card-title fw-bold mb-2" id="totalNonSubscription">{{ 'Rp ' . number_format($summaryData['totalNonSubscription'], 0, ',', '.') }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6 col-12 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="card-title d-flex align-items-start justify-content-between">
+                    <div class="avatar bg-label-info rounded d-flex justify-content-center align-items-center" style="width:50px; height:50px;">
+                        <i class="bx bx-calculator fs-4 bx-sm text-info"></i>
+                    </div>
+                </div>
+                <span class="fw-medium d-block mb-1">Total Laba/Rugi</span>
+                <h5 class="card-title fw-bold mb-2" id="totalProfitLoss">{{ 'Rp ' . number_format($summaryData['totalProfitLoss'], 0, ',', '.') }}</h5>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="card custom-card">
-
-    <div class="section-header rounded-top">
-        <h5 class="title">
-            <i class='bx bx-bar-chart-square'></i>
-            Pendapatan Langganan Global
-        </h5>
+<!-- Filters and Export -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">Filter & Export</h5>
     </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label for="globalYearFilter" class="form-label">Filter Tahun</label>
+                <select id="globalYearFilter" class="form-select">
+                    @foreach($availableYears as $year)
+                        <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>{{ $year }}</option>
+                    @endforeach
+                    <option value="all">Semua Tahun</option>
+                </select>
+            </div>
+            <div class="col-md-8 d-flex align-items-end mb-3">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                        <i class="bx bx-file me-1"></i>Export Excel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">
+                        <i class="bx bx-file-pdf me-1"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div class="filter-section">
-        <div class="form-group">
-            <label for="yearFilter" class="mb-2">Filter by Tahun:</label>
-            <select id="yearFilter" class="input-group year-filter">
-                <option value="all">Semua Tahun</option>
-                @for($year = date('Y'); $year >= 2020; $year--)
-                    <option value="{{ $year }}">{{ $year }}</option>
-                @endfor
-            </select>
-        </div>
-
-        <div class="form-group col-md-2">
-            <label for="paketFilter" class="mb-2">Filter by Paket:</label>
-            <select id="paketFilter" class="input-group year-filter">
-                <option value="all">Semua Paket</option>
-                @foreach($pakets as $paket)
-                    @if($paket->nama_paket != 'ISOLIREBILLING')
-                        <option value="{{ $paket->nama_paket }}">{{ $paket->nama_paket ?? 'Tidak Diketahui'}}</option>
-                    @endif
-                @endforeach
-            </select>
-        </div>
-
-        <div class="form-group col-md-4">
-            <label for="nameSearch" class="mb-2">Cari Nama or Alamat:</label>
-            <input type="text" id="nameSearch" class="input-group search-input" placeholder="Search ...">
-        </div>
-        
-        <div class="export-buttons">
-            <button class="btn btn-primary btn-sm excel" onclick="exportToExcel()">
-                <i class='bx bx-file me-2'></i>
-                Export To Excel
-            </button>
-        </div>
+<!-- Main Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold">Laporan Keuangan Bulanan</h5>
+        <small class="badge bg-label-info" id="yearBadge">Tahun {{ $selectedYear }}</small>
     </div>
     
-    <div class="table-container p-4">
-        <table class="custom-table hover">
-            <thead>
-                <tr>
-                    <th style="width: 60px">No</th>
-                    <th class="nama-column">Nama</th>
-                    <th class="alamat-column">Alamat</th>
-                    <th class="paket">Paket</th>
-                    @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $bulan)
-                        <th>{{ $bulan }}</th>
-                    @endforeach
-                    <th>Total Per Tahun</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach ($formatted as $lang)
-                    <tr data-year="{{ date('Y') }}" class="table-row">
-                        <td>{{$no++}}</td>
-                        <td class="nama-column">{{$lang['nama']}}</td>
-                        <td class="alamat-column">{{$lang['alamat'] ?? 'Unknown'}}</td>
-                        <td class="paket"><span class="badge bg-warning bg-opacity-50 text-dark">{{ $lang['paket'] }}</span></td>
-                        @foreach ($lang['bulan'] as $jumlah)
-                            <td class="text-right amount-cell">
-                                Rp {{ number_format((float)$jumlah, 0, ',', '.') }}
-                            </td>
-                        @endforeach
-                        <td class="text-right amount-cell bg-warning text-dark fw-bold">
-                            Rp {{ number_format((float)$lang['total'], 0, ',', '.') }}
-                        </td>
-                    </tr>
-                @endforeach
-                <tr class="table-row bg-warning bg-opacity-50 text-dark">
-                    <td colspan="4" style="text-align: center;"><strong>Total Per Bulan:</strong></td>
-                    @for ($i = 1; $i <= 12; $i++)
-                        <td class="fw-bold">Rp {{ number_format($bulanTotals[$i] ?? 0, 0, ',', '.') }}</td>
-                    @endfor
-                    <td class="bg-dark text-white"><strong>Rp {{ number_format($totalPendapatan ?? 0, 0, ',', '.') }}</strong></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div class="d-flex justify-content-start">
-        <nav aria-label="Page navigation">
-            <ul class="pagination pagination-modern">
-                @if($formatted->onFirstPage())
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            <i class='bx bx-chevron-left'></i>
-                        </span>
-                    </li>
-                @else
-                    <li class="page-item">
-                        <a class="page-link" href="{{ $formatted->previousPageUrl() }}" rel="prev">
-                            <i class='bx bx-chevron-left'></i>
-                        </a>
-                    </li>
-                @endif
-
-                @foreach($formatted->getUrlRange(1, $formatted->lastPage()) as $page => $url)
-                    <li class="page-item {{ $formatted->currentPage() == $page ? 'active' : '' }}">
-                        <a class="page-link" href="{{ $url }}">{{ $page }}</a>
-                    </li>
-                @endforeach
-
-                @if($formatted->hasMorePages())
-                    <li class="page-item">
-                        <a class="page-link" href="{{ $formatted->nextPageUrl() }}" rel="next">
-                            <i class='bx bx-chevron-right'></i>
-                        </a>
-                    </li>
-                @else
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            <i class='bx bx-chevron-right'></i>
-                        </span>
-                    </li>
-                @endif
-            </ul>
-        </nav>
-        <style>
-            .pagination-modern {
-                gap: 5px;
-            }
-            .pagination-modern .page-link {
-                border-radius: 6px;
-                padding: 8px 16px;
-                color: #4a5568;
-                border: 1px solid #e2e8f0;
-                transition: all 0.2s;
-            }
-            .pagination-modern .page-item.active .page-link {
-                background-color: #3182ce;
-                border-color: #3182ce;
-                color: white;
-            }
-            .pagination-modern .page-link:hover:not(.disabled) {
-                background-color: #edf2f7;
-                color: #2d3748;
-                border-color: #cbd5e0;
-            }
-            .pagination-modern .page-item.disabled .page-link {
-                background-color: #f7fafc;
-                color: #a0aec0;
-                border-color: #edf2f7;
-            }
-        </style>
-    </div>
-</div>
-
-<div class="card custom-card">
-    <div class="section-header rounded-top">
-        <h5 class="title">
-            <i class='bx bx-bar-chart-square'></i>
-            Pendapatan Non Langganan Global
-        </h5>
-    </div>
-
-    <div class="filter-section">
-        <label for="yearFilter">Filter Tahun:</label>
-        <select id="tahun" class="year-filter">
-            <option value="all">Semua Tahun</option>
-            @for($year = date('Y'); $year >= 2020; $year--)
-                <option value="{{ $year }}">{{ $year }}</option>
-            @endfor
-        </select>
-        <label for="nameSearch">Jenis Pendapatan:</label>
-        <input type="text" id="nama" class="search-input" placeholder="Ketik Jenis Pendapatan ...">
-        
-        <div class="export-buttons">
-            <button class="export-btn excel">
-                <i class='bx bx-file'></i>
-                Export Excel
-            </button>
+    <div class="table-wrapper">
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-spinner"></div>
         </div>
-    </div>
-
-    <div class="table-container p-4 mb-5">
-        <table class="custom-table hover">
-            <thead>
-                <tr>
-                    <th style="width: 60px">No</th>
-                    <th class="nama-column">Jenis Pendapatan</th>
-                    @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $bulan)
-                        <th>{{ $bulan }}</th>
-                    @endforeach
-                </tr>
-            </thead>
-            <tbody>
-                @php $no = 1; @endphp
-                @foreach ($nonFormattedData as $lang)
-                    <tr data-year="{{ date('Y') }}" class="table-rows">
-                        <td>{{$no++}}</td>
-                        <td class="nama-column">{{$lang['nama']}}</td>
-                        @foreach ($lang['bulan'] as $jumlah)
-                            <td class="text-right amount-cell">
-                                Rp {{ number_format($jumlah, 0, ',', '.') }}
-                            </td>
-                        @endforeach
+        
+        <div class="table-responsive text-nowrap">
+            <table class="table table-hover" id="mainTable">
+                <thead class="table-dark text-center fw-bold">
+                    <tr class="fw-bold">
+                        <th class="fw-bold">Kategori</th>
+                        <th class="fw-bold text-center">Jan</th>
+                        <th class="fw-bold text-center">Feb</th>
+                        <th class="fw-bold text-center">Mar</th>
+                        <th class="fw-bold text-center">Apr</th>
+                        <th class="fw-bold text-center">Mei</th>
+                        <th class="fw-bold text-center">Jun</th>
+                        <th class="fw-bold text-center">Jul</th>
+                        <th class="fw-bold text-center">Agu</th>
+                        <th class="fw-bold text-center">Sep</th>
+                        <th class="fw-bold text-center">Okt</th>
+                        <th class="fw-bold text-center">Nov</th>
+                        <th class="fw-bold text-center">Des</th>
+                        <th class="fw-bold text-center total-header">Total Tahun</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="table-border-bottom-0" id="mainTableBody">
+                    <!-- Data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <script>
-// Langganan Global Filter
-function filterPaket() {
-    const selectedPaket = document.getElementById('paketFilter').value;
-    const rows = document.querySelectorAll('.table-row');
-    
-    rows.forEach(row => {
-        const paket = row.querySelector('.paket:nth-child(4)').textContent; // Assuming paket is in the 4th column
-        if (selectedPaket === 'all' || paket === selectedPaket) {
-            row.classList.remove('hidden-row');
-        } else {
-            row.classList.add('hidden-row');
-        }
-    });
-}
-document.getElementById('paketFilter').addEventListener('change', filterPaket);
+// Data from controller
+let currentFinancialData = @json($financialData);
+let currentSummaryData = @json($summaryData);
+let currentSelectedYear = {{ $selectedYear }};
 
-function calculateColumnTotals() {
-    const visibleRows = Array.from(document.querySelectorAll('.table-row')).filter(row => 
-        !row.classList.contains('hidden-row') && !row.classList.contains('bg-warning')
-    );
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+// Format currency
+function formatCurrency(amount) {
+    return 'Rp ' + amount.toLocaleString('id-ID');
+}
+
+// Update table with current data
+function updateTable() {
+    const tbody = document.getElementById('mainTableBody');
     
-    const totals = new Array(13).fill(0); // 12 months + total column
+    // Clear existing rows
+    tbody.innerHTML = '';
     
-    visibleRows.forEach(row => {
-        const cells = row.querySelectorAll('.amount-cell');
-        cells.forEach((cell, index) => {
-            const value = parseInt(cell.textContent.replace(/[^\d]/g, '')) || 0;
-            totals[index] += value;
+    // Create rows for each category
+    const categories = [
+        {
+            name: 'Pendapatan Langganan',
+            data: currentFinancialData.subscription
+        },
+        {
+            name: 'Pendapatan Non-Langganan',
+            data: currentFinancialData.nonSubscription
+        },
+        {
+            name: 'Total Pendapatan',
+            data: currentFinancialData.totalRevenue
+        },
+        {
+            name: 'Pengeluaran',
+            data: currentFinancialData.operationalCost
+        },
+        {
+            name: 'Laba/Rugi Bersih',
+            data: currentFinancialData.profitLoss
+        }
+    ];
+    
+    categories.forEach(category => {
+        const row = document.createElement('tr');
+        
+        // Category name cell
+        const categoryCell = document.createElement('td');
+        categoryCell.className = 'category-cell bg-label-warning text-dark text-center';
+        categoryCell.textContent = category.name;
+        row.appendChild(categoryCell);
+        
+        // Monthly data cells
+        category.data.forEach(amount => {
+            const cell = document.createElement('td');
+            cell.className = 'amount-cell text-center';
+            cell.textContent = formatCurrency(amount);
+            row.appendChild(cell);
         });
-    });
-    
-    return totals;
-}
-
-function updateTotalsRow(totals) {
-    const totalsRow = document.querySelector('.table-row.bg-warning');
-    const totalCells = totalsRow.querySelectorAll('td:not(:first-child)');
-    
-    totals.forEach((total, index) => {
-        if (totalCells[index]) {
-            totalCells[index].innerHTML = `<strong>Rp ${total.toLocaleString('id-ID')}</strong>`;
-        }
-    });
-}
-
-function filterTable() {
-    const selectedYear = document.getElementById('yearFilter').value;
-    const searchText = document.getElementById('nameSearch').value.toLowerCase();
-    
-    const rows = document.querySelectorAll('.table-row:not(.bg-warning)');
-    
-    rows.forEach(row => {
-        const nama = row.querySelector('.nama-column').textContent.toLowerCase();
-        const alamat = row.querySelector('.alamat-column').textContent.toLowerCase();
-        const yearMatch = selectedYear === 'all' || row.dataset.year === selectedYear;
-        const nameMatch = nama.includes(searchText) || alamat.includes(searchText);
         
-        if (yearMatch && nameMatch) {
-            row.classList.remove('hidden-row');
-        } else {
-            row.classList.add('hidden-row');
-        }
+        // Total cell with dark background
+        const totalCell = document.createElement('td');
+        totalCell.className = 'amount-cell text-center total-cell';
+        const total = category.data.reduce((sum, amount) => sum + amount, 0);
+        totalCell.textContent = formatCurrency(total);
+        row.appendChild(totalCell);
+        
+        tbody.appendChild(row);
     });
-
-    const totals = calculateColumnTotals();
-    updateTotalsRow(totals);
 }
 
+// Update summary cards
+function updateSummaryCards() {
+    document.getElementById('totalSubscription').textContent = formatCurrency(currentSummaryData.totalSubscription);
+    document.getElementById('totalNonSubscription').textContent = formatCurrency(currentSummaryData.totalNonSubscription);
+    document.getElementById('totalProfitLoss').textContent = formatCurrency(currentSummaryData.totalProfitLoss);
+}
+
+// Show loading overlay
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+// Hide loading overlay
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Load data for selected year
+function loadDataForYear(year) {
+    if (year === currentSelectedYear.toString()) {
+        return; // No need to reload if same year
+    }
+    
+    showLoading();
+    
+    // Make AJAX request to get data for selected year
+    fetch(`{{ route('keuangan.getGlobalPendapatanData') }}?year=${year}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentFinancialData = data.data.financialData;
+            currentSummaryData = data.data.summaryData;
+            currentSelectedYear = data.data.selectedYear;
+            
+            updateTable();
+            updateSummaryCards();
+            
+            // Update year badge
+            document.getElementById('yearBadge').textContent = `Tahun ${currentSelectedYear}`;
+        } else {
+            console.error('Error loading data:', data.message);
+            // Use Sneat's toast notification if available
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Gagal memuat data. Silakan coba lagi.',
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    }
+                });
+            } else {
+                alert('Gagal memuat data. Silakan coba lagi.');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat memuat data.',
+                customClass: {
+                    confirmButton: 'btn btn-primary'
+                }
+            });
+        } else {
+            alert('Terjadi kesalahan saat memuat data.');
+        }
+    })
+    .finally(() => {
+        hideLoading();
+    });
+}
+
+// Export functions
 function exportToExcel() {
-    const table = document.querySelector('.custom-table');
-    const workbook = XLSX.utils.table_to_book(table, { sheet: 'Pendapatan Langganan Global' });
-    XLSX.writeFile(workbook, 'Pendapatan_Langganan_Global.xlsx'); // Updated filename to match previous edit
-}
-document.querySelector('.export-btn.excel').addEventListener('click', exportToExcel); // Added event listener for Excel export
-
-// Non Langganan Global Filter
-function filterTableNonLang() {
-    const selectedYear = document.getElementById('tahun').value;
-    const searchText = document.getElementById('nama').value.toLowerCase();
-    const rows = document.querySelectorAll('.table-rows');
+    const table = document.getElementById('mainTable');
+    const workbook = XLSX.utils.table_to_book(table, { sheet: 'Laporan Keuangan Global' });
+    XLSX.writeFile(workbook, `Laporan_Keuangan_Global_${currentSelectedYear}.xlsx`);
     
-    rows.forEach(row => {
-        const nama = row.querySelector('.nama-column').textContent.toLowerCase();
-        const yearMatch = selectedYear === 'all' || row.dataset.year === selectedYear;
-        const nameMatch = nama.includes(searchText);
-        
-        if (yearMatch && nameMatch) {
-            row.classList.remove('hidden-row');
-        } else {
-            row.classList.add('hidden-row');
+    // Show success message
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'File Excel berhasil diunduh.',
+            timer: 2000,
+            showConfirmButton: false,
+            topLayer: true
+        });
+    }
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
+    doc.setFontSize(16);
+    doc.text(`Laporan Keuangan Global - Tahun ${currentSelectedYear}`, 14, 22);
+    
+    doc.autoTable({
+        html: '#mainTable',
+        startY: 30,
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [105, 108, 255],
+            textColor: [255, 255, 255],
+            fontSize: 8
+        },
+        bodyStyles: {
+            fontSize: 7
+        },
+        columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 18 },
+            2: { cellWidth: 18 },
+            3: { cellWidth: 18 },
+            4: { cellWidth: 18 },
+            5: { cellWidth: 18 },
+            6: { cellWidth: 18 },
+            7: { cellWidth: 18 },
+            8: { cellWidth: 18 },
+            9: { cellWidth: 18 },
+            10: { cellWidth: 18 },
+            11: { cellWidth: 18 },
+            12: { cellWidth: 18 },
+            13: { cellWidth: 25 }
         }
     });
+    
+    doc.save(`Laporan_Keuangan_Global_${currentSelectedYear}.pdf`);
+    
+    // Show success message
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: 'File PDF berhasil diunduh.',
+            timer: 2000,
+            showConfirmButton: false,
+            topLayer: true
+        });
+    }
 }
-document.getElementById('tahun').addEventListener('change', filterTableNonLang);
-document.getElementById('nama').addEventListener('input', filterTableNonLang);
 
-document.getElementById('yearFilter').addEventListener('change', filterTable);
-document.getElementById('nameSearch').addEventListener('input', filterTable);
+// Event listeners
+document.getElementById('globalYearFilter').addEventListener('change', function() {
+    const selectedYear = this.value;
+    if (selectedYear !== 'all') {
+        loadDataForYear(selectedYear);
+    } else {
+        // Handle "all years" case if needed
+        console.log('All years selected - implement if needed');
+    }
+});
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTable();
+    updateSummaryCards();
+});
 </script>
+
 @endsection

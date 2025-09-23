@@ -1095,125 +1095,213 @@ class KeuanganController extends Controller
             ], 500);
         }
     }
-    public function globalPendapatan()
+    public function globalPendapatan(Request $request)
     {
-        // $co = Customer::all();
-        // dd($co);
+        // Get filter parameters
+        $year = $request->get('year', date('Y'));
 
-        // Ambil semua data pembayaran yang status invoice-nya "Sudah Bayar"
-        $pembayaran = Pembayaran::with(['invoice.customer', 'invoice.status', 'invoice.paket'])
+        // Initialize monthly data arrays
+        $monthlySubscription = array_fill(1, 12, 0);
+        $monthlyNonSubscription = array_fill(1, 12, 0);
+        $monthlyOperationalCost = array_fill(1, 12, 0);
+
+        // Get subscription revenue (Pembayaran) by month
+        $pembayaranData = Pembayaran::with(['invoice.customer', 'invoice.status', 'invoice.paket'])
             ->whereHas('invoice.status', function ($q) {
                 $q->where('nama_status', 'Sudah Bayar');
             })
+            ->whereYear('tanggal_bayar', $year)
+            ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
+            ->groupBy('month')
         ->get();
 
-        $allPembayaran = Pembayaran::with([
-            'invoice.customer',
-            'invoice.status',
-            'invoice.paket'
-        ])->whereHas('invoice.status', function ($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })->get();
-
-        // dd($pembayaran);
-        // Susun data per customer dan per bulan
-        $data = [];
-
-        foreach ($pembayaran as $p) {
-            $customer = $p->invoice->customer->nama_customer;
-            $alamat = $p->invoice->customer->alamat;
-            $paket = $p->invoice->paket ? $p->invoice->paket->nama_paket : 'Tidak Diketahui';
-            // dd($total);
-            $month = Carbon::parse($p->tanggal_bayar)->format('n'); // 1 - 12
-
-            if (!isset($data[$customer])) {
-                $data[$customer] = array_fill(1, 12, 0); // Inisialisasi 12 bulan
-                $data[$customer]['total'] = 0; // Inisialisasi total
-            }
-            $data[$customer]['alamat'] = $alamat;
-            $data[$customer]['paket'] = $paket;
-            $data[$customer]['total'] += $p->jumlah_bayar; 
-            $data[$customer][$month] += $p->jumlah_bayar;
-        }
-        // Ubah jadi array untuk dikirim ke view
-        // dd($data);
-        $formatted = [];
-        foreach ($data as $customer => $months) {
-            $formatted[] = [
-            'nama' => $customer,
-            'alamat' => $months['alamat'] ?? 'Tidak Diketahui', 
-            'bulan' => array_filter($months, fn($v, $k) => is_numeric($k), ARRAY_FILTER_USE_BOTH),
-            'paket' => $months['paket'] ?? 'Tidak Diketahui',
-            'total' => $months['total'] ?? 0
-            ];
+        foreach ($pembayaranData as $data) {
+            $monthlySubscription[$data->month] = $data->total;
         }
 
-        // Convert array to collection and paginate
-        $perPage = 10; // Number of items per page
-        $currentPage = request()->get('page', 1);
-        $collection = collect($formatted);
-        
-        $paginatedFormatted = new \Illuminate\Pagination\LengthAwarePaginator(
-            $collection->forPage($currentPage, $perPage),
-            $collection->count(),
-            $perPage,
-            $currentPage,
-            ['path' => request()->url()]
-        );
-
-        // Replace original $formatted with paginated version
-        $formatted = $paginatedFormatted;
-
-        $bulanTotals = array_fill(1, 12, 0); // Inisialisasi
-        
-        foreach ($allPembayaran as $p) {
-            $month = \Carbon\Carbon::parse($p->tanggal_bayar)->format('n');
-            $bulanTotals[$month] += $p->jumlah_bayar;
-        }
-
-        $totalPendapatan = array_sum($bulanTotals);
-        // dd($totalPendapatan);
-
-        // dd($bulanTotals);
-        // Tambahkan total per bulan ke array
-        $nonLangganan = Pendapatan::with(['user'])
-            ->orderBy('tanggal', 'desc')
+        // Get non-subscription revenue (Pendapatan) by month
+        $pendapatanData = Pendapatan::whereYear('tanggal', $year)
+            ->selectRaw('MONTH(tanggal) as month, SUM(jumlah_pendapatan) as total')
+            ->groupBy('month')
             ->get();
 
-        $nonFormatted = [];
-
-        foreach ($nonLangganan as $pendapatan) {
-            $user = $pendapatan->jenis_pendapatan ? $pendapatan->jenis_pendapatan : 'Tidak Diketahui';
-            $admin = $pendapatan->user_id;
-            $a = $pendapatan->user->roles->name ?? 'Tidak Diketahui';
-            $month = Carbon::parse($pendapatan->tanggal)->format('n'); // 1 - 12
-
-            if (!isset($nonFormatted[$user])) {
-                $nonFormatted[$user] = array_fill(1, 12, 0); // Inisialisasi 12 bulan
-            }
-            $nonFormatted[$user][$month] += $pendapatan->jumlah_pendapatan;
+        foreach ($pendapatanData as $data) {
+            $monthlyNonSubscription[$data->month] = $data->total;
         }
-        // Ubah jadi array untuk dikirim ke view
-        $nonFormattedData = [];
-        foreach ($nonFormatted as $user => $months) {
-            $nonFormattedData[] = [
-                'nama' => $user,
-                'a' => $a,
-                'bulan' => $months // bulan 1-12 => jumlah pendapatan
-            ];
-        }
-        // dd($nonFormattedData);
-        $pakets = Paket::all();
 
-        return view('/keuangan/pendapatan-global',[
+        // Get operational costs (Pengeluaran) by month
+        $pengeluaranData = Pengeluaran::whereYear('tanggal_pengeluaran', $year)
+            ->selectRaw('MONTH(tanggal_pengeluaran) as month, SUM(jumlah_pengeluaran) as total')
+            ->groupBy('month')
+            ->get();
+
+        foreach ($pengeluaranData as $data) {
+            $monthlyOperationalCost[$data->month] = $data->total;
+        }
+
+        // Calculate monthly totals and profit/loss
+        $monthlyTotalRevenue = [];
+        $monthlyProfitLoss = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $totalRevenue = $monthlySubscription[$month] + $monthlyNonSubscription[$month];
+            $monthlyTotalRevenue[$month] = $totalRevenue;
+            $monthlyProfitLoss[$month] = $totalRevenue - $monthlyOperationalCost[$month];
+        }
+
+        // Calculate yearly totals for summary cards
+        $totalSubscription = array_sum($monthlySubscription);
+        $totalNonSubscription = array_sum($monthlyNonSubscription);
+        $totalOperationalCost = array_sum($monthlyOperationalCost);
+        $totalRevenue = $totalSubscription + $totalNonSubscription;
+        $totalProfitLoss = $totalRevenue - $totalOperationalCost;
+
+        // Prepare data for view
+        $financialData = [
+            'subscription' => array_values($monthlySubscription),
+            'nonSubscription' => array_values($monthlyNonSubscription),
+            'totalRevenue' => array_values($monthlyTotalRevenue),
+            'operationalCost' => array_values($monthlyOperationalCost),
+            'profitLoss' => array_values($monthlyProfitLoss)
+        ];
+
+        // Summary data
+        $summaryData = [
+            'totalSubscription' => $totalSubscription,
+            'totalNonSubscription' => $totalNonSubscription,
+            'totalRevenue' => $totalRevenue,
+            'totalOperationalCost' => $totalOperationalCost,
+            'totalProfitLoss' => $totalProfitLoss
+        ];
+
+        // Get available years for filter dropdown
+        $availableYears = collect();
+
+        // Get years from Pembayaran
+        $pembayaranYears = Pembayaran::selectRaw('YEAR(tanggal_bayar) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        // Get years from Pendapatan
+        $pendapatanYears = Pendapatan::selectRaw('YEAR(tanggal) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        // Get years from Pengeluaran
+        $pengeluaranYears = Pengeluaran::selectRaw('YEAR(tanggal_pengeluaran) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        $availableYears = $pembayaranYears->merge($pendapatanYears)
+            ->merge($pengeluaranYears)
+            ->unique()
+            ->sort()
+            ->values();
+
+        // If AJAX request, return JSON data
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'financialData' => $financialData,
+                    'summaryData' => $summaryData,
+                    'selectedYear' => $year
+                ]
+            ]);
+        }
+
+        return view('/keuangan/pendapatan-global', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'pembayaran' => $pembayaran,
-            'formatted' => $formatted,
-            'nonFormattedData' => $nonFormattedData,
-            'pakets' => $pakets,
-            'bulanTotals' => $bulanTotals,
-            'totalPendapatan' => $totalPendapatan,
+            'financialData' => $financialData,
+            'summaryData' => $summaryData,
+            'selectedYear' => $year,
+            'availableYears' => $availableYears,
+        ]);
+    }
+
+    // Add new method for AJAX data updates
+    public function getGlobalPendapatanData(Request $request)
+    {
+        $year = $request->get('year', date('Y'));
+
+        // Initialize monthly data arrays
+        $monthlySubscription = array_fill(1, 12, 0);
+        $monthlyNonSubscription = array_fill(1, 12, 0);
+        $monthlyOperationalCost = array_fill(1, 12, 0);
+
+        // Get subscription revenue by month
+        $pembayaranData = Pembayaran::whereHas('invoice.status', function ($q) {
+            $q->where('nama_status', 'Sudah Bayar');
+        })
+            ->whereYear('tanggal_bayar', $year)
+            ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
+            ->groupBy('month')
+            ->get();
+
+        foreach ($pembayaranData as $data) {
+            $monthlySubscription[$data->month] = $data->total;
+        }
+
+        // Get non-subscription revenue by month
+        $pendapatanData = Pendapatan::whereYear('tanggal', $year)
+            ->selectRaw('MONTH(tanggal) as month, SUM(jumlah_pendapatan) as total')
+            ->groupBy('month')
+            ->get();
+
+        foreach ($pendapatanData as $data) {
+            $monthlyNonSubscription[$data->month] = $data->total;
+        }
+
+        // Get operational costs by month
+        $pengeluaranData = Pengeluaran::whereYear('tanggal_pengeluaran', $year)
+            ->selectRaw('MONTH(tanggal_pengeluaran) as month, SUM(jumlah_pengeluaran) as total')
+            ->groupBy('month')
+            ->get();
+
+        foreach ($pengeluaranData as $data) {
+            $monthlyOperationalCost[$data->month] = $data->total;
+        }
+
+        // Calculate totals and profit/loss
+        $monthlyTotalRevenue = [];
+        $monthlyProfitLoss = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $totalRevenue = $monthlySubscription[$month] + $monthlyNonSubscription[$month];
+            $monthlyTotalRevenue[$month] = $totalRevenue;
+            $monthlyProfitLoss[$month] = $totalRevenue - $monthlyOperationalCost[$month];
+        }
+
+        // Calculate yearly totals
+        $totalSubscription = array_sum($monthlySubscription);
+        $totalNonSubscription = array_sum($monthlyNonSubscription);
+        $totalOperationalCost = array_sum($monthlyOperationalCost);
+        $totalRevenue = $totalSubscription + $totalNonSubscription;
+        $totalProfitLoss = $totalRevenue - $totalOperationalCost;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'financialData' => [
+                    'subscription' => array_values($monthlySubscription),
+                    'nonSubscription' => array_values($monthlyNonSubscription),
+                    'totalRevenue' => array_values($monthlyTotalRevenue),
+                    'operationalCost' => array_values($monthlyOperationalCost),
+                    'profitLoss' => array_values($monthlyProfitLoss)
+                ],
+                'summaryData' => [
+                    'totalSubscription' => $totalSubscription,
+                    'totalNonSubscription' => $totalNonSubscription,
+                    'totalRevenue' => $totalRevenue,
+                    'totalOperationalCost' => $totalOperationalCost,
+                    'totalProfitLoss' => $totalProfitLoss
+                ],
+                'selectedYear' => $year
+            ]
         ]);
     }
 
