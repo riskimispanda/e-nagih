@@ -134,10 +134,10 @@
             </div>
             <div class="col-md-8 d-flex align-items-end mb-3">
                 <div class="btn-group" role="group">
-                    <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                    <button type="button" class="btn btn-success btn-sm" onclick="exportToExcel()">
                         <i class="bx bx-file me-1"></i>Export Excel
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="exportToPDF()">
                         <i class="bx bx-file-pdf me-1"></i>Export PDF
                     </button>
                 </div>
