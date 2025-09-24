@@ -1584,6 +1584,14 @@ class KeuanganController extends Controller
         // Bulan saat ini
         $currentMonth = now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
+        
+        // Get per_page parameter, default to 10
+        $perPage = $request->get('per_page', 10);
+        if ($perPage === 'all') {
+            $perPage = 999999; // Large number to get all records
+        } else {
+            $perPage = (int) $perPage;
+        }
 
         // Ambil hanya 1 invoice terakhir per customer (subquery)
         $latestInvoicesQuery = Invoice::select('invoice.*')
@@ -1618,7 +1626,7 @@ class KeuanganController extends Controller
             }
         }
 
-        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate(10)->appends($request->all());
+        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate($perPage)->appends($request->all());
         // dd($invoices);
         // Hitung total semua invoice sesuai filter
         $allInvoices = (clone $latestInvoicesQuery)->get();

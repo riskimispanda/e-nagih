@@ -51,7 +51,8 @@ class DataController extends Controller
             ->orderBy('tanggal_selesai', 'desc');
 
         $import = Customer::where('cek', 'Imported')->count();
-
+        $countAgen = User::where('roles_id', 6)->count();
+        // dd($countAgen);
         // Apply search filter
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -218,6 +219,7 @@ class DataController extends Controller
             'installasiBulanan' => $instalasiBulanan,
             'nonAktif' => $nonAktif,
             'importData' => $import,
+            'countAgen' => $countAgen
         ]);
     }
 

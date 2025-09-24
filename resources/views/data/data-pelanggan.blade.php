@@ -924,6 +924,23 @@
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3 mb-3">
+                        <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Data Agen">
+                            <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
+                                <div class="data-card-icon secondary">
+                                    <i class="bx bx-user"></i>
+                                </div>
+                                <div class="data-card-content">
+                                    <div class="data-label">Data Agen</div>
+                                    <div class="data-value">
+                                        <span class="badge bg-secondary rounded-pill">
+                                            {{ $countAgen }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-sm-6 col-lg-3 mb-3">
                         <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
                             <div class="data-card-icon secondary">
                                 <i class="bx bx-error-circle"></i>

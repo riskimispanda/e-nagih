@@ -269,57 +269,7 @@
                         <small class="card-subtitle text-muted">Daftar invoice pelanggan periode {{ $displayPeriod }}{{ $displayStatus }} yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
                     <div class="text-end d-flex align-items-center gap-2">
-                        <!-- Export Dropdown -->
-                        <div class="dropdown">
-                            <button class="btn btn-success btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bx bx-download me-1"></i>Export Excel
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
-                                <li>
-                                    <h6 class="dropdown-header">
-                                        <i class="bx bx-calendar me-1"></i>Export Berdasarkan Periode
-                                    </h6>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportData('today')">
-                                        <i class="bx bx-calendar-check me-2 text-primary"></i>
-                                        <div>
-                                            <strong>Hari Ini</strong>
-                                            <small class="d-block text-muted">{{ now()->format('d M Y') }}</small>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportData('month')">
-                                        <i class="bx bx-calendar-alt me-2 text-info"></i>
-                                        <div>
-                                            <strong>Bulan Ini</strong>
-                                            <small class="d-block text-muted">{{ $currentMonthName }} {{ now()->year }}</small>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="exportData('current_filter')">
-                                        <i class="bx bx-filter me-2 text-warning"></i>
-                                        <div>
-                                            <strong>Data Saat Ini</strong>
-                                            <small class="d-block text-muted">Sesuai filter yang aktif</small>
-                                        </div>
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customRangeModal">
-                                        <i class="bx bx-calendar-event me-2 text-success"></i>
-                                        <div>
-                                            <strong>Custom Range</strong>
-                                            <small class="d-block text-muted">Pilih tanggal sendiri</small>
-                                        </div>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        
                         
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
                             <i class="bx bx-receipt me-1"></i>{{ $invoices->total() }} Invoice
@@ -445,7 +395,7 @@
                                 Secara default menampilkan invoice bulan {{ $currentMonthName }}
                             </small>
                         </div>
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <label class="form-label">Status Tagihan</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-filter"></i></span>
@@ -458,6 +408,77 @@
                                     <option value="Sudah Bayar" {{ $selectedStatus == 'Sudah Bayar' ? 'selected' : '' }}>Sudah Bayar</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label">Tampilkan Data</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-list-ul"></i></span>
+                                <select class="form-select" id="entriesPerPage" onchange="changeEntriesPerPage()">
+                                    @php
+                                        $selectedPerPage = request()->get('per_page', 10);
+                                    @endphp
+                                    <option value="10" {{ $selectedPerPage == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ $selectedPerPage == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ $selectedPerPage == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ $selectedPerPage == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="all" {{ $selectedPerPage == 'all' ? 'selected' : '' }}>Semua</option>
+                                </select>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bx bx-info-circle me-1"></i>
+                                Jumlah data per halaman
+                            </small>
+                        </div>
+                        <!-- Export Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-success btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bx bx-download me-1"></i>Export Excel
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                                <li>
+                                    <h6 class="dropdown-header">
+                                        <i class="bx bx-calendar me-1"></i>Export Berdasarkan Periode
+                                    </h6>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('today')">
+                                        <i class="bx bx-calendar-check me-2 text-primary"></i>
+                                        <div>
+                                            <strong>Hari Ini</strong>
+                                            <small class="d-block text-muted">{{ now()->format('d M Y') }}</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('month')">
+                                        <i class="bx bx-calendar-alt me-2 text-info"></i>
+                                        <div>
+                                            <strong>Bulan Ini</strong>
+                                            <small class="d-block text-muted">{{ $currentMonthName }} {{ now()->year }}</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('current_filter')">
+                                        <i class="bx bx-filter me-2 text-warning"></i>
+                                        <div>
+                                            <strong>Data Saat Ini</strong>
+                                            <small class="d-block text-muted">Sesuai filter yang aktif</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customRangeModal">
+                                        <i class="bx bx-calendar-event me-2 text-success"></i>
+                                        <div>
+                                            <strong>Custom Range</strong>
+                                            <small class="d-block text-muted">Pilih tanggal sendiri</small>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -867,6 +888,52 @@
         }
 
         // Redirect ke URL dengan parameter status dan month
+        window.location.href = currentUrl.toString();
+    }
+
+    // Function untuk mengubah jumlah data per halaman (server-side)
+    function changeEntriesPerPage() {
+        const entriesSelect = document.getElementById('entriesPerPage');
+        const monthSelect = document.getElementById('filterMonth');
+        const statusSelect = document.getElementById('filterStatus');
+        const selectedPerPage = entriesSelect.value;
+        const selectedMonth = monthSelect.value;
+        const selectedStatus = statusSelect.value;
+
+        // Tampilkan loading indicator
+        const tableBody = document.querySelector('#customerTable tbody');
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center py-5">
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
+                        <p class="text-muted mb-0">Sedang mengubah jumlah data per halaman</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        // Buat URL dengan parameter per_page dan pertahankan parameter lainnya
+        const currentUrl = new URL(window.location.href);
+
+        // Set per_page parameter
+        currentUrl.searchParams.set('per_page', selectedPerPage);
+
+        // Pertahankan parameter lainnya
+        if (selectedMonth && selectedMonth !== '') {
+            currentUrl.searchParams.set('month', selectedMonth);
+        }
+        if (selectedStatus && selectedStatus !== '') {
+            currentUrl.searchParams.set('status', selectedStatus);
+        }
+
+        // Reset ke halaman pertama ketika mengubah per_page
+        currentUrl.searchParams.delete('page');
+
+        // Redirect ke URL dengan parameter per_page
         window.location.href = currentUrl.toString();
     }
 
