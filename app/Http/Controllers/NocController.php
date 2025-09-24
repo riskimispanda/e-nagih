@@ -333,8 +333,8 @@ class NocController extends Controller
             ]);
 
             $search = $request->input('search');
-        $perPage = (int) $request->input('per_page', 10);
-        $page = (int) $request->input('page', 1);
+            $perPage = (int) $request->input('per_page', 10);
+            $page = (int) $request->input('page', 1);
 
             // Validate per_page to prevent memory issues
             if ($perPage > 100) {

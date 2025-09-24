@@ -498,7 +498,17 @@
     
     function fetchPaketData(page = 1, search = '') {
         $('#loading-overlay').removeClass('d-none');
-        fetch("{{ route('ajax.paket') }}" + "?search=" + search)
+        
+        // Build URL with proper parameters
+        const url = new URL("{{ route('ajax.paket') }}", window.location.origin);
+        url.searchParams.set('page', page);
+        if (search) {
+            url.searchParams.set('search', search);
+        }
+        
+        console.log('🔍 Fetching data from:', url.toString());
+        
+        fetch(url.toString())
         .then(res => {
             if (!res.ok) {
                 console.group('❌ Fetch Error - Paket Data');
@@ -511,6 +521,7 @@
             return res.json();
         })
         .then(data => {
+            console.log('📊 Received data:', data);
             renderPaketTable(data);
             renderPaketPagination(data);
             $('#paket-total-data').text(`Total Data: ${data.total}`);
@@ -566,9 +577,46 @@
     function renderPaketPagination(data) {
         let html = '';
         if (data.last_page > 1) {
-            for (let i = 1; i <= data.last_page; i++) {
-                html += `<li class="page-item${i === data.current_page ? ' active' : ''}"><a class="page-link" href="#" onclick="goToPaketPage(${i});return false;">${i}</a></li>`;
+            // Previous button
+            html += `<li class="page-item${data.current_page === 1 ? ' disabled' : ''}">
+                        <a class="page-link" href="#" onclick="${data.current_page > 1 ? `goToPaketPage(${data.current_page - 1})` : 'return false'};return false;">
+                            <i class="tf-icon bx bx-chevrons-left"></i>
+                        </a>
+                     </li>`;
+            
+            // Page numbers
+            let startPage = Math.max(1, data.current_page - 2);
+            let endPage = Math.min(data.last_page, data.current_page + 2);
+            
+            // Show first page if not in range
+            if (startPage > 1) {
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPaketPage(1);return false;">1</a></li>`;
+                if (startPage > 2) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
             }
+            
+            // Show page numbers in range
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<li class="page-item${i === data.current_page ? ' active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPaketPage(${i});return false;">${i}</a>
+                         </li>`;
+            }
+            
+            // Show last page if not in range
+            if (endPage < data.last_page) {
+                if (endPage < data.last_page - 1) {
+                    html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                }
+                html += `<li class="page-item"><a class="page-link" href="#" onclick="goToPaketPage(${data.last_page});return false;">${data.last_page}</a></li>`;
+            }
+            
+            // Next button
+            html += `<li class="page-item${data.current_page === data.last_page ? ' disabled' : ''}">
+                        <a class="page-link" href="#" onclick="${data.current_page < data.last_page ? `goToPaketPage(${data.current_page + 1})` : 'return false'};return false;">
+                            <i class="tf-icon bx bx-chevrons-right"></i>
+                        </a>
+                     </li>`;
         }
         $('#paket-pagination').html(html);
     }
