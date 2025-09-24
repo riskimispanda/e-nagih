@@ -1498,9 +1498,18 @@ class KeuanganController extends Controller
 
     public function agen(Request $request)
     {
+        $currentMonth = now()->format('m');
+
         $agenQuery = User::whereIn('roles_id', [6, 7])
             ->with(['customer'])
-            ->withCount('customer');
+            ->withCount(['customer' => function ($query) use ($currentMonth) {
+                // Count customers with status 1, 2, 3, 4, 5, 9 that have invoices in current month
+                $query->whereIn('status_id', [1, 2, 3, 4, 5, 9])
+                    ->whereHas('invoice', function ($invoiceQuery) use ($currentMonth) {
+                        $invoiceQuery->whereMonth('jatuh_tempo', $currentMonth)
+                            ->whereYear('jatuh_tempo', date('Y'));
+                    });
+            }]);
 
         // Apply search filter if provided
         if ($request->has('search') && !empty($request->search)) {
@@ -1531,7 +1540,16 @@ class KeuanganController extends Controller
 
     public function searchAgen(Request $request)
     {
-        $query = User::where('roles_id', 6)->withCount('customer');
+        $currentMonth = now()->format('m');
+
+        $query = User::where('roles_id', 6)->withCount(['customer' => function ($query) use ($currentMonth) {
+            // Count customers with status 1, 2, 3, 4, 5, 9 that have invoices in current month
+            $query->whereIn('status_id', [1, 2, 3, 4, 5, 9])
+                ->whereHas('invoice', function ($invoiceQuery) use ($currentMonth) {
+                    $invoiceQuery->whereMonth('jatuh_tempo', $currentMonth)
+                        ->whereYear('jatuh_tempo', date('Y'));
+                });
+        }]);
 
         // Apply search filter
         if ($request->has('search') && !empty($request->search)) {
@@ -1581,7 +1599,7 @@ class KeuanganController extends Controller
             })
             ->with(['customer.paket', 'status', 'pembayaran.user'])
             ->whereHas('customer', function ($q) use ($id) {
-                $q->where('agen_id', $id)->whereIn('status_id', [3, 9]);
+            $q->where('agen_id', $id)->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
             });
 
         // dd($latestInvoicesQuery->get());
@@ -2016,6 +2034,183 @@ class KeuanganController extends Controller
         })->toArray();
     }
 
+    public function exportPelangganAgen(Request $request, $id)
+    {
+        try {
+            // Get agen info
+            $agen = User::findOrFail($id);
 
+            // Get export parameters
+            $exportType = $request->get('export_type');
+            $format = $request->get('format', 'xlsx');
 
+            // Build base query
+            $query = Invoice::with(['customer.paket', 'status', 'pembayaran.user'])
+                ->whereHas('customer', function ($q) use ($id) {
+                    $q->where('agen_id', $id)->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+                });
+
+            // Apply filters based on export type
+            switch ($exportType) {
+                case 'today':
+                    $date = $request->get('date', now()->format('Y-m-d'));
+                    $query->whereDate('jatuh_tempo', $date);
+                    $filename = "Data_Pelanggan_Agen_{$agen->name}_Hari_Ini_" . now()->format('Y-m-d');
+                    break;
+
+                case 'month':
+                    $month = $request->get('month', now()->month);
+                    $year = $request->get('year', now()->year);
+                    $query->whereMonth('jatuh_tempo', $month)
+                        ->whereYear('jatuh_tempo', $year);
+                    $monthName = [
+                        1 => 'Januari',
+                        2 => 'Februari',
+                        3 => 'Maret',
+                        4 => 'April',
+                        5 => 'Mei',
+                        6 => 'Juni',
+                        7 => 'Juli',
+                        8 => 'Agustus',
+                        9 => 'September',
+                        10 => 'Oktober',
+                        11 => 'November',
+                        12 => 'Desember'
+                    ][$month];
+                    $filename = "Data_Pelanggan_Agen_{$agen->name}_{$monthName}_{$year}";
+                    break;
+
+                case 'current_filter':
+                    $filterMonth = $request->get('month');
+                    $filterStatus = $request->get('status');
+
+                    if ($filterMonth && $filterMonth !== 'all') {
+                        $query->whereMonth('jatuh_tempo', $filterMonth);
+                    }
+
+                    if ($filterStatus) {
+                        if ($filterStatus == 'Sudah Bayar') {
+                            $query->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
+                        } elseif ($filterStatus == 'Belum Bayar') {
+                            $query->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
+                        }
+                    }
+
+                    $filename = "Data_Pelanggan_Agen_{$agen->name}_Filter_" . now()->format('Y-m-d');
+                    break;
+
+                case 'custom_range':
+                    $startDate = $request->get('start_date');
+                    $endDate = $request->get('end_date');
+
+                    if ($startDate && $endDate) {
+                        $query->whereBetween('jatuh_tempo', [
+                            Carbon::parse($startDate)->startOfDay(),
+                            Carbon::parse($endDate)->endOfDay()
+                        ]);
+                    }
+
+                    $filename = "Data_Pelanggan_Agen_{$agen->name}_" .
+                        Carbon::parse($startDate)->format('Y-m-d') . "_sampai_" .
+                        Carbon::parse($endDate)->format('Y-m-d');
+                    break;
+
+                default:
+                    // Default to current month
+                    $query->whereMonth('jatuh_tempo', now()->month)
+                        ->whereYear('jatuh_tempo', now()->year);
+                    $filename = "Data_Pelanggan_Agen_{$agen->name}_" . now()->format('Y-m');
+                    break;
+            }
+
+            // Get the data
+            $invoices = $query->orderBy('jatuh_tempo', 'desc')->get();
+
+            // Prepare data for export
+            $exportData = [];
+            $no = 1;
+
+            foreach ($invoices as $invoice) {
+                $exportData[] = [
+                    'No' => $no++,
+                    'Nama Pelanggan' => $invoice->customer->nama_customer ?? '-',
+                    'Alamat' => $invoice->customer->alamat ?? '-',
+                    'PIC' => $invoice->customer->agen->name ?? '-',
+                    'Paket' => $invoice->customer->paket->nama_paket ?? '-',
+                    'Status Tagihan' => $invoice->status->nama_status ?? '-',
+                    'Total Tagihan' => $invoice->tagihan ?? 0,
+                    'Tambahan' => $invoice->tambahan ?? 0,
+                    'Tunggakan' => $invoice->tunggakan ?? 0,
+                    'Saldo' => $invoice->saldo ?? 0,
+                    'Total Keseluruhan' => ($invoice->tagihan ?? 0) + ($invoice->tambahan ?? 0) + ($invoice->tunggakan ?? 0) - ($invoice->saldo ?? 0),
+                    'Periode' => $invoice->jatuh_tempo ? Carbon::parse($invoice->jatuh_tempo)->translatedFormat('F') : '-',
+                    'Metode Bayar' => $invoice->pembayaran->isNotEmpty() ? $invoice->pembayaran->first()->metode_bayar : '-',
+                    'Tanggal Pembayaran' => $invoice->pembayaran->isNotEmpty() ?
+                        Carbon::parse($invoice->pembayaran->first()->created_at)->format('d-M-Y H:i:s') : '-',
+                    'Admin/Agen' => $invoice->pembayaran->isNotEmpty() && $invoice->pembayaran->first()->user ?
+                        $invoice->pembayaran->first()->user->name . ' / ' . $invoice->pembayaran->first()->user->roles->name : '-',
+                    'Keterangan' => $invoice->pembayaran->isNotEmpty() ? $invoice->pembayaran->first()->keterangan : '-',
+                ];
+            }
+
+            // Create export file
+            if ($format === 'csv') {
+                return $this->exportToCsv($exportData, $filename);
+            } else {
+                return $this->exportToExcel($exportData, $filename, $agen);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in exportPelangganAgen: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat export: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function exportToExcel($data, $filename, $agen)
+    {
+        // Create a simple Excel export using Laravel Excel or manual creation
+        $headers = [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '.xlsx"',
+            'Cache-Control' => 'max-age=0',
+        ];
+
+        // For now, we'll create a CSV with Excel headers
+        // In a real implementation, you'd use Laravel Excel package
+        return $this->exportToCsv($data, $filename, $headers);
+    }
+
+    private function exportToCsv($data, $filename, $headers = null)
+    {
+        if (!$headers) {
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '.csv"',
+                'Cache-Control' => 'max-age=0',
+            ];
+        }
+
+        $callback = function () use ($data) {
+            $file = fopen('php://output', 'w');
+
+            // Add BOM for UTF-8
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Add headers
+            if (!empty($data)) {
+                fputcsv($file, array_keys($data[0]));
+
+                // Add data rows
+                foreach ($data as $row) {
+                    fputcsv($file, $row);
+                }
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

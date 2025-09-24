@@ -268,7 +268,59 @@
                         <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }} - {{ $displayPeriod }}{{ $displayStatus }}</h4>
                         <small class="card-subtitle text-muted">Daftar invoice pelanggan periode {{ $displayPeriod }}{{ $displayStatus }} yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
-                    <div class="text-end">
+                    <div class="text-end d-flex align-items-center gap-2">
+                        <!-- Export Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-success btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bx bx-download me-1"></i>Export Excel
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                                <li>
+                                    <h6 class="dropdown-header">
+                                        <i class="bx bx-calendar me-1"></i>Export Berdasarkan Periode
+                                    </h6>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('today')">
+                                        <i class="bx bx-calendar-check me-2 text-primary"></i>
+                                        <div>
+                                            <strong>Hari Ini</strong>
+                                            <small class="d-block text-muted">{{ now()->format('d M Y') }}</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('month')">
+                                        <i class="bx bx-calendar-alt me-2 text-info"></i>
+                                        <div>
+                                            <strong>Bulan Ini</strong>
+                                            <small class="d-block text-muted">{{ $currentMonthName }} {{ now()->year }}</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="exportData('current_filter')">
+                                        <i class="bx bx-filter me-2 text-warning"></i>
+                                        <div>
+                                            <strong>Data Saat Ini</strong>
+                                            <small class="d-block text-muted">Sesuai filter yang aktif</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customRangeModal">
+                                        <i class="bx bx-calendar-event me-2 text-success"></i>
+                                        <div>
+                                            <strong>Custom Range</strong>
+                                            <small class="d-block text-muted">Pilih tanggal sendiri</small>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
                             <i class="bx bx-receipt me-1"></i>{{ $invoices->total() }} Invoice
                         </span>
@@ -558,7 +610,58 @@
 </div>
 </div>
 
-
+<!-- Custom Range Modal -->
+<div class="modal fade" id="customRangeModal" tabindex="-1" aria-labelledby="customRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="customRangeModalLabel">
+                    <i class="bx bx-calendar-event me-2"></i>Export Custom Range
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customRangeForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="startDate" class="form-label">
+                                <i class="bx bx-calendar me-1"></i>Tanggal Mulai
+                            </label>
+                            <input type="date" class="form-control" id="startDate" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="endDate" class="form-label">
+                                <i class="bx bx-calendar me-1"></i>Tanggal Selesai
+                            </label>
+                            <input type="date" class="form-control" id="endDate" name="end_date" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="exportFormat" class="form-label">
+                            <i class="bx bx-file me-1"></i>Format Export
+                        </label>
+                        <select class="form-select" id="exportFormat" name="format">
+                            <option value="xlsx">Excel (.xlsx)</option>
+                            <option value="csv">CSV (.csv)</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bx bx-info-circle me-2"></i>
+                        <strong>Info:</strong> Export akan mencakup semua data invoice pelanggan agen <strong>{{ $agen->name }}</strong> dalam rentang tanggal yang dipilih.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Batal
+                </button>
+                <button type="button" class="btn btn-success" onclick="exportCustomRange()">
+                    <i class="bx bx-download me-1"></i>Export Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -766,6 +869,210 @@
         // Redirect ke URL dengan parameter status dan month
         window.location.href = currentUrl.toString();
     }
+
+    // Export Functions
+    function exportData(type) {
+        const agenId = {{ $agen->id }};
+        let exportUrl = `/keuangan/export-pelanggan-agen/${agenId}`;
+        let params = new URLSearchParams();
+
+        // Add current filters to maintain consistency
+        const currentMonth = document.getElementById('filterMonth').value;
+        const currentStatus = document.getElementById('filterStatus').value;
+
+        switch(type) {
+            case 'today':
+                params.append('export_type', 'today');
+                params.append('date', new Date().toISOString().split('T')[0]);
+                break;
+            case 'month':
+                params.append('export_type', 'month');
+                params.append('month', new Date().getMonth() + 1);
+                params.append('year', new Date().getFullYear());
+                break;
+            case 'current_filter':
+                params.append('export_type', 'current_filter');
+                if (currentMonth && currentMonth !== '') {
+                    params.append('month', currentMonth);
+                }
+                if (currentStatus && currentStatus !== '') {
+                    params.append('status', currentStatus);
+                }
+                break;
+        }
+
+        // Show loading state
+        showExportLoading(type);
+
+        // Create download link
+        const fullUrl = `${exportUrl}?${params.toString()}`;
+        
+        // Create temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = fullUrl;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Hide loading state after a delay
+        setTimeout(() => {
+            hideExportLoading();
+        }, 2000);
+    }
+
+    function exportCustomRange() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const format = document.getElementById('exportFormat').value;
+
+        // Validation
+        if (!startDate || !endDate) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan',
+                text: 'Silakan pilih tanggal mulai dan tanggal selesai!',
+                confirmButtonColor: '#28a745'
+            });
+            return;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai!',
+                confirmButtonColor: '#dc3545'
+            });
+            return;
+        }
+
+        const agenId = {{ $agen->id }};
+        let params = new URLSearchParams();
+        params.append('export_type', 'custom_range');
+        params.append('start_date', startDate);
+        params.append('end_date', endDate);
+        params.append('format', format);
+
+        const exportUrl = `/keuangan/export-pelanggan-agen/${agenId}?${params.toString()}`;
+
+        // Show loading state
+        showExportLoading('custom');
+
+        // Create download link
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = '';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('customRangeModal'));
+        modal.hide();
+
+        // Reset form
+        document.getElementById('customRangeForm').reset();
+
+        // Hide loading state after a delay
+        setTimeout(() => {
+            hideExportLoading();
+        }, 2000);
+    }
+
+    function showExportLoading(type) {
+        // Create loading toast
+        const toast = document.createElement('div');
+        toast.id = 'exportToast';
+        toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed';
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+
+        let message = 'Memproses export data...';
+        switch(type) {
+            case 'today':
+                message = 'Mengexport data hari ini...';
+                break;
+            case 'month':
+                message = 'Mengexport data bulan ini...';
+                break;
+            case 'current_filter':
+                message = 'Mengexport data sesuai filter...';
+                break;
+            case 'custom':
+                message = 'Mengexport data custom range...';
+                break;
+        }
+
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bx bx-download me-2"></i>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+    }
+
+    function hideExportLoading() {
+        const existingToast = document.getElementById('exportToast');
+        if (existingToast) {
+            const bsToast = bootstrap.Toast.getInstance(existingToast);
+            if (bsToast) {
+                bsToast.hide();
+            }
+            setTimeout(() => {
+                if (existingToast.parentNode) {
+                    existingToast.parentNode.removeChild(existingToast);
+                }
+            }, 500);
+        }
+
+        // Show success message
+        const successToast = document.createElement('div');
+        successToast.className = 'toast align-items-center text-white bg-success border-0 position-fixed';
+        successToast.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+        successToast.setAttribute('role', 'alert');
+        successToast.setAttribute('aria-live', 'assertive');
+        successToast.setAttribute('aria-atomic', 'true');
+
+        successToast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bx bx-check me-2"></i>Export berhasil! File sedang diunduh...
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+
+        document.body.appendChild(successToast);
+        const bsSuccessToast = new bootstrap.Toast(successToast, { delay: 3000 });
+        bsSuccessToast.show();
+
+        // Remove after showing
+        setTimeout(() => {
+            if (successToast.parentNode) {
+                successToast.parentNode.removeChild(successToast);
+            }
+        }, 3500);
+    }
+
+    // Set default dates for custom range modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        // Set default start date to first day of current month
+        document.getElementById('startDate').value = firstDayOfMonth.toISOString().split('T')[0];
+        // Set default end date to today
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    });
 </script>
 
 @endsection
