@@ -81,6 +81,14 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             $status = 'Aktif';
         } elseif ($customer->status_id == 9) {
             $status = 'Blokir';
+        } elseif ($customer->status_id == 1) {
+            $status = 'Menunggu';
+        } elseif ($customer->status_id == 2) {
+            $status = 'On Progress';
+        } elseif ($customer->status_id == 4) {
+            $status = 'Maintenance';
+        } elseif ($customer->status_id == 5) {
+            $status = 'Assigment';
         }
 
         return [
