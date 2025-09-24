@@ -142,8 +142,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/semua', [ExportControllers::class, 'exportSemua'])->name('export.semua');
     Route::get('/aktif', [ExportControllers::class, 'exportAktif'])->name('export.aktif');
     Route::get('/nonaktif', [ExportControllers::class, 'exportNonAktif'])->name('export.nonaktif');
-    Route::get('/paket/{id}', [ExportControllers::class, 'exportPaket'])->name('export.paket');
     Route::get('/ringkasan-per-paket', [ExportControllers::class, 'exportRingkasanPaket'])->name('export.ringkasan');
+    Route::get('/paket/{id}', [ExportControllers::class, 'exportPaket'])->name('export.paket')->where('id', '[0-9]+');
     Route::get('/export/bulan/{month}/{year}', [ExportControllers::class, 'exportBulan'])->name('export.bulan');
 
 
@@ -293,7 +293,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/edit/paket/{id}', [NocController::class, 'editPaket']);
     Route::post('/update/paket/{id}', [NocController::class, 'updatePaket']);
     Route::get('/interface/{id}', [NocController::class, 'interface'])->middleware('auth', 'roles:Super Admin,NOC')->name('profile-paket');
-// routes/web.php
+    // routes/web.php
     Route::get('/paket/data', [NocController::class, 'ajaxPaket'])->name('ajax.paket');
     Route::get('/edit/server/{id}', [NocController::class, 'editServer']);
     Route::post('/update/server/{id}', [NocController::class, 'updateServer']);

@@ -15,6 +15,7 @@ use App\Models\Lokasi;
 use App\Models\ODC;
 use App\Models\ODP;
 use App\Services\ChatServices;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -24,43 +25,43 @@ class NocController extends Controller
      * Display a listing of the resource.
      */
 
-     public function interface($id)
-     {
-         $router = Router::findOrFail($id);
-         $client = MikrotikServices::connect($router);
-         $status = MikrotikServices::status($router);
-         return view('NOC.interface-mikrotik', [
-             'router_id' => $router->id,
-             'users' => auth()->user(),
-             'roles' => auth()->user()->roles,
-             'status' => $status,
-         ]);
-     }
+    public function interface($id)
+    {
+        $router = Router::findOrFail($id);
+        $client = MikrotikServices::connect($router);
+        $status = MikrotikServices::status($router);
+        return view('NOC.interface-mikrotik', [
+            'router_id' => $router->id,
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'status' => $status,
+        ]);
+    }
 
-     public function realtime($id)
-     {
-         $router = Router::findOrFail($id);
-         $client = MikrotikServices::connect($router);
-     
-         // Pastikan koneksi berhasil
-         if (!$client) {
-             return response()->json(['error' => 'Gagal koneksi ke router'], 500);
-         }
-     
-         // Pilih interface berdasarkan ID router
-         if ($router->id === 2) {
-             $interface = 'vlan-5Mbps';
-         } elseif ($router->id === 3) {
-             $interface = 'sfp+2';
-         } else {
-             $interface = 'vlan-5Mbps'; // Default interface
-         }
-     
-         $traffic = MikrotikServices::getInterfaceTraffic($client, $interface);
-     
-         return response()->json($traffic);
-     }
-     
+    public function realtime($id)
+    {
+        $router = Router::findOrFail($id);
+        $client = MikrotikServices::connect($router);
+
+        // Pastikan koneksi berhasil
+        if (!$client) {
+            return response()->json(['error' => 'Gagal koneksi ke router'], 500);
+        }
+
+        // Pilih interface berdasarkan ID router
+        if ($router->id === 2) {
+            $interface = 'vlan-5Mbps';
+        } elseif ($router->id === 3) {
+            $interface = 'sfp+2';
+        } else {
+            $interface = 'vlan-5Mbps'; // Default interface
+        }
+
+        $traffic = MikrotikServices::getInterfaceTraffic($client, $interface);
+
+        return response()->json($traffic);
+    }
+
 
 
     public function index()
@@ -143,7 +144,7 @@ class NocController extends Controller
             if (str_starts_with($nomor, '0')) {
                 $nomor = '62' . substr($nomor, 1);
             }
-        
+
             $chat->kirimNotifikasiTeknisi($nomor, $tek);
         }
 
@@ -219,6 +220,7 @@ class NocController extends Controller
             return $r;
         });
 
+        try {
         $paket = Paket::with('customer', 'router')
             ->when($search, function ($query) use ($search) {
                 $query->where('nama_paket', 'like', '%' . $search . '%');
@@ -227,6 +229,14 @@ class NocController extends Controller
             ->orderBy('nama_paket', 'asc')
             ->paginate(10, ['*'], 'paket_page')
             ->withQueryString();
+        } catch (\Exception $e) {
+            Log::error('Gagal mengambil data paket', [
+                'search' => $search,
+                'error_message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $paket = collect([]);
+        }
 
         return view('NOC.profile-paket', [
             'users' => auth()->user(),
@@ -235,6 +245,7 @@ class NocController extends Controller
             'router' => $router,
         ]);
 }
+
 
 
 
@@ -308,24 +319,176 @@ class NocController extends Controller
         return redirect()->back()->with('success', 'Paket berhasil diperbarui');
     }
 
-    // PaketController.php
     public function ajaxPaket(Request $request)
     {
-        $search = $request->input('search');
+        try {
+            // Log the incoming request for debugging
+            Log::info('🔍 ajaxPaket method called', [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+                'headers' => $request->headers->all(),
+                'params' => $request->all(),
+                'user_id' => auth()->id(),
+                'timestamp' => now()
+            ]);
+
+            $search = $request->input('search');
         $perPage = (int) $request->input('per_page', 10);
         $page = (int) $request->input('page', 1);
 
-        $query = Paket::with('customer', 'router')
-            ->when($search, function ($q) use ($search) {
-                $q->where('nama_paket', 'like', '%' . $search . '%');
-            })
-            ->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
-            ->orderBy('nama_paket', 'asc');
+            // Validate per_page to prevent memory issues
+            if ($perPage > 100) {
+                $perPage = 100;
+            }
 
-        $paket = $query->paginate($perPage, ['*'], 'page', $page);
+            Log::info('📊 Query parameters', [
+                'search' => $search,
+                'perPage' => $perPage,
+                'page' => $page
+            ]);
 
-        return response()->json($paket);
+            // Build query with proper error handling for relationships
+            $query = Paket::query();
+
+            // Check if relationships exist before eager loading
+            try {
+                $query = $query->with(['customer', 'router']);
+            } catch (\Exception $e) {
+                Log::warning('⚠️ Relationship loading issue', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                // Continue without relationships if they cause issues
+            }
+
+            // Apply search filter
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_paket', 'like', '%' . $search . '%')
+                        ->orWhere('id', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Apply ordering
+            $query->orderByRaw("CASE WHEN nama_paket = 'ISOLIREBILLING' THEN 1 ELSE 0 END")
+                ->orderBy('nama_paket', 'asc');
+
+            Log::info('🔍 Executing query...');
+
+            // Execute pagination
+            $paket = $query->paginate($perPage, ['*'], 'page', $page);
+
+            Log::info('✅ Query executed successfully', [
+                'total' => $paket->total(),
+                'current_page' => $paket->currentPage(),
+                'last_page' => $paket->lastPage(),
+                'items_count' => $paket->count()
+            ]);
+
+            // Prepare response data
+            $responseData = [
+                'success' => true,
+                'message' => 'Data paket berhasil dimuat',
+                'data' => $paket->items(),
+                'current_page' => $paket->currentPage(),
+                'last_page' => $paket->lastPage(),
+                'per_page' => $paket->perPage(),
+                'total' => $paket->total(),
+                'from' => $paket->firstItem(),
+                'to' => $paket->lastItem(),
+                'has_more_pages' => $paket->hasMorePages(),
+                'timestamp' => now()->toISOString()
+            ];
+
+            Log::info('📤 Sending JSON response', [
+                'response_size' => strlen(json_encode($responseData)),
+                'items_count' => count($responseData['data'])
+            ]);
+
+            // Ensure we're returning JSON with proper headers
+            return response()->json($responseData, 200, [
+                'Content-Type' => 'application/json',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('❌ Database query error in ajaxPaket', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql() ?? 'N/A',
+                'bindings' => $e->getBindings() ?? [],
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data paket - Database error',
+                'error' => config('app.debug') ? $e->getMessage() : 'Database connection issue',
+                'timestamp' => now()->toISOString()
+            ], 500, [
+                'Content-Type' => 'application/json'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('❌ General error in ajaxPaket', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data paket - Server error',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+                'timestamp' => now()->toISOString()
+            ], 500, [
+                'Content-Type' => 'application/json'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('❌ Fatal error in ajaxPaket', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data paket - Fatal error',
+                'error' => config('app.debug') ? $e->getMessage() : 'System error',
+                'timestamp' => now()->toISOString()
+            ], 500, [
+                'Content-Type' => 'application/json'
+            ]);
+        }
     }
+
+    // Add this method to test if the controller is being called correctly
+    public function testAjaxPaket(Request $request)
+    {
+        Log::info('🧪 testAjaxPaket called', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'headers' => $request->headers->all()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test endpoint working correctly',
+            'method' => 'testAjaxPaket',
+            'timestamp' => now()->toISOString(),
+            'request_info' => [
+                'method' => $request->method(),
+                'url' => $request->fullUrl(),
+                'user_agent' => $request->userAgent(),
+                'ip' => $request->ip()
+            ]
+        ], 200, [
+            'Content-Type' => 'application/json'
+        ]);
+    }
+
 
     public function editServer($id)
     {
@@ -448,7 +611,7 @@ class NocController extends Controller
             'local_address' => $request->local_address
         ]);
 
-        
+
         // dd($konek);
 
         $client = MikrotikServices::connect($router);
@@ -464,6 +627,4 @@ class NocController extends Controller
 
         return redirect('/teknisi/antrian')->with('toast_success', 'Berhasil Update Detail');
     }
-
-
 }

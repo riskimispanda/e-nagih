@@ -393,10 +393,8 @@
         let value = this.value.replace(/[^,\d]/g, '').toString();
         let cleanValue = value.replace(/[^0-9]/g, '');
         
-        // Simpan angka mentah ke input hidden
         hargaRaw.value = cleanValue;
         
-        // Format ke Rupiah
         let formatted = new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
@@ -411,10 +409,8 @@
         let value = this.value.replace(/[^,\d]/g, '').toString();
         let cleanValue = value.replace(/[^0-9]/g, '');
         
-        // Simpan angka mentah ke input hidden
         editHargaRaw.value = cleanValue;
         
-        // Format ke Rupiah
         let formatted = new Intl.NumberFormat('id-ID', {
             style: 'currency',
             currency: 'IDR',
@@ -424,17 +420,15 @@
         this.value = formatted;
     });
     
-    // Function to handle paket edit - define it globally first
+    // Function to handle paket edit
     function editPaket(id) {
         console.log('editPaket called with id:', id);
         
         try {
-            // Show loading
             if ($('#loading-overlay').length > 0) {
                 $('#loading-overlay').removeClass('d-none');
             }
             
-            // Fetch paket data
             $.ajax({
                 url: `/edit/paket/${id}`,
                 type: 'GET',
@@ -443,12 +437,10 @@
                     console.log('Received data:', data);
                     
                     try {
-                        // Populate modal fields
                         $('#edit_nama_paket').val(data.nama_paket || '');
                         $('#edit_profile_name').val(data.paket_name || '');
                         $('#edit_router_id').val(data.router_id || '');
                         
-                        // Format and set price
                         const harga = data.harga || 0;
                         const formattedPrice = new Intl.NumberFormat('id-ID', {
                             style: 'currency',
@@ -458,19 +450,16 @@
                         $('#edit_harga').val(formattedPrice);
                         $('#edit_hargaRaw').val(harga);
                         
-                        // Set form action
                         $('#editPaketForm').attr('action', `/update/paket/${id}`);
                         
-                        // Hide loading
                         if ($('#loading-overlay').length > 0) {
                             $('#loading-overlay').addClass('d-none');
                         }
                         
-                        // Show modal using jQuery
                         $('#modalEditPaket').modal('show');
                         console.log('Modal should be shown');
                     } catch (e) {
-                        console.error('Error populating modal:', e);
+                        console.error('❌ Error populating modal:', e);
                         if ($('#loading-overlay').length > 0) {
                             $('#loading-overlay').addClass('d-none');
                         }
@@ -478,31 +467,49 @@
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('AJAX Error:', xhr, status, error);
+                    console.group('❌ AJAX Error - Paket');
+                    console.error('Status:', status);
+                    console.error('Error Message:', error);
+                    console.error('HTTP Status Code:', xhr.status);
+                    console.error('Response Text:', xhr.responseText);
+                    console.error('ReadyState:', xhr.readyState);
+                    console.error('Request URL:', this.url);
+                    console.groupEnd();
+
                     if ($('#loading-overlay').length > 0) {
                         $('#loading-overlay').addClass('d-none');
                     }
-                    alert('Terjadi kesalahan saat mengambil data paket: ' + error);
+                    
+                    alert(`Gagal mengambil data paket.\nStatus: ${xhr.status}\nPesan: ${error}`);
                 }
             });
         } catch (e) {
-            console.error('Function error:', e);
+            console.error('❌ Function error:', e);
             alert('Terjadi kesalahan: ' + e.message);
         }
     }
     
-    // Make editPaket function globally available
     window.editPaket = editPaket;
     
-    // Client-side pagination & search for Profile Paket
+    // Client-side pagination & search
     let paketCurrentPage = 1;
     let paketSearchTerm = '';
     const paketPerPage = 10;
     
     function fetchPaketData(page = 1, search = '') {
         $('#loading-overlay').removeClass('d-none');
-        fetch(`/paket/data?page=${page}&per_page=${paketPerPage}&search=${encodeURIComponent(search)}`)
-        .then(res => res.json())
+        fetch("{{ route('ajax.paket') }}" + "?search=" + search)
+        .then(res => {
+            if (!res.ok) {
+                console.group('❌ Fetch Error - Paket Data');
+                console.error('HTTP Status Code:', res.status);
+                console.error('Status Text:', res.statusText);
+                console.error('Request URL:', res.url);
+                console.groupEnd();
+                throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+            }
+            return res.json();
+        })
         .then(data => {
             renderPaketTable(data);
             renderPaketPagination(data);
@@ -510,7 +517,8 @@
             $('#paket-showing-data').text(`Menampilkan ${data.from || 0} - ${data.to || 0} dari ${data.total} data`);
             $('#loading-overlay').addClass('d-none');
         })
-        .catch(() => {
+        .catch((err) => {
+            console.error('❌ Gagal memuat data paket:', err);
             $('#paket-table-body').html('<tr><td colspan="7" class="text-center">Gagal memuat data</td></tr>');
             $('#paket-pagination').html('');
             $('#paket-total-data').text('Total Data: 0');
@@ -528,26 +536,25 @@
                 const customerCount = item.customer ? item.customer.length : 0;
                 html += `
     <tr class="text-center">
-    <td>${data.from + idx}</td>
-    <td><span class="badge ${badgeClass} bg-opacity-10">${item.nama_paket || ''}</span></td>
-    <td>${item.paket_name || '-'}</td>
-    <td>${item.router ? (item.router.nama_router || '-') : '-'}</td>
-    <td>Rp ${formattedPrice}</td>
-    <td><span class="fw-bold badge bg-warning bg-opacity-10 text-warning">${customerCount}</span></td>
-    <td>
-    <div class="row">
-    <div class="d-flex justify-content-center gap-2">
-    <a href="#" onclick="editPaket(${item.id})" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
-    <i class="bx bx-edit text-warning"></i>
-    </a>|
-    <a href="/hapus/paket/${item.id}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
-    <i class="bx bx-trash text-danger"></i>
-    </a>
-    </div>
-    </div>
-    </td>
-    </tr>
-    `;
+        <td>${data.from + idx}</td>
+        <td><span class="badge ${badgeClass} bg-opacity-10">${item.nama_paket || ''}</span></td>
+        <td>${item.paket_name || '-'}</td>
+        <td>${item.router ? (item.router.nama_router || '-') : '-'}</td>
+        <td>Rp ${formattedPrice}</td>
+        <td><span class="fw-bold badge bg-warning bg-opacity-10 text-warning">${customerCount}</span></td>
+        <td>
+            <div class="row">
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="#" onclick="editPaket(${item.id})" data-bs-toggle="tooltip" title="Edit Profile" data-bs-placement="bottom">
+                        <i class="bx bx-edit text-warning"></i>
+                    </a>|
+                    <a href="/hapus/paket/${item.id}" data-bs-toggle="tooltip" title="Hapus Profile" data-bs-placement="bottom" onclick="return confirm('Apakah Anda yakin ingin menghapus paket ini?')">
+                        <i class="bx bx-trash text-danger"></i>
+                    </a>
+                </div>
+            </div>
+        </td>
+    </tr>`;
             });
         } else {
             html = `<tr><td colspan="7" class="text-center py-4"><div class="d-flex flex-column align-items-center"><i class="bx bx-search-alt-2 fs-1 text-muted mb-2"></i><span class="text-muted">Tidak ada data paket yang ditemukan</span></div></td></tr>`;
@@ -584,7 +591,6 @@
         }
     });
     
-    // Debounce for input event
     let paketSearchTimeout;
     $('#paket-search-input').on('input', function() {
         clearTimeout(paketSearchTimeout);
@@ -595,38 +601,42 @@
         }, 300);
     });
     
-    // Initial load
     $(document).ready(function() {
         fetchPaketData(1, '');
     });
     
     // Function to handle router edit
     function editRouter(id) {
-        // Fetch router data
         fetch(`/edit/router/${id}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                console.group('❌ Fetch Error - Router Data');
+                console.error('HTTP Status Code:', response.status);
+                console.error('Status Text:', response.statusText);
+                console.error('Request URL:', response.url);
+                console.groupEnd();
+                throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            // Populate modal fields
             document.getElementById('edit_nama_router').value = data.nama_router;
             document.getElementById('edit_ip_address').value = data.ip_address;
             document.getElementById('edit_port').value = data.port;
             document.getElementById('edit_username').value = data.username;
             document.getElementById('edit_password').value = data.password;
             
-            // Set form action
             document.getElementById('editRouterForm').action = `/update/router/${id}`;
             
-            // Show modal
             const modal = new bootstrap.Modal(document.getElementById('modalEditRouter'));
             modal.show();
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('❌ Gagal ambil data router:', error);
             alert('Terjadi kesalahan saat mengambil data router');
         });
     }
-    
-    
 </script>
+
 
 @endsection
