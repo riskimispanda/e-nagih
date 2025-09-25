@@ -14,6 +14,7 @@ use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Log;
 use App\Models\ODP;
+use Carbon\Carbon;
 
 
 // Log
@@ -213,10 +214,9 @@ class HelpdeskController extends Controller
                     'paket_id' => $data->paket_id,
                     'agen_id' => $data->agen_id,
                 ])
-                ->log('Menambahkan data pelanggan baru');
+                ->log(auth()->user()->name . ' Menambahkan data pelanggan baru ' . $data->nama_customer . ' pada ' . Carbon::parse($data->created_at)->locale('id')->isoFormat('dddd, D MMMM Y H:i:s') . ' PIC: ' . ($data->agen?->name ?? '-'));
 
             try {
-                $chat->CustomerBaru($nomor, $data);
                 foreach($noc as $n)
                 {
                     $nomor = preg_replace('/[^0-9]/', '', $n->no_hp);

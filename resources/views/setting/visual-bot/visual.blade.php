@@ -22,7 +22,7 @@
         <h5 class="card-header card-title">
             <i class="bx bx-bot text-warning fw-bold me-2"></i> Daftar Bot Tersedia
         </h5>
-        <div class="table-responsive text-nowrap">
+        <div class="table-responsive text-nowrap mb-4">
             <table class="table table-bordered table-hover">
                 <thead class="table-dark text-center">
                     <tr>
@@ -48,7 +48,7 @@
         <h5 class="card-header">
             <i class="bx bx-pulse text-warning me-2 fw-bold"></i> Log Pengiriman Pesan
         </h5>
-        <div class="table-responsive">
+        <div class="table-responsive mb-4">
             <table class="table table-hover table-striped">
                 <thead class="table-dark">
                     <tr>
@@ -67,6 +67,7 @@
 </div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const socket = io("https://enagih-chat.niscala.net:3000", { transports: ["websocket"] });
     const botTable = document.getElementById("botTableBody");
@@ -77,7 +78,7 @@
     let botTerpilih = null;
 
     // ambil bot terpilih dari server
-    fetch("https://enagih-chat.niscala.net:3000/get-selected-bot")
+    fetch("https://enagih-chat.niscala.net/get-selected-bot")
         .then(res => res.json())
         .then(data => {
             botTerpilih = data.selectedBot;
@@ -115,15 +116,19 @@
                 <td>${count}</td>
                 <td><span class="badge bg-success">Aktif</span></td>
                 <td>
-                    <button class="btn btn-sm ${botTerpilih === session ? 'btn-success' : 'btn-outline-primary'} pilih-bot" data-bot="${session}">
-                        ${botTerpilih === session ? "✅ Terpilih" : "Gunakan"}
-                    </button>
+                    <div class="d-flex justify-content-center gap-2" role="group">
+                        <button class="btn btn-sm ${botTerpilih === session ? 'btn-success' : 'btn-outline-primary'} pilih-bot" data-bot="${session}">
+                            ${botTerpilih === session ? "✅ Terpilih" : "Gunakan"}
+                        </button>
+                        <button class="btn btn-sm btn-warning disconnect-bot" data-bot="${session}">🔌 Disconnect</button>
+                        <button class="btn btn-sm btn-info reconnect-bot" data-bot="${session}">♻ Reconnect</button>
+                    </div>
                 </td>
             `;
             botTable.appendChild(row);
         });
 
-        setPilihBotListener();
+        setActionListeners();
         tampilkanBotTerpilih();
     });
 
@@ -139,12 +144,17 @@
                         <h6 class="text-success fw-bold">${session}</h6>
                         <img src="${qr}" alt="QR ${session}" class="img-fluid rounded shadow mb-3" />
                         <p class="text-muted" id="status-${session}">📲 Scan QR dengan WhatsApp</p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-warning disconnect-bot" data-bot="${session}">🔌 Disconnect</button>
+                            <button class="btn btn-sm btn-info reconnect-bot" data-bot="${session}">♻ Reconnect</button>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
         if (!existing) {
             botList.insertAdjacentHTML("beforeend", html);
+            setActionListeners();
         } else {
             document.querySelector(`#bot-${session} img`).src = qr;
         }
@@ -172,13 +182,17 @@
                 <td>0</td>
                 <td><span class="badge bg-success">Aktif</span></td>
                 <td>
-                    <button class="btn btn-sm ${botTerpilih === session ? 'btn-success' : 'btn-outline-primary'} pilih-bot" data-bot="${session}">
-                        ${botTerpilih === session ? "✅ Terpilih" : "Gunakan"}
-                    </button>
+                    <div class="d-flex justify-content-center" role="group">
+                        <button class="btn btn-sm ${botTerpilih === session ? 'btn-success' : 'btn-outline-primary'} pilih-bot" data-bot="${session}">
+                            ${botTerpilih === session ? "✅ Terpilih" : "Gunakan"}
+                        </button>
+                        <button class="btn btn-sm btn-warning disconnect-bot" data-bot="${session}">🔌 Disconnect</button>
+                        <button class="btn btn-sm btn-info reconnect-bot" data-bot="${session}">♻ Reconnect</button>
+                    </div>
                 </td>
             `;
             botTable.appendChild(row);
-            setPilihBotListener();
+            setActionListeners();
             updateTombolAksi();
         }
     });
@@ -200,31 +214,106 @@
         });
     });
 
-    // pilih bot
-    function setPilihBotListener() {
+    // === ACTION LISTENERS ===
+    function setActionListeners() {
+        // pilih bot
         document.querySelectorAll(".pilih-bot").forEach(button => {
-            button.addEventListener("click", function () {
+            button.onclick = function () {
                 const selected = this.dataset.bot;
-                fetch("https://enagih-chat.niscala.net:3000/set-selected-bot", {
+                fetch("https://enagih-chat.niscala.net/set-selected-bot", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ sessionName: selected }),
                 })
-                .then((res) => res.json())
+                .then(res => res.json())
                 .then((data) => {
                     if (data.selectedBot) {
                         botTerpilih = data.selectedBot;
                         updateTombolAksi();
                         tampilkanBotTerpilih();
                     } else {
-                        alert("❌ Gagal memilih bot: " + (data.error || "Unknown error"));
+                        Swal.fire("Gagal", data.error || "Unknown error", "error");
                     }
                 })
                 .catch((err) => {
-                    alert("❌ Gagal terhubung ke server bot");
+                    Swal.fire("Error", "Gagal terhubung ke server bot", "error");
                     console.error(err);
                 });
-            });
+            };
+        });
+
+        // disconnect bot
+        document.querySelectorAll(".disconnect-bot").forEach(button => {
+            button.onclick = function () {
+                const session = this.dataset.bot;
+                Swal.fire({
+                    title: `Yakin ingin disconnect bot ${session}?`,
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Ya, Disconnect",
+                    cancelButtonText: "Batal",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch("https://enagih-chat.niscala.net/disconnect-bot", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sessionName: session }),
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            Swal.fire({
+                                icon: data.error ? "error" : "success",
+                                title: data.error ? "Gagal" : "Berhasil",
+                                text: data.status || data.error || "Bot berhasil di-disconnect",
+                                timer: 2000,
+                                showConfirmButton: false,
+                                topLayer: true
+                            });
+                        })
+                        .catch(err => {
+                            console.error("❌ Gagal disconnect bot:", err);
+                            Swal.fire("Error", "Gagal disconnect bot", "error");
+                        });
+                    }
+                });
+            };
+        });
+
+        // reconnect bot
+        document.querySelectorAll(".reconnect-bot").forEach(button => {
+            button.onclick = function () {
+                const session = this.dataset.bot;
+                Swal.fire({
+                    title: `Ingin reconnect bot ${session}?`,
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "Ya, Reconnect",
+                    cancelButtonText: "Batal",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch("https://enagih-chat.niscala.net/reconnect-bot", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sessionName: session }),
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            Swal.fire({
+                                icon: data.error ? "error" : "success",
+                                title: data.error ? "Gagal" : "Berhasil",
+                                text: data.status || data.error || "Bot berhasil direconnect",
+                                timer: 2000,
+                                showConfirmButton: false,
+                                topLayer: true
+                            });
+                        })
+                        .catch(err => {
+                            console.error("❌ Gagal reconnect bot:", err);
+                            Swal.fire("Error", "Gagal reconnect bot", "error");
+                        });
+                    }
+                });
+            };
         });
     }
 
@@ -244,20 +333,35 @@
 
     // tambah bot baru
     document.getElementById("tambahBotBtn").addEventListener("click", () => {
-        const sessionName = prompt("Masukkan nama session bot:");
-        if (!sessionName) return;
-        fetch("https://enagih-chat.niscala.net:3000/tambah-bot", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionName }),
-        })
-        .then(res => res.json())
-        .then(data => {
-            alert(data.status || data.error || "Berhasil menambahkan bot");
-        })
-        .catch(err => {
-            console.error("❌ Gagal tambah bot:", err);
-            alert("Gagal menambahkan bot");
+        Swal.fire({
+            title: "Masukkan nama session bot",
+            input: "text",
+            showCancelButton: true,
+            confirmButtonText: "Tambah",
+            cancelButtonText: "Batal",
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                fetch("https://enagih-chat.niscala.net/tambah-bot", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sessionName: result.value }),
+                })
+                .then(res => res.json())
+                .then(data => {
+                    Swal.fire({
+                        icon: data.error ? "error" : "success",
+                        title: data.error ? "Gagal" : "Berhasil",
+                        text: data.status || data.error || "Berhasil menambahkan bot",
+                        timer: 2000,
+                        showConfirmButton: false,
+                        topLayer: true
+                    });
+                })
+                .catch(err => {
+                    console.error("❌ Gagal tambah bot:", err);
+                    Swal.fire("Error", "Gagal menambahkan bot", "error");
+                });
+            }
         });
     });
 </script>
