@@ -201,6 +201,54 @@
                 <p class="text-muted mb-0">Kelola dan pantau data pendapatan perusahaan</p>
             </div>
             <div class="d-flex gap-2">
+                <div class="export-dropdown">
+                    <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bx bx-file me-1"></i>
+                        Export Excel
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-scrollable" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Export Semua Data -->
+                        <li><h6 class="dropdown-header">Export Semua Data</h6></li>
+                        <li>
+                            <a class="dropdown-item" href="/unpaid">
+                                <i class="bx bx-download"></i>
+                                Semua Pelanggan
+                            </a>
+                        </li>
+                
+                        <li><hr class="dropdown-divider"></li>
+                
+                        <!-- Export Berdasarkan Bulan -->
+                        <li><h6 class="dropdown-header">Export Berdasarkan Bulan</h6></li>
+                        @php
+                            $months = [
+                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+                                '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                                '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+                            ];
+                            $currentYear = date('Y');
+                        @endphp
+                        @foreach($months as $num => $name)
+                        <li>
+                            <a class="dropdown-item" href="{{ route('unpaid.bulan', ['month' => $num, 'year' => $currentYear]) }}">
+                                <i class="bx bx-calendar"></i>
+                                {{ $name }} {{ $currentYear }}
+                            </a>
+                        </li>
+                        @endforeach
+                
+                        <li><hr class="dropdown-divider"></li>
+                
+                        <!-- Export Berdasarkan Custom Date Range -->
+                        <li><h6 class="dropdown-header">Export Berdasarkan Tanggal</h6></li>
+                        <li>
+                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customDateModal">
+                                <i class="bx bx-calendar-event"></i>
+                                Pilih Tanggal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 <button onclick="refreshData()" class="btn btn-outline-danger btn-sm">
                     <i class="bx bx-refresh me-2"></i>
                     Refresh
@@ -325,19 +373,7 @@
             <!-- Status filter removed as requested -->
             
             <!-- Date Range -->
-            {{-- <div class="col-12 col-md-6 col-lg-4">
-                <label class="form-label fw-medium text-dark">Periode Tanggal</label>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <input type="date" id="startDate" name="start_date" value="{{ $startDate ?? '' }}"
-                        class="form-control" title="Tanggal Mulai">
-                    </div>
-                    <div class="col-6">
-                        <input type="date" id="endDate" name="end_date" value="{{ $endDate ?? '' }}"
-                        class="form-control" title="Tanggal Akhir">
-                    </div>
-                </div>
-            </div> --}}
+            
         </div>
         
         <!-- Filter action buttons removed as requested -->
@@ -784,6 +820,33 @@
                 </button>
             </div>
         </div>
+    </div>
+</div>
+<!-- Modal Custom Date Range -->
+<div class="modal fade" id="customDateModal" tabindex="-1" aria-labelledby="customDateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form action="{{ route('unpaid.range') }}" method="GET">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customDateModalLabel">Export Invoice Belum Bayar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="startDate" class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" id="startDate" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endDate" class="form-label">Tanggal Selesai</label>
+                        <input type="date" name="end_date" id="endDate" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Export</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 @endforeach

@@ -1152,6 +1152,7 @@
                                 <th>Status</th>
                                 <th>Tanggal Installasi</th>
                                 <th>History Pembayaran</th>
+                                <th>Pembayaran Terakhir</th>
                                 <th>Remote IP</th>
                                 <th>Aksi</th>
                             </tr>
@@ -1208,6 +1209,9 @@
                                     <a href="/riwayatPembayaran/{{ $item->id }}" class="btn btn-outline-info action-btn" data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}" data-bs-placement="top">
                                         <i class="bx bx-history"></i>
                                     </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-danger">{{$item->last_pembayaran ?? '-'}}</span>
                                 </td>
                                 <td>
                                     <div class="row">

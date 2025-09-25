@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CustomerAgen;
 use Illuminate\Http\Request;
 use App\Exports\ExportPelanggan;
 use Maatwebsite\Excel\Facades\Excel;
@@ -55,5 +56,35 @@ class ExportControllers extends Controller
             ->causedBy(auth()->user()->id)
             ->log(auth()->user()->name . ' Melakukan Export data pelanggan bulan ' . $month . ' Tahun ' . $year);
         return Excel::download(new ExportPelanggan('bulan', ['month' => $month, 'year' => $year]), 'pelanggan-' . $month . '-' . $year . '.xlsx');
+    }
+
+    public function unpaid()
+    {
+        activity('Export')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Melakukan Export data pelanggan Belum Bayar');
+        return Excel::download(new CustomerAgen(), 'unpaid-' . now()->format('m-Y') . '.xlsx');
+    }
+
+    public function unpaidBulan($month, $year)
+    {
+        activity('Export')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Melakukan Export data pelanggan Belum Bayar ' . $month . ' Tahun ' . $year);
+        return Excel::download(new CustomerAgen('bulan', ['month' => $month, 'year' => $year]), 'unpaid-' . $month . '-' . $year . '.xlsx');
+    }
+
+    public function unpaidRange(Request $request)
+    {
+        $start = $request->get('start_date');
+        $end = $request->get('end_date');
+
+        activity('Export')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Melakukan Export data pelanggan Belum Bayar Tanggal ' . $start . ' Sampai ' . $end);
+        return Excel::download(
+            new CustomerAgen('range', ['start' => $start, 'end' => $end]),
+            'pelanggan-unpaid-' . $start . '-' . $end . '.xlsx'
+        );
     }
 }

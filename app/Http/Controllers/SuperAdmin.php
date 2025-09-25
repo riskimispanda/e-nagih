@@ -226,7 +226,13 @@ class SuperAdmin extends Controller
         ]);
     }
 
-
+    public function kirimUlang($id)
+    {
+        $pembayaran = Pembayaran::with('invoice.customer')->findOrFail($id);
+        $chat = new ChatServices();
+        $chat->pembayaranBerhasil($pembayaran->invoice->customer->no_hp, $pembayaran);
+        return redirect('/data/pembayaran')->with('success', 'Berhasil Kirim Notifikasi Pembayaran');
+    }
 
     
     public function logDetail($id)

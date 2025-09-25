@@ -52,7 +52,6 @@ class DataController extends Controller
 
         $import = Customer::where('cek', 'Imported')->count();
         $countAgen = User::where('roles_id', 6)->count();
-        // dd($countAgen);
         // Apply search filter
         if ($search) {
             $query->where(function($q) use ($search) {
@@ -95,6 +94,18 @@ class DataController extends Controller
         // Get paginated results
         $customers = $query->paginate($perPage)->appends($request->query());
 
+        $customers->getCollection()->transform(function ($customer) {
+            $invoiceIds = $customer->invoice->pluck('id');
+            $lastPembayaran = Pembayaran::whereIn('invoice_id', $invoiceIds)
+                ->latest('tanggal_bayar')
+                ->first();
+
+            $customer->last_pembayaran = $lastPembayaran?->tanggal_bayar
+                ? \Carbon\Carbon::parse($lastPembayaran->tanggal_bayar)->locale('id')->isoFormat('dddd, D-MMMM-Y')
+                : '-';
+
+            return $customer;
+        });
         // Get statistics data (independent of pagination)
         $totalCustomers = Customer::whereIn('status_id', [3, 4, 9])->count();
         $totalActive = Customer::where('status_id', 3)->count();

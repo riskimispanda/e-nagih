@@ -50,12 +50,12 @@ class ChatServices
         $sisaTagihan = $totalTagihan - $jumlahBayar - $saldo;
 
         $tunggakan = max($sisaTagihan, 0);
-
+        $tanggalBayar = Carbon::parse($pembayaran->tanggal_bayar)->locale('id')->isoFormat('dddd, D MMMM Y');
 
         $response = Http::post("{$this->baseURL}/send-pesan", [
             'to' => $to . '@c.us',
             'pesan' => "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
-                        "📅 Tanggal Pembayaran: " . now()->format('d-m-Y') . "\n" .
+                "📅 Tanggal Pembayaran: " . $tanggalBayar . "\n" .
                         "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
                         "💵 Tunggakan: Rp ". number_format($tunggakan ?? 0, 0,',','.') . "\n".
                         "👤 Nama Pelanggan: " . $namaCustomer . "\n" .

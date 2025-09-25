@@ -43,7 +43,7 @@
                                     <td><span class="badge bg-info bg-opacity-10 text-info">{{ $item->customer->paket->nama_paket }}</span></td>
                                     <td>
                                         <span class="badge bg-warning bg-opacity-10 text-warning">
-                                            {{ $lastPayment ? \Carbon\Carbon::parse($lastPayment->created_at)->translatedFormat('d-M-Y H:i:s') : '-' }}
+                                            {{ $lastPayment ? \Carbon\Carbon::parse($lastPayment->tanggal_bayar)->locale('id')->isoFormat('dddd, D MMMM Y') : '-' }}
                                         </span>
                                     </td>
                                     <td>{{ \Carbon\Carbon::parse($item->jatuh_tempo)->locale('id')->translatedFormat('F Y') }}</td>

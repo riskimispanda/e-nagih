@@ -674,333 +674,334 @@
                             </td>
                             <td>
                                 @if($payment->status_id == 8)
-                                <div class="d-flex">
-                                    <a class="btn btn-outline-warning btn-sm text-warning" 
-                                    data-bs-toggle="modal" 
-                                    data-bs-target="#editModal{{ $payment->id }}">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a class="btn btn-outline-warning btn-sm text-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $payment->id }}">
+                                        <i class="bx bx-pencil"></i>
+                                    </a>
+                                    <a href="/kirim-ulang/{{ $payment->id }}" class="btn btn-outline-danger btn-sm text-danger" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Notifikasi Pembayaran Berhasil">
+                                        <i class="bx bx-message"></i>
+                                    </a>
+                                </div>
+                                @else
+                                <button class="btn btn-outline-warning btn-sm text-warning" disabled>
                                     <i class="bx bx-pencil"></i>
-                                </a>
-                            </div>
-                            @else
-                            <button class="btn btn-outline-warning btn-sm text-warning" disabled>
-                                <i class="bx bx-pencil"></i>
-                            </button>
-                            @endif
-                        </td>
-                        <td>
-                            <span class="fw-bold">
-                                <small>{{$payment->keterangan}}</small>
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="9" class="text-center py-5">
-                            <div class="d-flex flex-column align-items-center">
-                                <i class="bx bx-money text-muted" style="font-size: 3rem;"></i>
-                                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                                <p class="text-muted mb-0">Belum ada data pembayaran yang tersedia</p>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <!-- Pagination -->
-    @if (isset($payments) && $payments->hasPages())
-    <div class="p-4 border-top" id="paginationContainer">
-        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
-            <div class="text-muted small">
-                Menampilkan {{ $payments->firstItem() ?? 0 }} sampai {{ $payments->lastItem() ?? 0 }}
-                dari {{ $payments->total() ?? 0 }} hasil
+                                </button>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="fw-bold">
+                                    <small>{{$payment->keterangan}}</small>
+                                </span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="bx bx-money text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                                    <p class="text-muted mb-0">Belum ada data pembayaran yang tersedia</p>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-            <div>
-                <nav aria-label="Page navigation">
-                    <ul class="pagination pagination-sm justify-content-center mb-0">
-                        {{-- Previous Page Link --}}
-                        @if ($payments->onFirstPage())
+        </div>
+        <!-- Pagination -->
+        @if (isset($payments) && $payments->hasPages())
+        <div class="p-4 border-top" id="paginationContainer">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                <div class="text-muted small">
+                    Menampilkan {{ $payments->firstItem() ?? 0 }} sampai {{ $payments->lastItem() ?? 0 }}
+                    dari {{ $payments->total() ?? 0 }} hasil
+                </div>
+                <div>
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            {{-- Previous Page Link --}}
+                            @if ($payments->onFirstPage())
                             <li class="page-item disabled">
                                 <span class="page-link">‹ Previous</span>
                             </li>
-                        @else
+                            @else
                             <li class="page-item">
                                 <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->currentPage() - 1 }}">‹ Previous</a>
                             </li>
-                        @endif
-
-                        {{-- Pagination Elements --}}
-                        @php
+                            @endif
+                            
+                            {{-- Pagination Elements --}}
+                            @php
                             $start = max(1, $payments->currentPage() - 2);
                             $end = min($payments->lastPage(), $payments->currentPage() + 2);
-                        @endphp
-
-                        {{-- First Page --}}
-                        @if ($start > 1)
+                            @endphp
+                            
+                            {{-- First Page --}}
+                            @if ($start > 1)
                             <li class="page-item">
                                 <a class="page-link ajax-pagination-old" href="#" data-page="1">1</a>
                             </li>
                             @if ($start > 2)
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
                             @endif
-                        @endif
-
-                        {{-- Page Numbers --}}
-                        @for ($i = $start; $i <= $end; $i++)
+                            @endif
+                            
+                            {{-- Page Numbers --}}
+                            @for ($i = $start; $i <= $end; $i++)
                             @if ($i == $payments->currentPage())
-                                <li class="page-item active">
-                                    <span class="page-link">{{ $i }}</span>
-                                </li>
+                            <li class="page-item active">
+                                <span class="page-link">{{ $i }}</span>
+                            </li>
                             @else
-                                <li class="page-item">
-                                    <a class="page-link ajax-pagination-old" href="#" data-page="{{ $i }}">{{ $i }}</a>
-                                </li>
+                            <li class="page-item">
+                                <a class="page-link ajax-pagination-old" href="#" data-page="{{ $i }}">{{ $i }}</a>
+                            </li>
                             @endif
-                        @endfor
-
-                        {{-- Last Page --}}
-                        @if ($end < $payments->lastPage())
+                            @endfor
+                            
+                            {{-- Last Page --}}
+                            @if ($end < $payments->lastPage())
                             @if ($end < $payments->lastPage() - 1)
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
                             @endif
                             <li class="page-item">
                                 <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->lastPage() }}">{{ $payments->lastPage() }}</a>
                             </li>
-                        @endif
-
-                        {{-- Next Page Link --}}
-                        @if ($payments->hasMorePages())
+                            @endif
+                            
+                            {{-- Next Page Link --}}
+                            @if ($payments->hasMorePages())
                             <li class="page-item">
                                 <a class="page-link ajax-pagination-old" href="#" data-page="{{ $payments->currentPage() + 1 }}">Next ›</a>
                             </li>
-                        @else
+                            @else
                             <li class="page-item disabled">
                                 <span class="page-link">Next ›</span>
                             </li>
-                        @endif
-                    </ul>
-                </nav>
+                            @endif
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay d-none">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <span class="text-dark">Memuat data...</span>
+        </div>
+    </div>
+    
+    {{-- Modal Edit Pembayaran --}}
+    @foreach ($payments as $pembayaran)
+    <div class="modal fade" id="editModal{{ $pembayaran->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pembayaran {{ $pembayaran->invoice->customer->nama_customer }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/edit/pembayaran/{{ $pembayaran->id }}" method="POST" class="editPembayaranForm">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-sm-6 mb-2">
+                                <label class="form-label">Nama Customer</label>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="bx bx-user"></i></span>
+                                    <input type="text" class="form-control" value="{{ $pembayaran->invoice->customer->nama_customer ?? '-' }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-2">
+                                <label class="form-label">Total Tagihan</label>
+                                <div class="input-group input-group-merge">
+                                    <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                    <input type="text" class="form-control" value="Rp {{ number_format($pembayaran->invoice->tagihan + $pembayaran->invoice->tunggakan + $pembayaran->invoice->tambahan - $pembayaran->invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="col-sm-12 mb-2">
+                                <label class="form-label">Jumlah Bayar</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                    <input type="text" name="jumlah" id="jumlah{{ $pembayaran->id }}" class="form-control" value="{{ $pembayaran->jumlah_bayar ? 'Rp '.number_format($pembayaran->jumlah_bayar,0,',','.') : 'Rp 0' }}">
+                                    <input type="hidden" name="jumlahRaw" id="jumlahRaw{{ $pembayaran->id }}" value="{{ $pembayaran->jumlah_bayar ?? 0 }}">
+                                </div>
+                            </div>
+                            
+                            <div class="col-sm-12 mb-2">
+                                <label class="form-label">Keterangan Edit</label>
+                                <textarea name="keterangan" class="form-control" cols="10" rows="5"></textarea>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-warning btn-sm" type="submit">
+                            <i class="bx bx-pencil me-2"></i>
+                            Request
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    @endif
-</div>
-
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay d-none">
-    <div class="loading-content">
-        <div class="spinner"></div>
-        <span class="text-dark">Memuat data...</span>
-    </div>
-</div>
-
-{{-- Modal Edit Pembayaran --}}
-@foreach ($payments as $pembayaran)
-<div class="modal fade" id="editModal{{ $pembayaran->id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Pembayaran {{ $pembayaran->invoice->customer->nama_customer }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="/edit/pembayaran/{{ $pembayaran->id }}" method="POST" class="editPembayaranForm">
-                @csrf
+    @endforeach
+    <!-- Modal Export -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export Data Custom Range</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-sm-6 mb-2">
-                            <label class="form-label">Nama Customer</label>
-                            <div class="input-group input-group-merge">
-                                <span class="input-group-text"><i class="bx bx-user"></i></span>
-                                <input type="text" class="form-control" value="{{ $pembayaran->invoice->customer->nama_customer ?? '-' }}" readonly>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 mb-2">
-                            <label class="form-label">Total Tagihan</label>
-                            <div class="input-group input-group-merge">
-                                <span class="input-group-text"><i class="bx bx-money"></i></span>
-                                <input type="text" class="form-control" value="Rp {{ number_format($pembayaran->invoice->tagihan + $pembayaran->invoice->tunggakan + $pembayaran->invoice->tambahan - $pembayaran->invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
-                            </div>
-                        </div>
-                        
-                        <div class="col-sm-12 mb-2">
-                            <label class="form-label">Jumlah Bayar</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bx bx-money"></i></span>
-                                <input type="text" name="jumlah" id="jumlah{{ $pembayaran->id }}" class="form-control" value="{{ $pembayaran->jumlah_bayar ? 'Rp '.number_format($pembayaran->jumlah_bayar,0,',','.') : 'Rp 0' }}">
-                                <input type="hidden" name="jumlahRaw" id="jumlahRaw{{ $pembayaran->id }}" value="{{ $pembayaran->jumlah_bayar ?? 0 }}">
-                            </div>
-                        </div>
-                        
-                        <div class="col-sm-12 mb-2">
-                            <label class="form-label">Keterangan Edit</label>
-                            <textarea name="keterangan" class="form-control" cols="10" rows="5"></textarea>
-                        </div>
-                        
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-warning btn-sm" type="submit">
-                        <i class="bx bx-pencil me-2"></i>
-                        Request
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endforeach
-<!-- Modal Export -->
-<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Export Data Custom Range</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-12">
-                        <label class="form-label">Rentang Tanggal</label>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <input type="date" id="exportStartDate" class="form-control" title="Tanggal Mulai">
-                            </div>
-                            <div class="col-6">
-                                <input type="date" id="exportEndDate" class="form-control" title="Tanggal Akhir">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Rentang Tanggal</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="date" id="exportStartDate" class="form-control" title="Tanggal Mulai">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date" id="exportEndDate" class="form-control" title="Tanggal Akhir">
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer gap-2">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-primary" onclick="exportCustomRange()">Export</button>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="exportCustomRange()">Export</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-@endsection
-
-@section('page-script')
-<script>
-    let searchTimeout;
-    let isLoading = false;
+    @endsection
     
-    // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeSearch();
-        initializeFilters();
-        initializeEntriesPerPage();
-    });
-    
-    // Initialize search functionality
-    function initializeSearch() {
-        const searchInput = document.getElementById('searchInput');
+    @section('page-script')
+    <script>
+        let searchTimeout;
+        let isLoading = false;
         
-        if (searchInput) {
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    applyFilters();
-                }, 500); // Debounce search for 500ms
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSearch();
+            initializeFilters();
+            initializeEntriesPerPage();
+        });
+        
+        // Initialize search functionality
+        function initializeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        applyFilters();
+                    }, 500); // Debounce search for 500ms
+                });
+            }
+        }
+        
+        // Initialize filter functionality
+        function initializeFilters() {
+            const metodeFilter = document.getElementById('metodeFilter');
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            [metodeFilter, startDate, endDate].forEach(element => {
+                if (element) {
+                    element.addEventListener('change', applyFilters);
+                }
             });
         }
-    }
-    
-    // Initialize filter functionality
-    function initializeFilters() {
-        const metodeFilter = document.getElementById('metodeFilter');
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
         
-        [metodeFilter, startDate, endDate].forEach(element => {
-            if (element) {
-                element.addEventListener('change', applyFilters);
+        // Initialize entries per page functionality
+        function initializeEntriesPerPage() {
+            const entriesSelect = document.getElementById('entriesPerPage');
+            
+            if (entriesSelect) {
+                entriesSelect.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    loadDataWithAjax(selectedValue);
+                });
             }
-        });
-    }
-    
-    // Initialize entries per page functionality
-    function initializeEntriesPerPage() {
-        const entriesSelect = document.getElementById('entriesPerPage');
+        }
         
-        if (entriesSelect) {
-            entriesSelect.addEventListener('change', function() {
-                const selectedValue = this.value;
-                loadDataWithAjax(selectedValue);
+        // Load data using AJAX with entries per page
+        function loadDataWithAjax(perPage = 25, page = 1) {
+            if (isLoading) return;
+            
+            showLoading();
+            
+            // Get current filter values
+            const formData = new FormData(document.getElementById('filterForm'));
+            const params = new URLSearchParams();
+            
+            // Add form data to params
+            for (let [key, value] of formData.entries()) {
+                if (value.trim() !== '') {
+                    params.append(key, value);
+                }
+            }
+            
+            // Add per_page and page parameters
+            params.append('per_page', perPage);
+            if (page > 1) {
+                params.append('page', page);
+            }
+            
+            // Make AJAX request
+            fetch(`{{ route('pembayaran.ajax') }}?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    updateTableWithAjax(data.data.payments, data.data.pagination);
+                    updateStatistics(data.data.statistics);
+                    updatePaginationWithAjax(data.data.pagination, perPage);
+                    
+                    // Show notification
+                    const totalVisible = perPage === 'all' ? data.data.payments.length : Math.min(parseInt(perPage), data.data.payments.length);
+                    showNotification(`Menampilkan ${totalVisible} entri`, 'success');
+                } else {
+                    showNotification(data.message || 'Terjadi kesalahan', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat memuat data', 'error');
+            })
+            .finally(() => {
+                hideLoading();
             });
         }
-    }
-    
-    // Load data using AJAX with entries per page
-    function loadDataWithAjax(perPage = 25, page = 1) {
-        if (isLoading) return;
         
-        showLoading();
-        
-        // Get current filter values
-        const formData = new FormData(document.getElementById('filterForm'));
-        const params = new URLSearchParams();
-        
-        // Add form data to params
-        for (let [key, value] of formData.entries()) {
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-        
-        // Add per_page and page parameters
-        params.append('per_page', perPage);
-        if (page > 1) {
-            params.append('page', page);
-        }
-        
-        // Make AJAX request
-        fetch(`{{ route('pembayaran.ajax') }}?${params.toString()}`, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                updateTableWithAjax(data.data.payments, data.data.pagination);
-                updateStatistics(data.data.statistics);
-                updatePaginationWithAjax(data.data.pagination, perPage);
-                
-                // Show notification
-                const totalVisible = perPage === 'all' ? data.data.payments.length : Math.min(parseInt(perPage), data.data.payments.length);
-                showNotification(`Menampilkan ${totalVisible} entri`, 'success');
-            } else {
-                showNotification(data.message || 'Terjadi kesalahan', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Terjadi kesalahan saat memuat data', 'error');
-        })
-        .finally(() => {
-            hideLoading();
-        });
-    }
-    
-    // Update table with AJAX data
-    function updateTableWithAjax(payments, pagination) {
-        const tableBody = document.getElementById('tableBody');
-        
-        if (!tableBody) return;
-        
-        if (payments.length === 0) {
-            tableBody.innerHTML = `
+        // Update table with AJAX data
+        function updateTableWithAjax(payments, pagination) {
+            const tableBody = document.getElementById('tableBody');
+            
+            if (!tableBody) return;
+            
+            if (payments.length === 0) {
+                tableBody.innerHTML = `
                 <tr>
                     <td colspan="10" class="text-center py-5">
                         <div class="d-flex flex-column align-items-center">
@@ -1011,20 +1012,20 @@
                     </td>
                 </tr>
             `;
-            return;
-        }
-        
-        let tableHTML = '';
-        payments.forEach((payment, index) => {
-            let rowNumber;
-            if (pagination) {
-                const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
-                rowNumber = startIndex + index;
-            } else {
-                rowNumber = index + 1;
+                return;
             }
             
-            tableHTML += `
+            let tableHTML = '';
+            payments.forEach((payment, index) => {
+                let rowNumber;
+                if (pagination) {
+                    const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
+                    rowNumber = startIndex + index;
+                } else {
+                    rowNumber = index + 1;
+                }
+                
+                tableHTML += `
                 <tr>
                     <td class="fw-medium">${rowNumber}</td>
                     <td>
@@ -1073,47 +1074,47 @@
                     </td>
                 </tr>
             `;
-        });
+            });
+            
+            tableBody.innerHTML = tableHTML;
+        }
         
-        tableBody.innerHTML = tableHTML;
-    }
-    
-    // Update pagination with AJAX data
-    function updatePaginationWithAjax(pagination, perPage) {
-        const paginationContainer = document.querySelector('.p-4.border-top');
-        
-        if (!paginationContainer) return;
-        
-        if (perPage === 'all') {
-            // Show info for all entries but hide pagination controls
-            paginationContainer.style.display = 'block';
-            const totalRecords = pagination ? pagination.total : 0;
-            paginationContainer.innerHTML = `
+        // Update pagination with AJAX data
+        function updatePaginationWithAjax(pagination, perPage) {
+            const paginationContainer = document.querySelector('.p-4.border-top');
+            
+            if (!paginationContainer) return;
+            
+            if (perPage === 'all') {
+                // Show info for all entries but hide pagination controls
+                paginationContainer.style.display = 'block';
+                const totalRecords = pagination ? pagination.total : 0;
+                paginationContainer.innerHTML = `
                 <div class="d-flex justify-content-center">
                     <div class="text-muted small">
                         Menampilkan semua ${formatNumber(totalRecords)} data
                     </div>
                 </div>
             `;
-            return;
-        }
-        
-        if (!pagination) {
-            // Hide pagination when no pagination data
-            paginationContainer.style.display = 'none';
-            return;
-        }
-        
-        // Show pagination container
-        paginationContainer.style.display = 'block';
-        
-        // Generate pagination info
-        const fromRecord = pagination.from || 0;
-        const toRecord = pagination.to || 0;
-        const totalRecords = pagination.total || 0;
-        
-        // Generate pagination HTML with info
-        let paginationHTML = `
+                return;
+            }
+            
+            if (!pagination) {
+                // Hide pagination when no pagination data
+                paginationContainer.style.display = 'none';
+                return;
+            }
+            
+            // Show pagination container
+            paginationContainer.style.display = 'block';
+            
+            // Generate pagination info
+            const fromRecord = pagination.from || 0;
+            const toRecord = pagination.to || 0;
+            const totalRecords = pagination.total || 0;
+            
+            // Generate pagination HTML with info
+            let paginationHTML = `
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
                 <div class="text-muted small">
                     Menampilkan ${fromRecord} sampai ${toRecord} dari ${formatNumber(totalRecords)} hasil
@@ -1122,156 +1123,156 @@
                     <nav aria-label="Page navigation">
                         <ul class="pagination pagination-sm justify-content-center mb-0">
         `;
-        
-        // Previous button
-        if (pagination.current_page > 1) {
-            paginationHTML += `<li class="page-item">
+            
+            // Previous button
+            if (pagination.current_page > 1) {
+                paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
             </li>`;
-        } else {
-            paginationHTML += `<li class="page-item disabled">
+                } else {
+                    paginationHTML += `<li class="page-item disabled">
                 <span class="page-link">‹ Previous</span>
             </li>`;
-        }
-        
-        // Page numbers
-        const startPage = Math.max(1, pagination.current_page - 2);
-        const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
-        
-        if (startPage > 1) {
-            paginationHTML += `<li class="page-item">
+                    }
+                    
+                    // Page numbers
+                    const startPage = Math.max(1, pagination.current_page - 2);
+                    const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
+                    
+                    if (startPage > 1) {
+                        paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
             </li>`;
-            if (startPage > 2) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-        
-        for (let i = startPage; i <= endPage; i++) {
-            if (i === pagination.current_page) {
-                paginationHTML += `<li class="page-item active">
+                            if (startPage > 2) {
+                                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                            }
+                        }
+                        
+                        for (let i = startPage; i <= endPage; i++) {
+                            if (i === pagination.current_page) {
+                                paginationHTML += `<li class="page-item active">
                     <span class="page-link">${i}</span>
                 </li>`;
-            } else {
-                paginationHTML += `<li class="page-item">
+                                } else {
+                                    paginationHTML += `<li class="page-item">
                     <a class="page-link ajax-pagination" href="#" data-page="${i}">${i}</a>
                 </li>`;
-            }
-        }
-        
-        if (endPage < pagination.last_page) {
-            if (endPage < pagination.last_page - 1) {
-                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-            paginationHTML += `<li class="page-item">
+                                    }
+                                }
+                                
+                                if (endPage < pagination.last_page) {
+                                    if (endPage < pagination.last_page - 1) {
+                                        paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+                                    }
+                                    paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a>
             </li>`;
-        }
-        
-        // Next button
-        if (pagination.current_page < pagination.last_page) {
-            paginationHTML += `<li class="page-item">
+                                    }
+                                    
+                                    // Next button
+                                    if (pagination.current_page < pagination.last_page) {
+                                        paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
             </li>`;
-        } else {
-            paginationHTML += `<li class="page-item disabled">
+                                        } else {
+                                            paginationHTML += `<li class="page-item disabled">
                 <span class="page-link">Next ›</span>
             </li>`;
-        }
-        
-        paginationHTML += `
+                                            }
+                                            
+                                            paginationHTML += `
                         </ul>
                     </nav>
                 </div>
             </div>
         `;
-        
-        // Update pagination container
-        paginationContainer.innerHTML = paginationHTML;
-        
-        // Add event listeners to pagination links
-        const paginationLinks = paginationContainer.querySelectorAll('.ajax-pagination');
-        paginationLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const page = this.getAttribute('data-page');
-                loadDataWithAjax(getCurrentPerPage(), page);
-            });
-        });
-    }
-    
-    // Get current per page value
-    function getCurrentPerPage() {
-        const entriesSelect = document.getElementById('entriesPerPage');
-        return entriesSelect ? entriesSelect.value : 10;
-    }
-    
-    // Update statistics cards
-    function updateStatistics(stats) {
-        // Update statistics if needed
-        console.log('Statistics updated:', stats);
-    }
-    
-    // Helper function to format numbers
-    function formatNumber(number) {
-        return new Intl.NumberFormat('id-ID').format(number);
-    }
-    
-    // Helper function to format date and time
-    function formatDateTime(tanggalBayar, createdAt) {
-        if (!tanggalBayar || !createdAt) return '';
-        
-        const date = new Date(tanggalBayar + ' ' + new Date(createdAt).toTimeString().split(' ')[0]);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
-    
-    // Helper function to get status badge
-    function getStatusBadge(status) {
-        if (!status) return '<span class="status-badge bg-secondary bg-opacity-10 text-secondary">N/A</span>';
-        
-        if (status.nama_status === 'Sudah Bayar') {
-            return `
+                                            
+                                            // Update pagination container
+                                            paginationContainer.innerHTML = paginationHTML;
+                                            
+                                            // Add event listeners to pagination links
+                                            const paginationLinks = paginationContainer.querySelectorAll('.ajax-pagination');
+                                            paginationLinks.forEach(link => {
+                                                link.addEventListener('click', function(e) {
+                                                    e.preventDefault();
+                                                    const page = this.getAttribute('data-page');
+                                                    loadDataWithAjax(getCurrentPerPage(), page);
+                                                });
+                                            });
+                                        }
+                                        
+                                        // Get current per page value
+                                        function getCurrentPerPage() {
+                                            const entriesSelect = document.getElementById('entriesPerPage');
+                                            return entriesSelect ? entriesSelect.value : 10;
+                                        }
+                                        
+                                        // Update statistics cards
+                                        function updateStatistics(stats) {
+                                            // Update statistics if needed
+                                            console.log('Statistics updated:', stats);
+                                        }
+                                        
+                                        // Helper function to format numbers
+                                        function formatNumber(number) {
+                                            return new Intl.NumberFormat('id-ID').format(number);
+                                        }
+                                        
+                                        // Helper function to format date and time
+                                        function formatDateTime(tanggalBayar, createdAt) {
+                                            if (!tanggalBayar || !createdAt) return '';
+                                            
+                                            const date = new Date(tanggalBayar + ' ' + new Date(createdAt).toTimeString().split(' ')[0]);
+                                            return date.toLocaleDateString('id-ID', {
+                                                day: '2-digit',
+                                                month: '2-digit',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit'
+                                            });
+                                        }
+                                        
+                                        // Helper function to get status badge
+                                        function getStatusBadge(status) {
+                                            if (!status) return '<span class="status-badge bg-secondary bg-opacity-10 text-secondary">N/A</span>';
+                                            
+                                            if (status.nama_status === 'Sudah Bayar') {
+                                                return `
                 <span class="status-badge bg-success bg-opacity-10 text-success">
                     <i class="bx bx-check-circle"></i>
                     ${status.nama_status}
                 </span>
             `;
-        } else {
-            return `
+                                            } else {
+                                                return `
                 <span class="status-badge bg-secondary bg-opacity-10 text-secondary">
                     <i class="bx bx-time-five"></i>
                     ${status.nama_status}
                 </span>
             `;
-        }
-    }
-    
-    // Helper function to get user badge
-    function getUserBadge(user) {
-        if (user) {
-            return `
+                                            }
+                                        }
+                                        
+                                        // Helper function to get user badge
+                                        function getUserBadge(user) {
+                                            if (user) {
+                                                return `
                 <span class="status-badge bg-danger bg-opacity-10 text-danger fw-bold">
                     ${user.name}
                 </span>
             `;
-        } else {
-            return `
+                                            } else {
+                                                return `
                 <span class="status-badge bg-info bg-opacity-10 text-primary fw-bold">Tripay</span>
             `;
-        }
-    }
-    
-    // Helper function to get action buttons
-    function getActionButtons(payment) {
-        if (payment.status_id == 8) {
-            return `
+                                            }
+                                        }
+                                        
+                                        // Helper function to get action buttons
+                                        function getActionButtons(payment) {
+                                            if (payment.status_id == 8) {
+                                                return `
                 <div class="d-flex">
                     <a class="btn btn-outline-warning btn-sm text-warning" 
                        data-bs-toggle="modal" 
@@ -1280,158 +1281,158 @@
                     </a>
                 </div>
             `;
-        } else {
-            return `
+                                            } else {
+                                                return `
                 <button class="btn btn-outline-warning btn-sm text-warning" disabled>
                     <i class="bx bx-pencil"></i>
                 </button>
             `;
-        }
-    }
-    
-    // Apply filters and search
-    function applyFilters() {
-        if (isLoading) return;
-        
-        const formData = new FormData(document.getElementById('filterForm'));
-        const params = new URLSearchParams();
-        
-        for (let [key, value] of formData.entries()) {
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-        
-        // Show loading
-        showLoading();
-        
-        // Make AJAX request
-        fetch(`{{ route('pembayaran') }}?${params.toString()}`, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.text();
-        })
-        .then(html => {
-            // Parse the response and update the table
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // Update table content
-            const newTableContainer = doc.querySelector('#tableContainer');
-            const currentTableContainer = document.querySelector('#tableContainer');
-            
-            if (newTableContainer && currentTableContainer) {
-                currentTableContainer.innerHTML = newTableContainer.innerHTML;
-            }
-            
-            // Update pagination if exists
-            const newPagination = doc.querySelector('.p-4.border-top');
-            const currentPagination = document.querySelector('.p-4.border-top');
-            
-            if (newPagination && currentPagination) {
-                currentPagination.innerHTML = newPagination.innerHTML;
-            }
-            
-            // Update URL without page reload
-            const url = new URL(window.location);
-            for (let [key, value] of params.entries()) {
-                url.searchParams.set(key, value);
-            }
-            
-            // Remove empty parameters
-            for (let key of url.searchParams.keys()) {
-                if (!params.has(key)) {
-                    url.searchParams.delete(key);
-                }
-            }
-            
-            window.history.pushState({}, '', url);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Terjadi kesalahan saat memuat data', 'error');
-        })
-        .finally(() => {
-            hideLoading();
-        });
-    }
-    
-    // Clear all filters
-    function clearFilters() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('metodeFilter').value = '';
-        document.getElementById('startDate').value = '';
-        document.getElementById('endDate').value = '';
-        
-        // Redirect to clean URL
-        window.location.href = '{{ route('pembayaran') }}';
-    }
-    
-    // Refresh data
-    function refreshData() {
-        if (isLoading) return;
-        
-        showLoading();
-        
-        // Get current filters
-        const formData = new FormData(document.getElementById('filterForm'));
-        const params = new URLSearchParams();
-        
-        for (let [key, value] of formData.entries()) {
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-        
-        // Reload with current filters
-        window.location.href = `{{ route('pembayaran') }}?${params.toString()}`;
-    }
-    
-    // View payment details
-    function viewPayment(paymentId) {
-        // You can implement modal or redirect to detail page
-        showNotification('Fitur detail pembayaran akan segera tersedia', 'info');
-    }
-    
-    // View payment proof
-    function viewProof(paymentId) {
-        // You can implement modal to show payment proof
-        showNotification('Fitur lihat bukti pembayaran akan segera tersedia', 'info');
-    }
-    
-    // Show loading overlay
-    function showLoading() {
-        isLoading = true;
-        document.getElementById('loadingOverlay').classList.remove('d-none');
-    }
-    
-    // Hide loading overlay
-    function hideLoading() {
-        isLoading = false;
-        document.getElementById('loadingOverlay').classList.add('d-none');
-    }
-    
-    // Show notification
-    function showNotification(message, type = 'info') {
-        // Create notification element
-        const notification = document.createElement('div');
-        notification.className = `position-fixed top-0 end-0 p-3`;
-        notification.style.zIndex = '9999';
-        notification.style.marginTop = '20px';
-        notification.style.marginRight = '20px';
-        
-        const alertClass = type === 'error' ? 'alert-danger' :
-        type === 'success' ? 'alert-success' : 'alert-primary';
-        
-        notification.innerHTML = `
+                                            }
+                                        }
+                                        
+                                        // Apply filters and search
+                                        function applyFilters() {
+                                            if (isLoading) return;
+                                            
+                                            const formData = new FormData(document.getElementById('filterForm'));
+                                            const params = new URLSearchParams();
+                                            
+                                            for (let [key, value] of formData.entries()) {
+                                                if (value.trim() !== '') {
+                                                    params.append(key, value);
+                                                }
+                                            }
+                                            
+                                            // Show loading
+                                            showLoading();
+                                            
+                                            // Make AJAX request
+                                            fetch(`{{ route('pembayaran') }}?${params.toString()}`, {
+                                                method: 'GET',
+                                                headers: {
+                                                    'X-Requested-With': 'XMLHttpRequest',
+                                                    'Accept': 'text/html'
+                                                }
+                                            })
+                                            .then(response => {
+                                                if (!response.ok) {
+                                                    throw new Error('Network response was not ok');
+                                                }
+                                                return response.text();
+                                            })
+                                            .then(html => {
+                                                // Parse the response and update the table
+                                                const parser = new DOMParser();
+                                                const doc = parser.parseFromString(html, 'text/html');
+                                                
+                                                // Update table content
+                                                const newTableContainer = doc.querySelector('#tableContainer');
+                                                const currentTableContainer = document.querySelector('#tableContainer');
+                                                
+                                                if (newTableContainer && currentTableContainer) {
+                                                    currentTableContainer.innerHTML = newTableContainer.innerHTML;
+                                                }
+                                                
+                                                // Update pagination if exists
+                                                const newPagination = doc.querySelector('.p-4.border-top');
+                                                const currentPagination = document.querySelector('.p-4.border-top');
+                                                
+                                                if (newPagination && currentPagination) {
+                                                    currentPagination.innerHTML = newPagination.innerHTML;
+                                                }
+                                                
+                                                // Update URL without page reload
+                                                const url = new URL(window.location);
+                                                for (let [key, value] of params.entries()) {
+                                                    url.searchParams.set(key, value);
+                                                }
+                                                
+                                                // Remove empty parameters
+                                                for (let key of url.searchParams.keys()) {
+                                                    if (!params.has(key)) {
+                                                        url.searchParams.delete(key);
+                                                    }
+                                                }
+                                                
+                                                window.history.pushState({}, '', url);
+                                            })
+                                            .catch(error => {
+                                                console.error('Error:', error);
+                                                showNotification('Terjadi kesalahan saat memuat data', 'error');
+                                            })
+                                            .finally(() => {
+                                                hideLoading();
+                                            });
+                                        }
+                                        
+                                        // Clear all filters
+                                        function clearFilters() {
+                                            document.getElementById('searchInput').value = '';
+                                            document.getElementById('metodeFilter').value = '';
+                                            document.getElementById('startDate').value = '';
+                                            document.getElementById('endDate').value = '';
+                                            
+                                            // Redirect to clean URL
+                                            window.location.href = '{{ route('pembayaran') }}';
+                                        }
+                                        
+                                        // Refresh data
+                                        function refreshData() {
+                                            if (isLoading) return;
+                                            
+                                            showLoading();
+                                            
+                                            // Get current filters
+                                            const formData = new FormData(document.getElementById('filterForm'));
+                                            const params = new URLSearchParams();
+                                            
+                                            for (let [key, value] of formData.entries()) {
+                                                if (value.trim() !== '') {
+                                                    params.append(key, value);
+                                                }
+                                            }
+                                            
+                                            // Reload with current filters
+                                            window.location.href = `{{ route('pembayaran') }}?${params.toString()}`;
+                                        }
+                                        
+                                        // View payment details
+                                        function viewPayment(paymentId) {
+                                            // You can implement modal or redirect to detail page
+                                            showNotification('Fitur detail pembayaran akan segera tersedia', 'info');
+                                        }
+                                        
+                                        // View payment proof
+                                        function viewProof(paymentId) {
+                                            // You can implement modal to show payment proof
+                                            showNotification('Fitur lihat bukti pembayaran akan segera tersedia', 'info');
+                                        }
+                                        
+                                        // Show loading overlay
+                                        function showLoading() {
+                                            isLoading = true;
+                                            document.getElementById('loadingOverlay').classList.remove('d-none');
+                                        }
+                                        
+                                        // Hide loading overlay
+                                        function hideLoading() {
+                                            isLoading = false;
+                                            document.getElementById('loadingOverlay').classList.add('d-none');
+                                        }
+                                        
+                                        // Show notification
+                                        function showNotification(message, type = 'info') {
+                                            // Create notification element
+                                            const notification = document.createElement('div');
+                                            notification.className = `position-fixed top-0 end-0 p-3`;
+                                            notification.style.zIndex = '9999';
+                                            notification.style.marginTop = '20px';
+                                            notification.style.marginRight = '20px';
+                                            
+                                            const alertClass = type === 'error' ? 'alert-danger' :
+                                            type === 'success' ? 'alert-success' : 'alert-primary';
+                                            
+                                            notification.innerHTML = `
                 <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
                     <i class="bx ${
                         type === 'error' ? 'bx-error' :
@@ -1442,160 +1443,161 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 5000);
-    }
-    
-    // Handle pagination clicks - Updated to use AJAX
-    document.addEventListener('click', function(e) {
-        // Handle old pagination (Laravel generated)
-        if (e.target.closest('.ajax-pagination-old')) {
-            e.preventDefault();
-            const link = e.target.closest('.ajax-pagination-old');
-            const page = link.getAttribute('data-page');
-            
-            // Use AJAX pagination with current per_page setting
-            loadDataWithAjax(getCurrentPerPage(), page);
-        }
-        
-        // Handle new pagination (AJAX generated) - already handled in updatePaginationWithAjax
-        // This is for fallback compatibility
-        if (e.target.closest('.pagination a:not(.ajax-pagination):not(.ajax-pagination-old)')) {
-            e.preventDefault();
-            const link = e.target.closest('.pagination a');
-            const url = new URL(link.href);
-            const page = url.searchParams.get('page') || 1;
-            
-            // Use AJAX pagination with current per_page setting
-            loadDataWithAjax(getCurrentPerPage(), page);
-        }
-    });
-</script>
-
-<script>
-    // Fungsi format rupiah
-    function formatRupiah(angka, prefix = "Rp ") {
-        let number_string = angka.replace(/[^,\d]/g, '').toString(),
-        split = number_string.split(','),
-        sisa = split[0].length % 3,
-        rupiah = split[0].substr(0, sisa),
-        ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-        
-        if (ribuan) {
-            let separator = sisa ? '.' : '';
-            rupiah += separator + ribuan.join('.');
-        }
-        
-        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
-        return prefix + rupiah;
-    }
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // Loop semua input jumlah
-        document.querySelectorAll('[id^="jumlah"]').forEach(function(jumlahInput) {
-            let id = jumlahInput.id.replace('jumlah','');
-            let jumlahRaw = document.getElementById('jumlahRaw' + id);
-            if (!jumlahRaw) return;
-            
-            // Inisialisasi nilai awal
-            let initialValue = jumlahRaw.value || '0';
-            jumlahInput.value = formatRupiah(initialValue);
-            jumlahRaw.value = initialValue;
-            
-            // Event listener saat mengetik
-            jumlahInput.addEventListener('input', function() {
-                let value = this.value.replace(/\D/g,'');
-                jumlahRaw.value = value;
-                this.value = formatRupiah(value);
-            });
-        });
-        
-        // SweetAlert konfirmasi sebelum submit form
-        document.querySelectorAll('form.editPembayaranForm').forEach(function(form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault(); // cegah submit default
-                
-                Swal.fire({
-                    title: 'Apakah kamu yakin?',
-                    text: "Data pembayaran akan diperbarui!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Ya, update sekarang!',
-                    topLayer: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
-        });
-        
-        // SweetAlert flash message
-        @if(session('success'))
-        Swal.fire({
-            title: "Sukses!",
-            text: "{{ session('success') }}",
-            icon: "success",
-            timer: 2000,
-            showConfirmButton: false,
-            topLayer: true
-        });
-        @elseif(session('error'))
-        Swal.fire({
-            title: "Gagal!",
-            text: "{{ session('error') }}",
-            icon: "error",
-            timer: 3000,
-            showConfirmButton: false,
-            topLayer: true
-        });
-        @endif
-    });
-</script>
-
-<script>
-    function showExportModal() {
-        const modal = new bootstrap.Modal(document.getElementById('exportModal'));
-        modal.show();
-    }
-    
-    function exportData(filter) {
-        window.location.href = `{{ route('pembayaran.export', '') }}/${filter}`;
-    }
-    
-    function exportCustomRange() {
-        const startDate = document.getElementById('exportStartDate').value;
-        const endDate = document.getElementById('exportEndDate').value;
-        
-        if (!startDate || !endDate) {
-            showNotification('Silakan pilih rentang tanggal', 'error');
-            return;
-        }
-        
-        if (new Date(startDate) > new Date(endDate)) {
-            showNotification('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
-            return;
-        }
-        
-        const url = new URL(`{{ route('pembayaran.export', 'custom') }}`);
-        url.searchParams.append('start_date', startDate);
-        url.searchParams.append('end_date', endDate);
-        
-        window.location.href = url.toString();
-        
-        // Tutup modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-        modal.hide();
-    }
-</script>
-
-@endsection
+                                            
+                                            document.body.appendChild(notification);
+                                            
+                                            // Auto remove after 5 seconds
+                                            setTimeout(() => {
+                                                if (notification.parentElement) {
+                                                    notification.remove();
+                                                }
+                                            }, 5000);
+                                        }
+                                        
+                                        // Handle pagination clicks - Updated to use AJAX
+                                        document.addEventListener('click', function(e) {
+                                            // Handle old pagination (Laravel generated)
+                                            if (e.target.closest('.ajax-pagination-old')) {
+                                                e.preventDefault();
+                                                const link = e.target.closest('.ajax-pagination-old');
+                                                const page = link.getAttribute('data-page');
+                                                
+                                                // Use AJAX pagination with current per_page setting
+                                                loadDataWithAjax(getCurrentPerPage(), page);
+                                            }
+                                            
+                                            // Handle new pagination (AJAX generated) - already handled in updatePaginationWithAjax
+                                            // This is for fallback compatibility
+                                            if (e.target.closest('.pagination a:not(.ajax-pagination):not(.ajax-pagination-old)')) {
+                                                e.preventDefault();
+                                                const link = e.target.closest('.pagination a');
+                                                const url = new URL(link.href);
+                                                const page = url.searchParams.get('page') || 1;
+                                                
+                                                // Use AJAX pagination with current per_page setting
+                                                loadDataWithAjax(getCurrentPerPage(), page);
+                                            }
+                                        });
+                                    </script>
+                                    
+                                    <script>
+                                        // Fungsi format rupiah
+                                        function formatRupiah(angka, prefix = "Rp ") {
+                                            let number_string = angka.replace(/[^,\d]/g, '').toString(),
+                                            split = number_string.split(','),
+                                            sisa = split[0].length % 3,
+                                            rupiah = split[0].substr(0, sisa),
+                                            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+                                            
+                                            if (ribuan) {
+                                                let separator = sisa ? '.' : '';
+                                                rupiah += separator + ribuan.join('.');
+                                            }
+                                            
+                                            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+                                            return prefix + rupiah;
+                                        }
+                                        
+                                        document.addEventListener('DOMContentLoaded', function() {
+                                            // Loop semua input jumlah
+                                            document.querySelectorAll('[id^="jumlah"]').forEach(function(jumlahInput) {
+                                                let id = jumlahInput.id.replace('jumlah','');
+                                                let jumlahRaw = document.getElementById('jumlahRaw' + id);
+                                                if (!jumlahRaw) return;
+                                                
+                                                // Inisialisasi nilai awal
+                                                let initialValue = jumlahRaw.value || '0';
+                                                jumlahInput.value = formatRupiah(initialValue);
+                                                jumlahRaw.value = initialValue;
+                                                
+                                                // Event listener saat mengetik
+                                                jumlahInput.addEventListener('input', function() {
+                                                    let value = this.value.replace(/\D/g,'');
+                                                    jumlahRaw.value = value;
+                                                    this.value = formatRupiah(value);
+                                                });
+                                            });
+                                            
+                                            // SweetAlert konfirmasi sebelum submit form
+                                            document.querySelectorAll('form.editPembayaranForm').forEach(function(form) {
+                                                form.addEventListener('submit', function(e) {
+                                                    e.preventDefault(); // cegah submit default
+                                                    
+                                                    Swal.fire({
+                                                        title: 'Apakah kamu yakin?',
+                                                        text: "Data pembayaran akan diperbarui!",
+                                                        icon: 'warning',
+                                                        showCancelButton: true,
+                                                        confirmButtonColor: '#3085d6',
+                                                        cancelButtonColor: '#d33',
+                                                        confirmButtonText: 'Ya, update sekarang!',
+                                                        topLayer: true
+                                                    }).then((result) => {
+                                                        if (result.isConfirmed) {
+                                                            form.submit();
+                                                        }
+                                                    });
+                                                });
+                                            });
+                                            
+                                            // SweetAlert flash message
+                                            @if(session('success'))
+                                            Swal.fire({
+                                                title: "Sukses!",
+                                                text: "{{ session('success') }}",
+                                                icon: "success",
+                                                timer: 2000,
+                                                showConfirmButton: false,
+                                                topLayer: true
+                                            });
+                                            @elseif(session('error'))
+                                            Swal.fire({
+                                                title: "Gagal!",
+                                                text: "{{ session('error') }}",
+                                                icon: "error",
+                                                timer: 3000,
+                                                showConfirmButton: false,
+                                                topLayer: true
+                                            });
+                                            @endif
+                                        });
+                                    </script>
+                                    
+                                    <script>
+                                        function showExportModal() {
+                                            const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+                                            modal.show();
+                                        }
+                                        
+                                        function exportData(filter) {
+                                            window.location.href = `{{ route('pembayaran.export', '') }}/${filter}`;
+                                        }
+                                        
+                                        function exportCustomRange() {
+                                            const startDate = document.getElementById('exportStartDate').value;
+                                            const endDate = document.getElementById('exportEndDate').value;
+                                            
+                                            if (!startDate || !endDate) {
+                                                showNotification('Silakan pilih rentang tanggal', 'error');
+                                                return;
+                                            }
+                                            
+                                            if (new Date(startDate) > new Date(endDate)) {
+                                                showNotification('Tanggal mulai tidak boleh lebih besar dari tanggal akhir', 'error');
+                                                return;
+                                            }
+                                            
+                                            const url = new URL(`{{ route('pembayaran.export', 'custom') }}`);
+                                            url.searchParams.append('start_date', startDate);
+                                            url.searchParams.append('end_date', endDate);
+                                            
+                                            window.location.href = url.toString();
+                                            
+                                            // Tutup modal
+                                            const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+                                            modal.hide();
+                                        }
+                                    </script>
+                                    
+                                    @endsection
+                                    

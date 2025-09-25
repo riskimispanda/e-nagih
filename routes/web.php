@@ -140,11 +140,15 @@ Route::middleware(['auth'])->group(function () {
 
     // Export Excel
     Route::get('/semua', [ExportControllers::class, 'exportSemua'])->name('export.semua');
+    Route::get('/unpaid', [ExportControllers::class, 'unpaid']);
     Route::get('/aktif', [ExportControllers::class, 'exportAktif'])->name('export.aktif');
     Route::get('/nonaktif', [ExportControllers::class, 'exportNonAktif'])->name('export.nonaktif');
     Route::get('/ringkasan-per-paket', [ExportControllers::class, 'exportRingkasanPaket'])->name('export.ringkasan');
     Route::get('/paket/{id}', [ExportControllers::class, 'exportPaket'])->name('export.paket')->where('id', '[0-9]+');
     Route::get('/export/bulan/{month}/{year}', [ExportControllers::class, 'exportBulan'])->name('export.bulan');
+    Route::get('/unpaid/bulan/{month}/{year}', [ExportControllers::class, 'unpaidBulan'])->name('unpaid.bulan');
+    Route::get('/unpaid/range', [ExportControllers::class, 'unpaidRange'])->name('unpaid.range');
+
 
 
     // Setting
@@ -159,6 +163,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/kirim/invoice/{id}', [SuperAdmin::class, 'kirimInvoice'])->name('kirim-invoice');
     Route::get('/hapus/user/{id}', [SuperAdmin::class, 'hapusUser'])->name('hapus-user');
     Route::post('/update/password/{id}', [UserController::class, 'updatePassword'])->name('update-password');
+    Route::get('/kirim-ulang/{id}', [SuperAdmin::class, 'kirimUlang']);
 
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');
