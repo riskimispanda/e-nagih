@@ -238,6 +238,20 @@ Route::middleware(['auth'])->group(function () {
 
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
+    Route::get('/dashboard-debug', function () {
+        try {
+            return app(Analytics::class)->index();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => collect($e->getTrace())->take(5) // ambil 5 trace teratas biar nggak kepanjangan
+            ], 500);
+        }
+    })->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
+
     Route::get('/data/pelanggan', [DataController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
     Route::get('/data/logistik', [Analytics::class, 'logistik'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('logistik');
     Route::get('/data/antrian', [Analytics::class, 'antrian'])->name('antrian');
