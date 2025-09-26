@@ -214,7 +214,7 @@ class HelpdeskController extends Controller
                     'paket_id' => $data->paket_id,
                     'agen_id' => $data->agen_id,
                 ])
-                ->log(auth()->user()->name . ' Menambahkan data pelanggan baru ' . $data->nama_customer . ' pada ' . Carbon::parse($data->created_at)->locale('id')->isoFormat('dddd, D MMMM Y H:i:s') . ' PIC: ' . ($data->agen?->name ?? '-'));
+                ->log(auth()->user()->name . ' Menambahkan data pelanggan baru ' . $data->nama_customer . ' pada ' . Carbon::parse($data->created_at)->locale('id')->isoFormat('dddd, D MMMM Y H:mm:ss') . ' PIC: ' . ($data->agen?->name ?? '-'));
 
             try {
                 foreach($noc as $n)
