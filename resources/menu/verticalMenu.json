@@ -15,7 +15,7 @@
     {
       "url": "/dashboard",
       "name": "Dashboards",
-      "icon": "menu-icon tf-icons bx bx-home-smile",
+      "icon": "menu-icon tf-icons bx bxs-home-smile",
       "slug": "dashboard",
       "roles": [
         "Super Admin",
@@ -31,7 +31,7 @@
       "url": "/dashboard/keuangan",
       "_comment": "Dashboard Khusus Keuangan",
       "name": "Dashboard Keuangan",
-      "icon": "menu-icon tf-icons bx bx-wallet-alt",
+      "icon": "menu-icon tf-icons bx bxs-wallet-alt",
       "slug": "dashboard-keuangan",
       "roles": [
       ]
@@ -39,7 +39,7 @@
     {
       "url": "/dashboard-logistik",
       "name": "Dashboard Logistik",
-      "icon": "menu-icon tf-icons bx bx-package",
+      "icon": "menu-icon tf-icons bx bxs-package",
       "slug": "dashboard-logistik",
       "roles": [
         "Super Admin",
@@ -56,6 +56,19 @@
         "Super Admin",
         "Admin Keuangan",
         "Admin Logistik"
+      ]
+    },
+    {
+      "url": "/kalender",
+      "name": "Schedule",
+      "icon": "menu-icon tf-icons bx bxs-calendar",
+      "slug": "kalender",
+      "roles": [
+        "Super Admin",
+        "Admin Keuangan",
+        "Admin Logistik",
+        "NOC",
+        "Teknisi"
       ]
     },
     {

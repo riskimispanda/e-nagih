@@ -73,6 +73,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Request;
 use RouterOS\Client;
 use App\Http\Controllers\ExportControllers;
+use App\Http\Controllers\KalenderController;
 
 
 // Main Page Route
@@ -149,7 +150,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/unpaid/bulan/{month}/{year}', [ExportControllers::class, 'unpaidBulan'])->name('unpaid.bulan');
     Route::get('/unpaid/range', [ExportControllers::class, 'unpaidRange'])->name('unpaid.range');
 
-
+    // API routes untuk FullCalendar
+    Route::prefix('api/schedule')->name('api.schedule.')->group(function () {
+        Route::get('/events', [KalenderController::class, 'getEvents'])->name('events');
+        Route::post('/', [KalenderController::class, 'store'])->name('store');
+        Route::get('/{schedule}', [KalenderController::class, 'show'])->name('show');
+        Route::put('/{schedule}', [KalenderController::class, 'update'])->name('update');
+        Route::delete('/{schedule}', [KalenderController::class, 'destroy'])->name('destroy');
+        Route::patch('/{schedule}/datetime', [KalenderController::class, 'updateDateTime'])->name('update-datetime');
+    });
 
     // Setting
     Route::get('/setting', [SettingController::class, 'blokirSetting'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('setting');
@@ -164,6 +173,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hapus/user/{id}', [SuperAdmin::class, 'hapusUser'])->name('hapus-user');
     Route::post('/update/password/{id}', [UserController::class, 'updatePassword'])->name('update-password');
     Route::get('/kirim-ulang/{id}', [SuperAdmin::class, 'kirimUlang']);
+    Route::get('/kalender', [KalenderController::class, 'jadwal'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Admin Logistik')->name('kalender');
 
     // Customer blocking/unblocking routes
     Route::get('/blokir/{id}', [Analytics::class, 'blokir'])->name('blokir');

@@ -23,6 +23,8 @@ use App\Models\ODC;
 use Illuminate\Support\Facades\DB;
 use App\Models\Pendapatan;
 use App\Models\Pengeluaran;
+use Carbon\Carbon;
+use App\Models\Schedules;
 
 class Analytics extends Controller
 {
@@ -32,7 +34,12 @@ class Analytics extends Controller
     $antrian = Customer::whereIn('status_id', [1, 2, 5])->get();
     $jumlahPelanggan = Customer::whereIn('status_id', [3, 4, 9])->count();
     $pembayaran = Pembayaran::whereMonth('created_at', now()->month)->orderBy('created_at', 'desc')->get();
+    $today = Carbon::today()->toDateString();
 
+    $todaySchedules = Schedules::active()
+      ->where('user_id', auth()->id())
+      ->whereDate('date', $today)
+      ->get();
 
     // Total Pendapatan
     $langganan = Pembayaran::sum('jumlah_bayar');
@@ -53,6 +60,7 @@ class Analytics extends Controller
       'pembayaran' => $pembayaran,
       'totalPendapatan' => $totalPendapatan,
       'totalPengeluaran' => $totalPengeluaran,
+      'todaySchedules' => $todaySchedules
     ]);
   }
 

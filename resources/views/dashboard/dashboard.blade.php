@@ -1,4 +1,4 @@
-@extends('layouts/contentNavbarLayout')
+@extends('layouts.contentNavbarLayout')
 
 @section('title', 'Dashboard')
 
@@ -16,6 +16,28 @@
 
 @section('content')
     <div class="row">
+        <div class="col-sm-12 mb-2">
+            @if($todaySchedules->count())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h6 class="fw-bold text-danger mb-0">📅 Jadwal Hari Ini:</h6>
+                    <ul class="mb-0">
+                        @foreach($todaySchedules as $schedule)
+                            <li>
+                                {{ $schedule->title }}
+                                @if($schedule->time_type === 'specific')
+                                    ({{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->locale('id')->isoFormat('H:mm') : '' }}
+                                     - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->locale('id')->isoFormat('H:mm') : '' }})
+                                @else
+                                    (Seharian)
+                                @endif
+                                <b>By: {{ $schedule->user->roles->name }}</b>
+                            </li>
+                        @endforeach
+                    </ul>              
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+        </div>
         <div class="col-xxl-12 mb-6 order-0">
             <div class="card">
                 <div class="d-flex align-items-start row">
