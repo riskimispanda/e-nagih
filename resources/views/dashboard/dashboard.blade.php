@@ -25,12 +25,12 @@
                             <li>
                                 {{ $schedule->title }}
                                 @if($schedule->time_type === 'specific')
-                                    ({{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->locale('id')->isoFormat('H:mm') : '' }}
-                                     - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->locale('id')->isoFormat('H:mm') : '' }})
+                                ({{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->locale('id')->isoFormat('H:mm') : '' }}
+                                - {{ $schedule->end_time ? \Carbon\Carbon::parse($schedule->end_time)->locale('id')->isoFormat('H:mm') : '' }})
                                 @else
                                     (Seharian)
                                 @endif
-                                <b>By: {{ $schedule->user->roles->name }}</b>
+                                <b>By: {{ $schedule->user ? $schedule->user->name : 'Unknown' }}</b>
                             </li>
                         @endforeach
                     </ul>              
