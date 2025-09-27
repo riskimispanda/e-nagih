@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Auth;
 use Spatie\Activitylog\Models\Activity;
+use Carbon\Carbon;
 
 class LoginBasic extends Controller
 {
@@ -40,6 +41,9 @@ class LoginBasic extends Controller
   
   public function logout()
   {
+    activity('User')
+      ->causedBy(auth()->user())
+      ->log(auth()->user()->name . ' Logout Dari Sistem pada ' . Carbon::now('Asia/Jakarta')->locale('id')->isoFormat('dddd, D MMMM Y'));
     auth()->logout();
     return redirect('/')->with('toast_success', 'Logout successful!');
   }
