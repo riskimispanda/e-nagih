@@ -201,54 +201,6 @@
                 <p class="text-muted mb-0">Kelola dan pantau data pendapatan perusahaan</p>
             </div>
             <div class="d-flex gap-2">
-                <div class="export-dropdown">
-                    <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bx bx-file me-1"></i>
-                        Export Excel
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-scrollable" style="max-height: 300px; overflow-y: auto;">
-                        <!-- Export Semua Data -->
-                        <li><h6 class="dropdown-header">Export Semua Data</h6></li>
-                        <li>
-                            <a class="dropdown-item" href="/unpaid">
-                                <i class="bx bx-download"></i>
-                                Semua Pelanggan
-                            </a>
-                        </li>
-                
-                        <li><hr class="dropdown-divider"></li>
-                
-                        <!-- Export Berdasarkan Bulan -->
-                        <li><h6 class="dropdown-header">Export Berdasarkan Bulan</h6></li>
-                        @php
-                            $months = [
-                                '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-                                '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-                                '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
-                            ];
-                            $currentYear = date('Y');
-                        @endphp
-                        @foreach($months as $num => $name)
-                        <li>
-                            <a class="dropdown-item" href="{{ route('unpaid.bulan', ['month' => $num, 'year' => $currentYear]) }}">
-                                <i class="bx bx-calendar"></i>
-                                {{ $name }} {{ $currentYear }}
-                            </a>
-                        </li>
-                        @endforeach
-                
-                        <li><hr class="dropdown-divider"></li>
-                
-                        <!-- Export Berdasarkan Custom Date Range -->
-                        <li><h6 class="dropdown-header">Export Berdasarkan Tanggal</h6></li>
-                        <li>
-                            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customDateModal">
-                                <i class="bx bx-calendar-event"></i>
-                                Pilih Tanggal
-                            </a>
-                        </li>
-                    </ul>
-                </div>
                 <button onclick="refreshData()" class="btn btn-outline-danger btn-sm">
                     <i class="bx bx-refresh me-2"></i>
                     Refresh
@@ -394,6 +346,54 @@
             </a>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <div class="export-dropdown">
+                <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-file me-1"></i>
+                    Export Excel
+                </button>
+                <ul class="dropdown-menu dropdown-menu-scrollable" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Export Semua Data -->
+                    <li><h6 class="dropdown-header">Export Semua Data</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="/unpaid">
+                            <i class="bx bx-download"></i>
+                            Semua Pelanggan
+                        </a>
+                    </li>
+            
+                    <li><hr class="dropdown-divider"></li>
+            
+                    <!-- Export Berdasarkan Bulan -->
+                    <li><h6 class="dropdown-header">Export Berdasarkan Bulan</h6></li>
+                    @php
+                        $months = [
+                            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+                            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+                            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+                        ];
+                        $currentYear = date('Y');
+                    @endphp
+                    @foreach($months as $num => $name)
+                    <li>
+                        <a class="dropdown-item" href="{{ route('unpaid.bulan', ['month' => $num, 'year' => $currentYear]) }}">
+                            <i class="bx bx-calendar"></i>
+                            {{ $name }} {{ $currentYear }}
+                        </a>
+                    </li>
+                    @endforeach
+            
+                    <li><hr class="dropdown-divider"></li>
+            
+                    <!-- Export Berdasarkan Custom Date Range -->
+                    <li><h6 class="dropdown-header">Export Berdasarkan Tanggal</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customDateModal">
+                            <i class="bx bx-calendar-event"></i>
+                            Pilih Tanggal
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <label class="form-label mb-0 text-muted small">Tampilkan:</label>
             <select id="entriesPerPage" class="form-select form-select-sm" style="width: auto;">
                 <option value="10" selected>10</option>
@@ -841,9 +841,9 @@
                         <input type="date" name="end_date" id="endDate" class="form-control" required>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Export</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <div class="modal-footer gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Export</button>
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
                 </div>
             </div>
         </form>
