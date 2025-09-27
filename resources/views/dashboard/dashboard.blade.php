@@ -44,7 +44,7 @@
                     <div class="col-sm-7">
                         <div class="card-body">
                             <h4 class="card-title text-primary mb-3 fw-bold" style="text-transform: uppercase">Selamat Datang {{ $users->name }} 🎉</h4>
-                            <p class="card-text"><b>E-Nagih</b> adalah aplikasi berbasis web yang dirancang untuk mempermudah proses pencatatan, pengelolaan, dan penagihan pembayaran pelanggan.</p>
+                            <p class="card-text"><b>NBilling</b> adalah aplikasi berbasis web yang dirancang untuk mempermudah proses pencatatan, pengelolaan, dan penagihan pembayaran pelanggan.</p>
                         </div>
                     </div>
                     <div class="col-sm-5 text-center text-sm-left">

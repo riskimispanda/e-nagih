@@ -460,7 +460,7 @@ class MikrotikServices
         if (!empty($data['remoteAddress'])) {
             $query->equal('remote-address', $data['remoteAddress']);
         }
-        $query->equal('comment','Created by E-Nagih');
+        $query->equal('comment', 'Created by NBilling');
 
         try {
             $client->query($query)->read();

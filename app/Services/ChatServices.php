@@ -61,7 +61,7 @@ class ChatServices
                         "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
                         "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
                         "Terima kasih telah menggunakan layanan kami 🙏\n" .
-                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         if ($response->successful()) {
@@ -110,10 +110,10 @@ class ChatServices
                         "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
                         "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
                         "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n" .
-                        "📄 Nomor Invoice: INV-E-NAGIH-{$invoice->customer->nama_customer}-{$time}\n\n" .
+                "📄 Nomor Invoice: INV-NBilling-{$invoice->customer->nama_customer}-{$time}\n\n" .
                         "🔗 Link Pembayaran:\n{$url}\n\n" .
                         "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
-                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         // Cek apakah berhasil
@@ -137,7 +137,7 @@ class ChatServices
         $pesan = "Halo {$customer->nama_customer}, berikut adalah daftar tagihan Anda:\n\n";
 
         foreach ($invoices as $invoice) {
-            $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
+            $pesan .= "📄 *Invoice:* INV-NBilling-{$customer->nama_customer}-{$invoice->id}\n";
             $pesan .= "📅 Tanggal: " . now()->format('d-m-Y') . "\n";
             $pesan .= "💰 Tagihan Bulan: " . $jatuhTempo->translatedFormat('F Y') . "\n";
             $pesan .= "💰 Jumlah: Rp " . number_format($invoice->tagihan, 0, ',', '.') . "\n";
@@ -149,7 +149,7 @@ class ChatServices
         }
 
         $pesan .= "\nSilakan lakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan.\n\n";
-        $pesan .= "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️";
+        $pesan .= "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
         $response = Http::post("{$this->baseURL}/send-pesan", [
             'to' => $customer->no_hp . '@c.us',
@@ -199,10 +199,10 @@ class ChatServices
             'pesan' => "Halo {$invoice->customer->nama_customer}, Selamat proses instalasi Anda telah selesai. Berikut adalah tagihan Anda:\n\n" .
                     "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
                     "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
-                    "📄 Nomor Invoice: INV-E-NAGIH-{$invoice->customer->nama_customer}-{$time}\n\n" .
+                "📄 Nomor Invoice: INV-NBilling-{$invoice->customer->nama_customer}-{$time}\n\n" .
                     "🔗 Link Pembayaran:\n{$url}\n\n" .
                     "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
-                    "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         // Respons
@@ -235,7 +235,7 @@ class ChatServices
                         "📅 Tanggal Blokir: " . now()->format('d-m-Y') . "\n" .
                        "Silakan segera lakukan pembayaran untuk menghindari pemutusan permanen.\n" .
                        "🔗 Link Pembayaran:\n{$url}\n\n" .
-                       "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         Log::info("📩 Kirim Notifikasi Blokir ke {$to}", [
@@ -261,7 +261,7 @@ class ChatServices
             'to' => $to . '@c.us',
             'pesan' => "Halo {$tek->name}, Antrian Instalasi Pelanggan baru tersedia. Silakan login ke aplikasi untuk melihat detail.\n\n" .
                         "🔗 Link Aplikasi:\n{$url}\n\n" .
-                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         if ($response->successful()) {
@@ -284,7 +284,7 @@ class ChatServices
                         "Nama Pelanggan: {$customer->nama_customer}\n" .
                         "Nama Agen: " . ($customer->agen->nama_agen ?? '-') . "\n" .
                         "🔗 Link Aplikasi:\n{$url}\n\n" .
-                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         if ($response->successful()) {
@@ -309,7 +309,7 @@ class ChatServices
                         "Keterangan: {$tiket->keterangan}\n" .
                         "By Admin: {$tiket->user->name}\n" .
                         "🔗 Link Aplikasi:\n{$url}\n\n" .
-                        "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️"
+                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
         ]);
 
         if ($response->successful()) {
@@ -345,7 +345,7 @@ class ChatServices
         foreach ($invoices as $invoice) {
             $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
 
-            $pesan .= "📄 *Invoice:* INV-E-NAGIH-{$customer->nama_customer}-{$invoice->id}\n";
+            $pesan .= "📄 *Invoice:* INV-NBilling-{$customer->nama_customer}-{$invoice->id}\n";
             $pesan .= "💰 Jumlah Tagihan: Rp " . number_format(
                 $invoice->tagihan + ($invoice->tambahan ?? 0) + ($invoice->tunggakan ?? 0) - ($invoice->saldo ?? 0),
                 0, ',', '.'
@@ -357,7 +357,7 @@ class ChatServices
 
         $pesan .= "Mohon segera lakukan pembayaran agar layanan tetap aktif.\n";
         $pesan .= "Jika sudah melakukan pembayaran, abaikan pesan ini 🙏\n\n";
-        $pesan .= "Pesan ini dikirim otomatis oleh sistem *E-Nagih* ⚙️";
+        $pesan .= "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
         // kirim pesan sekali saja (gabungan semua invoice)
         $response = Http::post("{$this->baseURL}/send-pesan", [
