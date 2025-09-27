@@ -24,7 +24,7 @@
                             </a>
                         </div>
                         <!-- /Logo -->
-                        <h4 class="text-center mb-5">Welcome to E-Nagih 👋</h4>
+                        <h4 class="text-center mb-5">Welcome to NBilling 👋</h4>
                         <p></p>
 
                         <form id="formAuthentication" class="mb-6" action="/login" method="POST">
