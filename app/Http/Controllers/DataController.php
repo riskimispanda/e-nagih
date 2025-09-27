@@ -63,6 +63,9 @@ class DataController extends Controller
                     })
                   ->orWhereHas('odp.odc.olt', function($p) use ($search) {
                         $p->where('nama_odp', 'like', '%' . $search . '%');
+                    })
+                    ->orWhereHas('agen', function ($p) use ($search) {
+                        $p->where('name', 'like', '%' . $search . '%');
                     });
             });
         }
