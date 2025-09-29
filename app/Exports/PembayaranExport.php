@@ -65,15 +65,15 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles
                 'keterangan' => $pembayaran->keterangan,
                 'metode_bayar' => $pembayaran->metode_bayar,
                 'periode' => $periode,
-                'admin' => 'Di Input Oleh: ' . $pembayaran->user->name,
-                'agen' => $pembayaran->agen->name ?? '-',
+                'admin' => 'Di Input Oleh: ' . ($pembayaran->user->name ?? '-'),
+                'agen' => $pembayaran->invoice->customer->agen->name ?? '-',
             ];
         });
     }
 
     public function headings(): array
     {
-        return ['ID', 'Nama Pelanggan', 'Paket', 'Jumlah Bayar', 'Tanggal Pembayaran', 'Keterangan', ' Metode Bayar', 'Periode', 'Admin', 'PIC/Agen'];
+        return ['ID', 'Nama Pelanggan', 'Paket', 'Jumlah Bayar', 'Tanggal Pembayaran', 'Keterangan', ' Metode Bayar', 'Periode', 'Admin', 'PIC'];
     }
 
     public function styles(Worksheet $sheet)
