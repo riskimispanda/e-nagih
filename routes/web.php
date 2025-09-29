@@ -199,6 +199,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
         $startDate = $request->start_date;
         $endDate = $request->end_date;
+        activity('Export Pembayaran')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Export Data Pembayaran');
         return Excel::download(
             new PembayaranExport($filter, $startDate, $endDate),
             "pembayaran_export_{$filter}.xlsx"
