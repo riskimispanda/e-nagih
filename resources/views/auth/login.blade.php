@@ -16,7 +16,7 @@
                         <!-- Logo -->
                         <div class="app-brand justify-content-center">
                             <a href="{{ url('/') }}" class="app-brand-link">
-                                <img src="{{ asset('assets/nagih.svg') }}" alt="Logo" width="100%" height="205"
+                                <img src="{{ asset('assets/logo_new.png') }}" alt="Logo" width="100%" height="205"
                                     class="mx-auto d-block">
                                 {{-- <span class="app-brand-logo demo">
                                     <img src="{{ asset('assets/nagih.svg') }}" alt="Logo" height="50">

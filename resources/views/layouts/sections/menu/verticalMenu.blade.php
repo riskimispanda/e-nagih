@@ -19,13 +19,12 @@ use Illuminate\Support\Facades\Auth;
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
     
     <!-- ! Hide app brand if navbar-full -->
-    <div class="app-brand demo">
+    <div class="app-brand demo justify-content-center">
         <a href="{{ url('/') }}" class="app-brand-link">
             <span class="app-brand-logo demo">
-                <img src="{{ asset('assets/nagih.svg') }}" alt="Logo" height="150" width="100%">
+                <img src="{{ asset('assets/logo_new.png') }}" alt="Logo" height="140" width="100%">
             </span>
         </a>
-        
         <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block d-xl-none">
             <i class="bx bx-chevron-left bx-sm d-flex align-items-center justify-content-center"></i>
         </a>
