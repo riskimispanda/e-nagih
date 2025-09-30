@@ -40,7 +40,8 @@ class Customer extends Model
         'access_point',
         'station',
         'remote',
-        'cek'
+        'cek',
+        'warning_sent'
     ];
 
 

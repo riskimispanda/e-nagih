@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
             
         $schedule->command('app:test-command')->everyMinute();
         $schedule->command('app:generate-invoice')->everyMinute();
-        $schedule->command('app:send-warning')->everyMinute();
+        $schedule->command('app:send-warning')->dailyAt('08:00');
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Services\ChatServices;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use App\Models\Customer;
 
 class SendWarning extends Command
 {
@@ -17,9 +18,13 @@ class SendWarning extends Command
     {
         $today = Carbon::today();
 
+        if (in_array($today->day, [2, 11])) {
+            $count = Customer::whereNotNull('warning_sent')->update(['warning_sent' => null]);
+            Log::info("Berhasil reset field warning_sent. Total customer direset: " . $count);
+        }
+
         // hanya jalan tanggal 1 - 10
         if (!in_array($today->day, range(1, 10))) {
-            $this->info("Hari ini {$today->format('d F Y')} bukan jadwal kirim warning.");
             return Command::SUCCESS;
         }
 
@@ -39,7 +44,10 @@ class SendWarning extends Command
             if (!$invoice->customer) {
                 continue;
             }
-
+            if ($invoice->customer->warning_sent == 1) {
+                Log::info($invoice->customer->nama_customer . ' sudah di kirim notifikasi');
+                continue;
+            }
             $hasil = $chat->kirimWarningBayar($invoice->customer, $invoice);
 
             if (isset($hasil['success']) && $hasil['success'] === false) {
@@ -48,11 +56,11 @@ class SendWarning extends Command
                 $this->error("❌ Gagal kirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}: {$hasil['pesan']}");
                 Log::error("❌ Gagal kirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}: {$hasil['pesan']}");
             } else {
+                $invoice->customer->update(['warning_sent' => 1]);
                 $this->info("✅ Berhasil terkirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}");
                 Log::info("✅ Berhasil terkirim ke {$invoice->customer->nama_customer} untuk invoice {$invoice->id}");
             }
         }
-
         return Command::SUCCESS;
     }
 }
