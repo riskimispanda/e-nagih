@@ -34,6 +34,7 @@ class SendWarning extends Command
         $invoices = Invoice::with('customer')
             ->where('status_id', 7)
             ->whereDate('jatuh_tempo', '<', $today)
+            ->where('paket_id', '!=', 11)
             ->get()
             ->groupBy('customer_id')
             ->map(function ($customerInvoices) {
