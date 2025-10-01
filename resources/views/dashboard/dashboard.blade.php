@@ -107,7 +107,7 @@
                             </div>
                             <p class="mb-1">Pelanggan Lunas</p>
                             <h4 class="card-title mb-3">Rp {{ number_format($pelangganLunas, 0, ',', '.') }}</h4>
-                            <small class="badge bg-label-success"><i class="bx bxs-user me-1 fs-6"></i>{{ $countLunas }}</small>
+                            <small class="badge bg-label-success"><i class="bx bxs-user me-1 fs-6"></i>{{ $countLunas }} Invoice</small>
                         </div>
                     </div>
                 </div>
@@ -121,7 +121,7 @@
                             </div>
                             <p class="mb-1">Pelanggan Belum Lunas</p>
                             <h4 class="card-title mb-3">Rp {{ number_format($pelangganBelumLunas, 0, ',', '.') }}</h4>
-                            <small class="badge bg-label-danger"><i class="bx bxs-user me-1 fs-6"></i>{{ $countBelumLunas }}</small>
+                            <small class="badge bg-label-danger"><i class="bx bxs-user me-1 fs-6"></i>{{ $countBelumLunas }} Invoice</small>
                         </div>
                     </div>
                 </div>
