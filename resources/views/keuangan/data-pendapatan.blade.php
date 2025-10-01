@@ -213,19 +213,20 @@
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
     <!-- Total Revenue -->
-    {{-- <div class="col-12 col-sm-6 col-lg-3">
+    <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p class="text-muted small mb-1 fw-medium">Total Pendapatan</p>
-                    <h5 id="totalRevenueValue" class="fw-bold text-dark mb-0">Rp {{ number_format($totalRevenue ?? 0, 0, ',', '.') }}</h5>
+                    <h5 id="totalRevenueValue" class="fw-bold text-dark mb-3">Rp {{ number_format($pembayaran ?? 0, 0, ',', '.') }}</h5>
+                    <small class="text-muted">Total pendapatan langganan tahun ini</small>
                 </div>
                 <div class="stat-icon bg-success bg-opacity-10 text-success">
                     <i class="bx bx-trending-up"></i>
                 </div>
             </div>
         </div>
-    </div> --}}
+    </div>
 
     {{-- <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
@@ -242,7 +243,7 @@
     </div> --}}
     
     <!-- Monthly Revenue -->
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-12 col-sm-6 col-lg-3">
         <a href="/data/pembayaran" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat detail pembayaran">
             <div class="revenue-card p-4">
                 <div class="d-flex justify-content-between align-items-center">
@@ -260,7 +261,7 @@
     </div>
     
     <!-- Pending Revenue -->
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
@@ -276,7 +277,7 @@
     </div>
     
     <!-- Total Invoices -->
-    <div class="col-12 col-sm-6 col-lg-4">
+    <div class="col-12 col-sm-6 col-lg-3">
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
