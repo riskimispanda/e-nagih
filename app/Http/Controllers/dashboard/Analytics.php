@@ -35,6 +35,11 @@ class Analytics extends Controller
     $jumlahPelanggan = Customer::whereIn('status_id', [3, 4, 9])->count();
     $pembayaran = Pembayaran::whereMonth('created_at', now()->month)->orderBy('created_at', 'desc')->get();
     $today = Carbon::today()->toDateString();
+    $pelangganLunas = Invoice::where('status_id', 8)->sum('tagihan') + Invoice::where('status_id', 8)->sum('tunggakan') - Invoice::where('status_id', 8)->sum('saldo');
+    $countPelangganLunas = Invoice::where('status_id', 8)->count();
+    $pelangganBelumLunas = Invoice::where('status_id', 7)->sum('tagihan') + Invoice::where('status_id', 7)->sum('tunggakan') - Invoice::where('status_id', 7)->sum('saldo');
+    $countPelangganBelumLunas = Invoice::where('status_id', 7)->count();
+
 
     $todaySchedules = Schedules::active()
       ->where('user_id', auth()->id())
@@ -60,7 +65,11 @@ class Analytics extends Controller
       'pembayaran' => $pembayaran,
       'totalPendapatan' => $totalPendapatan,
       'totalPengeluaran' => $totalPengeluaran,
-      'todaySchedules' => $todaySchedules
+      'todaySchedules' => $todaySchedules,
+      'pelangganLunas' => $pelangganLunas,
+      'countLunas' => $countPelangganLunas,
+      'pelangganBelumLunas' => $pelangganBelumLunas,
+      'countBelumLunas' => $countPelangganBelumLunas
     ]);
   }
 

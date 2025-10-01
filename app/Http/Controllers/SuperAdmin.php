@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Imports\UpgradeCustomer;
 use Illuminate\Http\Request;
 use App\Models\Pembayaran;
 use App\Models\Invoice;
@@ -19,6 +20,7 @@ use App\Models\Roles;
 use App\Models\BeritaAcara;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 class SuperAdmin extends Controller
@@ -458,5 +460,19 @@ class SuperAdmin extends Controller
             ->log(auth()->user()->name . ' Menghapus Berita Acara');
 
         return redirect('/berita-acara')->with('toast_success', 'Berhasil Menghapus Berita Acara');
+    }
+
+    public function importUpgrade(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new UpgradeCustomer, $request->file('file'));
+            return redirect()->back()->with('success', 'Data customer berhasil diimport!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+        }
     }
 }

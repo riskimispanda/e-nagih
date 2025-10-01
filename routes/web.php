@@ -150,6 +150,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/unpaid/bulan/{month}/{year}', [ExportControllers::class, 'unpaidBulan'])->name('unpaid.bulan');
     Route::get('/unpaid/range', [ExportControllers::class, 'unpaidRange'])->name('unpaid.range');
 
+    // Export Upgrade paket Customer
+    Route::post('/import-upgrade', [SuperAdmin::class, 'importUpgrade']);
+
     // API routes untuk FullCalendar
     Route::prefix('api/schedule')->name('api.schedule.')->group(function () {
         Route::get('/events', [KalenderController::class, 'getEvents'])->name('events');

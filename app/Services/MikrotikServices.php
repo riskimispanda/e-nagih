@@ -27,7 +27,7 @@ class MikrotikServices
                     'user' => $router->username,
                     'pass' => $router->password,
                     'port' => (int) $router->port,
-                    'timeout' => 5,
+                    'timeout' => 15,
                 ]);
 
                 // Cek koneksi langsung setelah connect
@@ -42,6 +42,35 @@ class MikrotikServices
         }
 
         return self::$klien[$key];
+    }
+
+    public static function changeProfileUpgrade(Client $client, $usersecret, $profileBaru)
+    {
+        try {
+            // Cari PPP secret berdasarkan usersecret
+            $query = (new Query('/ppp/secret/print'))
+                ->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) {
+                Log::warning("PPP Secret tidak ditemukan untuk usersecret: {$usersecret}");
+                return false;
+            }
+
+            foreach ($users as $user) {
+                $setQuery = (new Query('/ppp/secret/set'))
+                    ->equal('.id', $user['.id'])
+                    ->equal('profile', $profileBaru);
+
+                $client->query($setQuery)->read();
+            }
+
+            Log::info("Berhasil ubah profile {$usersecret} ke {$profileBaru}");
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Gagal ubah profile: {$e->getMessage()}");
+            return false;
+        }
     }
 
     public static function getFirewallRules(Router $router)
@@ -475,7 +504,7 @@ class MikrotikServices
         try {
             $query = new Query('/ppp/secret/print');
             $query->where('comment', 'Created by E-Nagih');
-            // $query->where('name', 'cobas2@niscala.net.id');
+            // $query->where('name', 'Roshid-A202@niscala.net.id');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());

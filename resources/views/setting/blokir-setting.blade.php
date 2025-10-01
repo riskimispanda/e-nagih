@@ -148,6 +148,41 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-sm-6">
+                        <small class="text-light fw-medium">Import Upgrade</small>
+                        <div class="accordion mt-4" id="accordionExample">
+                            <div class="card accordion-item active">
+                                <h2 class="accordion-header mb-5" id="headingFive">
+                                    <button type="button" class="accordion-button bg-primary text-white fw-bold" data-bs-toggle="collapse" data-bs-target="#accordionFive" aria-expanded="true" aria-controls="accordionTwo">
+                                    <i class="bx bx-download me-1"></i>
+                                        Import Data Upgrade
+                                    </button>
+                                </h2>
+                                <div id="accordionFive" class="accordion-collapse collapse " data-bs-parent="#accordionExample">
+                                    <div class="accordion-body">
+                                        <form action="/import-upgrade" method="POST" enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    <label class="form-label">Import Data</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text"><i class="bx bx-file"></i></span>
+                                                        <input type="file" name="file" class="form-control" required>
+                                                    </div>
+                                                    <small class="text-muted">File: xlsx, xls, csv</small>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="d-flex justify-content-end">
+                                                    <button type="submit" class="btn btn-warning btn-sm"><i class="bx bx-file me-1"></i>Import</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
