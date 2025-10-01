@@ -143,7 +143,6 @@ class ChatServices
             $pesan .= "💰 Jumlah: Rp " . number_format($invoice->tagihan, 0, ',', '.') . "\n";
             $pesan .= "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n";
             $pesan .= "📊 Status: {$invoice->status->nama_status}\n\n";
-            $pesan .= "🔔 Jatuh Tempo: {$jatuhTempo->translatedFormat('d F Y')}\n\n";
             $pesan .= "🔗 Link Pembayaran: \n{$url}\n";
             $pesan .= "--------------------------\n";
         }
@@ -350,7 +349,6 @@ class ChatServices
                 $invoice->tagihan + ($invoice->tambahan ?? 0) + ($invoice->tunggakan ?? 0) - ($invoice->saldo ?? 0),
                 0, ',', '.'
             ) . "\n";
-            $pesan .= "🔔 Jatuh Tempo: {$jatuhTempo->translatedFormat('d F Y')}\n";
             $pesan .= "📊 Status: {$invoice->status->nama_status}\n";
             $pesan .= "🔗 Link: " . url('/payment/invoice/' . $invoice->id) . "\n\n";
         }
