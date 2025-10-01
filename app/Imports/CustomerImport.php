@@ -68,6 +68,8 @@ class CustomerImport implements ToModel, WithHeadingRow
 
             // default invoice bulan ini
             $jatuhTempo = Carbon::now()->endOfMonth();
+            $bulanKemarin = Carbon::now()->subMonth()->endOfMonth();
+            $bulanSekarang = Carbon::now()->endOfMonth();
 
             if (isset($row['status_bayar']) && $row['status_bayar'] == 1) {
                 // BUAT INVOICE BULAN DEPAN (BELUM LUNAS)
@@ -75,7 +77,7 @@ class CustomerImport implements ToModel, WithHeadingRow
                     'customer_id'    => $customer->id,
                     'status_id'      => 7,
                     'paket_id'       => $customer->paket_id,
-                    'jatuh_tempo'    => Carbon::now()->addMonth()->endOfMonth(),
+                    'jatuh_tempo'    => $bulanSekarang,
                     'tagihan'        => $harga,
                     'tanggal_blokir' => 10,
                     'cek' => 'Imported'
@@ -86,7 +88,7 @@ class CustomerImport implements ToModel, WithHeadingRow
                     'customer_id'    => $customer->id,
                     'status_id'      => 7,
                     'paket_id'       => $customer->paket_id,
-                    'jatuh_tempo'    => $jatuhTempo,
+                    'jatuh_tempo'    => $bulanKemarin,
                     'tagihan'        => $harga,
                     'tanggal_blokir' => 10,
                     'cek' => 'Imported'
