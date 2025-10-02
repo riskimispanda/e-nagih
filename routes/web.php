@@ -345,6 +345,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/noc/interface/{id}/realtime', [NocController::class, 'realtime']);
     Route::get('/edit/antrian/{id}/noc', [NocController::class, 'editAntrian']);
     Route::post('/simpan/noc/{id}', [NocController::class, 'simpanEdit']);
+    Route::get('/get-paket-by-router/{routerId}', [NocController::class, 'getPaketByRouter']);
 
 
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');

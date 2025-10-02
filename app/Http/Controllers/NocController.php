@@ -587,10 +587,14 @@ class NocController extends Controller
     public function editAntrian($id)
     {
         $customer = Customer::findOrFail($id);
+        $router = Router::all();
+        $paket = Paket::all();
         return view('/NOC/editAntrian',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'antrian' => $customer
+            'antrian' => $customer,
+            'paket' => $paket,
+            'router' => $router
         ]);
     }
 
@@ -598,33 +602,59 @@ class NocController extends Controller
     {
         $customer = Customer::findOrFail($id);
         $router = Router::findOrFail($customer->router_id);
-        $paket = $customer->paket->paket_name;
+
+        // Pastikan paket yang baru diambil berdasarkan paket_id yang dipilih
+        $paket = Paket::find($request->paket_id);
+        if (!$paket) {
+            return redirect()->back()->with('error', 'Paket tidak ditemukan');
+        }
+
         $koneksi = Koneksi::findOrFail($customer->koneksi_id);
         $konek = strtolower($koneksi->nama_koneksi);
-        
+
         // Update database Laravel
         $customer->update([
             'usersecret' => $request->usersecret,
             'pass_secret' => $request->pass,
             'remote' => $request->remote,
             'remote_address' => $request->remote,
-            'local_address' => $request->local_address
+            'local_address' => $request->local_address,
+            'paket_id' => $request->paket_id,
+            'router_id' => $request->router_id
         ]);
-
-
-        // dd($konek);
 
         $client = MikrotikServices::connect($router);
 
-        MikrotikServices::addPPPSecret($client, [
+        // Data untuk PPP Secret
+        $pppData = [
             'name'          => $request->usersecret,
             'password'      => $request->pass,
-            'remoteAddress' => $request->remote,
-            'localAddress'  => $request->local_address,
-            'profile'       => $paket,
+            'remote-address' => $request->remote,
+            'local-address'  => $request->local_address,
+            'profile'       => $paket->paket_name, // Gunakan nama paket dari database
             'service'       => $konek
-        ]);
+        ];
 
-        return redirect('/teknisi/antrian')->with('toast_success', 'Berhasil Update Detail');
+        Log::info("PPP Data to be sent: " . json_encode($pppData));
+
+        // Cek dan update atau buat baru
+        $existingSecret = MikrotikServices::checkPPPSecret($client, $request->usersecret);
+
+        if ($existingSecret) {
+            Log::info("Existing secret found: " . json_encode($existingSecret));
+            MikrotikServices::updatePPPSecret($client, $existingSecret['.id'], $pppData);
+            $message = 'Berhasil Update PPP Secret di Mikrotik';
+        } else {
+            MikrotikServices::addPPPSecret($client, $pppData);
+            $message = 'Berhasil Membuat PPP Secret Baru di Mikrotik';
+        }
+
+        return redirect('/teknisi/antrian')->with('toast_success', $message);
+    }
+
+    public function getPaketByRouter($routerId)
+    {
+        $paket = Paket::where('router_id', $routerId)->get();
+        return response()->json($paket);
     }
 }

@@ -44,6 +44,46 @@ class MikrotikServices
         return self::$klien[$key];
     }
 
+    public static function checkPPPSecret($client, $usersecret)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $response = $client->query($query)->read();
+
+            return !empty($response) ? $response[0] : null;
+        } catch (\Exception $e) {
+            Log::error('Error checking PPP Secret: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public static function updatePPPSecret($client, $secretId, $data)
+    {
+        try {
+            Log::info("Updating PPP Secret - ID: {$secretId}, Data: " . json_encode($data));
+
+            $query = new Query('/ppp/secret/set');
+            $query->equal('.id', $secretId);
+
+            foreach ($data as $key => $value) {
+                if (!empty($value)) {
+                    $query->equal($key, $value);
+                    Log::info("Setting {$key} = {$value}");
+                }
+            }
+
+            $response = $client->query($query)->read();
+            Log::info("PPP Secret update response: " . json_encode($response));
+
+            Log::info("PPP Secret updated successfully: {$data['name']}");
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error updating PPP Secret: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public static function changeProfileUpgrade(Client $client, $usersecret, $profileBaru, $localAddress = null, $remoteAddress = null)
     {
         try {
@@ -444,8 +484,8 @@ class MikrotikServices
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('comment', 'Created by E-Nagih');
-            // $query->where('name', 'Isti-H102@niscala.net.id');
+            $query->where('comment', 'Created by NBilling');
+            // $query->where('name', 'asaaaaa@niscala.net.id');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
