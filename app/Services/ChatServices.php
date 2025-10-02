@@ -58,6 +58,7 @@ class ChatServices
                 "📅 Tanggal Pembayaran: " . $tanggalBayar . "\n" .
                         "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
                         "💵 Tunggakan: Rp ". number_format($tunggakan ?? 0, 0,',','.') . "\n".
+                "💳 Tipe Pembayaran: " . $pembayaran->tipe_pembayaran . "\n" .
                         "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
                         "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
                         "Terima kasih telah menggunakan layanan kami 🙏\n" .
