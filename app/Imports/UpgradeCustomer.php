@@ -96,7 +96,7 @@ class UpgradeCustomer implements ToModel, WithHeadingRow
                     if ($router) {
                         $client = MikrotikServices::connect($router);
                         if ($client) {
-                            MikrotikServices::changeProfileUpgrade($client, $customer->usersecret, $paket->paket_name);
+                            MikrotikServices::changeProfileUpgrade($client, $customer->usersecret, $paket->paket_name, $customer->local_address, $customer->remote_address);
                             MikrotikServices::removeActiveConnections($client, $customer->usersecret);
                             Log::info('Berhasil Upgrade melalui Import untuk Customer: ' . $customer->nama_customer);
                         }
