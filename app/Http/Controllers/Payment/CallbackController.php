@@ -202,6 +202,7 @@ class CallbackController extends Controller
                 'metode_bayar' => $metodeBayar,
                 'keterangan' => 'Pembayaran Paket Langganan Via ' . $metodeBayar . ' dari: ' . $invoice->customer->nama_customer,
                 'status_id' => 8,
+                'tipe_pembayaran' => 'reguler',
                 'saldo' => $invoice->saldo
             ]);
 

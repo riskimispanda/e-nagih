@@ -1314,6 +1314,11 @@ class KeuanganController extends Controller
             $pilihan = $request->input('bayar', []); // ["tagihan","tambahan","tunggakan"]
             $gunakanSaldo = $request->has('saldo');  // true kalau checkbox saldo dicentang
 
+            // Validasi tipe_pembayaran
+            $request->validate([
+                'tipe_pembayaran' => 'required|in:reguler,diskon',
+            ]);
+
             // Nominal yang akan dibayar sesuai pilihan
             $bayarTagihan   = in_array('tagihan', $pilihan)   ? $invoice->tagihan   : 0;
             $bayarTambahan  = in_array('tambahan', $pilihan)  ? $invoice->tambahan  : 0;
@@ -1359,7 +1364,7 @@ class KeuanganController extends Controller
             }
 
             // ================================
-            // Buat keterangan dinamis
+            // Buat keterangan dinamis dengan informasi tipe pembayaran
             // ================================
             $keteranganArr = [];
             if ($bayarTagihan > 0)   $keteranganArr[] = "Tagihan Langganan";
@@ -1368,23 +1373,27 @@ class KeuanganController extends Controller
             if ($saldoTerpakai > 0)  $keteranganArr[] = "menggunakan saldo";
             if ($saldoBaru > 0)      $keteranganArr[] = "menyisakan saldo";
 
-            $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
+            // Tambahkan informasi tipe pembayaran ke keterangan
+            $tipePembayaranLabel = $request->tipe_pembayaran == 'reguler' ? 'Reguler' : 'Diskon';
+
+            $keteranganPembayaran = "Pembayaran " . $tipePembayaranLabel . " - " . implode(", ", $keteranganArr) .
                 " dari " . auth()->user()->name .
                 " untuk pelanggan " . $invoice->customer->nama_customer .
                 " PIC : " . ($invoice->customer->agen->name ?? '-');
 
 
-            // Simpan pembayaran
+            // Simpan pembayaran DENGAN TIPE PEMBAYARAN
             $pembayaran = Pembayaran::create([
-                'invoice_id'    => $invoice->id,
-                'jumlah_bayar'  => $jumlahBayar,
-                'tanggal_bayar' => now(),
-                'metode_bayar'  => $request->metode_id,
-                'keterangan'    => $keteranganPembayaran,
-                'status_id'     => 8,
-                'user_id'       => auth()->id(),
-                'bukti_bayar'   => $buktiPath,
-                'saldo'         => $saldoBaru,
+                'invoice_id'      => $invoice->id,
+                'jumlah_bayar'    => $jumlahBayar,
+                'tanggal_bayar'   => now(),
+                'metode_bayar'    => $request->metode_id,
+                'tipe_pembayaran' => $request->tipe_pembayaran, // TAMBAHKAN INI
+                'keterangan'      => $keteranganPembayaran,
+                'status_id'       => 8,
+                'user_id'         => auth()->id(),
+                'bukti_bayar'     => $buktiPath,
+                'saldo'           => $saldoBaru,
             ]);
 
             // Notifikasi
@@ -1434,7 +1443,7 @@ class KeuanganController extends Controller
                         'tunggakan'       => $newTunggakan,
                         'saldo'           => $saldoBaru,
                         'status_id'       => 7,
-                        'merchant_ref' => $merchant,
+                        'merchant_ref'    => $merchant,
                         'created_at'      => $tanggalAwal,
                         'updated_at'      => $tanggalAwal,
                         'jatuh_tempo'     => $tanggalJatuhTempo,
@@ -1444,50 +1453,54 @@ class KeuanganController extends Controller
             }
 
             // ================================
-            // Catat ke kas
+            // Catat ke kas dengan informasi tipe pembayaran
             // ================================
             Kas::create([
                 'debit'         => $pembayaran->jumlah_bayar,
                 'tanggal_kas'   => $pembayaran->tanggal_bayar,
-                'keterangan'    => 'Pembayaran Dari ' . auth()->user()->name . ' Untuk Pelanggan ' . $pembayaran->invoice->customer->nama_customer . ' PIC : ' . ($invoice->customer->agen->name ?? '-'),
+                'keterangan'    => 'Pembayaran ' . $tipePembayaranLabel . ' dari ' . auth()->user()->name .
+                    ' untuk pelanggan ' . $pembayaran->invoice->customer->nama_customer .
+                    ' PIC : ' . ($invoice->customer->agen->name ?? '-'),
                 'kas_id'        => 1,
                 'user_id'       => auth()->id(),
                 'status_id'     => 3,
-                'customer_id' => $invoice->customer_id,
-                'pengeluaran_id'=> null,
+                'customer_id'   => $invoice->customer_id,
+                'pengeluaran_id' => null,
             ]);
 
             // ================================
             // Update Status Customer jika perlu
             // ================================
             // Jika customer diblokir, buka blokir
-            if ($customer->status_id == 9) {
+            if ($invoice->customer->status_id == 9) {
                 try {
                     $mikrotik = new MikrotikServices();
-                    $client = MikrotikServices::connect($customer->router);
-                    $mikrotik->unblokUser($client, $customer->usersecret, $customer->paket->paket_name);
-                    $mikrotik->removeActiveConnections($client, $customer->usersecret);
+                    $client = MikrotikServices::connect($invoice->customer->router);
+                    $mikrotik->unblokUser($client, $invoice->customer->usersecret, $invoice->customer->paket->paket_name);
+                    $mikrotik->removeActiveConnections($client, $invoice->customer->usersecret);
 
-                    $customer->update(['status_id' => 3]);
+                    $invoice->customer->update(['status_id' => 3]);
 
-                    Log::info('Customer ' . $customer->nama_customer . 'berhasil di unblock', ['customer_id' => $customer->id]);
+                    Log::info('Customer ' . $invoice->customer->nama_customer . ' berhasil di unblock', ['customer_id' => $invoice->customer->id]);
                 } catch (Exception $e) {
                     Log::error('Failed to unblock customer', [
-                        'customer_id' => $customer->id,
+                        'customer_id' => $invoice->customer->id,
                         'error' => $e->getMessage()
                     ]);
                 }
             }
 
-            // Catat Log Aktivitas
+            // Catat Log Aktivitas dengan informasi tipe pembayaran
             activity('keuangan')
                 ->causedBy(auth()->user())
                 ->performedOn($pembayaran)
-                ->log('Pembayaran dari admin keuangan ' . auth()->user()->name . ' untuk pelanggan ' . $pembayaran->invoice->customer->nama_customer . ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar, 0, ',', '.'));
+                ->log('Pembayaran ' . $tipePembayaranLabel . ' dari admin keuangan ' . auth()->user()->name .
+                    ' untuk pelanggan ' . $pembayaran->invoice->customer->nama_customer .
+                    ' dengan Jumlah Bayar ' . 'Rp ' . number_format($pembayaran->jumlah_bayar, 0, ',', '.'));
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Pembayaran berhasil disimpan.');
+            return redirect()->back()->with('success', 'Pembayaran ' . $tipePembayaranLabel . ' berhasil disimpan.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::info('Gagal menyimpan pembayaran: ' . $e->getMessage() . ' pada line ' . $e->getLine());

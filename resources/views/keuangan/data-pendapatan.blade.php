@@ -8,6 +8,20 @@
 
 @section('page-style')
 <style>
+    /* Tambahkan di section style */
+    .form-select {
+        border-radius: 8px;
+        border: 1px solid #d0d7de;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        outline: none;
+    }
     .revenue-card {
         background: #fff;
         border-radius: 12px;
@@ -612,6 +626,7 @@
 
 
 {{-- Modal Konfirmasi --}}
+{{-- Modal Konfirmasi --}}
 @foreach ($invoices as $invoice)
 <div class="modal fade" id="konfirmasiPembayaran{{ $invoice->id }}" tabindex="-1" style="display: none;" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -634,6 +649,19 @@
                             <input type="date" class="form-control" value="{{ \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') }}" readonly>
                         </div>
                     </div>
+
+                    <!-- TAMBAHKAN FIELD TIPE PEMBAYARAN DI SINI -->
+                    <div class="row">
+                        <div class="col mb-4">
+                            <label class="form-label">Tipe Pembayaran</label>
+                            <select name="tipe_pembayaran" class="form-select" required>
+                                <option value="">Pilih Tipe Pembayaran</option>
+                                <option value="reguler">Pembayaran Reguler</option>
+                                <option value="diskon">Pembayaran Diskon</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col mb-4 col-lg-4">
                             <label class="form-label mb-2">Tagihan</label>

@@ -4,6 +4,57 @@
 
 @section('page-style')
 <style>
+    .payment-type-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        width: fit-content;
+    }
+
+    .payment-info-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 0.5rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .payment-type-label {
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .payment-type-icon {
+        font-size: 1rem;
+    }
+
+    .badge-sm {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .bg-outline-success {
+        background-color: rgba(25, 135, 84, 0.1);
+        color: #198754;
+        border: 1px solid #198754;
+    }
+
+    .bg-outline-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        color: #ffc107;
+        border: 1px solid #ffc107;
+    }
+
+    .payment-display-compact {
+        font-size: 0.875rem;
+    }
     .payment-card {
         background: #fff;
         border-radius: 12px;
@@ -641,10 +692,15 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="payment-method-badge bg-info bg-opacity-10 text-primary">
-                                    <i class="bx bx-credit-card"></i>
-                                    {{ $payment->metode_bayar }}
-                                </span>
+                                <div class="payment-method-stack">
+                                    <div class="payment-method-badge bg-info bg-opacity-10 text-primary">
+                                        <i class="bx bx-credit-card me-1"></i>
+                                        {{ $payment->metode_bayar }}
+                                    </div>
+                                    <small class="payment-type-text text-muted mt-1">
+                                        {{ $payment->tipe_pembayaran == 'reguler' ? 'Pembayaran Reguler' : 'Pembayaran Diskon' }}
+                                    </small>
+                                </div>
                             </td>
                             <td>
                                 @if ($payment->status)
@@ -797,60 +853,72 @@
     </div>
     
     {{-- Modal Edit Pembayaran --}}
-    @foreach ($payments as $pembayaran)
-    <div class="modal fade" id="editModal{{ $pembayaran->id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Pembayaran {{ $pembayaran->invoice->customer->nama_customer }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="/edit/pembayaran/{{ $pembayaran->id }}" method="POST" class="editPembayaranForm">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-sm-6 mb-2">
-                                <label class="form-label">Nama Customer</label>
-                                <div class="input-group input-group-merge">
-                                    <span class="input-group-text"><i class="bx bx-user"></i></span>
-                                    <input type="text" class="form-control" value="{{ $pembayaran->invoice->customer->nama_customer ?? '-' }}" readonly>
-                                </div>
-                            </div>
-                            <div class="col-sm-6 mb-2">
-                                <label class="form-label">Total Tagihan</label>
-                                <div class="input-group input-group-merge">
-                                    <span class="input-group-text"><i class="bx bx-money"></i></span>
-                                    <input type="text" class="form-control" value="Rp {{ number_format($pembayaran->invoice->tagihan + $pembayaran->invoice->tunggakan + $pembayaran->invoice->tambahan - $pembayaran->invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
-                                </div>
-                            </div>
-                            
-                            <div class="col-sm-12 mb-2">
-                                <label class="form-label">Jumlah Bayar</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bx bx-money"></i></span>
-                                    <input type="text" name="jumlah" id="jumlah{{ $pembayaran->id }}" class="form-control" value="{{ $pembayaran->jumlah_bayar ? 'Rp '.number_format($pembayaran->jumlah_bayar,0,',','.') : 'Rp 0' }}">
-                                    <input type="hidden" name="jumlahRaw" id="jumlahRaw{{ $pembayaran->id }}" value="{{ $pembayaran->jumlah_bayar ?? 0 }}">
-                                </div>
-                            </div>
-                            
-                            <div class="col-sm-12 mb-2">
-                                <label class="form-label">Keterangan Edit</label>
-                                <textarea name="keterangan" class="form-control" cols="10" rows="5"></textarea>
-                            </div>
-                            
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-outline-warning btn-sm" type="submit">
-                            <i class="bx bx-pencil me-2"></i>
-                            Request
-                        </button>
-                    </div>
-                </form>
+@foreach ($payments as $pembayaran)
+<div class="modal fade" id="editModal{{ $pembayaran->id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Pembayaran {{ $pembayaran->invoice->customer->nama_customer }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <form action="/edit/pembayaran/{{ $pembayaran->id }}" method="POST" class="editPembayaranForm">
+                @csrf
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Nama Customer</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-user"></i></span>
+                                <input type="text" class="form-control" value="{{ $pembayaran->invoice->customer->nama_customer ?? '-' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <label class="form-label">Total Tagihan</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                <input type="text" class="form-control" value="Rp {{ number_format($pembayaran->invoice->tagihan + $pembayaran->invoice->tunggakan + $pembayaran->invoice->tambahan - $pembayaran->invoice->saldo ?? 0, 0, ',', '.') }}" readonly>
+                            </div>
+                        </div>
+                        
+                        <!-- TAMBAHKAN FIELD TIPE PEMBAYARAN DI SINI -->
+                        <div class="col-sm-12 mb-2">
+                            <label class="form-label">Tipe Pembayaran</label>
+                            <div class="input-group input-group-merge">
+                                <span class="input-group-text"><i class="bx bx-category"></i></span>
+                                <select name="tipe_pembayaran" class="form-select" required>
+                                    <option value="reguler" {{ $pembayaran->tipe_pembayaran == 'reguler' ? 'selected' : '' }}>Pembayaran Reguler</option>
+                                    <option value="diskon" {{ $pembayaran->tipe_pembayaran == 'diskon' ? 'selected' : '' }}>Pembayaran Diskon</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-12 mb-2">
+                            <label class="form-label">Jumlah Bayar</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bx bx-money"></i></span>
+                                <input type="text" name="jumlah" id="jumlah{{ $pembayaran->id }}" class="form-control" value="{{ $pembayaran->jumlah_bayar ? 'Rp '.number_format($pembayaran->jumlah_bayar,0,',','.') : 'Rp 0' }}" oninput="formatRupiahEdit(this, {{ $pembayaran->id }})">
+                                <input type="hidden" name="jumlahRaw" id="jumlahRaw{{ $pembayaran->id }}" value="{{ $pembayaran->jumlah_bayar ?? 0 }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-sm-12 mb-2">
+                            <label class="form-label">Keterangan Edit</label>
+                            <textarea name="keterangan" class="form-control" cols="10" rows="3" placeholder="Masukkan alasan edit pembayaran..."></textarea>
+                        </div>
+                        
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-warning btn-sm" type="submit">
+                        <i class="bx bx-pencil me-2"></i>
+                        Request Edit
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
-    @endforeach
+</div>
+@endforeach
     <!-- Modal Export -->
     <div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">

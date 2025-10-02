@@ -244,7 +244,8 @@ class Customer extends Controller
                 'jumlah_bayar_baru' => $request->jumlahRaw,
                 'status_id' => 1,
                 'ket_edit' => $request->keterangan,
-                'admin_id' => auth()->user()->id
+                'admin_id' => auth()->user()->id,
+                'tipe_pembayaran' => $request->tipe_pembayaran
             ]);
 
             $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);

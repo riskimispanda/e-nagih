@@ -427,6 +427,7 @@ class AgenController extends Controller
                 'user_id'       => auth()->id(),
                 'bukti_bayar'   => $buktiPath,
                 'saldo'         => $saldoBaru,
+                'tipe_pembayaran' => 'reguler'
             ]);
 
             // Notifikasi
