@@ -24,7 +24,8 @@ use Illuminate\Support\Facades\DB;
 use App\Services\ChatServices;
 use Illuminate\Support\Facades\Log;
 use Exception;
-
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\CustomerAgen;
 
 
 class KeuanganController extends Controller
@@ -1597,7 +1598,7 @@ class KeuanganController extends Controller
         // Bulan saat ini
         $currentMonth = now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
-        
+
         // Get per_page parameter, default to 10
         $perPage = $request->get('per_page', 10);
         if ($perPage === 'all') {
@@ -1606,8 +1607,15 @@ class KeuanganController extends Controller
             $perPage = (int) $perPage;
         }
 
-        // Ambil hanya 1 invoice terakhir per customer (subquery)
-        $latestInvoicesQuery = Invoice::select('invoice.*')
+        // Base query untuk customer dengan agen_id
+        $baseCustomerQuery = function ($q) use ($id) {
+            $q->where('agen_id', $id)->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+        };
+
+        // Query untuk mengambil invoice terakhir per customer
+        if ($filterMonth !== 'all') {
+            // Jika filter bulan tertentu, ambil invoice terakhir untuk bulan tersebut
+            $latestInvoicesQuery = Invoice::select('invoice.*')
             ->join(DB::raw('(
                 SELECT customer_id, MAX(jatuh_tempo) as latest_jatuh_tempo 
                 FROM invoice 
@@ -1619,14 +1627,13 @@ class KeuanganController extends Controller
                     ->on('invoice.jatuh_tempo', '=', 'latest.latest_jatuh_tempo');
             })
             ->with(['customer.paket', 'status', 'pembayaran.user'])
-            ->whereHas('customer', function ($q) use ($id) {
-            $q->where('agen_id', $id)->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
-            });
-
-        // dd($latestInvoicesQuery->get());
-        // Filter bulan
-        if ($filterMonth !== 'all') {
-            $latestInvoicesQuery->whereRaw("MONTH(jatuh_tempo) = ?", [intval($filterMonth)]);
+                ->whereHas('customer', $baseCustomerQuery);
+        } else {
+            // Jika "Semua Bulan", ambil semua invoice tanpa filter bulan
+            $latestInvoicesQuery = Invoice::with(['customer.paket', 'status', 'pembayaran.user'])
+                ->whereHas('customer', $baseCustomerQuery)
+                ->whereYear('jatuh_tempo', date('Y')) // Tetap filter tahun berjalan
+                ->orderBy('jatuh_tempo', 'desc');
         }
 
         // Filter status
@@ -1639,10 +1646,41 @@ class KeuanganController extends Controller
             }
         }
 
-        $invoices = (clone $latestInvoicesQuery)->withMax('pembayaran', 'tanggal_bayar')->orderByDesc('pembayaran_max_tanggal_bayar')->paginate($perPage)->appends($request->all());
-        // dd($invoices);
+        // Untuk pagination, kita perlu query yang berbeda
+        if ($filterMonth !== 'all') {
+            // Untuk filter bulan tertentu, gunakan query dengan join
+            $invoices = (clone $latestInvoicesQuery)
+                ->withMax('pembayaran', 'tanggal_bayar')
+                ->orderByDesc('pembayaran_max_tanggal_bayar')
+                ->paginate($perPage)
+                ->appends($request->all());
+        } else {
+            // Untuk semua bulan, gunakan query sederhana
+            $invoices = (clone $latestInvoicesQuery)
+                ->withMax('pembayaran', 'tanggal_bayar')
+                ->orderByDesc('pembayaran_max_tanggal_bayar')
+                ->paginate($perPage)
+                ->appends($request->all());
+        }
+
         // Hitung total semua invoice sesuai filter
+        if ($filterMonth !== 'all') {
         $allInvoices = (clone $latestInvoicesQuery)->get();
+        } else {
+            $allInvoices = Invoice::with(['customer.paket', 'status', 'pembayaran.user'])
+                ->whereHas('customer', $baseCustomerQuery)
+                ->whereYear('jatuh_tempo', date('Y'))
+                ->get();
+        }
+
+        // Apply status filter untuk total calculation
+        if ($filterStatus) {
+            if ($filterStatus == 'Sudah Bayar') {
+                $allInvoices = $allInvoices->where('status.nama_status', 'Sudah Bayar');
+            } elseif ($filterStatus == 'Belum Bayar') {
+                $allInvoices = $allInvoices->where('status.nama_status', 'Belum Bayar');
+            }
+        }
 
         $totalPaid = $allInvoices->where('status.nama_status', 'Sudah Bayar')->sum('tagihan');
         $totalUnpaid = $allInvoices->where('status.nama_status', 'Belum Bayar')->sum('tagihan');
@@ -2065,25 +2103,28 @@ class KeuanganController extends Controller
             $exportType = $request->get('export_type');
             $format = $request->get('format', 'xlsx');
 
-            // Build base query
-            $query = Invoice::with(['customer.paket', 'status', 'pembayaran.user'])
-                ->whereHas('customer', function ($q) use ($id) {
-                    $q->where('agen_id', $id)->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
-                });
+            // Prepare parameters untuk class CustomerAgen
+            $exportParams = [
+                'agen_id' => $id,
+                'export_type' => $exportType,
+                'format' => $format
+            ];
 
             // Apply filters based on export type
             switch ($exportType) {
                 case 'today':
                     $date = $request->get('date', now()->format('Y-m-d'));
-                    $query->whereDate('jatuh_tempo', $date);
+                    $exportParams['type'] = 'range';
+                    $exportParams['startDate'] = $date;
+                    $exportParams['endDate'] = $date;
                     $filename = "Data_Pelanggan_Agen_{$agen->name}_Hari_Ini_" . now()->format('Y-m-d');
                     break;
 
                 case 'month':
                     $month = $request->get('month', now()->month);
                     $year = $request->get('year', now()->year);
-                    $query->whereMonth('jatuh_tempo', $month)
-                        ->whereYear('jatuh_tempo', $year);
+                    $exportParams['type'] = 'bulan';
+                    $exportParams['bulan'] = ['month' => $month, 'year' => $year];
                     $monthName = [
                         1 => 'Januari',
                         2 => 'Februari',
@@ -2105,18 +2146,16 @@ class KeuanganController extends Controller
                     $filterMonth = $request->get('month');
                     $filterStatus = $request->get('status');
 
+                    $exportParams['type'] = 'bulan';
+
+                    // PERBAIKAN: Handle 'all' value untuk bulan
                     if ($filterMonth && $filterMonth !== 'all') {
-                        $query->whereMonth('jatuh_tempo', $filterMonth);
+                        $exportParams['bulan'] = ['month' => $filterMonth, 'year' => now()->year];
+                    } else {
+                        $exportParams['bulan'] = 'all'; // Kirim 'all' bukan array
                     }
 
-                    if ($filterStatus) {
-                        if ($filterStatus == 'Sudah Bayar') {
-                            $query->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
-                        } elseif ($filterStatus == 'Belum Bayar') {
-                            $query->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
-                        }
-                    }
-
+                    $exportParams['filterStatus'] = $filterStatus;
                     $filename = "Data_Pelanggan_Agen_{$agen->name}_Filter_" . now()->format('Y-m-d');
                     break;
 
@@ -2124,12 +2163,9 @@ class KeuanganController extends Controller
                     $startDate = $request->get('start_date');
                     $endDate = $request->get('end_date');
 
-                    if ($startDate && $endDate) {
-                        $query->whereBetween('jatuh_tempo', [
-                            Carbon::parse($startDate)->startOfDay(),
-                            Carbon::parse($endDate)->endOfDay()
-                        ]);
-                    }
+                    $exportParams['type'] = 'range';
+                    $exportParams['startDate'] = $startDate;
+                    $exportParams['endDate'] = $endDate;
 
                     $filename = "Data_Pelanggan_Agen_{$agen->name}_" .
                         Carbon::parse($startDate)->format('Y-m-d') . "_sampai_" .
@@ -2138,47 +2174,31 @@ class KeuanganController extends Controller
 
                 default:
                     // Default to current month
-                    $query->whereMonth('jatuh_tempo', now()->month)
-                        ->whereYear('jatuh_tempo', now()->year);
+                    $exportParams['type'] = 'bulan';
+                    $exportParams['bulan'] = ['month' => now()->month, 'year' => now()->year];
                     $filename = "Data_Pelanggan_Agen_{$agen->name}_" . now()->format('Y-m');
                     break;
             }
 
-            // Get the data
-            $invoices = $query->orderBy('jatuh_tempo', 'desc')->get();
+            // Create export instance dengan semua parameter
+            $exportInstance = new CustomerAgen(
+                $exportParams['type'] ?? 'bulan',
+                $exportParams['bulan'] ?? null,
+                $exportParams['startDate'] ?? null,
+                $exportParams['endDate'] ?? null,
+                $exportParams['agen_id'] ?? null,
+                $exportParams['filterStatus'] ?? null
+            );
 
-            // Prepare data for export
-            $exportData = [];
-            $no = 1;
-
-            foreach ($invoices as $invoice) {
-                $exportData[] = [
-                    'No' => $no++,
-                    'Nama Pelanggan' => $invoice->customer->nama_customer ?? '-',
-                    'Alamat' => $invoice->customer->alamat ?? '-',
-                    'PIC' => $invoice->customer->agen->name ?? '-',
-                    'Paket' => $invoice->customer->paket->nama_paket ?? '-',
-                    'Status Tagihan' => $invoice->status->nama_status ?? '-',
-                    'Total Tagihan' => $invoice->tagihan ?? 0,
-                    'Tambahan' => $invoice->tambahan ?? 0,
-                    'Tunggakan' => $invoice->tunggakan ?? 0,
-                    'Saldo' => $invoice->saldo ?? 0,
-                    'Total Keseluruhan' => ($invoice->tagihan ?? 0) + ($invoice->tambahan ?? 0) + ($invoice->tunggakan ?? 0) - ($invoice->saldo ?? 0),
-                    'Periode' => $invoice->jatuh_tempo ? Carbon::parse($invoice->jatuh_tempo)->translatedFormat('F') : '-',
-                    'Metode Bayar' => $invoice->pembayaran->isNotEmpty() ? $invoice->pembayaran->first()->metode_bayar : '-',
-                    'Tanggal Pembayaran' => $invoice->pembayaran->isNotEmpty() ?
-                        Carbon::parse($invoice->pembayaran->first()->created_at)->format('d-M-Y H:i:s') : '-',
-                    'Admin/Agen' => $invoice->pembayaran->isNotEmpty() && $invoice->pembayaran->first()->user ?
-                        $invoice->pembayaran->first()->user->name . ' / ' . $invoice->pembayaran->first()->user->roles->name : '-',
-                    'Keterangan' => $invoice->pembayaran->isNotEmpty() ? $invoice->pembayaran->first()->keterangan : '-',
-                ];
-            }
-
-            // Create export file
-            if ($format === 'csv') {
-                return $this->exportToCsv($exportData, $filename);
-            } else {
-                return $this->exportToExcel($exportData, $filename, $agen);
+            // Return export based on format
+            switch ($format) {
+                case 'xls':
+                    return Excel::download($exportInstance, $filename . '.xls', \Maatwebsite\Excel\Excel::XLS);
+                case 'csv':
+                    return Excel::download($exportInstance, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV);
+                case 'xlsx':
+                default:
+                    return Excel::download($exportInstance, $filename . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
             }
         } catch (\Exception $e) {
             \Log::error('Error in exportPelangganAgen: ' . $e->getMessage());
@@ -2189,34 +2209,55 @@ class KeuanganController extends Controller
         }
     }
 
-    private function exportToExcel($data, $filename, $agen)
+    private function exportToXLSX($data, $filename, $agen)
     {
-        // Create a simple Excel export using Laravel Excel or manual creation
-        $headers = [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '.xlsx"',
-            'Cache-Control' => 'max-age=0',
-        ];
-
-        // For now, we'll create a CSV with Excel headers
-        // In a real implementation, you'd use Laravel Excel package
-        return $this->exportToCsv($data, $filename, $headers);
+        try {
+            return Excel::download(
+                new CustomerAgen($data, $agen->name),
+                $filename . '.xlsx',
+                \Maatwebsite\Excel\Excel::XLSX,
+                [
+                    'Cache-Control' => 'max-age=0',
+                ]
+            );
+        } catch (\Exception $e) {
+            // Fallback to CSV jika XLSX gagal
+            \Log::warning('XLSX export failed, falling back to CSV: ' . $e->getMessage());
+            return $this->exportToCSV($data, $filename);
+        }
     }
 
-    private function exportToCsv($data, $filename, $headers = null)
+    private function exportToXLS($data, $filename, $agen)
     {
-        if (!$headers) {
-            $headers = [
-                'Content-Type' => 'text/csv',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '.csv"',
-                'Cache-Control' => 'max-age=0',
-            ];
+        try {
+            return Excel::download(
+                new CustomerAgen($data, $agen->name),
+                $filename . '.xls',
+                \Maatwebsite\Excel\Excel::XLS,
+                [
+                    'Cache-Control' => 'max-age=0',
+                ]
+            );
+        } catch (\Exception $e) {
+            // Fallback to CSV jika XLS gagal
+            \Log::warning('XLS export failed, falling back to CSV: ' . $e->getMessage());
+            return $this->exportToCSV($data, $filename);
         }
+    }
+
+    private function exportToCSV($data, $filename)
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '.csv"',
+            'Cache-Control' => 'max-age=0',
+            'Pragma' => 'public',
+        ];
 
         $callback = function () use ($data) {
             $file = fopen('php://output', 'w');
 
-            // Add BOM for UTF-8
+            // Add BOM for UTF-8 compatibility
             fwrite($file, "\xEF\xBB\xBF");
 
             // Add headers
@@ -2225,7 +2266,18 @@ class KeuanganController extends Controller
 
                 // Add data rows
                 foreach ($data as $row) {
-                    fputcsv($file, $row);
+                    // Format numeric values properly
+                    $formattedRow = $row;
+                    $numericColumns = ['Total Tagihan', 'Tambahan', 'Tunggakan', 'Saldo', 'Total Keseluruhan'];
+
+                    foreach ($numericColumns as $col) {
+                        if (isset($formattedRow[$col])) {
+                            $formattedRow[$col] = is_numeric($formattedRow[$col]) ?
+                                number_format($formattedRow[$col], 0, ',', '.') : $formattedRow[$col];
+                        }
+                    }
+
+                    fputcsv($file, $formattedRow);
                 }
             }
 

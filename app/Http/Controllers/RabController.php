@@ -77,19 +77,44 @@ class RabController extends Controller
 
         $data = $query->latest()->paginate(10);
 
-        // Calculate totals
+        // Calculate totals for FILTERED data
         $totalAnggaran = $query->sum('jumlah_anggaran');
-
-        // Get RAB IDs from current query for calculating realized budget
         $rabIds = $query->pluck('id');
 
-        // Calculate total realized budget (pengeluaran) for filtered RABs
+        // Calculate total realized budget for filtered RABs
         $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
-            ->where('status_id', 3) // Only approved pengeluaran
+            ->where('status_id', 3)
             ->sum('jumlah_pengeluaran');
 
-        // Calculate remaining budget
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
+
+        // Calculate FILTERED SALDO (based on filtered period)
+        $pembayaran = Pembayaran::when($request->filled('tahun'), function ($q) use ($request) {
+            $q->whereYear('created_at', $request->tahun);
+        })
+            ->when($request->filled('bulan'), function ($q) use ($request) {
+                $q->whereMonth('created_at', $request->bulan);
+            })
+            ->sum('jumlah_bayar');
+
+        $pendapatan = Pendapatan::when($request->filled('tahun'), function ($q) use ($request) {
+            $q->whereYear('created_at', $request->tahun);
+        })
+            ->when($request->filled('bulan'), function ($q) use ($request) {
+                $q->whereMonth('created_at', $request->bulan);
+            })
+            ->sum('jumlah_pendapatan');
+
+        $pengeluaran = Pengeluaran::where('status_id', 3)
+            ->when($request->filled('tahun'), function ($q) use ($request) {
+                $q->whereYear('created_at', $request->tahun);
+            })
+            ->when($request->filled('bulan'), function ($q) use ($request) {
+                $q->whereMonth('created_at', $request->bulan);
+            })
+            ->sum('jumlah_pengeluaran');
+
+        $totalSaldo = $pembayaran + $pendapatan - $pengeluaran;
 
         $html = view('rab.partials.data-table', compact('data'))->render();
 
@@ -97,7 +122,8 @@ class RabController extends Controller
             'html' => $html,
             'total' => $totalAnggaran,
             'terealisasi' => $totalTerealisasi,
-            'sisa' => $sisaAnggaran
+            'sisa' => $sisaAnggaran,
+            'saldo' => $totalSaldo
         ]);
     }
 

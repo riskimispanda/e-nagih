@@ -220,22 +220,27 @@
         @php
         // Mapping bulan dalam bahasa Indonesia
         $monthNames = [
-        '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-        '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-        '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
         ];
-        
+
         $currentMonthNum = now()->format('m');
         $currentMonthName = $monthNames[$currentMonthNum];
-        
+
+        // Handle display period dengan benar - PERBAIKAN DI SINI
         $displayPeriod = 'Bulan Ini (' . $currentMonthName . ' ' . now()->year . ')';
-        if(request()->has('month')) {
-            $monthParam = request()->get('month');
-            if($monthParam == 'all') {
+        $selectedMonth = request()->get('month');
+
+        if($selectedMonth) {
+            if($selectedMonth == 'all') {
                 $displayPeriod = 'Semua Periode';
-            } elseif($monthParam != $currentMonthNum && isset($monthNames[$monthParam])) {
-                $displayPeriod = $monthNames[$monthParam] . ' ' . now()->year;
+            } elseif(isset($monthNames[$selectedMonth])) {
+                $displayPeriod = $monthNames[$selectedMonth] . ' ' . now()->year;
             }
+        } else {
+            // Default jika tidak ada parameter month
+            $displayPeriod = 'Bulan Ini (' . $currentMonthName . ' ' . now()->year . ')';
         }
 
         // Tambahkan informasi status filter
@@ -244,9 +249,17 @@
         if($selectedStatus) {
             $displayStatus = ' - ' . $selectedStatus;
         }
-        @endphp
-        
 
+        // Set selected values untuk dropdown - PERBAIKAN DI SINI
+        $selectedMonthDropdown = request()->get('month', $currentMonthNum);
+        // Jika tidak ada parameter month, set ke current month
+        if (!request()->has('month')) {
+            $selectedMonthDropdown = $currentMonthNum;
+        }
+
+        $selectedStatusDropdown = request()->get('status', '');
+        $selectedPerPage = request()->get('per_page', 10);
+        @endphp
 
         <!-- Info Alert -->
         <div class="alert alert-info alert-dismissible fade show" role="alert">
@@ -378,12 +391,9 @@
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-calendar"></i></span>
                                 <select class="form-select" id="filterMonth" onchange="filterByMonth()">
-                                    @php
-                                    $selectedMonth = request()->get('month', $currentMonthNum);
-                                    @endphp
-                                    <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>Semua Bulan</option>
+                                    <option value="all" {{ $selectedMonthDropdown == 'all' ? 'selected' : '' }}>Semua Bulan</option>
                                     @foreach($monthNames as $monthNum => $monthName)
-                                    <option value="{{ $monthNum }}" {{ $selectedMonth == $monthNum ? 'selected' : '' }}>
+                                    <option value="{{ $monthNum }}" {{ $selectedMonthDropdown == $monthNum ? 'selected' : '' }}>
                                         {{ $monthName }} {{ now()->year }}
                                         @if($monthNum == $currentMonthNum) (Bulan Ini) @endif
                                     </option>
@@ -392,7 +402,7 @@
                             </div>
                             <small class="text-muted">
                                 <i class="bx bx-info-circle me-1"></i>
-                                Secara default menampilkan invoice bulan {{ $currentMonthName }}
+                                Pilih "Semua Bulan" untuk menampilkan data dari semua periode
                             </small>
                         </div>
                         <div class="col-md-3 mb-2">
@@ -656,15 +666,20 @@
                             </label>
                             <input type="date" class="form-control" id="endDate" name="end_date" required>
                         </div>
-                    </div>
+                    </div><!-- Di dalam modal custom range -->
                     <div class="mb-3">
                         <label for="exportFormat" class="form-label">
                             <i class="bx bx-file me-1"></i>Format Export
                         </label>
                         <select class="form-select" id="exportFormat" name="format">
-                            <option value="xlsx">Excel (.xlsx)</option>
-                            <option value="csv">CSV (.csv)</option>
+                            <option value="xlsx">Excel (.xlsx) - Modern</option>
+                            <option value="xls">Excel (.xls) - Kompatibel</option>
+                            <option value="csv">CSV (.csv) - Paling Kompatibel</option>
                         </select>
+                        <small class="text-muted">
+                            <i class="bx bx-info-circle me-1"></i>
+                            Pilih .xls untuk kompatibilitas terbaik dengan WPS Office
+                        </small>
                     </div>
                     <div class="alert alert-info">
                         <i class="bx bx-info-circle me-2"></i>
@@ -837,156 +852,179 @@
         // Buat URL dengan parameter bulan dan pertahankan parameter status
         const currentUrl = new URL(window.location.href);
 
-        // Set month parameter
-        currentUrl.searchParams.set('month', selectedMonth);
-
-        // Pertahankan status parameter
-        if (selectedStatus && selectedStatus !== '') {
-            currentUrl.searchParams.set('status', selectedStatus);
+        // Handle parameter month - PERBAIKAN DI SINI
+        if (selectedMonth === 'all') {
+            currentUrl.searchParams.set('month', 'all'); // Set ke 'all', bukan dihapus
+        } else {
+            currentUrl.searchParams.set('month', selectedMonth);
         }
 
-        // Redirect ke URL dengan parameter bulan dan status
-        window.location.href = currentUrl.toString();
-    }
-
-    // Function untuk filter berdasarkan status tagihan (server-side)
-    function filterByStatus() {
-        const statusSelect = document.getElementById('filterStatus');
-        const monthSelect = document.getElementById('filterMonth');
-        const selectedStatus = statusSelect.value;
-        const selectedMonth = monthSelect.value;
-
-        // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengambil data invoice untuk status yang dipilih</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        // Buat URL dengan parameter status dan pertahankan parameter month
-        const currentUrl = new URL(window.location.href);
-
-        // Set status parameter
+        // Pertahankan status parameter jika ada
         if (selectedStatus && selectedStatus !== '') {
             currentUrl.searchParams.set('status', selectedStatus);
         } else {
             currentUrl.searchParams.delete('status');
         }
 
-        // Pertahankan month parameter
-        if (selectedMonth && selectedMonth !== '') {
-            currentUrl.searchParams.set('month', selectedMonth);
-        }
-
-        // Redirect ke URL dengan parameter status dan month
-        window.location.href = currentUrl.toString();
-    }
-
-    // Function untuk mengubah jumlah data per halaman (server-side)
-    function changeEntriesPerPage() {
-        const entriesSelect = document.getElementById('entriesPerPage');
-        const monthSelect = document.getElementById('filterMonth');
-        const statusSelect = document.getElementById('filterStatus');
-        const selectedPerPage = entriesSelect.value;
-        const selectedMonth = monthSelect.value;
-        const selectedStatus = statusSelect.value;
-
-        // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="10" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengubah jumlah data per halaman</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        // Buat URL dengan parameter per_page dan pertahankan parameter lainnya
-        const currentUrl = new URL(window.location.href);
-
-        // Set per_page parameter
-        currentUrl.searchParams.set('per_page', selectedPerPage);
-
-        // Pertahankan parameter lainnya
-        if (selectedMonth && selectedMonth !== '') {
-            currentUrl.searchParams.set('month', selectedMonth);
-        }
-        if (selectedStatus && selectedStatus !== '') {
-            currentUrl.searchParams.set('status', selectedStatus);
-        }
-
-        // Reset ke halaman pertama ketika mengubah per_page
+        // Hapus parameter page untuk kembali ke halaman pertama
         currentUrl.searchParams.delete('page');
 
-        // Redirect ke URL dengan parameter per_page
+        // Redirect ke URL dengan parameter yang sudah diperbaiki
         window.location.href = currentUrl.toString();
     }
 
-    // Export Functions
-    function exportData(type) {
-        const agenId = {{ $agen->id }};
-        let exportUrl = `/keuangan/export-pelanggan-agen/${agenId}`;
-        let params = new URLSearchParams();
+    // Function untuk filter berdasarkan status tagihan (server-side)
+function filterByStatus() {
+    const statusSelect = document.getElementById('filterStatus');
+    const monthSelect = document.getElementById('filterMonth');
+    const selectedStatus = statusSelect.value;
+    const selectedMonth = monthSelect.value;
 
-        // Add current filters to maintain consistency
-        const currentMonth = document.getElementById('filterMonth').value;
-        const currentStatus = document.getElementById('filterStatus').value;
+    // Tampilkan loading indicator
+    const tableBody = document.querySelector('#customerTable tbody');
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="10" class="text-center py-5">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
+                    <p class="text-muted mb-0">Sedang mengambil data invoice untuk status yang dipilih</p>
+                </div>
+            </td>
+        </tr>
+    `;
 
-        switch(type) {
-            case 'today':
-                params.append('export_type', 'today');
-                params.append('date', new Date().toISOString().split('T')[0]);
-                break;
-            case 'month':
-                params.append('export_type', 'month');
-                params.append('month', new Date().getMonth() + 1);
-                params.append('year', new Date().getFullYear());
-                break;
-            case 'current_filter':
-                params.append('export_type', 'current_filter');
-                if (currentMonth && currentMonth !== '') {
-                    params.append('month', currentMonth);
-                }
-                if (currentStatus && currentStatus !== '') {
-                    params.append('status', currentStatus);
-                }
-                break;
-        }
+    // Buat URL dengan parameter status dan pertahankan parameter month
+    const currentUrl = new URL(window.location.href);
 
-        // Show loading state
-        showExportLoading(type);
-
-        // Create download link
-        const fullUrl = `${exportUrl}?${params.toString()}`;
-        
-        // Create temporary link and trigger download
-        const link = document.createElement('a');
-        link.href = fullUrl;
-        link.download = '';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Hide loading state after a delay
-        setTimeout(() => {
-            hideExportLoading();
-        }, 2000);
+    // Handle status parameter
+    if (selectedStatus && selectedStatus !== '') {
+        currentUrl.searchParams.set('status', selectedStatus);
+    } else {
+        currentUrl.searchParams.delete('status');
     }
+
+    // Handle month parameter - PERBAIKAN DI SINI
+    if (selectedMonth && selectedMonth !== 'all') {
+        currentUrl.searchParams.set('month', selectedMonth);
+    } else {
+        currentUrl.searchParams.set('month', 'all'); // Set ke 'all'
+    }
+
+    // Hapus parameter page untuk kembali ke halaman pertama
+    currentUrl.searchParams.delete('page');
+
+    // Redirect ke URL dengan parameter status dan month
+    window.location.href = currentUrl.toString();
+}
+
+// Function untuk mengubah jumlah data per halaman (server-side)
+function changeEntriesPerPage() {
+    const entriesSelect = document.getElementById('entriesPerPage');
+    const monthSelect = document.getElementById('filterMonth');
+    const statusSelect = document.getElementById('filterStatus');
+    const selectedPerPage = entriesSelect.value;
+    const selectedMonth = monthSelect.value;
+    const selectedStatus = statusSelect.value;
+
+    // Tampilkan loading indicator
+    const tableBody = document.querySelector('#customerTable tbody');
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="10" class="text-center py-5">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
+                    <p class="text-muted mb-0">Sedang mengubah jumlah data per halaman</p>
+                </div>
+            </td>
+        </tr>
+    `;
+
+    // Buat URL dengan parameter per_page dan pertahankan parameter lainnya
+    const currentUrl = new URL(window.location.href);
+
+    // Set per_page parameter
+    currentUrl.searchParams.set('per_page', selectedPerPage);
+
+    // Handle month parameter - PERBAIKAN DI SINI
+    if (selectedMonth && selectedMonth !== 'all') {
+        currentUrl.searchParams.set('month', selectedMonth);
+    } else {
+        currentUrl.searchParams.set('month', 'all'); // Set ke 'all'
+    }
+
+    // Handle status parameter
+    if (selectedStatus && selectedStatus !== '') {
+        currentUrl.searchParams.set('status', selectedStatus);
+    } else {
+        currentUrl.searchParams.delete('status');
+    }
+
+    // Reset ke halaman pertama ketika mengubah per_page
+    currentUrl.searchParams.delete('page');
+
+    // Redirect ke URL dengan parameter per_page
+    window.location.href = currentUrl.toString();
+}
+
+    // Export Functions
+function exportData(type) {
+    const agenId = {{ $agen->id }};
+    let exportUrl = `/keuangan/export-pelanggan-agen/${agenId}`;
+    let params = new URLSearchParams();
+
+    // Add current filters to maintain consistency
+    const currentMonth = document.getElementById('filterMonth').value;
+    const currentStatus = document.getElementById('filterStatus').value;
+
+    switch(type) {
+        case 'today':
+            params.append('export_type', 'today');
+            params.append('date', new Date().toISOString().split('T')[0]);
+            break;
+        case 'month':
+            params.append('export_type', 'month');
+            params.append('month', new Date().getMonth() + 1);
+            params.append('year', new Date().getFullYear());
+            break;
+        case 'current_filter':
+            params.append('export_type', 'current_filter');
+            // PERBAIKAN: Handle 'all' value untuk month
+            if (currentMonth && currentMonth !== 'all') {
+                params.append('month', currentMonth);
+            } else {
+                params.append('month', 'all');
+            }
+            if (currentStatus && currentStatus !== '') {
+                params.append('status', currentStatus);
+            }
+            break;
+    }
+
+    // Show loading state
+    showExportLoading(type);
+
+    // Create download link
+    const fullUrl = `${exportUrl}?${params.toString()}`;
+    
+    // Create temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = fullUrl;
+    link.download = '';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Hide loading state after a delay
+    setTimeout(() => {
+        hideExportLoading();
+    }, 2000);
+}
 
     function exportCustomRange() {
         const startDate = document.getElementById('startDate').value;

@@ -4,6 +4,8 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use App\Models\Router;
+use App\Jobs\CacheConnectionMikrotik;
 
 class Kernel extends ConsoleKernel
 {
@@ -28,6 +30,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:test-command')->everyMinute();
         $schedule->command('app:generate-invoice')->everyMinute();
         $schedule->command('app:send-warning')->dailyAt('08:00');
+        $schedule->call(function () {
+            foreach (Router::all() as $router) {
+                CacheConnectionMikrotik::dispatch($router->id);
+            }
+        })->everyMinute();
     }
 
     /**

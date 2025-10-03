@@ -460,7 +460,7 @@
                                 <i class='bx bx-wallet-alt fs-3 me-2'></i>
                                 <h6 class="card-title text-white mb-0 fw-bold">Total Saldo</h6>
                             </div>
-                            <p class="card-text display-8 fw-bold mb-2">Rp {{ number_format($total, 0, ',', '.') }}</p>
+                            <p class="card-text display-8 fw-bold mb-2" id="saldo">Rp 0</p>
                         </div>
                     </div>
                 </div>
@@ -721,12 +721,14 @@
             // Update table
             document.getElementById('result-container').innerHTML = data.html;
             
-            // Update cards with formatted currency
+            // Update ALL cards with formatted currency
+            document.getElementById('saldo').textContent = formatCurrency(data.saldo);
             document.getElementById('pagu-tahun').textContent = formatCurrency(data.total);
             document.getElementById('anggaran-terealisasi').textContent = formatCurrency(data.terealisasi);
             document.getElementById('sisa-anggaran').textContent = formatCurrency(data.sisa);
             
-            console.log('Cards updated:', {
+            console.log('All cards updated:', {
+                saldo: data.saldo,
                 total: data.total,
                 terealisasi: data.terealisasi,
                 sisa: data.sisa
@@ -736,10 +738,11 @@
             alert('Gagal mengambil data');
         }
     }
-    
+
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
         // Set initial values from server data
+        document.getElementById('saldo').textContent = formatCurrency({{ $total }});
         document.getElementById('pagu-tahun').textContent = formatCurrency({{ $totalAnggaran ?? 0 }});
         document.getElementById('anggaran-terealisasi').textContent = formatCurrency({{ $totalTerealisasi ?? 0 }});
         document.getElementById('sisa-anggaran').textContent = formatCurrency({{ $sisaAnggaran ?? 0 }});
@@ -751,7 +754,7 @@
         document.getElementById('filter-bulan').addEventListener('change', performFilter);
         document.getElementById('filter-tahun').addEventListener('change', performFilter);
         document.getElementById('filter-kegiatan').addEventListener('change', performFilter);
-        
+
         console.log('Initial data loaded:', {
             total: {{ $totalAnggaran ?? 0 }},
             terealisasi: {{ $totalTerealisasi ?? 0 }},

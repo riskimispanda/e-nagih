@@ -41,7 +41,7 @@ class PengeluaranController extends Controller
         $pendapatanLanggananPerBulan = Pembayaran::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_bayar');
         $pendapatanNonLanggananPerBulan = Pendapatan::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_pendapatan');
 
-        $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $totalPengeluaran;
+        $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $mounthlyPengeluaran;
 
         $totalPembayaran = Pembayaran::sum('jumlah_bayar');
         $totalPendapatan = Pendapatan::sum('jumlah_pendapatan');
