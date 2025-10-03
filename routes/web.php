@@ -74,6 +74,8 @@ use Symfony\Component\HttpFoundation\Request;
 use RouterOS\Client;
 use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
+use App\Http\Middleware\VerifyCsrfTokens;
+use Illuminate\Support\Facades\Log;
 
 
 // Main Page Route
@@ -275,7 +277,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customer/request', [Customer::class, 'req'])->name('request');
     Route::post('/customer/add/pengaduan', [Customer::class, 'addPengaduan'])->name('customer.addPengaduan');
 
-
     // Logistik
     Route::post('/logistik/store', [Logistik::class, 'store']);
     Route::post('/add-kategori-logistik', [Logistik::class, 'tambahKategori'])->middleware('auth','roles:Super Admin,Admin Logistik');
@@ -285,8 +286,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tracking', [Logistik::class, 'tracking'])->middleware('auth', 'roles:Super Admin,Admin Logistik')->name('tracking');
     Route::get('/dashboard-logistik', [Logistik::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')->name('dashboard-logistik');
     Route::get('/tiket-barang', [Logistik::class, 'TiketBarang'])->middleware('auth', 'roles:Admin Logistik,Super Admin');
-
-
 
     // Teknisi
     Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])->middleware('auth', 'roles:Super Admin,Teknisi,NOC')->name('teknisi');
@@ -405,17 +404,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/pelanggan/bulk-wifi-scan', [MikrotikController::class, 'bulkWifiScan'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('bulk-wifi-scan');
     Route::get('/pelanggan/{id}/network-info', [MikrotikController::class, 'getNetworkInfo'])->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')->name('pelanggan-network-info');
 
-
-
-
-
     // Agen
     Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');
     Route::get('/agen/data-pelanggan/search', [AgenController::class, 'search'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-search');
     Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-statistics');
     Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name('request-pembayaran-agen');
     Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Agen')->name('pelanggan-agen');
-
 
     // Mikrotik API
     Route::get('/mikrotik', [MikrotikController::class, 'index'])->name('mikrotik');
@@ -436,15 +430,12 @@ Route::middleware(['auth'])->group(function () {
 // Payment callback routes (outside auth middleware and CSRF protection)
 
 // Tripay test callback route (specific for Tripay test feature)
-Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])->name('payment.tripay.test.callback')->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+Route::any('/payment/tripay-test-callback', [TripayController::class, 'handleTripayTestCallback'])->name('payment.tripay.test.callback')->withoutMiddleware(['auth', VerifyCsrfTokens::class]);
 
 // Payment callback tester routes (outside auth middleware for easier testing)
-Route::get('/payment/callback-tester', [TripayController::class, 'showCallbackTester'])
-->name('payment.callback.tester');
+Route::get('/payment/callback-tester', [TripayController::class, 'showCallbackTester'])->name('payment.callback.tester');
 
-Route::post('/payment/callback-test', [TripayController::class, 'processCallbackTest'])
-->name('payment.callback.test')
-->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/payment/callback-test', [TripayController::class, 'processCallbackTest'])->name('payment.callback.test')->withoutMiddleware([VerifyCsrfTokens::class]);
 
 // Direct test route for easier testing (can be accessed directly from browser)
 Route::get('/payment/test/{invoice_id}', function($invoice_id) {
@@ -455,28 +446,20 @@ Route::get('/payment/test/{invoice_id}', function($invoice_id) {
     // Call the callback handler directly
     $controller = new \App\Http\Controllers\Payment\TripayController();
     return $controller->paymentCallback($request);
-})
-->name('payment.direct.test')
-->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+})->name('payment.direct.test')->withoutMiddleware(['auth', VerifyCsrfTokens::class]);
 
 // Sandbox payment simulation routes
-Route::get('/payment/sandbox-simulate/{invoice_id}', [TripayController::class, 'simulateSandboxPayment'])
-->name('payment.sandbox.simulate')
-->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+Route::get('/payment/sandbox-simulate/{invoice_id}', [TripayController::class, 'simulateSandboxPayment'])->name('payment.sandbox.simulate')->withoutMiddleware(['auth', VerifyCsrfTokens::class]);
 
-Route::get('/payment/simulate-by-reference/{reference}', [TripayController::class, 'simulatePaymentByReference'])
-->name('payment.simulate.reference')
-->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+Route::get('/payment/simulate-by-reference/{reference}', [TripayController::class, 'simulatePaymentByReference'])->name('payment.simulate.reference')->withoutMiddleware(['auth', VerifyCsrfTokens::class]);
 
 // Check payment status from Tripay API
-Route::get('/payment/check-status/{invoice_id}', [TripayController::class, 'checkPaymentStatus'])
-->name('payment.check.status')
-->withoutMiddleware(['auth', \App\Http\Middleware\VerifyCsrfToken::class]);
+Route::get('/payment/check-status/{invoice_id}', [TripayController::class, 'checkPaymentStatus'])->name('payment.check.status')->withoutMiddleware(['auth', VerifyCsrfTokens::class]);
 
 // Fallback route for Tripay callback - accepts any method (GET, POST, etc.)
 Route::any('/tripay-callback', function(\Illuminate\Http\Request $request) {
     // Log the request
-    \Log::info('Tripay fallback callback received', [
+    Log::info('Tripay fallback callback received', [
         'method' => $request->method(),
         'url' => $request->url(),
         'all' => $request->all(),
@@ -486,10 +469,7 @@ Route::any('/tripay-callback', function(\Illuminate\Http\Request $request) {
     // Forward to the callback handler
     $controller = new \App\Http\Controllers\Payment\TripayController();
     return $controller->paymentCallback($request);
-})
-->name('payment.fallback')
-->middleware('api')
-->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+})->name('payment.fallback')->middleware('api')->withoutMiddleware([VerifyCsrfTokens::class]);
 
 Route::get('/api/olt/by-server/{server}', [TeknisiController::class, 'getByServer']);
 Route::get('/api/odc/by-olt/{odc}', [TeknisiController::class, 'getByOdc']);

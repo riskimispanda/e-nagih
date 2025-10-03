@@ -213,7 +213,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-end mt-6">
+                            <div class="d-flex justify-content-end mt-6 gap-2">
+                                <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Kembali</a>
                                 <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bx bx-file me-1"></i>Kirim</button>
                             </div>
                         </form>

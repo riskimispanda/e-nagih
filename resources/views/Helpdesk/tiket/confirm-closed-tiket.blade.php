@@ -170,6 +170,7 @@
                 </div>
             </div>
         </div>
+        {{-- Kategori Upgrade Downgrade --}}
         @if($kategori->kategori->nama_kategori == 'Upgrade' || $kategori->kategori->nama_kategori == 'Downgrade')
         <div class="card">
             <div class="card-body">
@@ -243,7 +244,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end mt-6">
+                        <div class="d-flex justify-content-end mt-6 gap-2">
+                            <a href="javascript:history.back()" class="btn btn-secondary btn-sm">Kembali</a>
                             <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bx bx-file me-1"></i>Kirim</button>
                         </div>
                     </form>
@@ -251,6 +253,25 @@
             </div>
         </div>
         @endif
+
+        {{-- Kategori Deaktivasi --}}
+        @if($kategori->kategori->nama_kategori == 'Deaktivasi')
+        <div class="card">
+            <div class="card-body">
+                <div class="card-header">
+                    <h5 class="card-title fw-semibold">Form Konfirmasi Deaktivasi Pelanggan</h5>
+                    <small class="card-subtitle">Form untuk konfirmasi Deaktivasi pelanggan</small>
+                </div>
+                <div class="card-body">
+                    <form action="#" method="POST">
+                        @csrf
+
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endif
+
     </div>
 </div>
 

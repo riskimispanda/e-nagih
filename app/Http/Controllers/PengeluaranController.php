@@ -19,6 +19,7 @@ class PengeluaranController extends Controller
     public function index()
     {
         $tahunSekarang = Carbon::now()->year;
+        $bulanSekarang = Carbon::now()->month;
         $rab = Rab::where('status_id', 12)
                 ->where('tahun_anggaran', $tahunSekarang)
                 ->get();
@@ -37,10 +38,14 @@ class PengeluaranController extends Controller
 
         $totalRequest = Pengeluaran::where('status_id', 1)->count();
 
-        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
-        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
+        $pendapatanLanggananPerBulan = Pembayaran::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_bayar');
+        $pendapatanNonLanggananPerBulan = Pendapatan::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_pendapatan');
 
-        $total = $pendapatanLangganan + $pendapatanNonLangganan - $totalPengeluaran;
+        $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $totalPengeluaran;
+
+        $totalPembayaran = Pembayaran::sum('jumlah_bayar');
+        $totalPendapatan = Pendapatan::sum('jumlah_pendapatan');
+        $totalSaldo = $totalPembayaran + $totalPendapatan - $totalPengeluaran;
 
         return view('keuangan.pengeluaran',[
             'users' => auth()->user(),
@@ -53,7 +58,8 @@ class PengeluaranController extends Controller
             'kas' => $kas,
             'rab' => $rab,
             'totalRequest' => $totalRequest,
-            'total' => $total,
+            'saldoBulanIni' => $totalSaldoBulanIni,
+            'total' => $totalSaldo
         ]);
     }
 
