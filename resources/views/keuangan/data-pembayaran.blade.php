@@ -360,20 +360,6 @@
 
 <!-- Statistics Cards -->
 <div class="row g-4 mb-4">
-    <!-- Total Payments -->
-    {{-- <div class="col-12 col-sm-6 col-lg-3">
-        <div class="payment-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <p class="text-muted small mb-1 fw-medium">Total Pembayaran</p>
-                    <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($totalPayments ?? 0, 0, ',', '.') }}</h5>
-                </div>
-                <div class="stat-icon bg-success bg-opacity-10 text-success">
-                    <i class="bx bx-money"></i>
-                </div>
-            </div>
-        </div>
-    </div> --}}
     
     <!-- Today's Payments -->
     <div class="col-12 col-sm-6 col-lg-3">
