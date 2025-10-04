@@ -116,12 +116,16 @@ class DataController extends Controller
         
         $metode = Metode::all();
         $pembayaran = Pembayaran::where('status_id', 6)->get();
-        $hariIni = Customer::whereDate('tanggal_selesai', today())
-            ->where('status_id', 3)
-            ->count();
-        $menunggu = Customer::whereDate('created_at', today())
-            ->whereIn('status_id', [1, 2, 5])
-            ->count();
+        // $hariIni = Customer::whereDate('tanggal_selesai', today())
+        //     ->where('status_id', 3)
+        //     ->count();
+        $hariIni = Customer::where('status_id', 3)->count();
+
+        // $menunggu = Customer::whereDate('created_at', today())
+        //     ->whereIn('status_id', [1, 2, 5])
+        //     ->count();
+        $menunggu = Customer::whereIn('status_id', [1, 2, 3])->count();
+
         $maintenance = Customer::whereDate('updated_at', today())
             ->where('status_id', 4)
             ->get();
