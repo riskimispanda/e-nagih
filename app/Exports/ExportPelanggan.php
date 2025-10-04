@@ -6,25 +6,61 @@ use App\Models\Paket;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 use Carbon\Carbon;
 
-class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
+class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents, WithTitle
 {
     protected $type;
     protected $paketId;
+    protected $title;
 
     public function __construct($type = 'semua', $paketId = null)
     {
         $this->type = $type;
         $this->paketId = $paketId;
+        $this->title = $this->generateTitle();
+    }
+
+    public function title(): string
+    {
+        return $this->title;
+    }
+
+    private function generateTitle()
+    {
+        switch ($this->type) {
+            case 'aktif':
+                return 'Pelanggan Aktif';
+            case 'nonaktif':
+                return 'Pelanggan Nonaktif';
+            case 'paket':
+                return 'Pelanggan Berdasarkan Paket';
+            case 'ringkasan':
+                return 'Ringkasan Paket';
+            case 'bulan':
+                $month = $this->paketId['month'] ?? date('m');
+                $year = $this->paketId['year'] ?? date('Y');
+                return "Pelanggan Bulan {$month}-{$year}";
+            default:
+                return 'Semua Pelanggan';
+        }
     }
 
     public function collection()
     {
         // Eager load semua relasi
         $query = Customer::with([
-            'paket', 
-            'odp.odc.olt', 
+            'paket',
+            'odp.odc.olt.server',
             'router', 
             'agen', 
             'teknisi', 
@@ -43,8 +79,8 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             case 'ringkasan':
                 return Paket::withCount('customer')->get();
             case 'bulan':
-                $month = $this->paketId['month']; // bulan dikirim di constructor
-                $year = $this->paketId['year'];   // tahun dikirim di constructor
+                $month = $this->paketId['month'] ?? date('m');
+                $year = $this->paketId['year'] ?? date('Y');
                 return $query->whereYear('tanggal_selesai', $year)
                     ->whereMonth('tanggal_selesai', $month)
                     ->get();
@@ -67,7 +103,6 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
         if (!empty($customer->tanggal_selesai)) {
             try {
                 $ts = $customer->tanggal_selesai;
-                // Pastikan string bisa di-parse
                 if (strtotime($ts) !== false) {
                     $tanggalSelesai = Carbon::parse($ts)->format('d-M-y H:i:s');
                 }
@@ -76,20 +111,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             }
         }
 
-        $status = '-';
-        if ($customer->status_id == 3) {
-            $status = 'Aktif';
-        } elseif ($customer->status_id == 9) {
-            $status = 'Blokir';
-        } elseif ($customer->status_id == 1) {
-            $status = 'Menunggu';
-        } elseif ($customer->status_id == 2) {
-            $status = 'On Progress';
-        } elseif ($customer->status_id == 4) {
-            $status = 'Maintenance';
-        } elseif ($customer->status_id == 5) {
-            $status = 'Assigment';
-        }
+        $status = $this->getStatusText($customer->status_id);
 
         return [
             $customer->id,
@@ -98,6 +120,9 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             $customer->email,
             $status,
             $customer->paket?->nama_paket ?? '-',
+            $customer->odp->odc->olt->server->lokasi_server ?? '-',
+            $customer->odp->odc->olt->nama_lokasi ?? '-',
+            $customer->odp->odc->nama_odc ?? '-',
             $customer->odp?->nama_odp ?? '-',
             $customer->router?->nama_router ?? '-',
             $customer->agen?->name ?? '-',
@@ -119,6 +144,20 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
+    private function getStatusText($statusId)
+    {
+        $statusMap = [
+            1 => 'Menunggu',
+            2 => 'On Progress',
+            3 => 'Aktif',
+            4 => 'Maintenance',
+            5 => 'Assigment',
+            9 => 'Blokir'
+        ];
+
+        return $statusMap[$statusId] ?? '-';
+    }
+
     // Heading kolom Excel
     public function headings(): array
     {
@@ -128,12 +167,15 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
 
         return [
             'ID',
-            'Nama',
+            'Nama Pelanggan',
             'No HP',
             'Email',
             'Status',
             'Paket',
-            'Lokasi',
+            'Server',
+            'OLT',
+            'ODC',
+            'ODP',
             'Router',
             'Agen',
             'Teknisi',
@@ -146,11 +188,235 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping
             'Usersecret',
             'Password Secret',
             'Transiver',
-            'Reciver',
+            'Receiver',
             'Access Point',
             'Station',
             'Tanggal Registrasi',
             'Tanggal Installasi'
+        ];
+    }
+
+    // Styling sederhana untuk Excel
+    public function styles(Worksheet $sheet)
+    {
+        return $sheet;
+    }
+
+    // Helper function untuk mendapatkan huruf kolom berdasarkan index
+    private function getColumnLetter($index)
+    {
+        $letters = '';
+        while ($index >= 0) {
+            $letters = chr(65 + ($index % 26)) . $letters;
+            $index = floor($index / 26) - 1;
+        }
+        return $letters;
+    }
+
+    // Event untuk styling lengkap
+    public function registerEvents(): array
+    {
+        return [
+            AfterSheet::class => function (AfterSheet $event) {
+                $sheet = $event->sheet->getDelegate();
+
+                // Tentukan jumlah kolom berdasarkan tipe
+                if ($this->type === 'ringkasan') {
+                    $totalColumns = 2;
+                    $headings = ['Nama Paket', 'Jumlah Pelanggan'];
+                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
+                } else {
+                    $totalColumns = 27; // 27 kolom (A sampai AA)
+                    $headings = [
+                        'ID',
+                        'Nama Pelanggan',
+                        'No HP',
+                        'Email',
+                        'Status',
+                        'Paket',
+                        'Server',
+                        'OLT',
+                        'ODC',
+                        'ODP',
+                        'Router',
+                        'Agen',
+                        'Teknisi',
+                        'Koneksi',
+                        'Perangkat',
+                        'Media',
+                        'Local Address',
+                        'Remote Address',
+                        'Remote',
+                        'Usersecret',
+                        'Password Secret',
+                        'Transiver',
+                        'Receiver',
+                        'Access Point',
+                        'Station',
+                        'Tanggal Registrasi',
+                        'Tanggal Installasi'
+                    ];
+                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AA
+                }
+
+                // Hapus heading otomatis yang sudah di-generate
+                $sheet->fromArray([], null, 'A1');
+
+                // Insert rows untuk judul
+                $sheet->insertNewRowBefore(1, 3);
+
+                // Set judul
+                $sheet->setCellValue('A1', 'LAPORAN DATA PELANGGAN');
+                $sheet->setCellValue('A2', 'Jenis: ' . $this->title);
+                $sheet->setCellValue('A3', 'Tanggal Export: ' . Carbon::now()->format('d-m-Y H:i:s'));
+
+                // Set heading manual di row 4
+                for ($col = 0; $col < $totalColumns; $col++) {
+                    $columnLetter = $this->getColumnLetter($col);
+                    $sheet->setCellValue($columnLetter . '4', $headings[$col]);
+                }
+
+                // Merge cells untuk judul
+                $sheet->mergeCells("A1:{$maxColumn}1");
+                $sheet->mergeCells("A2:{$maxColumn}2");
+                $sheet->mergeCells("A3:{$maxColumn}3");
+
+                // Style untuk judul utama
+                $sheet->getStyle('A1')->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'size' => 16,
+                        'color' => ['rgb' => '2C3E50'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'ECF0F1'],
+                    ],
+                ]);
+
+                // Style untuk subtitle
+                $sheet->getStyle('A2:A3')->applyFromArray([
+                    'font' => [
+                        'size' => 11,
+                        'color' => ['rgb' => '7F8C8D'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_LEFT,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'F8F9FA'],
+                    ],
+                ]);
+
+                // Set row height untuk judul
+                $sheet->getRowDimension(1)->setRowHeight(30);
+                $sheet->getRowDimension(2)->setRowHeight(20);
+                $sheet->getRowDimension(3)->setRowHeight(20);
+                $sheet->getRowDimension(4)->setRowHeight(25); // Header
+
+                // Auto size columns
+                for ($col = 0; $col < $totalColumns; $col++) {
+                    $columnLetter = $this->getColumnLetter($col);
+                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
+                }
+
+                // Style untuk header kolom (row 4) - SEMUA KOLOM SAMA
+                $headerRange = "A4:{$maxColumn}4";
+                $sheet->getStyle($headerRange)->applyFromArray([
+                    'font' => [
+                        'bold' => true,
+                        'color' => ['rgb' => 'FFFFFF'],
+                        'size' => 11,
+                    ],
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => '2C3E50'],
+                    ],
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_CENTER,
+                        'vertical' => Alignment::VERTICAL_CENTER,
+                    ],
+                    'borders' => [
+                        'allBorders' => [
+                            'borderStyle' => Border::BORDER_THIN,
+                            'color' => ['rgb' => '000000'],
+                        ],
+                    ],
+                ]);
+
+                // Style untuk data (row 5 dan seterusnya)
+                $lastRow = $sheet->getHighestRow();
+                if ($lastRow > 4) {
+                    $dataRange = "A5:{$maxColumn}{$lastRow}";
+
+                    // Border untuk data
+                    $sheet->getStyle($dataRange)->applyFromArray([
+                        'borders' => [
+                            'allBorders' => [
+                                'borderStyle' => Border::BORDER_THIN,
+                                'color' => ['rgb' => 'DDDDDD'],
+                            ],
+                        ],
+                        'alignment' => [
+                            'vertical' => Alignment::VERTICAL_CENTER,
+                        ],
+                    ]);
+
+                    // Style khusus untuk kolom tertentu
+                    if ($this->type !== 'ringkasan') {
+                        // Center alignment untuk ID, Status, Paket, dan Tanggal
+                        $centerColumns = [0, 4, 5, 25, 26]; // A, E, F, Z, AA
+                        foreach ($centerColumns as $colIndex) {
+                            $columnLetter = $this->getColumnLetter($colIndex);
+                            for ($row = 5; $row <= $lastRow; $row++) {
+                                $sheet->getStyle("{$columnLetter}{$row}")->getAlignment()
+                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                            }
+                        }
+
+                        // Left alignment untuk teks panjang
+                        $leftColumns = [1, 2, 3]; // B, C, D (Nama, No HP, Email)
+                        foreach ($leftColumns as $colIndex) {
+                            $columnLetter = $this->getColumnLetter($colIndex);
+                            for ($row = 5; $row <= $lastRow; $row++) {
+                                $sheet->getStyle("{$columnLetter}{$row}")->getAlignment()
+                                    ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                            }
+                        }
+                    } else {
+                        // Center alignment untuk jumlah pelanggan
+                        for ($row = 5; $row <= $lastRow; $row++) {
+                            $sheet->getStyle("B{$row}")->getAlignment()
+                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        }
+                    }
+
+                    // Alternating row colors untuk readability
+                    for ($row = 5; $row <= $lastRow; $row++) {
+                        if ($row % 2 == 0) {
+                            $sheet->getStyle("A{$row}:{$maxColumn}{$row}")
+                                ->getFill()
+                                ->setFillType(Fill::FILL_SOLID)
+                                ->getStartColor()
+                                ->setARGB('F8F9FA');
+                        }
+                    }
+                }
+
+                // Freeze panes agar header tetap visible
+                $sheet->freezePane('A5');
+
+                // Tambahkan filter pada header
+                $sheet->setAutoFilter("A4:{$maxColumn}4");
+
+                // Tambahkan protection pada sheet (optional)
+                $sheet->getProtection()->setSheet(true);
+            },
         ];
     }
 }
