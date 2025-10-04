@@ -27,12 +27,16 @@ class LoginBasic extends Controller
     if (auth()->attempt($credentials)) {
       $user = auth()->user();
       if (auth()->user()->roles_id == 6) {
+        activity('agen')
+          ->performedOn($user)
+          ->causedBy(auth()->user())
+          ->log(auth()->user()->name . ' Login ke Dashboard');
         return redirect()->intended('/helpdesk/data-antrian')->with('toast_success', 'Selamat Datang di E-Nagih ' . auth()->user()->name);
       }
       activity('user')
         ->performedOn($user)
         ->causedBy(auth()->user())
-        ->log('Login ke Dashboard');
+        ->log(auth()->user()->name . ' Login ke Dashboard');
       return redirect()->intended('dashboard')->with('toast_success', 'Login successful! ' . auth()->user()->name);
     }
     
