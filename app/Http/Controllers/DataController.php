@@ -121,7 +121,8 @@ class DataController extends Controller
             ->count();
         // $hariIni = Customer::where('status_id', 3)->count();
 
-        $menunggu = Customer::whereDate('created_at', today())
+        $menunggu = Customer::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
             ->whereIn('status_id', [1, 2, 5])
             ->count();
         // $menunggu = Customer::whereIn('status_id', [1, 2, 3])->count();
@@ -131,7 +132,7 @@ class DataController extends Controller
             ->get();
 
         $antrian = Customer::whereIn('status_id', [1, 2, 5])
-            ->whereMonth('created_at', 10)
+            ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->with('teknisi')
             ->get();
