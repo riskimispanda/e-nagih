@@ -131,7 +131,8 @@ class DataController extends Controller
             ->get();
 
         $antrian = Customer::whereIn('status_id', [1, 2, 5])
-            ->whereDate('created_at', today())
+            ->whereMonth('created_at', 10)
+            ->whereYear('created_at', now()->year)
             ->with('teknisi')
             ->get();
         
