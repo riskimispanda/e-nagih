@@ -204,12 +204,61 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
         $startDate = $request->start_date;
         $endDate = $request->end_date;
+        $month = $request->month;
+        $year = $request->year;
+        $search = $request->search;
+        $metode = $request->metode;
+
+        // **PERBAIKAN PENTING: Jika ada custom range, abaikan month/year**
+        if ($startDate && $endDate) {
+            $month = null;
+            $year = null;
+        }
+
+        // Generate filename yang lebih deskriptif
+        $timestamp = date('Y-m-d_H-i');
+        if ($month && $month !== '' && $month !== null) {
+            $monthNames = [
+                1 => 'January',
+                2 => 'February',
+                3 => 'March',
+                4 => 'April',
+                5 => 'May',
+                6 => 'June',
+                7 => 'July',
+                8 => 'August',
+                9 => 'September',
+                10 => 'October',
+                11 => 'November',
+                12 => 'December'
+            ];
+            $monthName = $monthNames[$month] ?? $month;
+            $filename = "pembayaran_{$monthName}_{$year}_{$timestamp}.xlsx";
+        } elseif ($startDate && $endDate) {
+            $start = date('Y-m-d', strtotime($startDate));
+            $end = date('Y-m-d', strtotime($endDate));
+            $filename = "pembayaran_custom_{$start}_to_{$end}_{$timestamp}.xlsx";
+        } else {
+            $filename = "pembayaran_{$filter}_{$timestamp}.xlsx";
+        }
+
         activity('Export Pembayaran')
             ->causedBy(auth()->user()->id)
-            ->log(auth()->user()->name . ' Export Data Pembayaran');
+            ->withProperties([
+                'filter' => $filter,
+                'month' => $month,
+                'year' => $year,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'search' => $search,
+                'metode' => $metode,
+                'filename' => $filename
+            ])
+            ->log(auth()->user()->name . ' Export Data Pembayaran dengan Filter: ' . $filter);
+
         return Excel::download(
-            new PembayaranExport($filter, $startDate, $endDate),
-            "pembayaran_export_{$filter}.xlsx"
+            new PembayaranExport($filter, $startDate, $endDate, $month, $year, $search, $metode),
+            $filename
         );
     })->name('pembayaran.export');
     Route::get('/berita-acara', [SuperAdmin::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC')->name('berita-acara');
