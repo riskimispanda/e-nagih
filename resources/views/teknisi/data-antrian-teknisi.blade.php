@@ -812,6 +812,8 @@
                                            data-bs-toggle="tooltip" title="Edit Detail">
                                             <i class="bx bx-pencil"></i>
                                         </a>
+                                        @else
+                                        -
                                         @endif
                                     </div>
                                 </td>
@@ -845,7 +847,7 @@
                         Menampilkan {{ $progressData->firstItem() }} - {{ $progressData->lastItem() }} dari {{ $progressData->total() }} data
                     </div>
                     <div>
-                        {{ $progressData->withQueryString()->links() }}
+                        {{ $progressData->withQueryString()->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
                 @elseif($progressPerPage == 0)
