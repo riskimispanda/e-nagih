@@ -4,211 +4,197 @@
 
 @section('vendor-style')
 <style>
-    /* Card styles */
+    /* Base Styles */
     .card {
-        border-radius: 0.75rem;
-        box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.05) !important;
-        margin-bottom: 1.5rem;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+        background: #fff;
     }
     
     .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-        padding: 1.25rem 1.5rem;
-    }
-    
-    .card-header-elements {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 1rem;
+        background: transparent;
+        border-bottom: 1px solid #f0f0f0;
+        padding: 1.5rem;
     }
     
     .card-title {
-        margin-bottom: 0.25rem;
         font-weight: 600;
-        color: #566a7f;
-        font-size: 1.125rem;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
     }
     
     .card-subtitle {
         color: #6c757d;
         font-size: 0.875rem;
-        margin-bottom: 0;
     }
-    
-    /* Filter styles */
+
+    /* Filter Section */
     .filter-container {
         display: flex;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
         flex-wrap: wrap;
-        padding: 0.5rem 0;
     }
     
     .month-filter {
-        min-width: 180px;
-        border-radius: 0.5rem;
-        border: 1px solid #d9dee3;
+        min-width: 160px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem;
-        background-color: #fff;
+        background: #fff;
     }
-    
-    .month-filter:focus {
-        border-color: #696cff;
-        box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.1);
-        outline: none;
-    }
-    
-    /* Table styles */
-    .table-modern {
+
+    /* Table Styles - Minimalist */
+    .table-minimalist {
         width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
+        border-collapse: collapse;
         margin-bottom: 0;
+        background: #fff;
     }
     
-    .table-modern th {
-        background-color: #f8f9fa;
+    .table-minimalist th {
+        background: #f8f9fa;
         font-weight: 600;
         color: #495057;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        padding: 0.875rem 1rem;
-        vertical-align: middle;
-        border-bottom: 2px solid #e9ecef;
-    }
-    
-    .table-modern td {
+        font-size: 0.8rem;
         padding: 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-        color: #4a4a4a;
+        border-bottom: 2px solid #e9ecef;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table-minimalist td {
+        padding: 1rem;
+        border-bottom: 1px solid #f8f9fa;
+        color: #4a5568;
         font-size: 0.875rem;
-    }
-    
-    .table-modern tbody tr {
         transition: all 0.2s ease;
-        background-color: #fff;
     }
     
-    .table-modern tbody tr:hover {
-        background-color: #f8f9ff;
+    .table-minimalist tbody tr {
+        background: #fff;
+        transition: all 0.2s ease;
+    }
+    
+    .table-minimalist tbody tr:hover {
+        background: #f8f9ff;
         transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    
-    /* Badge styles */
-    .badge-status {
-        padding: 0.4rem 0.8rem;
+
+    /* Badge Styles */
+    .badge-minimal {
+        padding: 0.35rem 0.75rem;
         font-size: 0.75rem;
-        font-weight: 600;
-        border-radius: 0.5rem;
-        letter-spacing: 0.3px;
+        font-weight: 500;
+        border-radius: 6px;
+        border: 1px solid;
     }
     
     .badge-waiting {
-        background-color: rgba(255, 171, 0, 0.12) !important;
-        color: #e6a800 !important;
-        border: 1px solid rgba(255, 171, 0, 0.2);
-    }
-    
-    .badge-progress {
-        background-color: rgba(105, 108, 255, 0.12) !important;
-        color: #696cff !important;
-        border: 1px solid rgba(105, 108, 255, 0.2);
-    }
-    
-    .badge-completed {
-        background-color: rgba(40, 199, 111, 0.12) !important;
-        color: #28c76f !important;
-        border: 1px solid rgba(40, 199, 111, 0.2);
-    }
-    
-    .badge-priority {
-        background-color: rgba(255, 76, 81, 0.12) !important;
-        color: #ff4c51 !important;
-        border: 1px solid rgba(255, 76, 81, 0.2);
-    }
-    
-    /* Button styles */
-    .btn-action {
-        width: 34px;
-        height: 34px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.5rem;
-        transition: all 0.2s ease;
-        margin: 0 0.125rem;
-        border: 1px solid transparent;
-    }
-    
-    .btn-maps {
-        background-color: #f8f9fa;
-        color: #6c757d;
-        border-color: #e9ecef;
-    }
-    
-    .btn-maps:hover {
-        background-color: #e9ecef;
-        color: #495057;
-        transform: translateY(-1px);
-    }
-    
-    .btn-process {
-        background-color: rgba(255, 171, 0, 0.12);
+        background: rgba(255, 171, 0, 0.1);
         color: #e6a800;
         border-color: rgba(255, 171, 0, 0.2);
     }
     
-    .btn-process:hover {
-        background-color: rgba(255, 171, 0, 0.2);
-        color: #cc9600;
-        transform: translateY(-1px);
+    .badge-progress {
+        background: rgba(105, 108, 255, 0.1);
+        color: #696cff;
+        border-color: rgba(105, 108, 255, 0.2);
     }
     
-    .btn-complete {
-        background-color: rgba(40, 199, 111, 0.12);
+    .badge-completed {
+        background: rgba(40, 199, 111, 0.1);
         color: #28c76f;
         border-color: rgba(40, 199, 111, 0.2);
     }
     
-    .btn-complete:hover {
-        background-color: rgba(40, 199, 111, 0.2);
-        color: #24b363;
-        transform: translateY(-1px);
+    .badge-priority {
+        background: rgba(255, 76, 81, 0.1);
+        color: #ff4c51;
+        border-color: rgba(255, 76, 81, 0.2);
+    }
+
+    /* Button Styles */
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background: #fff;
+        color: #6c757d;
+        transition: all 0.2s ease;
+        margin: 0 0.125rem;
     }
     
-    /* Search and filter styles */
+    .btn-icon:hover {
+        background: #f8f9fa;
+        color: #495057;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-process {
+        background: rgba(255, 171, 0, 0.1);
+        color: #e6a800;
+        border-color: rgba(255, 171, 0, 0.2);
+    }
+    
+    .btn-complete {
+        background: rgba(40, 199, 111, 0.1);
+        color: #28c76f;
+        border-color: rgba(40, 199, 111, 0.2);
+    }
+
+    /* Customer Info */
+    .customer-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .customer-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.125rem;
+    }
+    
+    .customer-phone {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    /* Search & Controls */
     .search-input {
-        border-radius: 0.5rem;
-        border: 1px solid #d9dee3;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
         padding: 0.5rem 0.75rem;
         font-size: 0.875rem;
         width: 100%;
-        max-width: 280px;
+        max-width: 240px;
         transition: all 0.2s ease;
     }
     
     .search-input:focus {
         border-color: #696cff;
-        box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.1);
+        box-shadow: 0 0 0 3px rgba(105, 108, 255, 0.1);
         outline: none;
     }
-    
-    /* Pagination styles */
+
+    /* Pagination */
     .pagination-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-top: 1.5rem;
-        padding: 1.25rem 0;
+        padding: 1.5rem 0 0;
         border-top: 1px solid #f0f0f0;
     }
     
@@ -217,41 +203,12 @@
         font-size: 0.875rem;
         font-weight: 500;
     }
-    
-    /* Status indicator */
-    .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 0.5rem;
-    }
-    
-    .status-waiting { background-color: #ffab00; }
-    .status-progress { background-color: #696cff; }
-    .status-completed { background-color: #28c76f; }
-    
-    /* Customer info styles */
-    .customer-info {
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .customer-name {
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 0.125rem;
-    }
-    
-    .customer-phone {
-        font-size: 0.75rem;
-        color: #6c757d;
-    }
-    
-    /* Empty state styles */
+
+    /* Empty State */
     .empty-state {
         padding: 3rem 1rem;
         text-align: center;
+        color: #6c757d;
     }
     
     .empty-state-icon {
@@ -261,103 +218,189 @@
     }
     
     .empty-state-title {
-        color: #6c757d;
+        font-weight: 600;
         margin-bottom: 0.5rem;
-        font-weight: 600;
     }
-    
-    .empty-state-text {
-        color: #adb5bd;
-        font-size: 0.875rem;
+
+    /* ==================== */
+    /* RESPONSIVE DESIGN */
+    /* ==================== */
+
+    @media (max-width: 1024px) {
+        .table-minimalist th:nth-child(4),
+        .table-minimalist td:nth-child(4),
+        .table-minimalist th:nth-child(5),
+        .table-minimalist td:nth-child(5) {
+            display: none;
+        }
     }
-    
-    /* Section spacing */
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #495057;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #f8f9fa;
-    }
-    
-    /* Responsive adjustments */
+
     @media (max-width: 768px) {
+        /* Card Header */
         .card-header-elements {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .card-header-elements .d-flex {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .card-header-elements .d-flex > * {
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+        
+        .search-input {
+            max-width: 100%;
+            margin-right: 0 !important;
+        }
+
+        /* Filter */
+        .filter-container {
             flex-direction: column;
             align-items: flex-start;
             gap: 0.75rem;
         }
         
-        .search-input {
-            max-width: 100%;
-            margin-bottom: 0.5rem;
-        }
-        
-        .filter-container {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-        
         .month-filter {
             min-width: 100%;
         }
-        
-        .table-modern th,
-        .table-modern td {
-            padding: 0.75rem 0.5rem;
-            font-size: 0.8125rem;
+
+        /* Table Mobile Layout */
+        .table-minimalist {
+            display: block;
         }
         
+        .table-minimalist thead {
+            display: none;
+        }
+        
+        .table-minimalist tbody,
+        .table-minimalist tr,
+        .table-minimalist td {
+            display: block;
+            width: 100%;
+        }
+        
+        .table-minimalist tr {
+            margin-bottom: 1rem;
+            border: 1px solid #f0f0f0;
+            border-radius: 12px;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+        
+        .table-minimalist td {
+            padding: 0.75rem 0.5rem;
+            border: none;
+            position: relative;
+            padding-left: 45%;
+            display: flex;
+            align-items: center;
+            min-height: 44px;
+            border-bottom: 1px solid #f8f9fa;
+        }
+        
+        .table-minimalist td:last-child {
+            border-bottom: none;
+            justify-content: center;
+            padding: 1rem 0.5rem;
+        }
+        
+        .table-minimalist td::before {
+            content: attr(data-label);
+            position: absolute;
+            left: 0.5rem;
+            width: 40%;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* Hide less important columns on mobile */
+        .table-minimalist td:nth-child(3),
+        .table-minimalist td:nth-child(4),
+        .table-minimalist td:nth-child(5) {
+            display: none;
+        }
+
+        /* Customer info mobile optimization */
+        .customer-info {
+            width: 100%;
+        }
+        
+        .customer-name {
+            font-size: 0.9rem;
+        }
+        
+        .customer-phone {
+            font-size: 0.7rem;
+        }
+
+        /* Badge mobile optimization */
+        .badge-minimal {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.7rem;
+        }
+
+        /* Button mobile optimization */
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 0.25rem;
+        }
+
+        /* Pagination mobile */
         .pagination-container {
             flex-direction: column;
             gap: 1rem;
             text-align: center;
         }
+    }
+
+    @media (max-width: 480px) {
+        .table-minimalist td {
+            padding-left: 50%;
+            min-height: 40px;
+            font-size: 0.8rem;
+        }
         
-        /* Hide less important columns on mobile */
-        .table-modern th:nth-child(3),
-        .table-modern td:nth-child(3) {
-            display: none;
+        .table-minimalist td::before {
+            width: 45%;
+            font-size: 0.7rem;
+        }
+        
+        .table-minimalist tr {
+            padding: 0.75rem;
+        }
+        
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+        }
+        
+        .card {
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            padding: 1.25rem;
         }
     }
 
-    /* Per page dropdown styles */
-.per-page-dropdown .dropdown-toggle::after {
-    margin-left: 0.5rem;
-}
-
-/* Responsive adjustments untuk dropdown */
-@media (max-width: 768px) {
-    .card-header-elements .d-flex {
-        flex-direction: column;
-        width: 100%;
-    }
-    
-    .card-header-elements .d-flex > * {
-        margin-bottom: 0.5rem;
-        width: 100%;
-    }
-    
-    .search-input {
-        margin-right: 0 !important;
-    }
-}
-    
-    @media (max-width: 576px) {
-        .table-modern th:nth-child(4),
-        .table-modern td:nth-child(4),
-        .table-modern th:nth-child(5),
-        .table-modern td:nth-child(5) {
-            display: none;
-        }
-        
-        .btn-action {
-            width: 32px;
-            height: 32px;
-            margin: 0.125rem;
-        }
+    /* Text truncation */
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.4;
     }
 </style>
 @endsection
@@ -383,7 +426,7 @@
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilter">
-                        <i class='bx bx-reset me-1'></i> Reset Filter
+                        <i class='bx bx-reset me-1'></i> Reset
                     </button>
                 </div>
             </div>
@@ -391,7 +434,6 @@
     </div>
 </div>
 
-<!-- Priority Section -->
 <!-- Priority Section -->
 <div class="row mb-4">
     <div class="col-12">
@@ -407,16 +449,6 @@
                     </div>
                     <div class="d-flex align-items-center">
                         <input type="text" class="search-input me-2" placeholder="Cari perusahaan..." id="searchCorp">
-                        <div class="dropdown me-2">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class='bx bx-filter me-1'></i> Filter
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Semua</a></li>
-                                <li><a class="dropdown-item" href="#">Terbaru</a></li>
-                                <li><a class="dropdown-item" href="#">Terlama</a></li>
-                            </ul>
-                        </div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class='bx bx-list-ul me-1'></i> {{ $corpPerPage == 0 ? 'Semua' : $corpPerPage }}
@@ -435,35 +467,35 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-modern" id="corpTable">
+                    <table class="table table-minimalist" id="corpTable">
                         <thead>
                             <tr>
-                                <th width="5%">No</th>
-                                <th width="25%">Nama Perusahaan</th>
-                                <th width="25%">Alamat</th>
-                                <th width="10%">Lokasi</th>
-                                <th width="15%">Tanggal Registrasi</th>
-                                <th width="10%">Status</th>
-                                <th width="10%">Aksi</th>
+                                <th>No</th>
+                                <th>Perusahaan</th>
+                                <th>Alamat</th>
+                                <th>Lokasi</th>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($corp as $item)
                             <tr>
-                                <td class="text-center fw-semibold text-muted">
+                                <td class="text-center fw-semibold text-muted" data-label="No">
                                     {{ $loop->iteration + ($corp->currentPage() - 1) * $corp->perPage() }}
                                 </td>
-                                <td>
+                                <td data-label="Perusahaan">
                                     <div class="customer-info">
                                         <span class="customer-name">{{ $item->nama_perusahaan }}</span>
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="text-truncate-2-lines" title="{{ $item->alamat }}">
+                                <td data-label="Alamat">
+                                    <span class="text-truncate-2" title="{{ $item->alamat }}">
                                         {{ Str::limit($item->alamat, 50) }}
                                     </span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-label="Lokasi">
                                     @php
                                         $gps = $item->gps;
                                         $isLink = Str::startsWith($gps, ['http://', 'https://']);
@@ -473,32 +505,31 @@
                                     @endphp
                                     <a href="{{ $url }}" 
                                     target="_blank" 
-                                    class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
+                                    class="btn btn-icon {{ $gps ? '' : 'disabled' }}" 
                                     data-bs-toggle="tooltip" 
                                     title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                                         <i class="bx bx-map"></i>
                                     </a>
                                 </td>
-                                <td>
-                                    <span class="fw-medium text-primary">
+                                <td data-label="Tanggal">
+                                    <span class="text-muted">
                                         {{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}
                                     </span>
                                 </td>
-                                <td>
-                                    <span class="badge badge-status badge-priority">
-                                        <i class='bx bx-time me-1'></i>
+                                <td data-label="Status">
+                                    <span class="badge badge-minimal badge-priority">
                                         {{ $item->status->nama_status }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <div class="d-flex justify-content-center">
                                         @if (auth()->user()->roles_id == 5)
-                                        <a href="/corp/proses/{{ $item->id }}" class="btn btn-action btn-process me-1" 
+                                        <a href="/corp/proses/{{ $item->id }}" class="btn btn-icon btn-process me-1" 
                                            data-bs-toggle="tooltip" title="Proses Instalasi">
                                             <i class="bx bx-hard-hat"></i>
                                         </a>
                                         @endif
-                                        <a href="/teknisi/detail-antrian/{{ $item->id }}" class="btn btn-action btn-maps" 
+                                        <a href="/teknisi/detail-antrian/{{ $item->id }}" class="btn btn-icon" 
                                            data-bs-toggle="tooltip" title="Lihat Detail">
                                             <i class="bx bx-info-circle"></i>
                                         </a>
@@ -511,7 +542,7 @@
                                     <div class="empty-state">
                                         <i class='bx bx-calendar-check empty-state-icon'></i>
                                         <h6 class="empty-state-title">Tidak ada antrian priority</h6>
-                                        <p class="empty-state-text">Semua pelanggan priority telah diproses</p>
+                                        <p class="card-subtitle">Semua pelanggan priority telah diproses</p>
                                     </div>
                                 </td>
                             </tr>
@@ -519,13 +550,14 @@
                         </tbody>
                     </table>
                 </div>
+                
                 @if($corp->hasPages() && $corpPerPage > 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $corp->firstItem() }} - {{ $corp->lastItem() }} dari {{ $corp->total() }} data
                     </div>
                     <div>
-                        {{ $corp->withQueryString()->links() }}
+                        {{ $corp->withQueryString()->onEachSide(1)->links() }}
                     </div>
                 </div>
                 @elseif($corpPerPage == 0)
@@ -555,16 +587,6 @@
                     </div>
                     <div class="d-flex align-items-center">
                         <input type="text" class="search-input me-2" placeholder="Cari pelanggan..." id="searchWaiting">
-                        <div class="dropdown me-2">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class='bx bx-filter me-1'></i> Filter
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Semua</a></li>
-                                <li><a class="dropdown-item" href="#">Terbaru</a></li>
-                                <li><a class="dropdown-item" href="#">Terlama</a></li>
-                            </ul>
-                        </div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class='bx bx-list-ul me-1'></i> {{ $waitingPerPage == 0 ? 'Semua' : $waitingPerPage }}
@@ -583,16 +605,16 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-modern" id="waitingTable">
+                    <table class="table table-minimalist" id="waitingTable">
                         <thead>
                             <tr>
-                                <th width="5%">No</th>
-                                <th width="20%">Pelanggan</th>
-                                <th width="25%">Alamat</th>
-                                <th width="10%">Lokasi</th>
-                                <th width="15%">Tanggal Registrasi</th>
-                                <th width="10%">Status</th>
-                                <th width="15%">Aksi</th>
+                                <th>No</th>
+                                <th>Pelanggan</th>
+                                <th>Alamat</th>
+                                <th>Lokasi</th>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -601,21 +623,21 @@
                             @if ($item->status_id == '5')
                             @php $waitingCount++; @endphp
                             <tr>
-                                <td class="text-center fw-semibold text-muted">
+                                <td class="text-center fw-semibold text-muted" data-label="No">
                                     {{ $loop->iteration + ($data->currentPage() - 1) * $data->perPage() }}
                                 </td>
-                                <td>
+                                <td data-label="Pelanggan">
                                     <div class="customer-info">
                                         <span class="customer-name">{{ $item->nama_customer }}</span>
                                         <small class="customer-phone">{{ $item->no_hp ?? 'No. HP tidak tersedia' }}</small>
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="text-truncate-2-lines" title="{{ $item->alamat }}">
+                                <td data-label="Alamat">
+                                    <span class="text-truncate-2" title="{{ $item->alamat }}">
                                         {{ Str::limit($item->alamat, 50) }}
                                     </span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center" data-label="Lokasi">
                                     @php
                                         $gps = $item->gps;
                                         $isLink = Str::startsWith($gps, ['http://', 'https://']);
@@ -625,37 +647,36 @@
                                     @endphp
                                     <a href="{{ $url }}" 
                                     target="_blank" 
-                                    class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
+                                    class="btn btn-icon {{ $gps ? '' : 'disabled' }}" 
                                     data-bs-toggle="tooltip" 
                                     title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                                         <i class="bx bx-map"></i>
                                     </a>
                                 </td>
-                                <td>
-                                    <span class="fw-medium text-primary">
+                                <td data-label="Tanggal">
+                                    <span class="text-muted">
                                         {{ $item->created_at->format('d M Y') }}
                                     </span>
                                 </td>
-                                <td>
-                                    <span class="badge badge-status badge-waiting">
-                                        <span class="status-indicator status-waiting"></span>
+                                <td data-label="Status">
+                                    <span class="badge badge-minimal badge-waiting">
                                         {{ $item->status->nama_status }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <div class="d-flex justify-content-center">
                                         @if (auth()->user()->roles->name == 'Teknisi')
-                                        <a href="/teknisi/selesai/{{ $item->id }}" class="btn btn-action btn-process me-1" 
+                                        <a href="/teknisi/selesai/{{ $item->id }}" class="btn btn-icon btn-process me-1" 
                                            data-bs-toggle="tooltip" title="Proses Instalasi">
                                             <i class="bx bx-hard-hat"></i>
                                         </a>
                                         @elseif(auth()->user()->roles->name == 'NOC')
-                                        <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-action btn-complete me-1" 
+                                        <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-icon btn-complete me-1" 
                                            data-bs-toggle="tooltip" title="Edit Detail">
                                             <i class="bx bx-pencil"></i>
                                         </a>
                                         @endif
-                                        <a href="/teknisi/detail-antrian/{{ $item->id }}" class="btn btn-action btn-maps" 
+                                        <a href="/teknisi/detail-antrian/{{ $item->id }}" class="btn btn-icon" 
                                            data-bs-toggle="tooltip" title="Lihat Detail">
                                             <i class="bx bx-info-circle"></i>
                                         </a>
@@ -670,7 +691,7 @@
                                     <div class="empty-state">
                                         <i class='bx bx-user-check empty-state-icon'></i>
                                         <h6 class="empty-state-title">Tidak ada antrian menunggu</h6>
-                                        <p class="empty-state-text">Semua pelanggan telah diproses</p>
+                                        <p class="card-subtitle">Semua pelanggan telah diproses</p>
                                     </div>
                                 </td>
                             </tr>
@@ -678,13 +699,14 @@
                         </tbody>
                     </table>
                 </div>
+                
                 @if($data->hasPages() && $waitingPerPage > 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} data
                     </div>
                     <div>
-                        {{ $data->withQueryString()->links() }}
+                        {{ $data->withQueryString()->onEachSide(1)->links() }}
                     </div>
                 </div>
                 @elseif($waitingPerPage == 0)
@@ -714,16 +736,6 @@
                     </div>
                     <div class="d-flex align-items-center">
                         <input type="text" class="search-input me-2" placeholder="Cari pelanggan..." id="searchProgress">
-                        <div class="dropdown me-2">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                <i class='bx bx-filter me-1'></i> Filter
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">Semua</a></li>
-                                <li><a class="dropdown-item" href="#">Terbaru</a></li>
-                                <li><a class="dropdown-item" href="#">Terlama</a></li>
-                            </ul>
-                        </div>
                         <div class="dropdown">
                             <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                 <i class='bx bx-list-ul me-1'></i> {{ $progressPerPage == 0 ? 'Semua' : $progressPerPage }}
@@ -742,17 +754,17 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-modern" id="progressTable">
+                    <table class="table table-minimalist" id="progressTable">
                         <thead>
                             <tr>
-                                <th width="5%">No</th>
-                                <th width="20%">Pelanggan</th>
-                                <th width="20%">Alamat</th>
-                                <th width="10%">Lokasi</th>
-                                <th width="15%">Tanggal Registrasi</th>
-                                <th width="10%">Status</th>
-                                <th width="10%">Aksi</th>
-                                <th width="10%">Teknisi</th>
+                                <th>No</th>
+                                <th>Pelanggan</th>
+                                <th>Alamat</th>
+                                <th>Lokasi</th>
+                                <th>Tanggal</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                                <th>Teknisi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -762,62 +774,61 @@
                             @if ($item->status_id == '2' or $item->status_id == '3')
                             @php $progressCount++; @endphp
                             <tr>
-                                <td class="text-center fw-semibold text-muted">
+                                <td class="text-center fw-semibold text-muted" data-label="No">
                                     {{ $loop->iteration + ($progressData->currentPage() - 1) * $progressData->perPage() }}
                                 </td>
-                                <td>
+                                <td data-label="Pelanggan">
                                     <div class="customer-info">
                                         <span class="customer-name">{{ $item->nama_customer }}</span>
+                                        <small class="customer-phone">{{ $item->no_hp ?? 'No. HP tidak tersedia' }}</small>
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="text-truncate-2-lines" title="{{ $item->alamat }}">
+                                <td data-label="Alamat">
+                                    <span class="text-truncate-2" title="{{ $item->alamat }}">
                                         {{ Str::limit($item->alamat, 40) }}
                                     </span>
                                 </td>
-                                <td class="text-center">
-                                    <a href="{{ $item->gps }}" target="_blank" class="btn btn-action btn-maps" 
+                                <td class="text-center" data-label="Lokasi">
+                                    <a href="{{ $item->gps }}" target="_blank" class="btn btn-icon" 
                                        data-bs-toggle="tooltip" title="Lihat di Google Maps">
                                         <i class="bx bx-map"></i>
                                     </a>
                                 </td>
-                                <td>
-                                    <span class="fw-medium badge bg-label-info text-primary">
+                                <td data-label="Tanggal">
+                                    <span class="text-muted">
                                         {{ $item->created_at->format('d M Y') }}
                                     </span>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     @if($item->status_id == 2)
-                                    <span class="badge bg-label-warning">
-                                        <span class="status-indicator bg-warning"></span>
+                                    <span class="badge badge-minimal badge-progress">
                                         {{ $item->status->nama_status }}
                                     </span>
                                     @elseif($item->status_id == 3)
-                                    <span class="badge bg-label-success">
-                                        <span class="status-indicator bg-success"></span>
+                                    <span class="badge badge-minimal badge-completed">
                                         {{ $item->status->nama_status }}
                                     </span>
                                     @endif
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <div class="d-flex justify-content-center">
                                         @if(auth()->user()->roles->name == 'Teknisi')
-                                        <a href="/teknisi/selesai/{{ $item->id }}/print" class="btn btn-action btn-complete me-1" 
+                                        <a href="/teknisi/selesai/{{ $item->id }}/print" class="btn btn-icon btn-complete me-1" 
                                            data-bs-toggle="tooltip" title="Selesaikan Instalasi">
                                             <i class="bx bx-check-circle"></i>
                                         </a>
                                         @elseif(auth()->user()->roles->name == 'NOC')
-                                        <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-action btn-complete me-1" 
+                                        <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-icon btn-complete me-1" 
                                            data-bs-toggle="tooltip" title="Edit Detail">
                                             <i class="bx bx-pencil"></i>
                                         </a>
                                         @else
-                                        -
+                                        <span class="text-muted">-</span>
                                         @endif
                                     </div>
                                 </td>
-                                <td class="text-center">
-                                    <span class="badge bg-label-danger border">
+                                <td class="text-center" data-label="Teknisi">
+                                    <span class="badge badge-minimal" style="background: rgba(108, 117, 125, 0.1); color: #6c757d; border-color: rgba(108, 117, 125, 0.2);">
                                         {{ strtoupper($item->teknisi->name ?? '-') }}
                                     </span>
                                 </td>
@@ -832,7 +843,7 @@
                                     <div class="empty-state">
                                         <i class='bx bx-hard-hat empty-state-icon'></i>
                                         <h6 class="empty-state-title">Tidak ada instalasi dalam proses</h6>
-                                        <p class="empty-state-text">Belum ada pelanggan yang sedang diproses</p>
+                                        <p class="card-subtitle">Belum ada pelanggan yang sedang diproses</p>
                                     </div>
                                 </td>
                             </tr>
@@ -840,13 +851,14 @@
                         </tbody>
                     </table>
                 </div>
+                
                 @if($progressData->hasPages() && $progressPerPage > 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $progressData->firstItem() }} - {{ $progressData->lastItem() }} dari {{ $progressData->total() }} data
                     </div>
                     <div>
-                        {{ $progressData->withQueryString()->links('pagination::bootstrap-5') }}
+                        {{ $progressData->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
                 @elseif($progressPerPage == 0)
@@ -963,19 +975,6 @@
                 }
             }
         }
-        
-        // Add CSS for text truncation
-        const style = document.createElement('style');
-        style.textContent = `
-            .text-truncate-2-lines {
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                line-height: 1.4;
-            }
-        `;
-        document.head.appendChild(style);
     });
 </script>
 
