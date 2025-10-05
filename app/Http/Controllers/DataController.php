@@ -145,6 +145,7 @@ class DataController extends Controller
             ->whereMonth('tanggal_selesai', now()->month)
             ->whereYear('tanggal_selesai', now()->year)
             ->with('teknisi')
+            ->orderBy('tanggal_selesai', 'desc')
             ->get();
 
         $bulananInstallasi = Customer::whereIn('status_id', [3, 4])
