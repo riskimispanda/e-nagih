@@ -452,7 +452,7 @@
                     <tbody>
                         @php $progressCount = 0; @endphp
                         @foreach ($data as $key => $item)
-                        @if (auth()->user()->id == $item->teknisi_id or auth()->user()->roles->name == 'NOC')
+                        @if (auth()->user()->id == $item->teknisi_id or auth()->user()->roles->name == 'NOC' or auth()->user()->roles->name == 'Super Admin')
                         @if ($item->status_id == '2')
                         @php $progressCount++; @endphp
                         <tr>
