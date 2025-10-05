@@ -768,7 +768,6 @@
                                 <td>
                                     <div class="customer-info">
                                         <span class="customer-name">{{ $item->nama_customer }}</span>
-                                        <small class="customer-phone">{{ $item->no_hp ?? 'No. HP tidak tersedia' }}</small>
                                     </div>
                                 </td>
                                 <td>
