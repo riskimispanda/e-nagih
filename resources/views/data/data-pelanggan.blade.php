@@ -1407,10 +1407,10 @@
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                     <td>
-                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y H:i:s') }}</span>
+                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') }}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y H:i:s') }}</span>
+                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}</span>
                                     </td>
                                 </tr>
                             @empty
