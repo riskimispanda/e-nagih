@@ -207,10 +207,11 @@ class TeknisiController extends Controller
                 'gps'             => $request->gps,
             ]);
 
-            LOG::info('Customer updated', [
+            LOG::info('Konfirmasi Installasi', [
                 'customer_id' => $customer->id,
                 'tanggal_selesai' => $tanggalSelesai,
                 'Nama Customer' => $customer->nama_customer,
+                'Nama Teknisi' => $customer->teknisi->name
             ]);
 
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
