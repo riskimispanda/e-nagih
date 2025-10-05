@@ -49,26 +49,75 @@ class TeknisiController extends Controller
          return round($tagihanProrata);
      }
 
-    public function index()
+    public function index(Request $request)
     {
         $teknisi = auth()->user()->id;
-        $customers = Customer::all();
-        $customersWithTeknisi = Customer::whereNotNull('teknisi_id')->exists();
         $user = auth()->user();
+        $customersWithTeknisi = Customer::whereNotNull('teknisi_id')->exists();
 
-        $corp = Perusahaan::where('status_id', 1)
+        // Get current month or from request (default: current month)
+        $currentMonth = $request->get('month', Carbon::now()->format('Y-m'));
+
+        // Get per page values from request with defaults
+        $corpPerPage = $request->get('corp_per_page', 10);
+        $waitingPerPage = $request->get('waiting_per_page', 10);
+        $progressPerPage = $request->get('progress_per_page', 10);
+
+        // Generate months for dropdown (12 bulan terakhir, diurutkan dari terlama ke terbaru)
+        $months = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $date = Carbon::now()->subMonths($i);
+            $months[] = [
+                'value' => $date->format('Y-m'),
+                'label' => $date->translatedFormat('F Y') // Bahasa Indonesia
+            ];
+        }
+
+        // Query untuk data Customer dengan filter bulan dan pagination
+        $customerQuery = Customer::where('status_id', 5);
+
+        if ($currentMonth) {
+            $customerQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
+                ->whereMonth('created_at', Carbon::parse($currentMonth)->month);
+        }
+
+        $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
+
+        // Query untuk antrian (status_id = 2) dengan filter bulan dan pagination
+        $antrianQuery = Customer::whereIn('status_id', [2, 3]);
+
+        if ($currentMonth) {
+            $antrianQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
+                ->whereMonth('created_at', Carbon::parse($currentMonth)->month);
+        }
+
+        $antrian = $antrianQuery->paginate($progressPerPage, ['*'], 'progress_page')->withQueryString();
+
+        // Query untuk corporate dengan filter bulan dan pagination
+        $corpQuery = Perusahaan::where('status_id', 1)
             ->when($user->roles_id != 4, function ($query) use ($user) {
                 $query->where('admin_id', $user->id);
-            })
-            ->get();
+            });
+
+        if ($currentMonth) {
+            $corpQuery->whereYear('tanggal', Carbon::parse($currentMonth)->year)
+                ->whereMonth('tanggal', Carbon::parse($currentMonth)->month);
+        }
+
+        $corp = $corpQuery->paginate($corpPerPage, ['*'], 'corp_page')->withQueryString();
 
         return view('/teknisi/data-antrian-teknisi', [
             'data' => $customers,
-            'antrian' => Customer::where('status_id', 2)->get(),
+            'progressData' => $antrian,
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customersWithTeknisi' => $customersWithTeknisi,
-            'corp' => $corp
+            'corp' => $corp,
+            'months' => $months,
+            'currentMonth' => $currentMonth,
+            'corpPerPage' => $corpPerPage,
+            'waitingPerPage' => $waitingPerPage,
+            'progressPerPage' => $progressPerPage
         ]);
     }
 
