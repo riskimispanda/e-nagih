@@ -813,10 +813,13 @@
                                 <td data-label="Aksi">
                                     <div class="d-flex justify-content-center">
                                         @if(auth()->user()->roles->name == 'Teknisi')
-                                        <a href="/teknisi/selesai/{{ $item->id }}/print" class="btn btn-icon btn-complete me-1" 
-                                           data-bs-toggle="tooltip" title="Selesaikan Instalasi">
-                                            <i class="bx bx-check-circle"></i>
-                                        </a>
+                                        <a href="/teknisi/selesai/{{ $item->id }}/print" 
+                                            class="btn btn-icon btn-complete me-1 @if($item->status_id == 3) disabled @endif" 
+                                            data-bs-toggle="tooltip" 
+                                            title="@if($item->status_id == 3) Sudah Selesai @else Selesaikan Instalasi @endif"
+                                            @if($item->status_id == 3) aria-disabled="true" tabindex="-1" @endif>
+                                             <i class="bx bx-check-circle"></i>
+                                         </a>
                                         @elseif(auth()->user()->roles->name == 'NOC')
                                         <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-icon btn-complete me-1" 
                                            data-bs-toggle="tooltip" title="Edit Detail">
@@ -828,7 +831,7 @@
                                     </div>
                                 </td>
                                 <td class="text-center" data-label="Teknisi">
-                                    <span class="badge badge-minimal" style="background: rgba(108, 117, 125, 0.1); color: #6c757d; border-color: rgba(108, 117, 125, 0.2);">
+                                    <span class="badge bg-label-warning">
                                         {{ strtoupper($item->teknisi->name ?? '-') }}
                                     </span>
                                 </td>
