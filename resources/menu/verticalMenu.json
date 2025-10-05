@@ -127,7 +127,7 @@
         {
           "url": "/teknisi/antrian",
           "name": "Data Antrian",
-          "slug": "antrian-noc",
+          "slug": "teknisi",
           "roles": [
             "Super Admin",
             "Admin Keuangan",
