@@ -1406,8 +1406,12 @@
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y H:i:s') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y H:i:s') }}</td>
+                                    <td>
+                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y H:i:s') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y H:i:s') }}</span>
+                                    </td>
                                 </tr>
                             @empty
                             <tr>
