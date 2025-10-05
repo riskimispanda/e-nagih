@@ -82,8 +82,8 @@ class NocController extends Controller
         return view('NOC.data-antrian-noc',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'customer' => Customer::where('status_id', 1)->where('teknisi_id', null)->get(),
-            'perusahaan' => Perusahaan::where('status_id', 5)->get(),
+            'customer' => Customer::where('status_id', 1)->where('teknisi_id', null)->paginate(10),
+            'perusahaan' => Perusahaan::where('status_id', 5)->paginate(10),
         ]);
     }
 

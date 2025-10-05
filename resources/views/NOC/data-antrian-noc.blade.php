@@ -761,7 +761,7 @@
                                 <th width="20%">Nama PIC</th>
                                 <th width="10%">Paket</th>
                                 <th width="10%">Lokasi</th>
-                                <th width="10%">Tanggal</th>
+                                <th width="10%">Tanggal Registrasi</th>
                                 <th width="10%">Status</th>
                                 <th width="10%">Aksi</th>
                                 <th width="10%">Admins</th>
@@ -830,6 +830,7 @@
                         </tbody>
                     </table>
                 </div>
+            {{ $perusahaan->links('pagination::bootstrap-5') }}
             </div>
         </div>
         
@@ -857,7 +858,7 @@
                                 <th width="20%">Alamat</th>
                                 <th width="10%">Paket</th>
                                 <th width="10%">Lokasi</th>
-                                <th width="15%">Tanggal</th>
+                                <th width="15%">Tanggal Registrasi</th>
                                 <th width="10%">Status</th>
                                 <th width="10%">Aksi</th>
                                 <th width="10%">Sales</th>
@@ -941,6 +942,7 @@
                     </tbody>
                 </table>
             </div>
+            {{ $customer->links('pagination::bootstrap-5') }}
         </div>
     </div>
 </div>
