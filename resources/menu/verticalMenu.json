@@ -125,7 +125,7 @@
           ]
         },
         {
-          "url": "/data/antrian-noc",
+          "url": "/teknisi/antrian",
           "name": "Data Antrian",
           "slug": "antrian-noc",
           "roles": [
