@@ -125,9 +125,9 @@
           ]
         },
         {
-          "url": "/data/antrian",
+          "url": "/data/antrian-noc",
           "name": "Data Antrian",
-          "slug": "antrian",
+          "slug": "antrian-noc",
           "roles": [
             "Super Admin",
             "Admin Keuangan",
