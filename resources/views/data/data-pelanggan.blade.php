@@ -1406,8 +1406,8 @@
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
-                                    <td>{{ date('d F Y H:i:s', strtotime($item->created_at)) }}</td>
-                                    <td>{{ date('d F Y H:i:s', strtotime($item->tanggal_selesai)) }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y H:i:s') }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y H:i:s') }}</td>
                                 </tr>
                             @empty
                             <tr>
