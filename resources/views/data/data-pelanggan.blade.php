@@ -1405,7 +1405,7 @@
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
-                                    <td>{{Carbon::parse($item->tanggal_selesai)->locale('id')->isoFormat('D MMMM Y H:mm:ss') ?? '-'}}</td>
+                                    <td>{{ Carbon::parse($item->tanggal_selesai)->locale('id')->isoFormat('D MMMM Y H:mm:ss') }}</td>
                                 </tr>
                             @empty
                             <tr>
