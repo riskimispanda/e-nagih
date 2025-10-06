@@ -76,6 +76,7 @@ use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 
 // Main Page Route
@@ -254,7 +255,7 @@ Route::middleware(['auth'])->group(function () {
                 'metode' => $metode,
                 'filename' => $filename
             ])
-            ->log(auth()->user()->name . ' Export Data Pembayaran : ' . $monthNames[$month]);
+            ->log(auth()->user()->name . ' Export Data Pembayaran : ' . $filter);
 
         return Excel::download(
             new PembayaranExport($filter, $startDate, $endDate, $month, $year, $search, $metode),
