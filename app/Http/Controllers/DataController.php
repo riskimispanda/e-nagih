@@ -221,7 +221,13 @@ class DataController extends Controller
             ));
             cache(['last_customer_update' => $currentUpdate], now()->addMinutes(5));
         }
+        $tagihan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tagihan');
+        $tambahan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tambahan');
+        $tunggakan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tunggakan');
+        $saldo = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('saldo');
 
+        // Estimasi Pendapatan bulan depan
+        $totalPendapatan = $tagihan + $tambahan + $tunggakan - $saldo;
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -238,7 +244,8 @@ class DataController extends Controller
             'installasiBulanan' => $instalasiBulanan,
             'nonAktif' => $nonAktif,
             'importData' => $import,
-            'countAgen' => $countAgen
+            'countAgen' => $countAgen,
+            'totalPendapatan' => $totalPendapatan
         ]);
     }
 
