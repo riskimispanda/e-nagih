@@ -28,7 +28,8 @@ class CekPayment extends Command
         'ba_paid_early' => 0,
         'ba_no_longer_needed' => 0,
         'prorate_cases' => 0,
-        'full_payment_cases' => 0
+        'full_payment_cases' => 0,
+        'soft_deleted_customers' => 0 // Tambahkan ini
     ];
 
     public function handle()
@@ -67,7 +68,11 @@ class CekPayment extends Command
 
     private function processInvoicesInChunks(Carbon $tanggalHariIni, bool $isDryRun)
     {
-        $query = Invoice::where('status_id', 7)->where('paket_id', '!=', 11);
+        $query = Invoice::where('status_id', 7)
+            ->where('paket_id', '!=', 11)
+            ->whereHas('customer', function ($query) {
+                $query->withTrashed(); // Include soft deleted customers
+            });
 
         if (!$this->option('force')) {
             $this->info("🔍 Mode normal: proses semua invoice belum bayar.");
@@ -85,9 +90,12 @@ class CekPayment extends Command
         $this->info("📦 Total invoice ditemukan: {$totalCount}");
 
         // Process in chunks - Load basic relationships only
-        $query->with(['customer.router', 'paket'])->chunk(50, function ($invoices) use ($tanggalHariIni, $isDryRun) {
-            $this->processInvoiceChunk($invoices, $tanggalHariIni, $isDryRun);
-        });
+        $query->with(['customer' => function ($query) {
+            $query->withTrashed()->with('router');
+        }, 'paket'])
+            ->chunk(50, function ($invoices) use ($tanggalHariIni, $isDryRun) {
+                $this->processInvoiceChunk($invoices, $tanggalHariIni, $isDryRun);
+            });
     }
 
     private function processInvoiceChunk($invoices, Carbon $tanggalHariIni, bool $isDryRun)
@@ -138,6 +146,21 @@ class CekPayment extends Command
     private function processSingleInvoice($invoice, $client, $chatService, Carbon $tanggalHariIni, bool $isDryRun)
     {
         $customer = $invoice->customer;
+
+        // Check if customer is soft deleted
+        // Check if customer is soft deleted
+        if ($customer && $customer->trashed()) {
+            Log::info("⏭️ Skip customer soft deleted", [
+                'customer_id' => $customer->id,
+                'customer_name' => $customer->nama_customer,
+                'deleted_at' => $customer->deleted_at,
+                'invoice_id' => $invoice->id
+            ]);
+            $this->warn("⏭️ Customer sudah dihapus (soft delete): {$customer->nama_customer} (ID: {$customer->id})");
+            $this->stats['soft_deleted_customers']++;
+            $this->stats['skipped']++;
+            return;
+        }
 
         if (!$customer || empty($customer->no_hp)) {
             $this->warn("⚠️ Customer ID {$invoice->customer_id} tidak valid atau nomor HP kosong");
@@ -202,11 +225,17 @@ class CekPayment extends Command
     /**
      * Get active Berita Acara for customer
      */
+    /**
+     * Get active Berita Acara for customer
+     */
     private function getActiveBeritaAcara($customer)
     {
         try {
             return BeritaAcara::where('customer_id', $customer->id)
                 ->where('tanggal_selesai_ba', '>=', now()->toDateString())
+                ->whereHas('customer', function ($query) {
+                    $query->withTrashed(); // Include soft deleted customers
+                })
                 ->orderBy('tanggal_selesai_ba', 'desc')
                 ->first();
         } catch (\Exception $e) {
@@ -550,6 +579,9 @@ class CekPayment extends Command
     /**
      * Display execution summary
      */
+    /**
+     * Display execution summary
+     */
     private function displaySummary(float $duration, bool $isDryRun)
     {
         $duration = round($duration, 2);
@@ -566,6 +598,7 @@ class CekPayment extends Command
         $this->info("🚫 BA tidak diperlukan lagi: {$this->stats['ba_no_longer_needed']}");
         $this->info("💰 Prorate cases: {$this->stats['prorate_cases']}");
         $this->info("💳 Full payment cases: {$this->stats['full_payment_cases']}");
+        $this->info("🗑️ Customer soft deleted: {$this->stats['soft_deleted_customers']}"); // TAMBAHKAN INI
         $this->info("⏭️ Dilewat: {$this->stats['skipped']}");
         $this->info("🚨 Error: {$this->stats['errors']}");
         $this->info("⏱️ Durasi: {$duration}s");

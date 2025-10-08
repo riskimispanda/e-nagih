@@ -241,20 +241,6 @@
             </div>
         </div>
     </div>
-
-    {{-- <div class="col-12 col-sm-6 col-lg-3">
-        <div class="revenue-card p-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <p class="text-muted small mb-1 fw-medium">Perkiraan Pendapatan</p>
-                    <h5 id="perkiraan" class="fw-bold text-dark mb-0">Rp {{number_format($perkiraanPendapatan ?? 0, 0, ',', '.')}}</h5>
-                </div>
-                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
-                    <i class="bx bx-calendar"></i>
-                </div>
-            </div>
-        </div>
-    </div> --}}
     
     <!-- Monthly Revenue -->
     <div class="col-12 col-sm-6 col-lg-3">
@@ -397,7 +383,7 @@
                     </li>
                     @endforeach
             
-                    <li><hr class="dropdown-divider"></li>
+                    {{-- <li><hr class="dropdown-divider"></li>
             
                     <!-- Export Berdasarkan Custom Date Range -->
                     <li><h6 class="dropdown-header">Export Berdasarkan Tanggal</h6></li>
@@ -406,7 +392,7 @@
                             <i class="bx bx-calendar-event"></i>
                             Pilih Tanggal
                         </a>
-                    </li>
+                    </li> --}}
                 </ul>
             </div>
             <label class="form-label mb-0 text-muted small">Tampilkan:</label>
@@ -440,7 +426,7 @@
                 </thead>
                 <tbody id="tableBody" style="font-size: 14px;">
                     @forelse($invoices ?? [] as $index => $invoice)
-                    <tr>
+                    <tr class="@if($invoice->customer->trashed()) bg-danger bg-opacity-10 @endif">
                         <td class="fw-medium">{{ $invoices->firstItem() + $index }}</td>
                         <td>
                             <div>
@@ -454,6 +440,11 @@
                                 <span class="badge bg-info bg-opacity-10 text-primary">
                                     {{ $invoice->paket->nama_paket ?? 'N/A' }}
                                 </span>
+                                @if($invoice->customer->trashed())
+                                <span class="badge bg-label-danger mt-2">
+                                    Deaktivasi
+                                </span>
+                                @endif
                             </td>
                             <td>
                                 <div class="d-flex align-items-center">
@@ -518,19 +509,42 @@
                             <td>
                                 <div class="d-flex gap-2">
                                     @if ($invoice->status && $invoice->status->nama_status == 'Belum Bayar')
-                                    <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}" data-bs-toggle="modal">
-                                        <i class="bx bx-money"></i>
-                                    </button>
-                                    <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="History Pembayaran {{ $invoice->customer->nama_customer ?? 'Not Found' }}">
-                                        <i class="bx bx-history"></i>
-                                    </a>
+                                        <button class="action-btn bg-success bg-opacity-10 text-success btn-sm 
+                                            @if($invoice->customer->trashed()) disabled @endif" 
+                                            data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}" 
+                                            data-bs-toggle="modal"
+                                            @if($invoice->customer->trashed()) disabled @endif>
+                                            <i class="bx bx-money"></i>
+                                        </button>
+                                        <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" 
+                                            class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary 
+                                            @if($invoice->customer->trashed()) disabled @endif" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="bottom" 
+                                            title="History Pembayaran {{ $invoice->customer->nama_customer ?? 'Not Found' }}">
+                                            <i class="bx bx-history"></i>
+                                        </a>
                                     @endif
-                                    <a href="/kirim/invoice/{{ $invoice->id }}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
+                                    
+                                    <a href="/kirim/invoice/{{ $invoice->id }}" 
+                                        class="action-btn bg-warning bg-opacity-10 text-warning btn-sm 
+                                        @if($invoice->customer->trashed()) disabled @endif" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="bottom" 
+                                        title="Kirim Invoice"
+                                        @if($invoice->customer->trashed()) onclick="return false;" @endif>
                                         <i class="bx bx-message"></i>
                                     </a>
+                                    
                                     <form action="{{ url('/tripay/sync-payment/'.$invoice->id) }}" method="POST" style="display:inline">
                                         @csrf
-                                        <button type="submit" class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync Payment">
+                                        <button type="submit" 
+                                            class="action-btn bg-danger bg-opacity-10 text-danger btn-sm 
+                                            @if($invoice->customer->trashed()) disabled @endif" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="bottom" 
+                                            title="Sync Payment"
+                                            @if($invoice->customer->trashed()) disabled @endif>
                                             <i class="bx bx-cart"></i>
                                         </button>
                                     </form>

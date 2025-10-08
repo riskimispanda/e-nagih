@@ -12,58 +12,55 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use App\Models\Invoice;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
-class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithStyles, WithColumnFormatting, ShouldAutoSize
+class CustomerBelumBayar implements FromCollection, WithMapping, WithHeadings, WithStyles, WithColumnFormatting, ShouldAutoSize
 {
     protected $type;
     protected $bulan;
     protected $startDate;
     protected $endDate;
     protected $agenId;
-    protected $filterStatus;
-    protected $includeDeleted; // Tambahkan parameter baru
+    protected $includeDeleted;
 
-    /**
-     * @param string $type 'bulan' untuk filter bulan tertentu, 'range' untuk custom date, 'all' untuk semua bulan
-     * @param array|null $bulan ['month' => int, 'year' => int] atau 'all'
-     * @param string|null $startDate format Y-m-d
-     * @param string|null $endDate format Y-m-d
-     * @param int|null $agenId ID agen untuk filter
-     * @param string|null $filterStatus Status tagihan untuk filter
-     * @param bool $includeDeleted Include customer yang sudah dihapus
-     */
-    public function __construct($type = 'bulan', $bulan = null, $startDate = null, $endDate = null, $agenId = null, $filterStatus = null, $includeDeleted = true) // Default: true
+    public function __construct($type = 'all', $bulan = null, $startDate = null, $endDate = null, $agenId = null, $includeDeleted = true)
     {
         $this->type = $type;
         $this->bulan = $bulan;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
         $this->agenId = $agenId;
-        $this->filterStatus = $filterStatus;
         $this->includeDeleted = $includeDeleted;
     }
 
     public function collection()
     {
+        Log::info('CustomerBelumBayar Export Started', [
+            'type' => $this->type,
+            'bulan' => $this->bulan,
+            'startDate' => $this->startDate,
+            'endDate' => $this->endDate,
+            'agenId' => $this->agenId
+        ]);
+
+        // Query dasar
         $query = Invoice::with([
             'customer' => function ($q) {
                 if ($this->includeDeleted) {
-                    $q->withTrashed(); // Include deleted customers
+                    $q->withTrashed();
                 }
             },
             'paket',
             'status',
-            'customer.agen',
-            'pembayaran.user'
-        ])
-            ->whereHas('customer', function ($q) {
-                $q->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+            'customer.agen'
+        ]);
 
-            // Include deleted customers dalam whereHas
-            if ($this->includeDeleted) {
-                $q->withTrashed();
-            }
-            });
+        // Filter status
+        $query->where(function($q) {
+            $q->whereHas('status', function($statusQuery) {
+                $statusQuery->whereIn('nama_status', ['Belum Bayar', 'Unpaid']);
+            })->orWhere('status_id', 7);
+        });
 
         // Filter by agen_id
         if ($this->agenId) {
@@ -75,61 +72,41 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
             });
         }
 
-        // Apply status filter jika ada
-        if ($this->filterStatus) {
-            if ($this->filterStatus == 'Sudah Bayar') {
-                $query->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
-            } elseif ($this->filterStatus == 'Belum Bayar') {
-                $query->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
-            }
-        }
-
         // Apply date filters
         if ($this->type === 'range' && $this->startDate && $this->endDate) {
-            // Custom date range
-            $query->whereBetween('jatuh_tempo', [$this->startDate, $this->endDate]);
-        } elseif ($this->type === 'bulan') {
-            // Handle filter bulan
-            if ($this->bulan === 'all') {
-                // Tampilkan semua data untuk tahun berjalan
-                $query->whereYear('jatuh_tempo', now()->year);
-            } elseif (is_array($this->bulan) && !empty($this->bulan)) {
-                // Filter bulan & tahun tertentu
-                $query->whereMonth('jatuh_tempo', $this->bulan['month'])
-                    ->whereYear('jatuh_tempo', $this->bulan['year']);
-            } else {
-                // Default: bulan ini
-                $query->whereMonth('jatuh_tempo', now()->month)
-                    ->whereYear('jatuh_tempo', now()->year);
-            }
+            $start = Carbon::parse($this->startDate)->startOfDay();
+            $end = Carbon::parse($this->endDate)->endOfDay();
+            
+            Log::info('Applying date range filter', [
+                'start' => $start,
+                'end' => $end
+            ]);
+            
+            $query->whereBetween('jatuh_tempo', [$start, $end]);
+            
+        } elseif ($this->type === 'bulan' && is_array($this->bulan)) {
+            $query->whereMonth('jatuh_tempo', $this->bulan['month'])
+                  ->whereYear('jatuh_tempo', $this->bulan['year']);
+                  
+        } elseif ($this->type === 'all') {
+            // Tampilkan SEMUA data unpaid tanpa filter tanggal
         } else {
             // Default: bulan ini
             $query->whereMonth('jatuh_tempo', now()->month)
-                ->whereYear('jatuh_tempo', now()->year);
+                  ->whereYear('jatuh_tempo', now()->year);
         }
 
-        return $query->orderBy('jatuh_tempo', 'desc')->get();
+        $results = $query->orderBy('jatuh_tempo', 'asc')->get();
+
+        Log::info('CustomerBelumBayar Export Results', [
+            'total_records' => $results->count()
+        ]);
+
+        return $results;
     }
 
     public function map($invoice): array
     {
-        // Format tanggal pembayaran
-        $tanggalPembayaran = '-';
-        $metodeBayar = '-';
-        $adminAgen = '-';
-        $keterangan = '-';
-
-        if ($invoice->pembayaran->isNotEmpty()) {
-            $pembayaran = $invoice->pembayaran->first();
-            $tanggalPembayaran = $pembayaran->created_at ?
-                Carbon::parse($pembayaran->created_at)->format('d-M-Y H:i:s') : '-';
-            $metodeBayar = $pembayaran->metode_bayar ?? '-';
-            $adminAgen = $pembayaran->user ?
-                $pembayaran->user->name . ' / ' . ($pembayaran->user->roles->name ?? '-') :
-                'By Tripay';
-            $keterangan = $pembayaran->keterangan ?? '-';
-        }
-
         // Hitung total keseluruhan
         $totalKeseluruhan = ($invoice->tagihan ?? 0) +
             ($invoice->tambahan ?? 0) +
@@ -142,14 +119,14 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
 
         if ($invoice->customer && $invoice->customer->trashed()) {
             $statusCustomer = 'Deaktivasi';
-            $namaCustomer .= ' (Deaktivasi)'; // Tambahkan tanda untuk mudah identifikasi
+            $namaCustomer .= ' (Deaktivasi)';
         }
 
         return [
             $namaCustomer,
             $invoice->customer->alamat ?? '-',
             $invoice->customer->no_hp ?? '-',
-            $invoice->customer->agen->name ?? '-', // PIC
+            $invoice->customer->agen->name ?? '-',
             $invoice->paket->nama_paket ?? '-',
             $invoice->status->nama_status ?? '-',
             $invoice->tagihan ?? 0,
@@ -157,19 +134,28 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
             $invoice->tunggakan ?? 0,
             $invoice->saldo ?? 0,
             $totalKeseluruhan,
-            $invoice->jatuh_tempo ? Carbon::parse($invoice->jatuh_tempo)->translatedFormat('F Y') : '-',
-            $metodeBayar,
-            $tanggalPembayaran,
-            $adminAgen,
-            $keterangan,
-            $statusCustomer // Kolom baru untuk status customer
+            $invoice->jatuh_tempo ? Carbon::parse($invoice->jatuh_tempo)->format('F Y') : '-',
+            $statusCustomer
         ];
     }
 
     public function headings(): array
     {
+        $rangeInfo = '';
+        
+        if ($this->type === 'range' && $this->startDate && $this->endDate) {
+            $start = Carbon::parse($this->startDate)->format('d M Y');
+            $end = Carbon::parse($this->endDate)->format('d M Y');
+            $rangeInfo = " ({$start} hingga {$end})";
+        } elseif ($this->type === 'bulan' && is_array($this->bulan)) {
+            $monthName = $this->getMonthName($this->bulan['month']);
+            $rangeInfo = " ({$monthName} {$this->bulan['year']})";
+        } elseif ($this->type === 'all') {
+            $rangeInfo = " (Semua Data)";
+        }
+
         return [
-            'Nama Pelanggan',
+            'Nama Pelanggan' . $rangeInfo,
             'Alamat',
             'No HP',
             'PIC',
@@ -181,36 +167,32 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
             'Saldo',
             'Total Keseluruhan',
             'Periode',
-            'Metode Bayar',
-            'Tanggal Pembayaran',
-            'Admin/Agen',
-            'Keterangan',
-            'Status Customer' // Heading baru
+            'Status Customer'
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        // Style untuk kompatibilitas WPS Office
         return [
             // Header row
             1 => [
                 'font' => [
                     'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF'],
+                    'color' => ['rgb' => '000000'],
                     'size' => 11,
                 ],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'color' => ['rgb' => '2c3e50']
+                    'color' => ['rgb' => 'E9ECEF'] // Abu-abu sangat muda
                 ],
                 'alignment' => [
                     'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                     'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                    'wrapText' => true
                 ]
             ],
-            // Data rows
-            'A:Q' => [ // Diperbarui ke Q karena ada kolom baru
+            // Data rows (diperbarui dari A:O menjadi A:M karena kolom berkurang)
+            'A:M' => [
                 'alignment' => [
                     'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
                 ],
@@ -218,10 +200,16 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
                     'size' => 10,
                 ]
             ],
-            // Number columns (G, H, I, J, K)
+            // Number columns (G, H, I, J, K) - tetap sama
             'G:K' => [
                 'alignment' => [
                     'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT,
+                ]
+            ],
+            // Kolom Jatuh Tempo (L) dan Status Customer (M) center
+            'L:M' => [
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                 ]
             ],
         ];
@@ -235,6 +223,19 @@ class CustomerAgen implements FromCollection, WithMapping, WithHeadings, WithSty
             'I' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Tunggakan
             'J' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Saldo
             'K' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1, // Total Keseluruhan
+            // Kolom N (hari keterlambatan) dihapus
         ];
+    }
+
+    private function getMonthName($month)
+    {
+        $months = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', 
+            '04' => 'April', '05' => 'Mei', '06' => 'Juni',
+            '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
+            '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+        ];
+
+        return $months[str_pad($month, 2, '0', STR_PAD_LEFT)] ?? 'Unknown';
     }
 }

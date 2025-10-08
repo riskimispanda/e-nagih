@@ -682,7 +682,7 @@
                     </thead>
                     <tbody id="tableBody" style="font-size: 14px">
                         @forelse($invoicePay ?? [] as $index => $payment)
-                            <tr>
+                            <tr class="@if($payment->invoice->customer->trashed()) bg-danger bg-opacity-10 @endif">
                                 <td class="fw-medium">{{ $payments->firstItem() + $index }}</td>
                                 <td>
                                     <div>
@@ -695,9 +695,12 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info bg-opacity-10 text-primary">
+                                    <span class="badge bg-info bg-opacity-10 text-primary mb-2">
                                         {{ $payment->invoice->paket->nama_paket ?? 'N/A' }}
                                     </span>
+                                    @if($payment->invoice->customer->trashed())
+                                    <span class="badge bg-label-danger">Deaktivasi</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -750,22 +753,27 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if ($payment->status_id == 8)
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <a class="btn btn-outline-warning btn-sm text-warning" data-bs-toggle="modal"
-                                                data-bs-target="#editModal{{ $payment->id }}">
-                                                <i class="bx bx-pencil"></i>
-                                            </a>
-                                            <a href="/kirim-ulang/{{ $payment->id }}"
-                                                class="btn btn-outline-danger btn-sm text-danger" data-bs-toggle="tooltip"
-                                                data-bs-placement="bottom" title="Kirim Notifikasi Pembayaran Berhasil">
-                                                <i class="bx bx-message"></i>
-                                            </a>
-                                        </div>
+                                    @if($payment->invoice->customer->trashed())
+                                    <div class="d-flex justify-content-center">
+                                        <span class="text-center fw-bold">-</span>
+                                    </div>
                                     @else
-                                        <button class="btn btn-outline-warning btn-sm text-warning" disabled>
-                                            <i class="bx bx-pencil"></i>
-                                        </button>
+                                        @if ($payment->status_id == 8)
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a class="btn btn-outline-warning btn-sm text-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ $payment->id }}">
+                                                    <i class="bx bx-pencil"></i>
+                                                </a>
+                                                <a href="/kirim-ulang/{{ $payment->id }}"
+                                                    class="btn btn-outline-danger btn-sm text-danger" data-bs-toggle="tooltip"
+                                                    data-bs-placement="bottom" title="Kirim Notifikasi Pembayaran Berhasil">
+                                                    <i class="bx bx-message"></i>
+                                                </a>
+                                            </div>
+                                        @else
+                                            <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                                                <i class="bx bx-pencil"></i>
+                                            </button>
+                                        @endif
                                     @endif
                                 </td>
                                 <td>
@@ -1167,9 +1175,10 @@
                 } else {
                     rowNumber = index + 1;
                 }
+                const isCustomerDeleted = payment.invoice?.customer?.deleted_at !== null && payment.invoice?.customer?.deleted_at !== undefined;
 
                 tableHTML += `
-                <tr>
+                <tr class="${isCustomerDeleted ? 'bg-danger bg-opacity-10' : ''}">
                     <td class="fw-medium">${rowNumber}</td>
                     <td>
                         <div>
@@ -1178,9 +1187,10 @@
                         </div>
                     </td>
                     <td>
-                        <span class="badge bg-info bg-opacity-10 text-primary">
+                        <span class="badge bg-info bg-opacity-10 text-primary mb-2">
                             ${payment.invoice?.paket?.nama_paket || 'N/A'}
                         </span>
+                        ${isCustomerDeleted ? '<span class="badge bg-label-danger ms-1">Deaktivasi</span>' : ''}
                     </td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -1414,31 +1424,45 @@
 
         // Helper function to get action buttons - FIXED: Added notification button
         function getActionButtons(payment) {
-            if (payment.status_id == 8) {
-                return `
+        // Cek apakah customer sudah di-soft delete
+        const isCustomerDeleted = payment.invoice?.customer?.deleted_at !== null && 
+                                payment.invoice?.customer?.deleted_at !== undefined;
+
+        // Jika customer deleted, tampilkan pesan
+        if (isCustomerDeleted) {
+            return `
+                <div class="d-flex justify-content-center">
+                    <span class="text-center fw-bold">-</span>
+                </div>
+            `;
+        }
+
+        // Jika customer tidak deleted, lanjutkan dengan logic biasa
+        if (payment.status_id == 8) {
+            return `
                 <div class="d-flex justify-content-center gap-2">
                     <a class="btn btn-outline-warning btn-sm text-warning" 
-                       data-bs-toggle="modal" 
-                       data-bs-target="#editModal${payment.id}">
+                    data-bs-toggle="modal" 
+                    data-bs-target="#editModal${payment.id}">
                         <i class="bx bx-pencil"></i>
                     </a>
                     <a href="/kirim-ulang/${payment.id}" 
-                       class="btn btn-outline-danger btn-sm text-danger" 
-                       data-bs-toggle="tooltip" 
-                       data-bs-placement="bottom" 
-                       title="Kirim Notifikasi Pembayaran Berhasil">
+                    class="btn btn-outline-danger btn-sm text-danger" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="bottom" 
+                    title="Kirim Notifikasi Pembayaran Berhasil">
                         <i class="bx bx-message"></i>
                     </a>
                 </div>
             `;
-            } else {
-                return `
+        } else {
+            return `
                 <button class="btn btn-outline-warning btn-sm text-warning" disabled>
                     <i class="bx bx-pencil"></i>
                 </button>
             `;
-            }
         }
+    }
 
         // Refresh data
         function refreshData() {

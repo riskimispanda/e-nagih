@@ -98,17 +98,19 @@ class MapController extends Controller
             ];
         });
 
-        $customer = Customer::all()->map(function ($item) {
-            $coord = $this->parseGps($item->gps);
-            return [
-                'id' => $item->id,
-                'nama' => $item->nama_customer,
-                'lat' => $coord['lat'],
-                'lng' => $coord['lng'],
-                'jenis' => 'customer',
-                'odp_id' => $item->lokasi_id
-            ];
-        });
+        $customer = Customer::whereNull('deleted_at') // ✅ Hanya customer aktif
+            ->get()
+            ->map(function ($item) {
+                $coord = $this->parseGps($item->gps);
+                return [
+                    'id' => $item->id,
+                    'nama' => $item->nama_customer,
+                    'lat' => $coord['lat'],
+                    'lng' => $coord['lng'],
+                    'jenis' => 'customer',
+                    'odp_id' => $item->lokasi_id
+                ];
+            });
 
         return response()->json(
             $server

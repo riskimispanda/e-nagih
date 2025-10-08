@@ -49,13 +49,19 @@ class Customer extends Controller
 
     public function history($customerId)
     {
-        $invoice = Invoice::with('customer','pembayaran','paket')->where('customer_id',$customerId)->paginate(10);
+        $invoice = Invoice::with(['customer' => function ($query) {
+            $query->withTrashed();
+        }, 'pembayaran', 'paket'])
+            ->where('customer_id', $customerId)
+            ->paginate(10);
         // dd($invoice);
+        $deaktivasi = CustomerModel::withTrashed()->where('id', $customerId)->first();
         return view('/pelanggan/history',[
             'users' => Auth::user(),
             'roles' => auth()->user()->roles,
             'customer' => CustomerModel::where('nama_customer', Auth::user()->name)->first(),
-            'invoice' => $invoice
+            'invoice' => $invoice,
+            'deaktivasi' => $deaktivasi
         ]);
     }
 

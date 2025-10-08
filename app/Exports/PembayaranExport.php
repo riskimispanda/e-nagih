@@ -49,7 +49,14 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
 
     public function collection()
     {
-        $query = Pembayaran::with(['invoice.customer', 'invoice.paket', 'invoice.status', 'user']);
+        $query = Pembayaran::with([
+            'invoice.customer' => function ($q) {
+                $q->withTrashed(); // Include soft deleted customers
+            },
+            'invoice.paket',
+            'invoice.status',
+            'user'
+        ]);
 
         // **PRIORITAS FILTER YANG DIPERBAIKI:**
         // 1. Custom Date Range (tertinggi)
@@ -115,7 +122,8 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         if ($this->search) {
             $query->where(function ($q) {
                 $q->whereHas('invoice.customer', function ($customerQuery) {
-                    $customerQuery->where('nama_customer', 'like', '%' . $this->search . '%')
+                    $customerQuery->withTrashed() // Include soft deleted dalam search
+                        ->where('nama_customer', 'like', '%' . $this->search . '%')
                         ->orWhere('no_hp', 'like', '%' . $this->search . '%');
                 })->orWhereHas('invoice.paket', function ($paketQuery) {
                     $paketQuery->where('nama_paket', 'like', '%' . $this->search . '%');
@@ -162,6 +170,12 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
             // Status invoice untuk informasi tambahan
             $statusInvoice = $pembayaran->invoice->status->nama_status ?? 'Tidak Diketahui';
 
+            // **TAMBAHAN: Status Customer (Aktif/Deaktivasi)**
+            $statusCustomer = 'Aktif';
+            if ($pembayaran->invoice->customer && $pembayaran->invoice->customer->trashed()) {
+                $statusCustomer = 'Deaktivasi';
+            }
+
             return [
                 'no' => $index + 1,
                 'nama_pelanggan' => $pembayaran->invoice->customer->nama_customer ?? 'Pelanggan Tidak Diketahui',
@@ -174,6 +188,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
                 'keterangan' => $pembayaran->keterangan ?? '-',
                 'periode_tagihan' => $periode ?? '-',
                 'status_invoice' => $statusInvoice,
+                'status_customer' => $statusCustomer, // **KOLOM BARU**
                 'admin_input' => $pembayaran->user->name ?? 'System',
                 'pic' => $pembayaran->invoice->customer->agen->name ?? '-',
             ];
@@ -194,6 +209,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
             'Keterangan',
             'Periode Tagihan',
             'Status Invoice',
+            'Status Customer', // **HEADING BARU**
             'Admin Input',
             'PIC/Agent',
         ];
@@ -283,12 +299,29 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
                 ],
             ]);
 
-            // Style untuk kolom Tanggal Pembayaran - left align
-            $sheet->getStyle("F2:F{$lastRow}")->applyFromArray([
+            // Style untuk kolom Status Customer - center align dengan conditional formatting
+            $sheet->getStyle("L2:L{$lastRow}")->applyFromArray([
                 'alignment' => [
-                    'horizontal' => Alignment::HORIZONTAL_LEFT,
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
                 ],
             ]);
+
+            // **CONDITIONAL FORMATTING untuk Status Customer**
+            for ($row = 2; $row <= $lastRow; $row++) {
+                $statusValue = $sheet->getCell("L{$row}")->getValue();
+                if ($statusValue === 'Deaktivasi') {
+                    $sheet->getStyle("L{$row}")->applyFromArray([
+                        'font' => [
+                            'color' => ['argb' => Color::COLOR_RED],
+                            'bold' => true,
+                        ],
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FEE2E2'], // Light red background
+                        ],
+                    ]);
+                }
+            }
         }
 
         // Auto width untuk semua kolom
@@ -302,6 +335,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         $sheet->getColumnDimension('E')->setWidth(18); // Jumlah Bayar (diperlebar)
         $sheet->getColumnDimension('F')->setWidth(25); // Tanggal Pembayaran
         $sheet->getColumnDimension('J')->setWidth(15); // Periode Tagihan
+        $sheet->getColumnDimension('L')->setWidth(12); // Status Customer
 
         // Auto height baris
         $sheet->getDefaultRowDimension()->setRowHeight(-1);
@@ -329,6 +363,21 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         $filterInfo .= "Jenis Filter: " . $this->getCurrentFilterType() . "\n";
         $filterInfo .= "Total Data: " . ($lastRow - 1) . " pembayaran\n";
 
+        // **TAMBAHAN: Hitung statistik status customer**
+        $aktifCount = 0;
+        $deaktivasiCount = 0;
+        for ($row = 2; $row <= $lastRow; $row++) {
+            $status = $sheet->getCell("L{$row}")->getValue();
+            if ($status === 'Aktif') {
+                $aktifCount++;
+            } elseif ($status === 'Deaktivasi') {
+                $deaktivasiCount++;
+            }
+        }
+
+        $filterInfo .= "Customer Aktif: " . $aktifCount . "\n";
+        $filterInfo .= "Customer Deaktivasi: " . $deaktivasiCount . "\n";
+
         if ($this->search) {
             $filterInfo .= "Pencarian: " . $this->search . "\n";
         }
@@ -342,7 +391,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         $filterInfo .= "Data By Nbilling";
 
         $sheet->setCellValue("A{$infoRow}", $filterInfo);
-        $sheet->mergeCells("A{$infoRow}:G" . ($infoRow + 9));
+        $sheet->mergeCells("A{$infoRow}:G" . ($infoRow + 10)); // Diperbesar untuk accommodate info tambahan
 
         $sheet->getStyle("A{$infoRow}")->applyFromArray([
             'font' => [

@@ -1261,9 +1261,8 @@
                             @endforeach
                             <tr>
                                 <td colspan="12" class="bg-label-secondary">
-                                    <span class="badge bg-label-danger fw-bold" style="text-transform: uppercase">
-                                        Total Pendapatan bulan {{ \Carbon\Carbon::now()->locale('id')->isoFormat('MMMM') }}
-                                        : Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+                                    <span class="badge bg-label-danger fw-bold">
+                                        Total Pendapatan: Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
                                     </span>
                                 </td>
                             </tr>

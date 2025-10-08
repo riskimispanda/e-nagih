@@ -14,16 +14,52 @@ use App\Models\Paket;
 use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\DB;
 use App\Models\Invoice;
+use Carbon\Carbon;
 
 class TiketController extends Controller
 {
-    public function TiketOpen()
+    public function TiketOpen(Request $request)
     {
-        $customer = Customer::with('status')->whereIn('status_id', [3, 4])->paginate(10);
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 10);
+
+        $query = Customer::with(['status', 'paket'])
+            ->whereIn('status_id', [3, 4]);
+
+        // Search filter
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_customer', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%")
+                    ->orWhere('no_hp', 'like', "%{$search}%")
+                    ->orWhereHas('paket', function ($q) use ($search) {
+                        $q->where('nama_paket', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('status', function ($q) use ($search) {
+                        $q->where('nama_status', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Handle "all" option
+        if ($perPage === 'all') {
+            $customer = $query->get();
+        } else {
+            $customer = $query->paginate($perPage)->appends([
+                'search' => $search,
+                'per_page' => $perPage
+            ]);
+        }
+
+        $tiketAktif = TiketOpen::count();
+
         return view('Helpdesk.tiket-open-pelanggan',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'customer' => $customer,
+            'search' => $search,
+            'perPage' => $perPage,
+            'tiketAktif' => $tiketAktif
         ]);
     }
 
@@ -64,6 +100,7 @@ class TiketController extends Controller
         $tiket->keterangan = $request->keterangan;
         $tiket->foto = $foto;
         $tiket->user_id = $user;
+        $tiket->status_id = 6;
         $tiket->save();
 
         $customer = Customer::findOrFail($request->customer_id);
@@ -90,10 +127,14 @@ class TiketController extends Controller
 
     public function closedTiket()
     {
-        $coba = TiketOpen::with(['kategori','customer','user'])
+        $coba = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+            $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+        }])
             ->whereHas('customer', function ($query) {
-                $query->where('status_id', 4);
-            })
+            $query->where('status_id', 4)
+                ->withTrashed(); // ✅ Juga untuk whereHas
+        })
+            ->whereIn('status_id', [3, 6])
             ->paginate(10);
 
         return view('Helpdesk.tiket.closed-tiket', [
@@ -185,6 +226,9 @@ class TiketController extends Controller
                     'tagihan'  => $customer->paket->harga,
                 ]);
             }
+            activity('NOC')
+                ->causedBy(auth()->user()->id)
+                ->log(auth()->user()->name . ' Update Paket Pelanggan ' . $customer->nama_customer . ' ke Paket ' . $customer->paket->nama_paket);
         });
 
         $tiket->delete();
@@ -192,5 +236,35 @@ class TiketController extends Controller
         return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
     }
 
+    public function confirmDeaktivasi(Request $request, $id)
+    {
+        DB::transaction(function () use ($request, $id) {
+            $tiket = TiketOpen::findOrFail($id);
+            $customer = Customer::where('id', $tiket->customer_id)->first();
 
+            if (!$customer) {
+                throw new \Exception("Customer tidak ditemukan");
+            }
+
+            // 1. Update tiket status
+            $tiket->update([
+                'status_id' => 3,
+                'keterangan' => $request->keterangan,
+                'tanggal_selesai' => Carbon::now()->toDate()
+            ]);
+
+            // 2. Kembalikan perangkat ke stok (otomatis via model event)
+            // Tidak perlu manual set perangkat_id = null karena sudah otomatis di model
+
+            // 3. SOFT DELETE customer (bukan hard delete)
+            $customer->delete(); // ✅ Sekarang ini SOFT DELETE karena model pakai SoftDeletes
+
+            // Log activity
+            activity()
+                ->performedOn($customer)
+                ->log("Customer {$customer->nama_customer} dideaktivasi via tiket #{$tiket->id}");
+        });
+
+        return redirect('/tiket-closed')->with('success', 'Berhasil deaktivasi pelanggan dan perangkat dikembalikan ke stok');
+    }
 }

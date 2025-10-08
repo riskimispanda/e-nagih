@@ -8,6 +8,7 @@ use App\Models\Pengeluaran;
 use Spatie\Activitylog\Models\Activity;
 use App\Models\Pembayaran;
 use App\Models\Pendapatan;
+use Carbon\Carbon;
 
 class RabController extends Controller
 {
@@ -16,12 +17,12 @@ class RabController extends Controller
         $data = Rab::with('pengeluaran')->latest()->paginate(10);
 
         // Calculate initial totals for all data
-        $totalAnggaran = Rab::sum('jumlah_anggaran');
-        $totalTerealisasi = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+        $totalAnggaran = Rab::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_anggaran');
+        $totalTerealisasi = Pengeluaran::where('status_id', 3)->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_pengeluaran');
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
-        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
-        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
-        $pengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+        $pendapatanLangganan = Pembayaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_bayar');
+        $pendapatanNonLangganan = Pendapatan::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_pendapatan');
+        $pengeluaran = Pengeluaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->where('status_id', 3)->sum('jumlah_pengeluaran');
         $total = $pendapatanLangganan + $pendapatanNonLangganan - $pengeluaran;
         // dd($total);
 

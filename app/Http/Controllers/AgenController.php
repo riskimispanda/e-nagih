@@ -21,67 +21,81 @@ class AgenController extends Controller
         $agen = Auth::user()->id;
 
         // Get current month as default filter
-        $currentMonth = Carbon::now()->format('m'); // Format: 01, 02, 03, etc.
+        $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
 
-        // Get customers with invoices, filtered by month
-        $query = Customer::with(['invoice' => function($q) use ($filterMonth) {
-                $q->with(['status', 'pembayaran.user']);
+        // Query dari Invoice sebagai utama
+        $query = Invoice::with([
+            'status',
+            'pembayaran.user',
+            'customer' => function ($q) {
+                $q->withTrashed()->with('paket');
+            }
+        ])
+            ->where(function ($mainQuery) use ($agen) {
+                // ✅ Untuk customer AKTIF: tampilkan SEMUA invoice
+                $mainQuery->whereHas('customer', function ($q) use ($agen) {
+                    $q->where('agen_id', $agen)
+                        ->whereIn('status_id', [3, 4, 9])
+                        ->whereNull('deleted_at'); // Hanya yang aktif
+                });
 
-                // Filter invoices by month if not showing all
-                if ($filterMonth !== 'all') {
-                    $q->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
-                }
+            // ✅ Untuk customer DELETED: hanya tampilkan invoice yang SUDAH BAYAR
+            $mainQuery->orWhere(function ($deletedQuery) use ($agen) {
+                $deletedQuery->whereHas('customer', function ($q) use ($agen) {
+                    $q->onlyTrashed() // Hanya yang deleted
+                        ->where('agen_id', $agen)
+                            ->whereIn('status_id', [3, 4, 9]);
+                    })->whereHas('status', function ($statusQuery) {
+                        $statusQuery->where('nama_status', 'Sudah Bayar'); // Hanya yang sudah bayar
+                    });
+                });
+            })
+            ->orderBy('jatuh_tempo', 'desc');
 
-                $q->orderBy('jatuh_tempo', 'desc');
-            }, 'paket'])
-            ->where('agen_id', $agen)
-            ->whereIn('status_id', [3, 9])
-            ->whereHas('invoice', function($q) use ($filterMonth) {
-                // Only include customers who have invoices in the selected month
-                if ($filterMonth !== 'all') {
-                    $q->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
-                }
-            });
-            // dd($query);
-        // Apply search filter if provided
+        // Apply month filter
+        if ($filterMonth !== 'all') {
+            $query->whereMonth('jatuh_tempo', intval($filterMonth));
+        }
+
+        // Apply search filter
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('nama_customer', 'LIKE', "%{$search}%")
-                  ->orWhere('alamat', 'LIKE', "%{$search}%")
-                  ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            $query->whereHas('customer', function ($q) use ($search) {
+                $q->where(function ($subQ) use ($search) {
+                    $subQ->where('nama_customer', 'LIKE', "%{$search}%")
+                        ->orWhere('alamat', 'LIKE', "%{$search}%")
+                        ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            });
             });
         }
 
-        $customers = $query->paginate(10);
+        $invoices = $query->paginate(10);
 
-        // Calculate statistics for the filtered period
+        // Calculate statistics
         $searchTerm = $request->get('search', '');
         $statistics = $this->calculateStatistics($agen, $filterMonth, $searchTerm);
 
         // Get available months for filter dropdown
         $availableMonths = $this->getAvailableMonths($agen);
 
-        // Get current month name in Indonesian
+        // Get month names
         $currentMonthName = $this->getIndonesianMonthName($currentMonth);
-
-        // Get selected month name for display
         $selectedMonthName = $filterMonth === 'all' ? 'Semua Periode' : $this->getIndonesianMonthName($filterMonth);
 
-        // If this is an AJAX request, return JSON
+        // AJAX response
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'data' => $customers,
-                'html' => view('agen.partials.customer-table-rows', compact('customers'))->render()
+                'data' => $invoices,
+                'html' => view('agen.partials.customer-table-rows', compact('invoices'))->render()
             ]);
         }
 
-        return view('agen.data-pelanggan-agen',[
+        return view('agen.data-pelanggan-agen', [
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
-            'customers' => $customers,
+            'invoices' => $invoices,
             'availableMonths' => $availableMonths,
             'currentMonth' => $currentMonth,
             'currentMonthName' => $currentMonthName,
@@ -95,56 +109,59 @@ class AgenController extends Controller
     {
         $agen = Auth::user()->id;
 
-        // Get month filter (default to current month)
+        // Get current month as default filter
         $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
 
-        // Get customers with invoices, filtered by month
-        $query = Customer::with(['invoice' => function($q) use ($filterMonth) {
-                $q->with('status');
+        // Query dari Invoice sebagai utama (konsisten dengan index)
+        $query = Invoice::with([
+            'status',
+            'pembayaran.user',
+            'customer' => function ($q) {
+                $q->withTrashed()->with('paket');
+            }
+        ])
+            ->whereHas('customer', function ($q) use ($agen) {
+                $q->withTrashed()
+                    ->where('agen_id', $agen)
+                    ->whereIn('status_id', [3, 4, 9]);
+            })
+            ->orderBy('jatuh_tempo', 'desc');
 
-                // Filter invoices by month if not showing all
-                if ($filterMonth !== 'all') {
-                    $q->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
-                }
-
-                $q->orderBy('jatuh_tempo', 'desc');
-            }, 'paket'])
-            ->where('agen_id', $agen)
-            ->whereIn('status_id', [3, 9])
-            ->whereHas('invoice', function($q) use ($filterMonth) {
-                // Only include customers who have invoices in the selected month
-                if ($filterMonth !== 'all') {
-                    $q->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
-                }
-            });
+        // Apply month filter
+        if ($filterMonth !== 'all') {
+            $query->whereMonth('jatuh_tempo', intval($filterMonth));
+        }
 
         // Apply search filter
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('nama_customer', 'LIKE', "%{$search}%")
-                  ->orWhere('alamat', 'LIKE', "%{$search}%")
-                  ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            $query->whereHas('customer', function ($q) use ($search) {
+                $q->where(function ($subQ) use ($search) {
+                    $subQ->where('nama_customer', 'LIKE', "%{$search}%")
+                        ->orWhere('alamat', 'LIKE', "%{$search}%")
+                        ->orWhere('no_hp', 'LIKE', "%{$search}%");
+            });
             });
         }
 
-        $customers = $query->paginate(10);
+        $invoices = $query->paginate(10);
 
-        // Calculate statistics for the filtered period
+        // Calculate statistics
         $searchTerm = $request->get('search', '');
         $statistics = $this->calculateStatistics($agen, $filterMonth, $searchTerm);
 
         return response()->json([
             'success' => true,
-            'data' => $customers->items(),
+            'data' => $invoices->items(),
             'statistics' => $statistics,
             'pagination' => [
-                'current_page' => $customers->currentPage(),
-                'last_page' => $customers->lastPage(),
-                'per_page' => $customers->perPage(),
-                'total' => $customers->total(),
-            ]
+                'current_page' => $invoices->currentPage(),
+                'last_page' => $invoices->lastPage(),
+                'per_page' => $invoices->perPage(),
+                'total' => $invoices->total(),
+            ],
+            'html' => view('agen.partials.customer-table-rows', compact('invoices'))->render()
         ]);
     }
 
@@ -175,9 +192,20 @@ class AgenController extends Controller
      */
     private function getAvailableMonths($agenId)
     {
-        $invoices = Invoice::whereHas('customer', function($q) use ($agenId) {
-                $q->where('agen_id', $agenId)
-                  ->whereIn('status_id', [3, 9]);
+        $invoices = Invoice::where(function ($query) use ($agenId) {
+            // Customer aktif
+            $query->whereHas('customer', function ($subQ) use ($agenId) {
+                $subQ->where('agen_id', $agenId)
+                    ->whereIn('status_id', [3, 9]);
+            });
+        })
+            ->orWhere(function ($query) use ($agenId) {
+                // Customer yang dihapus
+                $query->whereHas('customer', function ($subQ) use ($agenId) {
+                    $subQ->onlyTrashed()
+                        ->where('agen_id', $agenId)
+                        ->whereIn('status_id', [3, 9]);
+                });
             })
             ->whereNotNull('jatuh_tempo')
             ->get();
@@ -207,42 +235,65 @@ class AgenController extends Controller
     private function getIndonesianMonthName($monthNumber)
     {
         $months = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
-            '04' => 'April', '05' => 'Mei', '06' => 'Juni',
-            '07' => 'Juli', '08' => 'Agustus', '09' => 'September',
-            '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember'
         ];
 
         return $months[$monthNumber] ?? 'Unknown';
     }
 
     /**
-     * Calculate statistics for invoices based on filter
+     * Calculate statistics for invoices including soft deleted customers
+     */
+    /**
+     * Calculate statistics for invoices including soft deleted customers - FIXED VERSION
+     */
+    /**
+     * Calculate statistics for invoices including soft deleted customers - FIXED VERSION
+     */
+    /**
+     * Calculate statistics for invoices including soft deleted customers - CONSISTENT WITH INDEX
      */
     private function calculateStatistics($agenId, $filterMonth, $searchTerm = '')
     {
-        // Base query for invoices from this agent's customers
-        $invoicesQuery = Invoice::whereHas('customer', function($q) use ($agenId, $searchTerm) {
-                $q->where('agen_id', $agenId)
-                  ->whereIn('status_id', [3, 9]);
-
-                // Apply search filter if provided
-                if (!empty($searchTerm)) {
-                    $q->where(function($subQ) use ($searchTerm) {
-                        $subQ->where('nama_customer', 'LIKE', "%{$searchTerm}%")
-                             ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
-                             ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
-                    });
-                }
+        // GUNAKAN QUERY YANG SAMA PERSIS DENGAN INDEX
+        $invoicesQuery = Invoice::with([
+            'status',
+            'pembayaran.user', // Konsisten dengan index
+            'customer' => function ($q) {
+                $q->withTrashed()->with('paket'); // Konsisten dengan index
+            }
+        ])
+            ->whereHas('customer', function ($q) use ($agenId, $searchTerm) {
+                $q->withTrashed()
+                    ->where('agen_id', $agenId)
+                    ->whereIn('status_id', [3, 4, 9]) // Konsisten: [3, 4, 9] bukan [3, 9]
+                    ->when(!empty($searchTerm), function ($subQ) use ($searchTerm) {
+                        $subQ->where(function ($s) use ($searchTerm) {
+                            $s->where('nama_customer', 'LIKE', "%{$searchTerm}%")
+                                ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
+                                ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
+                        });
             });
+            })
+            ->orderBy('jatuh_tempo', 'desc'); // Konsisten dengan index
 
-        // Apply month filter if not showing all
+        // Apply month filter - SAMA DENGAN INDEX
         if ($filterMonth !== 'all') {
-            $invoicesQuery->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
+            $invoicesQuery->whereMonth('jatuh_tempo', intval($filterMonth));
         }
 
-        // Get all invoices for calculation
-        $invoices = $invoicesQuery->with('status')->get();
+        $invoices = $invoicesQuery->get();
 
         $totalPaid = 0;
         $totalUnpaid = 0;
@@ -251,22 +302,62 @@ class AgenController extends Controller
         $countUnpaid = 0;
         $countTotal = 0;
 
+        \Log::info("=== CALCULATE STATISTICS - CONSISTENT WITH INDEX ===");
+        \Log::info("Query conditions - Agen: {$agenId}, Month: {$filterMonth}, Search: '{$searchTerm}'");
+        \Log::info("Total invoices from query: " . $invoices->count());
+
         foreach ($invoices as $invoice) {
+            if (!$invoice->customer) {
+                \Log::warning("Invoice {$invoice->id}: No customer found, skipping");
+                continue;
+            }
+
             $tagihan = floatval($invoice->tagihan ?? 0);
             $tambahan = floatval($invoice->tambahan ?? 0);
             $tunggakan = floatval($invoice->tunggakan ?? 0);
             $saldo = floatval($invoice->saldo ?? 0);
             $invoiceTotal = $tagihan + $tambahan + $tunggakan - $saldo;
 
-            $totalAmount += $invoiceTotal;
-            $countTotal++;
+            // CEK STATUS - sama seperti di view
+            $isPaid = $invoice->status && $invoice->status->nama_status == 'Sudah Bayar';
+            $isDeleted = $invoice->customer->trashed(); // Gunakan method trashed()
 
-            if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
+            // CEK PEMBAYARAN - dari relasi yang sudah di-load
+            $hasPayments = $invoice->pembayaran && $invoice->pembayaran->isNotEmpty();
+
+            \Log::info("Processing Invoice {$invoice->id}: " .
+                "Customer: {$invoice->customer->nama_customer}, " .
+                "Deleted: " . ($isDeleted ? 'YES' : 'NO') . ", " .
+                "Paid: " . ($isPaid ? 'YES' : 'NO') . ", " .
+                "Payments: " . ($hasPayments ? $invoice->pembayaran->count() : '0') . ", " .
+                "Total: Rp " . number_format($invoiceTotal, 0, ',', '.'));
+
+            // LOGIC YANG SEDERHANA DAN KONSISTEN:
+            // 1. SEMUA invoice yang status "Sudah Bayar" DIHITUNG (baik customer aktif maupun deleted)
+            // 2. Hanya invoice yang "Belum Bayar" dari customer AKTIF yang dihitung sebagai unpaid
+            // 3. Invoice "Belum Bayar" dari customer deleted TIDAK dihitung
+
+            if ($isPaid) {
+                // ✅ INI YANG HARUSNYA TERHITUNG: Semua yang sudah bayar
+                $totalAmount += $invoiceTotal;
                 $totalPaid += $invoiceTotal;
                 $countPaid++;
+                $countTotal++;
+
+                \Log::info("→ COUNTED as PAID: Invoice {$invoice->id}");
             } else {
+                if (!$isDeleted) {
+                    // ✅ Customer aktif yang belum bayar
+                    $totalAmount += $invoiceTotal;
                 $totalUnpaid += $invoiceTotal;
                 $countUnpaid++;
+                    $countTotal++;
+
+                    \Log::info("→ COUNTED as UNPAID: Invoice {$invoice->id} (active customer)");
+                } else {
+                    // ❌ Customer deleted yang belum bayar - TIDAK DIHITUNG
+                    \Log::info("→ SKIPPED: Invoice {$invoice->id} (deleted customer, not paid)");
+                }
             }
         }
 
@@ -283,45 +374,57 @@ class AgenController extends Controller
     }
 
     /**
-     * Calculate statistics with status filter included
+     * Calculate statistics with status filter included - INCLUDE SOFT DELETED CUSTOMERS
+     */
+    /**
+     * Calculate statistics with status filter included - FIXED VERSION
+     */
+    /**
+     * Calculate statistics with status filter included - CONSISTENT VERSION
      */
     private function calculateStatisticsWithStatus($agenId, $filterMonth, $searchTerm = '', $statusFilter = '')
     {
-        // Base query for invoices from this agent's customers
-        $invoicesQuery = Invoice::whereHas('customer', function($q) use ($agenId, $searchTerm) {
-                $q->where('agen_id', $agenId)
-                  ->whereIn('status_id', [3, 9]);
-
-                // Apply search filter if provided
-                if (!empty($searchTerm)) {
-                    $q->where(function($subQ) use ($searchTerm) {
-                        $subQ->where('nama_customer', 'LIKE', "%{$searchTerm}%")
-                             ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
-                             ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
-                    });
-                }
+        // GUNAKAN QUERY YANG SAMA PERSIS
+        $invoicesQuery = Invoice::with([
+            'status',
+            'pembayaran.user',
+            'customer' => function ($q) {
+                $q->withTrashed()->with('paket');
+            }
+        ])
+            ->whereHas('customer', function ($q) use ($agenId, $searchTerm) {
+                $q->withTrashed()
+                    ->where('agen_id', $agenId)
+                    ->whereIn('status_id', [3, 4, 9]) // Konsisten: [3, 4, 9]
+                    ->when(!empty($searchTerm), function ($subQ) use ($searchTerm) {
+                        $subQ->where(function ($s) use ($searchTerm) {
+                            $s->where('nama_customer', 'LIKE', "%{$searchTerm}%")
+                                ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
+                                ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
+                        });
             });
+            })
+            ->orderBy('jatuh_tempo', 'desc');
 
-        // Apply month filter if not showing all
+        // Apply month filter - SAMA
         if ($filterMonth !== 'all') {
-            $invoicesQuery->whereRaw("MONTH(STR_TO_DATE(jatuh_tempo, '%Y-%m-%d')) = ?", [intval($filterMonth)]);
+            $invoicesQuery->whereMonth('jatuh_tempo', intval($filterMonth));
         }
 
         // Apply status filter if provided
         if (!empty($statusFilter)) {
             if ($statusFilter === 'Sudah Bayar') {
-                $invoicesQuery->whereHas('status', function($q) {
+                $invoicesQuery->whereHas('status', function ($q) {
                     $q->where('nama_status', 'Sudah Bayar');
                 });
             } elseif ($statusFilter === 'Belum Bayar') {
-                $invoicesQuery->whereHas('status', function($q) {
+                $invoicesQuery->whereHas('status', function ($q) {
                     $q->where('nama_status', '!=', 'Sudah Bayar');
                 });
             }
         }
 
-        // Get all invoices for calculation
-        $invoices = $invoicesQuery->with('status')->get();
+        $invoices = $invoicesQuery->get();
 
         $totalPaid = 0;
         $totalUnpaid = 0;
@@ -331,19 +434,51 @@ class AgenController extends Controller
         $countTotal = 0;
 
         foreach ($invoices as $invoice) {
+            if (!$invoice->customer) {
+                continue;
+            }
+
             $tagihan = floatval($invoice->tagihan ?? 0);
             $tambahan = floatval($invoice->tambahan ?? 0);
-            $invoiceTotal = $tagihan + $tambahan;
+            $tunggakan = floatval($invoice->tunggakan ?? 0);
+            $saldo = floatval($invoice->saldo ?? 0);
+            $invoiceTotal = $tagihan + $tambahan + $tunggakan - $saldo;
 
-            $totalAmount += $invoiceTotal;
-            $countTotal++;
+            $isPaid = $invoice->status && $invoice->status->nama_status == 'Sudah Bayar';
+            $isDeleted = $invoice->customer->trashed();
 
-            if ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar') {
+            // LOGIC YANG SAMA PERSIS
+            if (!empty($statusFilter)) {
+                if ($statusFilter === 'Sudah Bayar') {
+                    // Filter "Sudah Bayar": hitung SEMUA yang sudah bayar
+                    if ($isPaid) {
+                        $totalAmount += $invoiceTotal;
+                        $totalPaid += $invoiceTotal;
+                        $countPaid++;
+                        $countTotal++;
+                    }
+                } elseif ($statusFilter === 'Belum Bayar') {
+                    // Filter "Belum Bayar": hanya yang belum bayar dan customer AKTIF
+                    if (!$isPaid && !$isDeleted) {
+                        $totalAmount += $invoiceTotal;
+                        $totalUnpaid += $invoiceTotal;
+                        $countUnpaid++;
+                        $countTotal++;
+                    }
+                }
+            } else {
+                // Tanpa filter: gunakan logic yang sama
+                if ($isPaid) {
+                    $totalAmount += $invoiceTotal;
                 $totalPaid += $invoiceTotal;
                 $countPaid++;
-            } else {
+                    $countTotal++;
+                } else if (!$isDeleted) {
+                    $totalAmount += $invoiceTotal;
                 $totalUnpaid += $invoiceTotal;
                 $countUnpaid++;
+                    $countTotal++;
+                }
             }
         }
 

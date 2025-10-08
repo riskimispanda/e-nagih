@@ -221,6 +221,24 @@
         border-color: #28a745;
         box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
     }
+
+    /* Styling untuk customer yang di-soft delete */
+    .customer-deleted {
+        background: linear-gradient(45deg, #fff3f3 0%, #fff8f8 100%) !important;
+        position: relative;
+    }
+    
+    .customer-deleted .customer-name,
+    .customer-deleted .customer-address,
+    .customer-deleted .nomor-hp {
+        opacity: 0.7;
+        text-decoration: line-through;
+    }
+    
+    .deleted-badge {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
 </style>
 @endsection
 
@@ -262,14 +280,18 @@
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="bx bx-info-circle me-2"></i>
             <strong>Informasi:</strong> Tampilan ini menunjukkan data pelanggan untuk periode
-            <strong>{{ $currentMonthName ?? 'Bulan Sekarang' }}</strong>.
-            Gunakan filter periode bulan untuk melihat data bulan lain atau pilih "Semua Bulan" untuk melihat semua periode.
+            <strong>{{ $selectedMonthName ?? 'Bulan Sekarang' }}</strong>.
+            Termasuk pelanggan yang sudah dihapus (ditandai dengan strikethrough).
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        
         <div class="card mb-2">
             <div class="card-header modern-card-header">
                 <h4 class="card-title fw-bold">Data Pembayaran Pelanggan - Periode {{ $selectedMonthName ?? 'Periode Sekarang' }}</h4>
-                <small class="card-subtitle text-muted">Daftar Pembayaran tagihan periode {{ strtolower($selectedMonthName ?? 'bulan sekarang') }}</small>
+                <small class="card-subtitle text-muted">
+                    Daftar Pembayaran tagihan periode {{ strtolower($selectedMonthName ?? 'bulan sekarang') }} 
+                    (termasuk pelanggan yang dihapus)
+                </small>
             </div>
         </div>
         
@@ -280,6 +302,7 @@
                     <i class="bx bx-info-circle me-2"></i>
                     <strong>Statistik Periode:</strong>
                     Menampilkan data untuk periode <strong>{{ $selectedMonthName ?? 'Bulan Sekarang' }}</strong>
+                    - Termasuk pelanggan yang sudah dihapus dengan status "Sudah Bayar"
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             </div>
@@ -361,13 +384,14 @@
                 </div>
             </div>
         </div>
+
         <div class="card">
             <div class="card-body">
                 <div class="search-container">
                     <h6 class="mb-3 fw-bold text-dark">
                         <i class="bx bx-search me-2"></i>Filter & Pencarian Data
                         <small class="text-muted fw-normal">
-                            ({{ $customers->total() }} pelanggan, {{ $customers->sum(function($customer) { return $customer->invoice->count(); }) }} invoice periode {{ strtolower($selectedMonthName ?? 'sekarang') }})
+                            ({{ $invoices->total() }} invoice periode {{ strtolower($selectedMonthName ?? 'sekarang') }})
                         </small>
                     </h6>
                     <div class="row mb-3">
@@ -458,9 +482,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             @php
-            $totalRows = $customers->sum(function($customer) {
-                return $customer->invoice->count() > 0 ? $customer->invoice->count() : 1;
-            });
+            $totalRows = $invoices->count();
             @endphp
             <span class="text-muted" id="searchResults">
                 Menampilkan 
@@ -473,7 +495,7 @@
             </span>
             @if(config('app.debug'))
             <small class="text-muted ms-2">
-                ({{ $customers->count() }} pelanggan, {{ $customers->sum(function($customer) { return $customer->invoice->count(); }) }} invoices)
+                ({{ $invoices->count() }} invoices)
             </small>
             @endif
         </div>
@@ -497,333 +519,349 @@
                     <th>Jatuh Tempo</th>
                     <th>Tanggal Bayar</th>
                     <th>Aksi</th>
+                    <th>Status Customer</th>
                     <th>Keterangan</th>
                 </tr>
             </thead>
             <tbody class="text-center">
                 @php $rowNumber = 1; @endphp
-                @forelse ($customers as $customer)
-                @if($customer->invoice->isNotEmpty())
-                @foreach($customer->invoice as $invoice)
-                <tr class="customer-row text-center" data-id="{{ $customer->id }}"
-                    data-tagihan="{{ $invoice->status ? ($invoice->status->nama_status == 'Sudah Bayar' ? '0' : $invoice->tagihan ?? '0') : '0' }}"
-                    data-customer-id="{{ $customer->id }}"
-                    data-invoice-id="{{ $invoice->id }}"
-                    data-tagihan-tambahan="{{ $invoice->tambahan ?? '' }}"
-                    data-status-tagihan="{{ $invoice->status ? $invoice->status->nama_status : 'N/A' }}"
-                    data-jatuh-tempo="{{ $invoice->jatuh_tempo ?? '' }}"
-                    data-bulan-tempo="{{ $invoice->jatuh_tempo ? (function() use ($invoice) { try { return \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('F'); } catch (\Exception $e) { return ''; } })() : '' }}">
-                    <td class="text-center">{{ $rowNumber++ }}</td>
-                    <td class="customer-name">{{ $customer->nama_customer }}</td>
-                    <td class="customer-address">{{ $customer->alamat }}</td>
-                    <td class="nomor-hp">{{ $customer->no_hp }}</td>
-                    <td>
-                        <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
-                            {{ $customer->paket->nama_paket }}
-                        </span>
-                        @if($customer->status_id == 3)
-                        <small class="badge bg-success bg-opacity-10 text-success mt-1">Aktif</small>
-                        @elseif($customer->status_id == 9)
-                        <small class="badge bg-danger bg-opacity-10 text-danger mt-1">Non Aktif</small>
-                        @endif
-                    </td>
-                    <td>
-                        Rp {{ number_format($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo?? 0, 0, ',', '.') }}
-                    </td>
-                    <td class="text-center">
-                        @if ($invoice->status)
-                        <span class="badge
-                                            bg-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}
-                                            bg-opacity-10
-                                            {{ $invoice->status->nama_status == 'Sudah Bayar' ? 'text-success' : 'text-danger' }}
-                                            status-badge">
-                        {{ $invoice->status->nama_status }}
-                    </span>
-                    @else
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary status-badge">N/A</span>
-                    @endif
-                </td>
-                <td>
-                    @if ($invoice->jatuh_tempo)
+                @forelse ($invoices as $invoice)
                     @php
-                    try {
-                        $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
-                        $isOverdue = $jatuhTempo->isPast() && $invoice->status && $invoice->status->nama_status != 'Sudah Bayar';
-                    } catch (\Exception $e) {
-                        $jatuhTempo = null;
-                        $isOverdue = false;
-                    }
+                        $customer = $invoice->customer;
                     @endphp
-                    @if($jatuhTempo)
-                    <span class="badge {{ $isOverdue ? 'bg-danger' : 'bg-info' }} bg-opacity-10 {{ $isOverdue ? 'text-danger' : 'text-info' }}">
-                        {{ $jatuhTempo->format('d M Y') }}
-                        @if($isOverdue)
-                        <br><small>Terlambat</small>
-                        @endif
-                    </span>
-                    @else
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Invalid Date</span>
-                    @endif
-                    @else
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-                    @endif
-                </td>
-                <td>
-                    <span class="badge bg-success">
-                        @if($invoice->pembayaran()->exists())
-                        {{ ($invoice->pembayaran()->latest()->first()->created_at->format('d M Y h:m:s')) }}
-                        @else
-                        -
-                        @endif                            
-                    </span>
-                </td>                    
-                <td>
-                    <div class="d-flex justify-content-center gap-2">
-                        @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar')
-                        <button class="btn btn-outline-success btn-sm mb-1"
-                        data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
-                        data-bs-toggle="modal"
-                        title="Request Pembayaran">
-                        <i class="bx bx-money"></i>
-                    </button>
-                    @else
-                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
-                    data-bs-toggle="tooltip" data-bs-placement="bottom"
-                    title="Sudah Dibayar">
-                    <i class="bx bx-check"></i>
-                </span>
-                @endif
-                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="btn btn-outline-info btn-sm mb-1" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Histori pembayaran {{ $invoice->customer->nama_customer }}">
-                    <i class="bx bx-history"></i>
-                </a>
-                    </div>
-        </td>
-        <td>
-            {{ $invoice->pembayaran->first()->keterangan ?? '-' }}
-        </td>
-    </tr>
-    @endforeach
-    @else
-    <tr class="customer-row text-center" data-id="{{ $customer->id }}"
-        data-status-tagihan="N/A"
-        data-bulan-tempo="">
-        <td class="text-center">{{ $rowNumber++ }}</td>
-        <td class="customer-name">{{ $customer->nama_customer }}</td>
-        <td class="customer-address">{{ $customer->alamat }}</td>
-        <td class="nomor-hp">{{ $customer->no_hp }}</td>
-        <td>
-            <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
-                {{ $customer->paket->nama_paket }}
-            </span>
-            @if($customer->status_id == 3)
-            <small class="badge bg-success bg-opacity-10 text-success mt-1">Aktif</small>
-            @elseif($customer->status_id == 9)
-            <small class="badge bg-danger bg-opacity-10 text-danger mt-1">Non Aktif</small>
-            @endif
-        </td>
-        <td class="text-center">
-            <span class="badge bg-secondary bg-opacity-10 text-secondary status-badge">Tidak Ada Invoice</span>
-        </td>
-        <td>
-            <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-        </td>
-        <td>
-            <a href="/detail-pelanggan/{{ $customer->id }}"
-                class="btn btn-outline-info btn-sm mb-1"
-                data-bs-toggle="tooltip" data-bs-placement="bottom"
-                title="Detail Pelanggan">
-                <i class="bx bx-show"></i>
-            </a>
-        </td>
-    </tr>
-    @endif
-    @empty
-    <tr>
-        <td colspan="11" class="text-center py-5">
-            <div class="d-flex flex-column align-items-center">
-                <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                <p class="text-muted mb-0">Belum ada Data Pelanggan</p>
-            </div>
-        </td>
-    </tr>
-    @endforelse
-</tbody>
-</table>
-</div>
-<div class="d-flex justify-content-center">
-    {{ $customers->links() }}
-</div>
-</div>
-</div>
-</div>
+                    <tr class="customer-row text-center {{ $customer && $customer->trashed() ? 'customer-deleted' : '' }}" 
+                        data-id="{{ $customer->id ?? '-' }}"
+                        data-tagihan="{{ $invoice->status ? ($invoice->status->nama_status == 'Sudah Bayar' ? '0' : ($invoice->tagihan ?? '0')) : '0' }}"
+                        data-customer-id="{{ $customer->id ?? '-' }}"
+                        data-invoice-id="{{ $invoice->id }}"
+                        data-tagihan-tambahan="{{ $invoice->tambahan ?? '0' }}"
+                        data-status-tagihan="{{ $invoice->status->nama_status ?? 'N/A' }}"
+                        data-jatuh-tempo="{{ $invoice->jatuh_tempo ?? '' }}"
+                        data-bulan-tempo="{{ $invoice->jatuh_tempo ? \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('F') : '' }}"
+                        data-customer-deleted="{{ $customer && $customer->trashed() ? 'true' : 'false' }}">
+                        
+                        <td class="fw-bold text-center">{{ $rowNumber++ }}</td>
+            
+                        {{-- Nama --}}
+                        <td class="text-start customer-name">
+                            {{ $customer->nama_customer ?? 'Tidak Diketahui' }}
+                        </td>
+                        
+                        {{-- Alamat --}}
+                        <td class="text-start customer-address">
+                            {{ $customer->alamat ?? '-' }}
+                        </td>
+                        
+                        {{-- Nomor HP --}}
+                        <td class="nomor-hp">{{ $customer->no_hp ?? '-' }}</td>
+            
+                        {{-- Paket --}}
+                        <td class="text-center">
+                            @if($customer && $customer->paket)
+                                <span class="badge bg-warning bg-opacity-10 text-warning">
+                                    {{ $customer->paket->nama_paket }}
+                                </span>
+                            @endif
+                            @if($customer && $customer->status_id == 3)
+                                <small class="badge bg-success bg-opacity-10 text-success mt-1">Aktif</small>
+                            @elseif($customer && $customer->status_id == 9)
+                                <small class="badge bg-danger bg-opacity-10 text-danger mt-1">Non Aktif</small>
+                            @else
+                                <small class="badge bg-secondary bg-opacity-10 text-secondary mt-1">-</small>
+                            @endif
+                        </td>
+            
+                        {{-- Total tagihan --}}
+                        <td class="text-end">
+                            Rp {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - ($invoice->saldo ?? 0)), 0, ',', '.') }}
+                        </td>
+            
+                        {{-- Status pembayaran --}}
+                        <td class="text-center">
+                            @if ($invoice->status)
+                                <span class="badge
+                                    bg-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}
+                                    bg-opacity-10
+                                    text-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}">
+                                    {{ $invoice->status->nama_status }}
+                                </span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
+                            @endif
+                        </td>
+            
+                        {{-- Jatuh tempo --}}
+                        <td class="text-center">
+                            @php
+                                try {
+                                    $jatuhTempo = $invoice->jatuh_tempo ? \Carbon\Carbon::parse($invoice->jatuh_tempo) : null;
+                                    $isOverdue = $jatuhTempo && $jatuhTempo->isPast() && optional($invoice->status)->nama_status != 'Sudah Bayar';
+                                } catch (\Exception $e) {
+                                    $jatuhTempo = null;
+                                    $isOverdue = false;
+                                }
+                            @endphp
+                            @if($jatuhTempo)
+                                <span class="badge {{ $isOverdue ? 'bg-danger' : 'bg-info' }} bg-opacity-10 {{ $isOverdue ? 'text-danger' : 'text-info' }}">
+                                    {{ $jatuhTempo->format('d M Y') }}
+                                    @if($isOverdue)
+                                        <br><small>Terlambat</small>
+                                    @endif
+                                </span>
+                            @else
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
+                            @endif
+                        </td>
+            
+                        {{-- Tanggal pembayaran terakhir --}}
+                        <td class="text-center">
+                            @if($invoice->pembayaran()->exists())
+                                <span class="badge bg-success">
+                                    {{ $invoice->pembayaran()->latest()->first()->created_at->format('d M Y H:i:s') }}
+                                </span>
+                            @else
+                                <span class="badge bg-secondary">-</span>
+                            @endif
+                        </td>
+            
+                        {{-- Tombol aksi --}}
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar' && (!$customer || !$customer->trashed()))
+                                    <button class="btn btn-outline-success btn-sm mb-1"
+                                            data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
+                                            data-bs-toggle="modal"
+                                            title="Request Pembayaran">
+                                        <i class="bx bx-money"></i>
+                                    </button>
+                                @elseif($customer && $customer->trashed())
+                                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
+                                        title="Pelanggan sudah dihapus">
+                                        <i class="bx bx-block"></i>
+                                    </span>
+                                @else
+                                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
+                                        title="Sudah Dibayar">
+                                        <i class="bx bx-check"></i>
+                                    </span>
+                                @endif
+            
+                                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" 
+                                    class="btn btn-outline-info btn-sm mb-1"
+                                    title="Histori pembayaran {{ $customer->nama_customer ?? '' }}">
+                                    <i class="bx bx-history"></i>
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            @if($invoice->customer->trashed())
+                            <span class="badge bg-label-danger">
+                                Deaktivasi
+                            </span>
+                            @else
+                            <span class="badge bg-label-success">
+                                Aktif
+                            </span>
+                            @endif
+                        </td>
+                        {{-- Keterangan --}}
+                        <td class="text-start">
+                            {{ $invoice->pembayaran->first()->keterangan ?? '-' }}
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="12" class="text-center py-5">
+                            <div class="d-flex flex-column align-items-center">
+                                <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
+                                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                                <p class="text-muted mb-0">Belum ada Data Pelanggan</p>
+                            </div>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table> <!-- Tag penutup table yang sebelumnya hilang -->
+    </div>
+    <div class="d-flex justify-content-center">
+        {{ $invoices->links() }}
+    </div>
 </div>
 
 {{-- Modal Konfirmasi Pembayaran --}}
-@foreach ($customers as $customer)
-@if($customer->invoice->isNotEmpty())
-@foreach($customer->invoice as $invoice)
-@if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar')
-<div class="modal fade" id="konfirmasiPembayaran{{ $invoice->id }}" tabindex="-1" style="display: none;" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header border-bottom">
-                <h5 class="modal-title mb-6" id="modalCenterTitle">
-                    <i class="bx bx-wallet me-2 text-success"></i>
-                    Konfirmasi Pembayaran
-                    <span class="text-dark fw-bold">{{ $customer->nama_customer }}</span>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="/request/pembayaran/agen/{{ $invoice->id }}" method="POST" enctype="multipart/form-data" id="paymentForm{{ $invoice->id }}">
-                @csrf
-                <div class="modal-body">
-                    <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
-                    <!-- Customer Info -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="payment-info-card">
-                                <div class="d-flex align-items-center">
-                                    <i class="bx bx-user-circle me-2 text-primary fs-4"></i>
-                                    <div>
-                                        <strong class="text-dark">{{ $customer->nama_customer }}</strong><br>
-                                        <small class="text-muted">{{ $customer->alamat }} | {{ $customer->no_hp }}</small><br>
-                                        <small class="text-muted">Paket: <span class="text-primary fw-bold">{{ $customer->paket->nama_paket }}</span></small><br>
-                                        <small class="text-muted">Harga Paket: <span class="text-primary fw-bold">Rp {{ number_format($customer->paket->harga, 0, ',', '.') }}</span></small>
+@foreach ($invoices as $invoice)
+    @php
+        $customer = $invoice->customer;
+    @endphp
+
+    @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar' && $customer && !$customer->trashed())
+    <div class="modal fade" id="konfirmasiPembayaran{{ $invoice->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <!-- Header -->
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title mb-6" id="modalCenterTitle">
+                        <i class="bx bx-wallet me-2 text-success"></i>
+                        Konfirmasi Pembayaran
+                        <span class="text-dark fw-bold">{{ $customer->nama_customer }}</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Form -->
+                <form action="/request/pembayaran/agen/{{ $invoice->id }}" method="POST" enctype="multipart/form-data" id="paymentForm{{ $invoice->id }}">
+                    @csrf
+                    <div class="modal-body">
+
+                        <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
+
+                        <!-- Informasi Pelanggan -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="payment-info-card">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bx bx-user-circle me-2 text-primary fs-4"></i>
+                                        <div>
+                                            <strong class="text-dark">{{ $customer->nama_customer }}</strong><br>
+                                            <small class="text-muted">{{ $customer->alamat }} | {{ $customer->no_hp }}</small><br>
+                                            <small class="text-muted">Paket: 
+                                                <span class="text-primary fw-bold">{{ $customer->paket->nama_paket ?? '-' }}</span>
+                                            </small><br>
+                                            <small class="text-muted">Harga Paket: 
+                                                <span class="text-primary fw-bold">
+                                                    Rp {{ number_format($customer->paket->harga ?? 0, 0, ',', '.') }}
+                                                </span>
+                                            </small>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Tanggal Jatuh Tempo -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label for="jatuhTempo" class="form-label">Tanggal Jatuh Tempo</label>
-                            <input type="date" class="form-control"
-                            value="{{ \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') }}"
-                            readonly>
-                        </div>
-                    </div>
-                    
-                    <!-- Detail Tagihan -->
-                    <div class="row">
-                        <div class="col mb-4 col-lg-4">
-                            <label class="form-label mb-2">Tagihan</label>
-                            <div class="form-check">
-                                <input type="checkbox" 
-                                       class="form-check-input pilihan" 
-                                       name="bayar[]" 
-                                       value="tagihan" 
-                                       data-amount="{{ $invoice->tagihan ?? 0 }}" 
-                                       data-id="{{ $invoice->id }}">
-                                <label class="form-check-label">
-                                    Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}
-                                </label>
+
+                        <!-- Jatuh Tempo -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label for="jatuhTempo" class="form-label">Tanggal Jatuh Tempo</label>
+                                <input type="date" class="form-control"
+                                    value="{{ $invoice->jatuh_tempo ? \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') : '' }}"
+                                    readonly>
                             </div>
                         </div>
-                    
-                        <div class="col mb-4 col-lg-4">
-                            <label class="form-label mb-2">Biaya Tambahan</label>
-                            <div class="form-check">
-                                <input type="checkbox" 
-                                       class="form-check-input pilihan" 
-                                       name="bayar[]" 
-                                       value="tambahan" 
-                                       data-amount="{{ $invoice->tambahan ?? 0 }}" 
-                                       data-id="{{ $invoice->id }}">
-                                <label class="form-check-label">
-                                    Rp {{ number_format($invoice->tambahan ?? 0, 0, ',', '.') }}
-                                </label>
+
+                        <!-- Rincian Tagihan -->
+                        <div class="row">
+                            <div class="col mb-4 col-lg-4">
+                                <label class="form-label mb-2">Tagihan</label>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input pilihan" 
+                                        name="bayar[]" value="tagihan"
+                                        data-amount="{{ $invoice->tagihan ?? 0 }}" 
+                                        data-id="{{ $invoice->id }}">
+                                    <label class="form-check-label">
+                                        Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col mb-4 col-lg-4">
+                                <label class="form-label mb-2">Biaya Tambahan</label>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input pilihan" 
+                                        name="bayar[]" value="tambahan"
+                                        data-amount="{{ $invoice->tambahan ?? 0 }}" 
+                                        data-id="{{ $invoice->id }}">
+                                    <label class="form-check-label">
+                                        Rp {{ number_format($invoice->tambahan ?? 0, 0, ',', '.') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col mb-4 col-lg-4">
+                                <label class="form-label mb-2">Tunggakan</label>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input pilihan" 
+                                        name="bayar[]" value="tunggakan"
+                                        data-amount="{{ $invoice->tunggakan ?? 0 }}" 
+                                        data-id="{{ $invoice->id }}">
+                                    <label class="form-check-label">
+                                        Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col mb-4 col-lg-4">
+                                <label class="form-label mb-2">Sisa Saldo</label>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input pilihan"
+                                        name="saldo"
+                                        value="{{ $invoice->saldo ?? 0 }}"
+                                        data-amount="{{ $invoice->saldo ?? 0 }}"
+                                        data-id="{{ $invoice->id }}"
+                                        data-type="saldo">
+                                    <label class="form-check-label">
+                                        Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    
-                        <div class="col mb-4 col-lg-4">
-                            <label class="form-label mb-2">Tunggakan</label>
-                            <div class="form-check">
-                                <input type="checkbox" 
-                                       class="form-check-input pilihan" 
-                                       name="bayar[]" 
-                                       value="tunggakan" 
-                                       data-amount="{{ $invoice->tunggakan ?? 0 }}" 
-                                       data-id="{{ $invoice->id }}">
-                                <label class="form-check-label">
-                                    Rp {{ number_format($invoice->tunggakan ?? 0, 0, ',', '.') }}
-                                </label>
+
+                        <!-- Total -->
+                        <div class="row">
+                            <div class="col-12 mb-4 col-lg-12">
+                                <label class="form-label">Total</label>
+                                <input type="text" id="total{{ $invoice->id }}" 
+                                    class="form-control" name="total" value="Rp 0" readonly>
                             </div>
                         </div>
-                        <div class="col mb-4 col-lg-4">
-                            <label class="form-label mb-2">Sisa Saldo</label>
-                            <div class="form-check">
-                                <input type="checkbox"
-                                    class="form-check-input pilihan"
-                                    name="saldo"
-                                    value="{{ $invoice->saldo }}"
-                                    data-amount="{{ $invoice->saldo ?? 0 }}"
-                                    data-id="{{ $invoice->id }}"
-                                    data-type="saldo">
-                                <label class="form-check-label">
-                                    Rp {{ number_format($invoice->saldo ?? 0, 0, ',', '.') }}
-                                </label>
+
+                        <!-- Input Jumlah Bayar -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-12 col-lg-6">
+                                <label class="form-label">Jumlah Bayar <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control"
+                                    id="revenueAmount{{ $invoice->id }}"
+                                    name="revenueAmount"
+                                    oninput="formatRupiah(this, {{ $invoice->id }})"
+                                    placeholder="Masukkan jumlah bayar" required>
+                                <input type="hidden" id="raw{{ $invoice->id }}" 
+                                    name="jumlah_bayar" value="0">
+                            </div>
+
+                            <div class="col-12 col-lg-6">
+                                <label class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
+                                <select name="metode_id" class="form-select" required>
+                                    <option value="" selected disabled>Pilih Metode Pembayaran</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer Bank">Transfer</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Bukti Pembayaran -->
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Bukti Pembayaran</label>
+                                <input type="file" class="form-control" name="bukti_pembayaran" accept="image/*">
+                                <small class="text-muted">Upload foto bukti pembayaran (opsional)</small>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Total -->
-                    <div class="row">
-                        <div class="col-12 mb-4 col-lg-12">
-                            <label class="form-label">Total</label>
-                            <input type="text" id="total{{ $invoice->id }}" class="form-control" name="total" value="Rp 0" readonly>
-                        </div>
+
+                    <!-- Footer -->
+                    <div class="modal-footer gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
+                            <i class="bx bx-x me-1"></i>Batal
+                        </button>
+                        <button type="submit" class="btn btn-success btn-sm" id="submitBtn{{ $invoice->id }}">
+                            <i class="bx bx-send me-1"></i>Kirim Request
+                        </button>
                     </div>
-                    
-                    <!-- Input Pembayaran -->
-                    <div class="row g-2 mb-3">
-                        <div class="col-12 col-lg-6">
-                            <label class="form-label">Jumlah Bayar <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control"
-                            id="revenueAmount{{ $invoice->id }}"
-                            name="revenueAmount"
-                            oninput="formatRupiah(this, {{ $invoice->id }})"
-                            placeholder="Masukkan jumlah bayar" required>
-                            <input type="hidden" id="raw{{ $invoice->id }}" name="jumlah_bayar" value="0">
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <label class="form-label">Metode Pembayaran <span class="text-danger">*</span></label>
-                            <select name="metode_id" class="form-select">
-                                <option value="" selected disabled>Pilih Metode Pembayaran</option>
-                                <option value="Cash">Cash</option>
-                                <option value="Transfer Bank">Transfer</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <!-- Bukti Pembayaran -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <label class="form-label">Bukti Pembayaran</label>
-                            <input type="file" class="form-control" name="bukti_pembayaran" accept="image/*">
-                            <small class="text-muted">Upload foto bukti pembayaran (opsional)</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer gap-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
-                        <i class="bx bx-x me-1"></i>Batal
-                    </button>
-                    <button type="submit" class="btn btn-success btn-sm" id="submitBtn{{ $invoice->id }}">
-                        <i class="bx bx-send me-1"></i>Kirim Request
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
-</div>
-@endif
+    @endif
 @endforeach
-@endif
-@endforeach
-
 @endsection
 
 @section('page-script')
@@ -841,18 +879,15 @@
             const selectedStatus = statusSelect.value;
             const selectedBulan = bulanSelect.value;
             
-            
-            
             customerRows.forEach(function(row, index) {
                 const customerName = row.querySelector('.customer-name').textContent.toLowerCase();
                 const customerAddress = row.querySelector('.customer-address').textContent.toLowerCase();
                 const customerPhone = row.querySelector('.nomor-hp').textContent.toLowerCase();
+                const isDeleted = row.getAttribute('data-customer-deleted') === 'true';
                 
                 // Get data attributes for filtering
                 const statusTagihan = row.getAttribute('data-status-tagihan') || 'N/A';
                 const bulanTempo = row.getAttribute('data-bulan-tempo') || '';
-                
-                
                 
                 // Check search term match (name, address, or phone)
                 const matchesSearch = searchTerm === '' ||
@@ -864,10 +899,10 @@
                 let matchesStatus = true;
                 if (selectedStatus && selectedStatus !== '') {
                     if (selectedStatus === 'Belum Bayar') {
-                        // Show rows that are not "Sudah Bayar" (including N/A, Belum Bayar, etc.)
-                        matchesStatus = statusTagihan !== 'Sudah Bayar';
+                        // Show rows that are not "Sudah Bayar" AND customer is not deleted
+                        matchesStatus = statusTagihan !== 'Sudah Bayar' && !isDeleted;
                     } else if (selectedStatus === 'Sudah Bayar') {
-                        // Show only rows that are "Sudah Bayar"
+                        // Show only rows that are "Sudah Bayar" (both active and deleted customers)
                         matchesStatus = statusTagihan === 'Sudah Bayar';
                     }
                 }
@@ -959,7 +994,7 @@
                     emptyRow = document.createElement('tr');
                     emptyRow.className = 'empty-state-row';
                     emptyRow.innerHTML = `
-                    <td colspan="11" class="text-center py-5">
+                    <td colspan="12" class="text-center py-5">
                         <div class="d-flex flex-column align-items-center">
                             <i class="bx bx-search text-muted" style="font-size: 3rem;"></i>
                             <h5 class="text-dark mt-3 mb-2">Tidak ada hasil</h5>

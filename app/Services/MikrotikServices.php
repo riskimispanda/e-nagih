@@ -393,6 +393,15 @@ class MikrotikServices
                 return false;
             }
 
+            // ✅ TAMBAHAN: Check jika profile sudah sama
+            if (($user['profile'] ?? null) === $newProfile) {
+                Log::info("UpgradeDowngrade: profile sama, skip update", [
+                    'usersecret' => $usersecret,
+                    'profile' => $newProfile
+                ]);
+                return true; // Langsung return true, tidak perlu update
+            }
+
             // Update profile
             $setQuery = new Query('/ppp/secret/set');
             $setQuery->equal('.id', $user['.id']);

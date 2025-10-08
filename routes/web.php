@@ -76,7 +76,6 @@ use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 
 // Main Page Route
@@ -205,61 +204,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
         $startDate = $request->start_date;
         $endDate = $request->end_date;
-        $month = $request->month;
-        $year = $request->year;
-        $search = $request->search;
-        $metode = $request->metode;
-
-        // **PERBAIKAN PENTING: Jika ada custom range, abaikan month/year**
-        if ($startDate && $endDate) {
-            $month = null;
-            $year = null;
-        }
-
-        // Generate filename yang lebih deskriptif
-        $timestamp = date('Y-m-d_H-i');
-        if ($month && $month !== '' && $month !== null) {
-            $monthNames = [
-                1 => 'Januari',
-                2 => 'Februari',
-                3 => 'Maret',
-                4 => 'April',
-                5 => 'Mei',
-                6 => 'Juni',
-                7 => 'Juli',
-                8 => 'Agustus',
-                9 => 'September',
-                10 => 'Oktober',
-                11 => 'November',
-                12 => 'Desember'
-            ];
-            $monthName = $monthNames[$month] ?? $month;
-            $filename = "pembayaran_{$monthName}_{$year}_{$timestamp}.xlsx";
-        } elseif ($startDate && $endDate) {
-            $start = date('Y-m-d', strtotime($startDate));
-            $end = date('Y-m-d', strtotime($endDate));
-            $filename = "pembayaran_custom_{$start}_to_{$end}_{$timestamp}.xlsx";
-        } else {
-            $filename = "pembayaran_{$filter}_{$timestamp}.xlsx";
-        }
-
         activity('Export Pembayaran')
             ->causedBy(auth()->user()->id)
-            ->withProperties([
-                'filter' => $filter,
-                'month' => $month,
-                'year' => $year,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
-                'search' => $search,
-                'metode' => $metode,
-                'filename' => $filename
-            ])
-            ->log(auth()->user()->name . ' Export Data Pembayaran : ' . $filter);
-
+            ->log(auth()->user()->name . ' Export Data Pembayaran');
         return Excel::download(
-            new PembayaranExport($filter, $startDate, $endDate, $month, $year, $search, $metode),
-            $filename
+            new PembayaranExport($filter, $startDate, $endDate),
+            "pembayaran_export_{$filter}.xlsx"
         );
     })->name('pembayaran.export');
     Route::get('/berita-acara', [SuperAdmin::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC')->name('berita-acara');
@@ -271,9 +221,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hapus-berita-acara/{id}', [SuperAdmin::class, 'hapusBeritaAcara'])->middleware('auth', 'roles:Super Admin,Admin Keuangan');
 
     // Konfirmasi Tiket Open
-    Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan')->name('tutup-tiket');
+    Route::get('/tiket-open/{id}', [TiketController::class, 'tutupTiket'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Helpdesk')->name('tutup-tiket');
     Route::get('/api/paket/by-router/{routerId}', [TiketController::class, 'getPaketByRouter']);
     Route::post('/tutup-tiket/{id}', [TiketController::class, 'confirmClosedTiket'])->name('confirm-closed-tiket');
+    Route::get('/batalkan/{id}', [TeknisiController::class, 'batalkan']);
 
     // Import Customer
     Route::post('/customer/import', [DataController::class, 'Import']);
@@ -473,7 +424,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
     Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
     Route::get('/helpdesk/hapus-antrian/{id}', [HelpdeskController::class, 'hapusAntrian'])->name('hapus-antrian-helpdesk');
-    Route::get('/tiket-open', [TiketController::class, 'TiketOpen'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Admin Logistik')->name('tiket-open');
+    Route::get('/tiket-open', [TiketController::class, 'TiketOpen'])->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Admin Logistik,Helpdesk')->name('tiket-open');
     Route::get('/open-tiket/{id}', [TiketController::class, 'formOpenTiket'])->name('open-tiket');
 });
 

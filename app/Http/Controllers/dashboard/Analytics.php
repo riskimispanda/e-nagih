@@ -25,36 +25,77 @@ use App\Models\Pendapatan;
 use App\Models\Pengeluaran;
 use Carbon\Carbon;
 use App\Models\Schedules;
+use App\Models\TiketOpen;
 
 class Analytics extends Controller
 {
   public function index()
   {
-    $newCustomer = Customer::whereYear('tanggal_selesai', now()->year)->whereMonth('tanggal_selesai', now()->month)->get();
-    $antrian = Customer::whereIn('status_id', [1, 2, 5])->get();
-    $jumlahPelanggan = Customer::whereIn('status_id', [3, 4, 9])->count();
-    $pembayaran = Pembayaran::whereMonth('created_at', now()->month)->orderBy('created_at', 'desc')->get();
-    $today = Carbon::today()->toDateString();
-    $pelangganLunas = Invoice::where('status_id', 8)->sum('tagihan') + Invoice::where('status_id', 8)->sum('tunggakan') - Invoice::where('status_id', 8)->sum('saldo');
-    $countPelangganLunas = Invoice::where('status_id', 8)->count();
-    $pelangganBelumLunas = Invoice::where('status_id', 7)->sum('tagihan') + Invoice::where('status_id', 7)->sum('tunggakan') - Invoice::where('status_id', 7)->sum('saldo');
-    $countPelangganBelumLunas = Invoice::where('status_id', 7)->count();
+    // Hanya customer yang TIDAK di-soft delete
+    $newCustomer = Customer::whereYear('tanggal_selesai', now()->year)
+      ->whereMonth('tanggal_selesai', now()->month)
+      ->whereNull('deleted_at') // ✅ TAMBAHKAN INI
+      ->get();
 
+    $antrian = Customer::whereIn('status_id', [1, 2, 5])
+      ->whereNull('deleted_at') // ✅ TAMBAHKAN INI
+      ->get();
+
+    $jumlahPelanggan = Customer::whereIn('status_id', [3, 4, 9])
+      ->whereNull('deleted_at') // ✅ TAMBAHKAN INI
+      ->count();
+
+    $pembayaran = Pembayaran::whereMonth('created_at', now()->month)
+      ->whereHas('invoice.customer', function ($q) {
+        $q->withTrashed();
+      })
+      ->with(['invoice.customer' => function ($q) {
+        $q->withTrashed(); // Load relation dengan safe access
+      }])
+      ->orderBy('created_at', 'desc')
+      ->get();
+
+    $today = Carbon::today()->toDateString();
+    $pelangganLunas = Invoice::where('status_id', 8)
+      ->whereHas('customer', fn($q) => $q->withTrashed())
+      ->get()
+      ->reduce(fn($carry, $invoice) => $carry + $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo, 0);
+
+    $countPelangganLunas = Invoice::where('status_id', 8)
+      ->whereHas('customer', fn($q) => $q->withTrashed())
+      ->count();
+
+    // Lebih efisien dengan sum di database
+    $pelangganBelumLunas = Invoice::where('status_id', 7)
+      ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
+      ->get()
+      ->sum(function ($invoice) {
+        return ($invoice->tagihan ?? 0) +
+          ($invoice->tambahan ?? 0) +
+          ($invoice->tunggakan ?? 0) -
+          ($invoice->saldo ?? 0);
+      });
+
+    $countPelangganBelumLunas = Invoice::where('status_id', 7)
+      ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
+      ->count();
 
     $todaySchedules = Schedules::active()
       ->where('user_id', auth()->id())
       ->whereDate('date', $today)
       ->get();
 
-    // Total Pendapatan
+    // Total Pendapatan - tetap include semua (tidak perlu filter soft delete)
     $langganan = Pembayaran::sum('jumlah_bayar');
     $nonLangganan = Pendapatan::sum('jumlah_pendapatan');
     $pengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
     $totalPendapatan = $langganan + $nonLangganan - $pengeluaran;
 
-    // Total Pengeluaran 
+    // Total Pengeluaran - tetap include semua
     $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
 
+    $open = TiketOpen::where('status_id', 6)->count();
+    $closed = TiketOpen::where('status_id', 3)->count();
 
     return view("dashboard.dashboard", [
       "users" => auth()->user(),
@@ -69,7 +110,9 @@ class Analytics extends Controller
       'pelangganLunas' => $pelangganLunas,
       'countLunas' => $countPelangganLunas,
       'pelangganBelumLunas' => $pelangganBelumLunas,
-      'countBelumLunas' => $countPelangganBelumLunas
+      'countBelumLunas' => $countPelangganBelumLunas,
+      'open' => $open,
+      'closed' => $closed
     ]);
   }
 

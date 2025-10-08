@@ -511,110 +511,123 @@
                                 <th>Metode Bayar</th>
                                 <th>Tanggal Pembayaran</th>
                                 <th>Bukti Pembayaran</th>
+                                <th>Status Customer</th>
                                 <th>Admin / Agen</th>                                
                             </tr>
                         </thead>
                         <tbody class="text-center">
                             @php $rowNumber = ($invoices->currentPage() - 1) * $invoices->perPage() + 1; @endphp
                             @forelse ($invoices as $invoice)
-                            <tr class="customer-row" data-id="{{ $invoice->customer->id }}"
-                                data-nama="{{ strtolower($invoice->customer->nama_customer) }}"
-                                data-alamat="{{ strtolower($invoice->customer->alamat) }}"
-                                data-jatuh-tempo="{{ $invoice->jatuh_tempo ? $invoice->jatuh_tempo : '' }}"
-                                data-tagihan="{{ $invoice->tagihan ?? 0 }}"
-                                data-status="{{ $invoice->status ? $invoice->status->nama_status : '' }}">
-                                <td class="text-center">{{ $rowNumber++ }}</td>
-                                <td class="customer-name fw-bold">{{ $invoice->customer->nama_customer }}</td>
-                                <td class="customer-address">{{ $invoice->customer->alamat }}</td>
-                                <td>
-                                    @if($invoice->status)
-                                    <span class="badge
-                                            @if($invoice->status->id == 1) bg-info bg-opacity-10 text-info
-                                            @elseif($invoice->status->id == 8) bg-success bg-opacity-10 text-success
-                                            @elseif($invoice->status->id == 7) bg-danger bg-opacity-10 text-danger
-                                            @else bg-secondary bg-opacity-10 text-secondary
-                                            @endif">
-                                    {{ $invoice->status->nama_status }}
-                                </span>
-                                @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Status</span>
-                                @endif
-                            </td>
-                            <td>Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}</td>
-                            <td>
-                                @if($invoice->jatuh_tempo)
-                                @php
-                                try {
-                                    $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
-                                    $isOverdue = $jatuhTempo->isPast() && $invoice->status && $invoice->status->nama_status != 'Sudah Bayar';
-                                } catch (\Exception $e) {
-                                    $jatuhTempo = null;
-                                    $isOverdue = false;
-                                }
-                                @endphp
-                                @if($jatuhTempo)
-                                <span class="badge {{ $isOverdue ? 'bg-danger bg-opacity-10 text-danger' : ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar' ? 'bg-success bg-opacity-10 text-success' : 'bg-info bg-opacity-10 text-info') }}">
-                                    {{ $jatuhTempo->format('d M Y') }}
-                                    @if($isOverdue)
-                                    @elseif($invoice->status && $invoice->status->nama_status == 'Sudah Bayar')
+                                {{-- Skip customer yang sudah dihapus --}}
+                                {{-- @if($invoice->customer && $invoice->customer->trashed())
+                                    @continue
+                                @endif --}}
+                        
+                                <tr class="customer-row" data-id="{{ $invoice->customer->id }}"
+                                    data-nama="{{ strtolower($invoice->customer->nama_customer) }}"
+                                    data-alamat="{{ strtolower($invoice->customer->alamat) }}"
+                                    data-jatuh-tempo="{{ $invoice->jatuh_tempo ? $invoice->jatuh_tempo : '' }}"
+                                    data-tagihan="{{ $invoice->tagihan ?? 0 }}"
+                                    data-status="{{ $invoice->status ? $invoice->status->nama_status : '' }}">
+                                    <td class="text-center">{{ $rowNumber++ }}</td>
+                                    <td class="customer-name fw-bold">{{ $invoice->customer->nama_customer }}</td>
+                                    <td class="customer-address">{{ $invoice->customer->alamat }}</td>
+                                    <td>
+                                        @if($invoice->status)
+                                        <span class="badge
+                                                @if($invoice->status->id == 1) bg-info bg-opacity-10 text-info
+                                                @elseif($invoice->status->id == 8) bg-success bg-opacity-10 text-success
+                                                @elseif($invoice->status->id == 7) bg-danger bg-opacity-10 text-danger
+                                                @else bg-secondary bg-opacity-10 text-secondary
+                                                @endif">
+                                        {{ $invoice->status->nama_status }}
+                                    </span>
+                                    @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Status</span>
                                     @endif
-                                </span>
-                                @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary">Invalid Date</span>
-                                @endif
-                                @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($invoice->pembayaran->isNotEmpty())
-                                    @foreach ($invoice->pembayaran as $item)
-                                        <span class="badge bg-info">{{$item->metode_bayar}}</span>
-                                    @endforeach
-                                @else
-                                -
-                                @endif
-                            </td>
-                            <td>
-                                @if($invoice->pembayaran->isNotEmpty())
-                                    @foreach ($invoice->pembayaran as $item)
-                                        <span class="badge bg-info">{{ \Carbon\Carbon::parse($item->tanggal_bayar.' '.\Carbon\Carbon::parse($item->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}</span>
-                                    @endforeach
-                                @else
-                                <span>-</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($invoice->pembayaran->isNotEmpty())
-                                    @foreach ($invoice->pembayaran as $item)
-                                    <a href="{{ $item->bukti_bayar ? asset('storage/' . $item->bukti_bayar) : '#' }}"
-                                        target="_blank"
-                                        data-bs-toggle="tooltip"
-                                        data-bs-placement="bottom"
-                                        title="{{ $item->bukti_bayar ? 'Lihat Bukti' : 'Bukti Tidak Ditemukan' }}">
-                                         <i class="bx bx-info-circle text-info"></i>
-                                     </a>                                     
-                                    @endforeach
-                                @else
-                                -
-                                @endif
-                            </td>
-                            <td>
-                                @if ($invoice->pembayaran->isNotEmpty())
-                                    @foreach ($invoice->pembayaran as $pembayaran)
-                                        @if ($pembayaran->user)
-                                            <span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">
-                                                {{ $pembayaran->user->name }} / {{ $pembayaran->user->roles->name }}
-                                            </span>
-                                        @else
-                                            <span class="badge bg-secondary">By Tripay</span>
+                                </td>
+                                <td>Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}</td>
+                                <td>
+                                    @if($invoice->jatuh_tempo)
+                                    @php
+                                    try {
+                                        $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
+                                        $isOverdue = $jatuhTempo->isPast() && $invoice->status && $invoice->status->nama_status != 'Sudah Bayar';
+                                    } catch (\Exception $e) {
+                                        $jatuhTempo = null;
+                                        $isOverdue = false;
+                                    }
+                                    @endphp
+                                    @if($jatuhTempo)
+                                    <span class="badge {{ $isOverdue ? 'bg-danger bg-opacity-10 text-danger' : ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar' ? 'bg-success bg-opacity-10 text-success' : 'bg-info bg-opacity-10 text-info') }}">
+                                        {{ $jatuhTempo->format('d M Y') }}
+                                        @if($isOverdue)
+                                        @elseif($invoice->status && $invoice->status->nama_status == 'Sudah Bayar')
                                         @endif
-                                    @endforeach
-                                @else
-                                    <span class="fw-bold">-</span>
-                                @endif
-                            </td>                            
-                        </tr>
+                                    </span>
+                                    @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Invalid Date</span>
+                                    @endif
+                                    @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($invoice->pembayaran->isNotEmpty())
+                                        @foreach ($invoice->pembayaran as $item)
+                                            <span class="badge bg-info">{{$item->metode_bayar}}</span>
+                                        @endforeach
+                                    @else
+                                    -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($invoice->pembayaran->isNotEmpty())
+                                        @foreach ($invoice->pembayaran as $item)
+                                            <span class="badge bg-info">{{ \Carbon\Carbon::parse($item->tanggal_bayar.' '.\Carbon\Carbon::parse($item->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}</span>
+                                        @endforeach
+                                    @else
+                                    <span>-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($invoice->pembayaran->isNotEmpty())
+                                        @foreach ($invoice->pembayaran as $item)
+                                        <a href="{{ $item->bukti_bayar ? asset('storage/' . $item->bukti_bayar) : '#' }}"
+                                            target="_blank"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="bottom"
+                                            title="{{ $item->bukti_bayar ? 'Lihat Bukti' : 'Bukti Tidak Ditemukan' }}">
+                                             <i class="bx bx-info-circle text-info"></i>
+                                         </a>                                     
+                                        @endforeach
+                                    @else
+                                    -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($invoice->customer && $invoice->customer->trashed())
+                                    <span class="badge bg-label-danger fw-bold">Deaktivasi</span>
+                                    @else
+                                    <span class="badge bg-label-success fw-bold">Aktif</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($invoice->pembayaran->isNotEmpty())
+                                        @foreach ($invoice->pembayaran as $pembayaran)
+                                            @if ($pembayaran->user)
+                                                <span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">
+                                                    {{ $pembayaran->user->name }} / {{ $pembayaran->user->roles->name }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary">By Tripay</span>
+                                            @endif
+                                        @endforeach
+                                    @else
+                                        <span class="fw-bold">-</span>
+                                    @endif
+                                </td>                            
+                            </tr>
                         @empty
                         <tr class="empty-state-row">
                             <td colspan="10" class="text-center py-5">

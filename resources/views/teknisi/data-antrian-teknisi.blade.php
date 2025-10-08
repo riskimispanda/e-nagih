@@ -820,6 +820,9 @@
                                             @if($item->status_id == 3) aria-disabled="true" tabindex="-1" @endif>
                                              <i class="bx bx-check-circle"></i>
                                          </a>
+                                         <a href="/batalkan/{{ $item->id }}" class="btn btn-icon btn-complete bg-label-danger me-1 @if($item->status_id == 3) disabled @endif" data-bs-toggle="tooltip" title="Batalkan" data-bs-placement="bottom">
+                                            <i class="bx bx-x"></i>
+                                         </a>
                                         @elseif(auth()->user()->roles->name == 'NOC')
                                         <a href="/edit/antrian/{{ $item->id }}/noc" class="btn btn-icon btn-complete me-1" 
                                            data-bs-toggle="tooltip" title="Edit Detail">

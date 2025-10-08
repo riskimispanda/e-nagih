@@ -221,13 +221,24 @@ class DataController extends Controller
             ));
             cache(['last_customer_update' => $currentUpdate], now()->addMinutes(5));
         }
-        $tagihan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tagihan');
-        $tambahan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tambahan');
-        $tunggakan = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('tunggakan');
-        $saldo = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', now()->month)->whereYear('jatuh_tempo', now()->year)->sum('saldo');
+        $sumData = Invoice::whereIn('status_id', [7, 8])
+            ->whereMonth('jatuh_tempo', now()->month)
+            ->whereYear('jatuh_tempo', now()->year)
+            ->whereHas('customer', function ($query) {
+                $query->whereNull('deleted_at'); // Include soft deleted customers
+            })
+            ->selectRaw('
+        SUM(tagihan) as total_tagihan,
+        SUM(tambahan) as total_tambahan,
+        SUM(tunggakan) as total_tunggakan,
+        SUM(saldo) as total_saldo
+    ')
+            ->first();
 
-        // Estimasi Pendapatan bulan depan
-        $totalPendapatan = $tagihan + $tambahan + $tunggakan - $saldo;
+        $totalPendapatan = ($sumData->total_tagihan ?? 0)
+            + ($sumData->total_tambahan ?? 0)
+            + ($sumData->total_tunggakan ?? 0)
+            - ($sumData->total_saldo ?? 0);
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,

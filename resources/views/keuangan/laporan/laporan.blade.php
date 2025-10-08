@@ -846,7 +846,9 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td class="text-center">${formatDate(item.tanggal)}</td>
-                    <td class="text-center"><span class="badge bg-warning bg-opacity-10 text-warning">${item.jenis_pendapatan}</span></td>
+                    <td class="text-center">
+                        <span class="badge bg-warning bg-opacity-10 text-warning">${item.jenis_pendapatan}</span>
+                    </td>
                     <td class="text-center">${item.deskripsi}</td>
                     <td class="text-center"><span class="badge bg-info bg-opacity-10 text-info">${item.metode_bayar}</span></td>
                     <td class="text-center">${formatRupiah(item.jumlah_pendapatan)}</td>

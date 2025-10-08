@@ -17,21 +17,37 @@ class GenerateInvoice extends Command
         $bulanDepan = Carbon::now()->addMonth();
         $jatuhTempoBulanDepan = $bulanDepan->endOfMonth();
 
-        $pelangganAktif = Customer::where('status_id', 3)->get();
+        // Hanya ambil customer aktif yang TIDAK di-soft delete
+        $pelangganAktif = Customer::where('status_id', 3)
+            ->whereNull('deleted_at') // Pastikan tidak soft deleted
+            ->get();
+
+        $softDeletedCount = 0;
+        $generatedCount = 0;
+        $skippedCount = 0;
 
         foreach ($pelangganAktif as $customer) {
+            // Double check: Skip jika customer di-soft delete
+            if ($customer->trashed()) {
+                $this->warn("⏭️ Customer sudah dihapus (soft delete): {$customer->nama_customer}");
+                $softDeletedCount++;
+                continue;
+            }
+
             $invoiceTerakhir = Invoice::where('customer_id', $customer->id)
                 ->orderByDesc('created_at')
                 ->first();
 
             if (!$invoiceTerakhir) {
                 $this->info("⛔ {$customer->nama_customer} belum punya invoice. Lewati.");
+                $skippedCount++;
                 continue;
             }
 
             // Gunakan status_id untuk cek pembayaran (8 = sudah bayar)
             if ($invoiceTerakhir->status_id != 8) {
                 $this->warn("❌ {$customer->nama_customer} status invoice terakhir belum dibayar (status_id = {$invoiceTerakhir->status_id}). Lewati.");
+                $skippedCount++;
                 continue;
             }
 
@@ -43,10 +59,13 @@ class GenerateInvoice extends Command
 
             if ($sudahAda) {
                 $this->info("✅ Invoice bulan depan sudah ada untuk {$customer->nama_customer}. Lewati.");
+                $skippedCount++;
                 continue;
             }
+
             // Generate Merchant Reference 
             $merchant = 'INV-' . $customer->id . '-' . time();
+
             // Buat invoice bulan depan
             $invoice = Invoice::create([
                 'customer_id' => $customer->id,
@@ -58,8 +77,14 @@ class GenerateInvoice extends Command
             ]);
 
             $this->info("✅ Invoice dibuat untuk {$customer->nama_customer} | Rp " . number_format($invoice->tagihan, 0, ',', '.') . " | Jatuh Tempo: " . $invoice->jatuh_tempo->format('d-m-Y'));
+            $generatedCount++;
         }
 
-        $this->info("🎯 Selesai proses generate invoice.");
+        // Summary
+        $this->info("\n🎯 SUMMARY GENERATE INVOICE:");
+        $this->info("✅ {$generatedCount} invoice berhasil dibuat");
+        $this->info("⏭️ {$skippedCount} customer dilewati");
+        $this->info("🗑️ {$softDeletedCount} customer soft deleted");
+        $this->info("📊 Total customer diproses: " . $pelangganAktif->count());
     }
 }

@@ -13,6 +13,8 @@ class TiketOpen extends Model
         'keterangan',
         'foto',
         'user_id',
+        'status_id',
+        'tanggal_selesai'
     ];
 
     public function customer()
@@ -26,5 +28,10 @@ class TiketOpen extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function status()
+    {
+        return $this->belongsTo(Status::class, 'status_id');
     }
 }

@@ -97,7 +97,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-12 col-6 mb-6">
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between mb-4">
@@ -111,7 +111,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6 col-md-12 col-6 mb-6">
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between mb-4">
@@ -124,6 +124,38 @@
                             <small class="badge bg-label-danger"><i class="bx bxs-user me-1 fs-6"></i>{{ $countBelumLunas }} Invoice</small>
                         </div>
                     </div>
+                </div>
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
+                    <a href="/tiket-open" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Halaman Tiket Open">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between mb-4">
+                                    <div class="avatar flex-shrink-0 bg-warning bg-opacity-10 d-flex align-items-center justify-content-center rounded">
+                                        <i class="bx bx-card text-warning fw-bold"></i>
+                                    </div>
+                                </div>
+                                <p class="mb-1">Tiket Open</p>
+                                <h4 class="card-title mb-3">{{$open}}</h4>
+                                <small class="badge bg-label-warning"><i class="bx bx-card me-1 fs-6"></i>{{ $open }} Tiket</small>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
+                    <a href="/tiket-closed" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Halaman Tiket Closed">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="card-title d-flex align-items-start justify-content-between mb-4">
+                                    <div class="avatar flex-shrink-0 bg-success bg-opacity-10 d-flex align-items-center justify-content-center rounded">
+                                        <i class="bx bxs-card text-success fw-bold"></i>
+                                    </div>
+                                </div>
+                                <p class="mb-1">Tiket Closed</p>
+                                <h4 class="card-title mb-3">{{$closed}}</h4>
+                                <small class="badge bg-label-success"><i class="bx bxs-card me-1 fs-6"></i>{{ $closed }} Tiket</small>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
         </div>

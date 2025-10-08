@@ -57,7 +57,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
 
     public function collection()
     {
-        // Eager load semua relasi
+        // Eager load semua relasi dengan INCLUDE SOFT DELETED
         $query = Customer::with([
             'paket',
             'odp.odc.olt.server',
@@ -67,7 +67,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             'koneksi', 
             'perangkat', 
             'media'
-        ]);
+        ])->withTrashed(); // INCLUDE SOFT DELETED CUSTOMERS
 
         switch ($this->type) {
             case 'aktif':
@@ -77,7 +77,9 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             case 'paket':
                 return $query->where('paket_id', $this->paketId)->get();
             case 'ringkasan':
-                return Paket::withCount('customer')->get();
+                return Paket::withCount(['customer' => function ($q) {
+                    $q->withTrashed(); // Include soft deleted dalam count
+                }])->get();
             case 'bulan':
                 $month = $this->paketId['month'] ?? date('m');
                 $year = $this->paketId['year'] ?? date('Y');
@@ -113,12 +115,19 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
 
         $status = $this->getStatusText($customer->status_id);
 
+        // **TAMBAHAN: Status Customer (Aktif/Deaktivasi)**
+        $statusCustomer = 'Aktif';
+        if ($customer->trashed()) {
+            $statusCustomer = 'Deaktivasi';
+        }
+
         return [
             $customer->id,
             $customer->nama_customer,
             $customer->no_hp,
             $customer->email,
             $status,
+            $statusCustomer, // **KOLOM BARU: Status Customer**
             $customer->paket?->nama_paket ?? '-',
             $customer->odp->odc->olt->server->lokasi_server ?? '-',
             $customer->odp->odc->olt->nama_lokasi ?? '-',
@@ -171,6 +180,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             'No HP',
             'Email',
             'Status',
+            'Status Customer', // **HEADING BARU**
             'Paket',
             'Server',
             'OLT',
@@ -226,13 +236,14 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                     $headings = ['Nama Paket', 'Jumlah Pelanggan'];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
                 } else {
-                    $totalColumns = 27; // 27 kolom (A sampai AA)
+                    $totalColumns = 28; // 28 kolom (A sampai AB) - DITAMBAH 1 KOLOM
                     $headings = [
                         'ID',
                         'Nama Pelanggan',
                         'No HP',
                         'Email',
                         'Status',
+                        'Status Customer', // **HEADING BARU**
                         'Paket',
                         'Server',
                         'OLT',
@@ -256,7 +267,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                         'Tanggal Registrasi',
                         'Tanggal Installasi'
                     ];
-                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AA
+                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AB
                 }
 
                 // Hapus heading otomatis yang sudah di-generate
@@ -369,8 +380,8 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
 
                     // Style khusus untuk kolom tertentu
                     if ($this->type !== 'ringkasan') {
-                        // Center alignment untuk ID, Status, Paket, dan Tanggal
-                        $centerColumns = [0, 4, 5, 25, 26]; // A, E, F, Z, AA
+                        // Center alignment untuk ID, Status, Status Customer, Paket, dan Tanggal
+                        $centerColumns = [0, 4, 5, 6, 26, 27]; // A, E, F, G, AB, AC
                         foreach ($centerColumns as $colIndex) {
                             $columnLetter = $this->getColumnLetter($colIndex);
                             for ($row = 5; $row <= $lastRow; $row++) {
@@ -386,6 +397,23 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                             for ($row = 5; $row <= $lastRow; $row++) {
                                 $sheet->getStyle("{$columnLetter}{$row}")->getAlignment()
                                     ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                            }
+                        }
+
+                        // **CONDITIONAL FORMATTING untuk Status Customer**
+                        for ($row = 5; $row <= $lastRow; $row++) {
+                            $statusValue = $sheet->getCell($this->getColumnLetter(5) . $row)->getValue();
+                            if ($statusValue === 'Deaktivasi') {
+                                $sheet->getStyle($this->getColumnLetter(5) . $row)->applyFromArray([
+                                    'font' => [
+                                        'color' => ['argb' => Color::COLOR_RED],
+                                        'bold' => true,
+                                    ],
+                                    'fill' => [
+                                        'fillType' => Fill::FILL_SOLID,
+                                        'startColor' => ['argb' => 'FEE2E2'], // Light red background
+                                    ],
+                                ]);
                             }
                         }
                     } else {

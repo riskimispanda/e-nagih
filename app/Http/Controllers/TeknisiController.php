@@ -190,6 +190,19 @@ class TeknisiController extends Controller
         return response()->json($odp);
     }
 
+    public function batalkan($id)
+    {
+        $customer = Customer::where('id', $id);
+        $customer->update([
+            'teknisi_id' => null,
+            'status_id' => 5,
+        ]);
+        activity('batalkan')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Membatalkan pilihan');
+        return redirect('/teknisi/antrian')->with('success', 'Berhasil batalkan');
+    }
+
     public function konfirmasi(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);

@@ -13,11 +13,14 @@
 
         <div class="card">
             <div class="card-body">
-                <div class="d-flex justify-content-start mb-5">
+                <div class="d-flex justify-content-between mb-5">
                     <a href="javascript:history.back()" class="btn btn-secondary btn-sm">
                         <i class="bx bx-chevron-left"></i> Kembali
                     </a>
                 </div>
+                @if($deaktivasi->trashed())
+                <p class="fw-semibold">Deaktivasi Pada Tanggal: <span class="badge bg-label-warning">{{ \Carbon\Carbon::parse($deaktivasi->deleted_at)->locale('id')->isoFormat('D MMMM Y, H:mm:ss') }}</span></p>
+                @endif
                 <div class="table-responsive">
                     <table class="table table-hover text-center">
                         <thead class="table-dark">
