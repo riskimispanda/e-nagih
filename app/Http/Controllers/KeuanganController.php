@@ -578,7 +578,7 @@ class KeuanganController extends Controller
                 ->sum('jumlah_bayar');
         }
 
-        $totalTransactions = Pembayaran::count();
+        $totalTransactions = Pembayaran::whereMonth('created_at', $month)->whereYear('created_at', Carbon::now()->year)->count();
 
         // Get payment methods for filter dropdown
         $paymentMethods = Pembayaran::select('metode_bayar')
@@ -586,98 +586,120 @@ class KeuanganController extends Controller
             ->whereNotNull('metode_bayar')
             ->pluck('metode_bayar');
 
-        // Calculate payment method statistics
-        // Cash payments with month filter
-        $cashPayments = Pembayaran::where(function($q) {
+        $cashPayments = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%cash%')
-              ->orWhere('metode_bayar', 'like', '%tunai%');
+                ->orWhere('metode_bayar', 'like', '%tunai%')
+                ->orWhere('metode_bayar', 'like', '%Cash%'); // tambahan
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $cashPayments->whereMonth('tanggal_bayar', $month)
-                        ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $cashPayments = $cashPayments->sum('jumlah_bayar');
-        // Cash count with month filter
+
+        // Cash count with month filter - DIPERBAIKI
         $CashCount = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%cash%')
-                ->orWhere('metode_bayar', 'like', '%tunai%');
+                ->orWhere('metode_bayar', 'like', '%tunai%')
+                ->orWhere('metode_bayar', 'like', '%Cash%'); // tambahan
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $CashCount->whereMonth('tanggal_bayar', $month)
-                     ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $CashCount = $CashCount->count();
 
-
-        // Transfer payments with month filter
-        $transferPayments = Pembayaran::where(function($q) {
+        // Transfer payments with month filter - DIPERBAIKI (GABUNGKAN SEMUA)
+        $transferPayments = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%transfer%')
-              ->orWhere('metode_bayar', 'like', '%bank%')
-              ->orWhere('metode_bayar', 'like', '%briva%')
-              ->orWhere('metode_bayar', 'like', '%bniva%')
-              ->orWhere('metode_bayar', 'like', '%bcava%')
-              ->orWhere('metode_bayar', 'like', '%transfer bank%');
+                ->orWhere('metode_bayar', 'like', '%transfer bank%')
+                ->orWhere('metode_bayar', 'like', '%Transfer%')
+                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
+                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
+                ->orWhere('metode_bayar', 'like', '%briva%')
+                ->orWhere('metode_bayar', 'like', '%bcava%')
+                ->orWhere('metode_bayar', 'like', '%bniva%')
+                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%alfamart%')
+                ->orWhere('metode_bayar', 'like', '%indomaret%')
+                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
+                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $transferPayments->whereMonth('tanggal_bayar', $month)
-                            ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $transferPayments = $transferPayments->sum('jumlah_bayar');
-        // Transfer count with month filter
+
+        // Transfer count with month filter - DIPERBAIKI (GABUNGKAN SEMUA)
         $transferCount = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%transfer%')
-                ->orWhere('metode_bayar', 'like', '%bank%')
+                ->orWhere('metode_bayar', 'like', '%transfer bank%')
+                ->orWhere('metode_bayar', 'like', '%Transfer%')
+                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
+                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
                 ->orWhere('metode_bayar', 'like', '%briva%')
-                ->orWhere('metode_bayar', 'like', '%bniva%')
                 ->orWhere('metode_bayar', 'like', '%bcava%')
-                ->orWhere('metode_bayar', 'like', '%transfer bank%');
+                ->orWhere('metode_bayar', 'like', '%bniva%')
+                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%alfamart%')
+                ->orWhere('metode_bayar', 'like', '%indomaret%')
+                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
+                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $transferCount->whereMonth('tanggal_bayar', $month)
-                         ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $transferCount = $transferCount->count();
 
-        // Tripay count with month filter
-        $tripay = Pembayaran::where(function($q) {
-            $q->where('metode_bayar', 'like', '%tripay%')
-              ->orWhere('metode_bayar', 'like', '%DANA%');
+        // Tripay count with month filter - DIPERBAIKI (HAPUS DANA dari sini)
+        $tripay = Pembayaran::where(function ($q) {
+            $q->where('metode_bayar', 'like', '%tripay%');
+            // HAPUS: ->orWhere('metode_bayar', 'like', '%DANA%');
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $tripay->whereMonth('tanggal_bayar', $month)
-                   ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $tripay = $tripay->count();
 
-        // E-wallet payments with month filter
-        $ewalletPayments = Pembayaran::where(function($q) {
+        // E-wallet payments with month filter - DIPERBAIKI (TAMBAH METODE)
+        $ewalletPayments = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%ewallet%')
-              ->orWhere('metode_bayar', 'like', '%e-wallet%')
-              ->orWhere('metode_bayar', 'like', '%gopay%')
-              ->orWhere('metode_bayar', 'like', '%ovo%')
-              ->orWhere('metode_bayar', 'like', '%dana%')
-              ->orWhere('metode_bayar', 'like', '%qris%')
-              ->orWhere('metode_bayar', 'like', '%shopeepay%');
+                ->orWhere('metode_bayar', 'like', '%e-wallet%')
+                ->orWhere('metode_bayar', 'like', '%gopay%')
+                ->orWhere('metode_bayar', 'like', '%ovo%')
+                ->orWhere('metode_bayar', 'like', '%dana%')
+                ->orWhere('metode_bayar', 'like', '%qris%')
+                ->orWhere('metode_bayar', 'like', '%qris2%')
+                ->orWhere('metode_bayar', 'like', '%shopeepay%')
+                ->orWhere('metode_bayar', 'like', '%shopee%')
+                ->orWhere('metode_bayar', 'like', '%QRIS%')
+                ->orWhere('metode_bayar', 'like', '%DANA%') // DANA pindah ke sini
+                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%');
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $ewalletPayments->whereMonth('tanggal_bayar', $month)
-                           ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $ewalletPayments = $ewalletPayments->sum('jumlah_bayar');
-        
-        // E-wallet count with month filter
+
+        // E-wallet count with month filter - DIPERBAIKI
         $ewalletCount = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%ewallet%')
                 ->orWhere('metode_bayar', 'like', '%e-wallet%')
@@ -685,14 +707,19 @@ class KeuanganController extends Controller
                 ->orWhere('metode_bayar', 'like', '%ovo%')
                 ->orWhere('metode_bayar', 'like', '%dana%')
                 ->orWhere('metode_bayar', 'like', '%qris%')
-                ->orWhere('metode_bayar', 'like', '%shopeepay%');
+                ->orWhere('metode_bayar', 'like', '%qris2%')
+                ->orWhere('metode_bayar', 'like', '%shopeepay%')
+                ->orWhere('metode_bayar', 'like', '%shopee%')
+                ->orWhere('metode_bayar', 'like', '%QRIS%')
+                ->orWhere('metode_bayar', 'like', '%DANA%') // DANA pindah ke sini
+                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%');
         });
-        
+
         if ($month && $month !== '' && $month !== null) {
             $ewalletCount->whereMonth('tanggal_bayar', $month)
-                        ->whereYear('tanggal_bayar', Carbon::now()->year);
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
         }
-        
+
         $ewalletCount = $ewalletCount->count();
 
         return view('/keuangan/data-pembayaran',[
@@ -900,124 +927,164 @@ class KeuanganController extends Controller
         $today = Carbon::today();
         $currentMonth = Carbon::now();
 
+        // Filter payments untuk bulan ini
+        $monthlyPayments = $allPayments->filter(function ($payment) use ($currentMonth) {
+            $paymentDate = Carbon::parse($payment->tanggal_bayar);
+            return $paymentDate->month === $currentMonth->month &&
+                $paymentDate->year === $currentMonth->year;
+        });
+
+        // Jika ada filter bulan spesifik, gunakan data dari monthlyPayments yang sudah difilter
+        if ($month && $month !== '' && $month !== null) {
+            $filteredMonthlyPayments = $monthlyPayments->filter(function ($payment) use ($month) {
+                $paymentDate = Carbon::parse($payment->tanggal_bayar);
+                return $paymentDate->month == $month;
+            });
+
+            return [
+            'totalPayments' => $allPayments->sum('jumlah_bayar'),
+            'todayPayments' => $allPayments->where('tanggal_bayar', $today->format('Y-m-d'))->sum('jumlah_bayar'),
+                'monthlyPayments' => $filteredMonthlyPayments->sum('jumlah_bayar'),
+            'totalTransactions' => $allPayments->count(),
+            'month' => $month,
+
+                // Payment method statistics - menggunakan filteredMonthlyPayments yang konsisten
+                'cashPayments' => $this->calculatePaymentsByMethod($filteredMonthlyPayments, ['cash', 'tunai']),
+                'cashCount' => $this->calculatePaymentsCountByMethod($filteredMonthlyPayments, ['cash', 'tunai']),
+
+                'transferPayments' => $this->calculatePaymentsByMethod($filteredMonthlyPayments, [
+                    'transfer',
+                    'bank',
+                    'briva',
+                    'bniva',
+                    'bcava',
+                    'transfer bank',
+                    'INDOMARET',
+                    'ALFAMART',
+                    'ALFAMIDI'
+                ]),
+                'transferCount' => $this->calculatePaymentsCountByMethod($filteredMonthlyPayments, [
+                    'transfer',
+                    'bank',
+                    'briva',
+                    'bniva',
+                    'bcava',
+                    'transfer bank',
+                    'INDOMARET',
+                    'ALFAMART',
+                    'ALFAMIDI'
+                ]),
+
+                'ewalletPayments' => $this->calculatePaymentsByMethod($filteredMonthlyPayments, [
+                    'ewallet',
+                    'e-wallet',
+                    'gopay',
+                    'ovo',
+                    'dana',
+                    'qris',
+                    'qris2',
+                    'shopeepay'
+                ]),
+                'ewalletCount' => $this->calculatePaymentsCountByMethod($filteredMonthlyPayments, [
+                    'ewallet',
+                    'e-wallet',
+                    'gopay',
+                    'ovo',
+                    'dana',
+                    'qris',
+                    'shopeepay'
+                ]),
+
+                'tripayCount' => $this->calculatePaymentsCountByMethod($filteredMonthlyPayments, ['tripay', 'DANA']),
+            ];
+        }
+
+        // Untuk tanpa filter bulan (default current month)
         return [
             'totalPayments' => $allPayments->sum('jumlah_bayar'),
             'todayPayments' => $allPayments->where('tanggal_bayar', $today->format('Y-m-d'))->sum('jumlah_bayar'),
-            'monthlyPayments' => $allPayments->filter(function ($payment) use ($currentMonth) {
-                $paymentDate = Carbon::parse($payment->tanggal_bayar);
-                return $paymentDate->month === $currentMonth->month &&
-                    $paymentDate->year === $currentMonth->year;
-            })->sum('jumlah_bayar'),
+            'monthlyPayments' => $monthlyPayments->sum('jumlah_bayar'),
             'totalTransactions' => $allPayments->count(),
             'month' => $month,
-            // Payment method statistics with month filter - UPDATED untuk include soft deleted
-            'cashPayments' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%cash%')
-                        ->orWhere('metode_bayar', 'like', '%tunai%');
-                })->sum('jumlah_bayar')
-                : $this->calculatePaymentsByMethod($allPayments, ['cash', 'tunai']),
-            'cashCount' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%cash%')
-                        ->orWhere('metode_bayar', 'like', '%tunai%');
-                })->count()
-                : $this->calculatePaymentsCountByMethod($allPayments, ['cash', 'tunai']),
-            'transferPayments' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%transfer%')
-                        ->orWhere('metode_bayar', 'like', '%bank%')
-                        ->orWhere('metode_bayar', 'like', '%briva%')
-                        ->orWhere('metode_bayar', 'like', '%bniva%')
-                        ->orWhere('metode_bayar', 'like', '%bcava%')
-                        ->orWhere('metode_bayar', 'like', '%transfer bank%')
-                        ->orWhere('metode_bayar', 'like', '%INDOMARET%')
-                        ->orWhere('metode_bayar', 'like', '%ALFAMART%')
-                        ->orWhere('metode_bayar', 'like', '%ALFAMIDI%');
-                })->sum('jumlah_bayar')
-                : $this->calculatePaymentsByMethod($allPayments, ['transfer', 'bank', 'briva', 'bniva', 'bcava']),
-            'transferCount' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%transfer%')
-                        ->orWhere('metode_bayar', 'like', '%bank%')
-                        ->orWhere('metode_bayar', 'like', '%briva%')
-                        ->orWhere('metode_bayar', 'like', '%bniva%')
-                        ->orWhere('metode_bayar', 'like', '%bcava%')
-                        ->orWhere('metode_bayar', 'like', '%transfer bank%')
-                        ->orWhere('metode_bayar', 'like', '%INDOMARET%')
-                        ->orWhere('metode_bayar', 'like', '%ALFAMART%')
-                        ->orWhere('metode_bayar', 'like', '%ALFAMIDI%');
-                })->count()
-                : $this->calculatePaymentsCountByMethod($allPayments, ['transfer', 'bank', 'briva', 'bniva', 'bcava']),
-            'ewalletPayments' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%ewallet%')
-                        ->orWhere('metode_bayar', 'like', '%e-wallet%')
-                        ->orWhere('metode_bayar', 'like', '%gopay%')
-                        ->orWhere('metode_bayar', 'like', '%ovo%')
-                        ->orWhere('metode_bayar', 'like', '%dana%')
-                        ->orWhere('metode_bayar', 'like', '%qris%')
-                    ->orWhere('metode_bayar', 'like', '%qris2%')
-                        ->orWhere('metode_bayar', 'like', '%shopeepay%');
-                })->sum('jumlah_bayar')
-                : $this->calculatePaymentsByMethod($allPayments, ['ewallet', 'e-wallet', 'gopay', 'ovo', 'dana', 'qris', 'shopeepay']),
-            'ewalletCount' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%ewallet%')
-                        ->orWhere('metode_bayar', 'like', '%e-wallet%')
-                        ->orWhere('metode_bayar', 'like', '%gopay%')
-                        ->orWhere('metode_bayar', 'like', '%ovo%')
-                        ->orWhere('metode_bayar', 'like', '%dana%')
-                        ->orWhere('metode_bayar', 'like', '%qris%')
-                        ->orWhere('metode_bayar', 'like', '%shopeepay%');
-                })->count()
-                : $this->calculatePaymentsCountByMethod($allPayments, ['ewallet', 'e-wallet', 'gopay', 'ovo', 'dana', 'qris', 'shopeepay']),
-            'tripayCount' => $month && $month !== '' && $month !== null
-                ? Pembayaran::whereMonth('tanggal_bayar', $month)
-                ->whereYear('tanggal_bayar', Carbon::now()->year)
-                ->where(function ($q) {
-                    $q->where('metode_bayar', 'like', '%tripay%')
-                        ->orWhere('metode_bayar', 'like', '%DANA%');
-                })->count()
-                : $this->calculatePaymentsCountByMethod($allPayments, ['tripay', 'DANA']),
+
+            // Payment method statistics - menggunakan monthlyPayments yang konsisten
+            'cashPayments' => $this->calculatePaymentsByMethod($monthlyPayments, ['cash', 'tunai']),
+            'cashCount' => $this->calculatePaymentsCountByMethod($monthlyPayments, ['cash', 'tunai']),
+
+            'transferPayments' => $this->calculatePaymentsByMethod($monthlyPayments, [
+                'transfer',
+                'bank',
+                'briva',
+                'bniva',
+                'bcava',
+                'transfer bank',
+                'INDOMARET',
+                'ALFAMART',
+                'ALFAMIDI'
+            ]),
+            'transferCount' => $this->calculatePaymentsCountByMethod($monthlyPayments, [
+                'transfer',
+                'bank',
+                'briva',
+                'bniva',
+                'bcava',
+                'transfer bank',
+                'INDOMARET',
+                'ALFAMART',
+                'ALFAMIDI'
+            ]),
+
+            'ewalletPayments' => $this->calculatePaymentsByMethod($monthlyPayments, [
+                'ewallet',
+                'e-wallet',
+                'gopay',
+                'ovo',
+                'dana',
+                'qris',
+                'qris2',
+                'shopeepay'
+            ]),
+            'ewalletCount' => $this->calculatePaymentsCountByMethod($monthlyPayments, [
+                'ewallet',
+                'e-wallet',
+                'gopay',
+                'ovo',
+                'dana',
+                'qris',
+                'shopeepay'
+            ]),
+
+            'tripayCount' => $this->calculatePaymentsCountByMethod($monthlyPayments, ['tripay', 'DANA']),
         ];
     }
 
     /**
      * Calculate payments sum by payment method keywords
      */
-    private function calculatePaymentsByMethod($payments, array $keywords): float
+    private function calculatePaymentsByMethod($payments, $methods): float
     {
-        return $payments->filter(function ($payment) use ($keywords) {
-            $method = strtolower($payment->metode_bayar);
-            return collect($keywords)->some(function ($keyword) use ($method) {
-                return str_contains($method, strtolower($keyword));
-            });
+        return $payments->filter(function ($payment) use ($methods) {
+            foreach ($methods as $method) {
+                if (stripos($payment->metode_bayar, $method) !== false) {
+                    return true;
+                }
+            }
+            return false;
         })->sum('jumlah_bayar');
     }
 
     /**
      * Calculate payments count by payment method keywords
      */
-    private function calculatePaymentsCountByMethod($payments, array $keywords): int
+    private function calculatePaymentsCountByMethod($payments, $methods): int
     {
-        return $payments->filter(function ($payment) use ($keywords) {
-            $method = strtolower($payment->metode_bayar);
-            return collect($keywords)->some(function ($keyword) use ($method) {
-                return str_contains($method, strtolower($keyword));
-            });
+        return $payments->filter(function ($payment) use ($methods) {
+            foreach ($methods as $method) {
+                if (stripos($payment->metode_bayar, $method) !== false) {
+                    return true;
+                }
+            }
+            return false;
         })->count();
     }
 

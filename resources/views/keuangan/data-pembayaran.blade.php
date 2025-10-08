@@ -413,7 +413,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted small mb-1 fw-medium">Total Transaksi</p>
-                        <h5 class="fw-bold text-dark mb-0">{{ number_format($totalTransactions ?? 0, 0, ',', '.') }}</h5>
+                        <h5 class="fw-bold text-dark mb-2">{{ number_format($totalTransactions ?? 0, 0, ',', '.') }}</h5>
                     </div>
                     <div class="stat-icon bg-info bg-opacity-10 text-info">
                         <i class="bx bx-receipt"></i>
