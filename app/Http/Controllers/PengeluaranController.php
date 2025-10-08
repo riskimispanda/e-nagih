@@ -30,6 +30,8 @@ class PengeluaranController extends Controller
             ->orderBy('created_at', 'desc')
             ->orderBy('tanggal_pengeluaran', 'desc')
             ->where('status_id', 3)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
             ->paginate(10);
 
         $totalPengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
@@ -239,4 +241,67 @@ class PengeluaranController extends Controller
         return redirect('/pengeluaran/global')->with('toast_success', 'Pengeluaran Berhasil diperbarui');
     }
 
+    public function filterByMonth(Request $request)
+    {
+        $query = Pengeluaran::with('user')
+            ->orderBy('tanggal_pengeluaran', 'desc')
+            ->where('status_id', 3);
+
+        if ($request->month != 'all') {
+            $query->whereMonth('tanggal_pengeluaran', $request->month);
+        }
+        if ($request->kategori) {
+            $query->where('jenis_pengeluaran', 'like', '%' . $request->kategori . '%');
+        }
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('keterangan', 'like', '%' . $request->search . '%')
+                    ->orWhere('jenis_pengeluaran', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $pengeluarans = $query->paginate(10);
+        $pengeluarans->appends($request->all());
+
+        if ($request->ajax()) {
+            $view = view('keuangan.partials.pengeluaran-table', compact('pengeluarans'))->render();
+            $pagination = view('pagination.bootstrap-5', ['paginator' => $pengeluarans])->render();
+
+            return response()->json([
+                'table' => $view,
+                'pagination' => $pagination,
+                'count' => $pengeluarans->count(),
+                'total' => $pengeluarans->total(),
+                'totalPengeluaran' => number_format(Pengeluaran::sum('jumlah_pengeluaran'), 0, ',', '.'),
+                'dailyPengeluaran' => number_format(Pengeluaran::where('status_id', 3)
+                    ->whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran'), 0, ',', '.'),
+                'mounthlyPengeluaran' => number_format(Pengeluaran::where('status_id', 3)
+                    ->whereMonth('tanggal_pengeluaran', now()->month)->sum('jumlah_pengeluaran'), 0, ',', '.')
+            ]);
+        }
+
+        return view('keuangan.pengeluaran', compact('pengeluarans'));
+    }
+
+    public function ajaxFilter(Request $request)
+    {
+        $query = Pengeluaran::with('user')
+            ->orderBy('tanggal_pengeluaran', 'desc')
+            ->where('status_id', 3);
+
+        // Filter berdasarkan bulan jika bulan dipilih
+        if ($request->month && $request->month != 'all') {
+            $query->whereMonth('tanggal_pengeluaran', $request->month);
+        }
+
+        $pengeluarans = $query->paginate(10);
+
+        // Update data untuk tampilan
+        $data = [
+            'table' => view('keuangan.partials.pengeluaran-table', compact('pengeluarans'))->render(),
+            'pagination' => $pengeluarans->links('pagination::bootstrap-5')->toHtml(),
+        ];
+
+        return response()->json($data);
+    }
 }

@@ -169,13 +169,23 @@
                 
                 <!-- Filter -->
                 <div class="row mb-4 g-3">
-                    <div class="col-md-3">
-                        <label for="startDate" class="form-label">Tanggal Mulai</label>
-                        <input type="date" class="form-control" id="startDate">
-                    </div>
-                    <div class="col-md-3">
-                        <label for="endDate" class="form-label">Tanggal Akhir</label>
-                        <input type="date" class="form-control" id="endDate">
+                    <div class="col-sm-3">
+                        <label class="form-label">Filter Bulan</label>
+                        <select name="month" id="monthFilter" class="form-select">
+                            <option value="all" {{ request('month') == 'all' || !request('month') ? 'selected' : '' }}>Semua Bulan</option>
+                            <option value="1" {{ request('month') == '1' ? 'selected' : '' }}>Januari</option>
+                            <option value="2" {{ request('month') == '2' ? 'selected' : '' }}>Februari</option>
+                            <option value="3" {{ request('month') == '3' ? 'selected' : '' }}>Maret</option>
+                            <option value="4" {{ request('month') == '4' ? 'selected' : '' }}>April</option>
+                            <option value="5" {{ request('month') == '5' ? 'selected' : '' }}>Mei</option>
+                            <option value="6" {{ request('month') == '6' ? 'selected' : '' }}>Juni</option>
+                            <option value="7" {{ request('month') == '7' ? 'selected' : '' }}>Juli</option>
+                            <option value="8" {{ request('month') == '8' ? 'selected' : '' }}>Agustus</option>
+                            <option value="9" {{ request('month') == '9' ? 'selected' : '' }}>September</option>
+                            <option value="10" {{ request('month') == '10' ? 'selected' : '' }}>Oktober</option>
+                            <option value="11" {{ request('month') == '11' ? 'selected' : '' }}>November</option>
+                            <option value="12" {{ request('month') == '12' ? 'selected' : '' }}>Desember</option>
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label for="kategoriFilter" class="form-label">Kategori</label>
@@ -377,8 +387,14 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-start mt-4">
-                    {{ $pengeluarans->links('pagination::bootstrap-5') }}
+                <!-- Menjadi ini: -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div id="customPaginationInfo" class="text-muted small">
+                        Menampilkan {{ $pengeluarans->count() }} dari {{ $pengeluarans->total() }} records
+                    </div>
+                    <div class="pagination-container">
+                        {{ $pengeluarans->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             </div> <!-- card-body -->
         </div> <!-- card -->
@@ -621,68 +637,40 @@
 
 @section('page-script')
 <script>
-    $(document).ready(function() {
-        console.log('Pengeluaran modal script loaded');
-
-        // Additional event listener for jumlah pengeluaran to ensure numeric field is updated
-        $('#jumlahPengeluaran').on('input', function() {
-            const numericInput = $('#jumlahPengeluaranNumeric');
-            let value = this.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
-
-            console.log('Input value:', this.value);
-            console.log('Numeric value:', value);
-
-            if (numericInput.length) {
-                numericInput.val(value);
-                console.log('Numeric input updated:', numericInput.val());
+$(document).ready(function() {
+    // Fungsi untuk memuat data pengeluaran
+    function loadPengeluaran() {
+        $.ajax({
+            url: '{{ route("pengeluaran.ajax-filter") }}',
+            type: 'GET',
+            data: {
+                month: $('#monthFilter').val()
+            },
+            success: function(response) {
+                // Update tabel dan pagination
+                $('#pengeluaranTable tbody').html(response.table);
+                $('.pagination-container').html(response.pagination);
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
             }
         });
+    }
 
-        // RAB Selection Handler
-        $('#select-rab').on('change', function () {
-            console.log('RAB selection changed');
-            const selectedOption = $(this).find('option:selected');
-            const anggaranValue = selectedOption.data('anggaran');
+    // Event listener untuk filter bulan
+    $('#monthFilter').on('change', function() {
+        loadPengeluaran();
+    });
 
-            console.log('Selected RAB ID:', $(this).val());
-            console.log('Anggaran value:', anggaranValue);
-
-            if ($(this).val()) {
-                // Tampilkan form jumlah item dan anggaran
-                $('#jumlah-item-group').slideDown(300);
-                $('#anggaran-info').slideDown(300);
-
-                // Format dan tampilkan jumlah anggaran
-                if (anggaranValue && anggaranValue > 0) {
-                    const formattedAnggaran = new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0
-                    }).format(anggaranValue);
-
-                    $('#anggaran-amount').val(formattedAnggaran);
-                    console.log('Anggaran displayed:', formattedAnggaran);
-                } else {
-                    $('#anggaran-amount').val('Rp 0');
-                    console.log('No anggaran value found');
-                }
-            } else {
-                // Sembunyikan form dan info anggaran
-                $('#jumlah-item-group').slideUp(300);
-                $('#anggaran-info').slideUp(300);
-                $('#anggaran-amount').val('Rp 0');
-                console.log('RAB selection cleared');
-            }
-        });
-
-        // Reset form when modal is closed
-        $('#modalScrollable').on('hidden.bs.modal', function () {
-            $('#select-rab').val('').trigger('change');
-            $('#anggaran-info').hide();
-            $('#jumlah-item-group').hide();
-            $('#anggaran-amount').val('Rp 0');
-            console.log('Modal closed, form reset');
+    // Event listener untuk pagination
+    $(document).on('click', '.pagination a', function(e) {
+        e.preventDefault();
+        var page = $(this).attr('href').split('page=')[1];
+        $.get('{{ route("pengeluaran.ajax-filter") }}?page=' + page + '&month=' + $('#monthFilter').val(), function(data) {
+            $('#pengeluaranTable tbody').html(data.table);
+            $('.pagination-container').html(data.pagination);
         });
     });
+});
 </script>
 @endsection
