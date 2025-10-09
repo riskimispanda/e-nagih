@@ -574,35 +574,40 @@
                                 </td>
                                 <td>
                                     @if($invoice->pembayaran->isNotEmpty())
-                                        @foreach ($invoice->pembayaran as $item)
-                                            <span class="badge bg-info">{{$item->metode_bayar}}</span>
-                                        @endforeach
+                                        @php
+                                            $pembayaran = $invoice->pembayaran->first();
+                                        @endphp
+                                        <span class="badge bg-info">{{ $pembayaran->metode_bayar }}</span>
                                     @else
-                                    -
+                                        -
                                     @endif
                                 </td>
                                 <td>
                                     @if($invoice->pembayaran->isNotEmpty())
-                                        @foreach ($invoice->pembayaran as $item)
-                                            <span class="badge bg-info">{{ \Carbon\Carbon::parse($item->tanggal_bayar.' '.\Carbon\Carbon::parse($item->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}</span>
-                                        @endforeach
+                                        @php
+                                            $pembayaran = $invoice->pembayaran->first();
+                                        @endphp
+                                        <span class="badge bg-info">
+                                            {{ \Carbon\Carbon::parse($pembayaran->tanggal_bayar.' '.\Carbon\Carbon::parse($pembayaran->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}
+                                        </span>
                                     @else
-                                    <span>-</span>
+                                        <span>-</span>
                                     @endif
                                 </td>
                                 <td>
                                     @if($invoice->pembayaran->isNotEmpty())
-                                        @foreach ($invoice->pembayaran as $item)
-                                        <a href="{{ $item->bukti_bayar ? asset('storage/' . $item->bukti_bayar) : '#' }}"
+                                        @php
+                                            $pembayaran = $invoice->pembayaran->first();
+                                        @endphp
+                                        <a href="{{ $pembayaran->bukti_bayar ? asset('storage/' . $pembayaran->bukti_bayar) : '#' }}"
                                             target="_blank"
                                             data-bs-toggle="tooltip"
                                             data-bs-placement="bottom"
-                                            title="{{ $item->bukti_bayar ? 'Lihat Bukti' : 'Bukti Tidak Ditemukan' }}">
-                                             <i class="bx bx-info-circle text-info"></i>
-                                         </a>                                     
-                                        @endforeach
+                                            title="{{ $pembayaran->bukti_bayar ? 'Lihat Bukti' : 'Bukti Tidak Ditemukan' }}">
+                                            <i class="bx bx-info-circle text-info"></i>
+                                        </a>                                     
                                     @else
-                                    -
+                                        -
                                     @endif
                                 </td>
                                 <td>
