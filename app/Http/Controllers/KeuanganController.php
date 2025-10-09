@@ -1978,7 +1978,9 @@ class KeuanganController extends Controller
             $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
                 ->whereMonth('jatuh_tempo', intval($filterMonth))
                 ->whereYear('jatuh_tempo', date('Y'))
-                ->whereHas('customer', $baseCustomerQuery)
+                ->whereHas('customer', function ($q) use ($id) {
+                    $q->where('agen_id', $id);
+                })
                 ->groupBy('customer_id');
 
             // Query utama menggunakan fromSub
@@ -2011,7 +2013,9 @@ class KeuanganController extends Controller
             // Untuk "Semua Bulan"
             $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
                 ->whereYear('jatuh_tempo', date('Y'))
-                ->whereHas('customer', $baseCustomerQuery)
+                ->whereHas('customer', function ($q) use ($id) {
+                    $q->where('agen_id', $id);
+                })
                 ->groupBy('customer_id');
 
             $latestInvoicesQuery = Invoice::with([
