@@ -1972,60 +1972,62 @@ class KeuanganController extends Controller
                 ->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
         };
 
-        // Query untuk mengambil invoice terakhir per customer
+        // QUERY UTAMA YANG DIPERBAIKI - Hanya ambil satu invoice terakhir per customer
         if ($filterMonth !== 'all') {
-            // Jika filter bulan tertentu
+            // Untuk filter bulan tertentu - ambil invoice terakhir per customer di bulan tersebut
             $latestInvoicesQuery = Invoice::select('invoice.*')
                 ->join(DB::raw('(
-                    SELECT customer_id, MAX(jatuh_tempo) as latest_jatuh_tempo 
-                    FROM invoice 
-                    WHERE MONTH(jatuh_tempo) = ' . intval($filterMonth) . ' 
-                    AND YEAR(jatuh_tempo) = ' . date('Y') . '
-                    GROUP BY customer_id
-                ) as latest'), function ($join) {
-                    $join->on('invoice.customer_id', '=', 'latest.customer_id')
-                        ->on('invoice.jatuh_tempo', '=', 'latest.latest_jatuh_tempo');
+                SELECT customer_id, MAX(id) as latest_invoice_id 
+                FROM invoice 
+                WHERE MONTH(jatuh_tempo) = ' . intval($filterMonth) . ' 
+                AND YEAR(jatuh_tempo) = ' . date('Y') . '
+                GROUP BY customer_id
+            ) as latest'), function ($join) {
+                $join->on('invoice.id', '=', 'latest.latest_invoice_id');
                 })
                 ->with(['customer' => function ($q) {
                     $q->withTrashed()->with('paket');
                 }, 'status', 'pembayaran.user'])
                 ->whereHas('customer', $baseCustomerQuery)
-                // ✅ TAMBAHKAN INI: Join dengan customer table dan tambahkan kondisi
-                ->join('customer', 'invoice.customer_id', '=', 'customer.id')
+                // Kondisi untuk customer aktif dan deleted yang sudah bayar
                 ->where(function ($query) {
-                    $query->whereNull('customer.deleted_at') // Customer aktif: semua invoice
-                        ->orWhere(function ($q) {
-                            $q->whereNotNull('customer.deleted_at') // Customer deleted
-                                ->whereExists(function ($existsQuery) {
-                                    $existsQuery->select(DB::raw(1))
-                                        ->from('status')
-                                        ->whereColumn('status.id', 'invoice.status_id')
-                                        ->where('status.nama_status', 'Sudah Bayar');
-                                });
-                        });
+                $query->whereHas('customer', function ($q) {
+                    $q->whereNull('deleted_at'); // Customer aktif
+                })->orWhere(function ($q) {
+                    $q->whereHas('customer', function ($q) {
+                        $q->whereNotNull('deleted_at'); // Customer deleted
+                    })->whereHas('status', function ($q) {
+                        $q->where('nama_status', 'Sudah Bayar'); // Hanya yang sudah bayar
+                    });
+                });
                 });
         } else {
-            // Jika "Semua Bulan"
-            $latestInvoicesQuery = Invoice::with(['customer' => function ($q) {
+            // Untuk "Semua Bulan" - ambil invoice terakhir per customer di tahun ini
+            $latestInvoicesQuery = Invoice::select('invoice.*')
+                ->join(DB::raw('(
+                SELECT customer_id, MAX(id) as latest_invoice_id 
+                FROM invoice 
+                WHERE YEAR(jatuh_tempo) = ' . date('Y') . '
+                GROUP BY customer_id
+            ) as latest'), function ($join) {
+                    $join->on('invoice.id', '=', 'latest.latest_invoice_id');
+                })
+                ->with(['customer' => function ($q) {
                 $q->withTrashed()->with('paket');
             }, 'status', 'pembayaran.user'])
                 ->whereHas('customer', $baseCustomerQuery)
-                ->whereYear('jatuh_tempo', date('Y'))
-                // ✅ TAMBAHKAN INI: Join dengan customer table dan tambahkan kondisi
-                ->join('customer', 'invoice.customer_id', '=', 'customer.id')
+                // Kondisi untuk customer aktif dan deleted yang sudah bayar
                 ->where(function ($query) {
-                    $query->whereNull('customer.deleted_at') // Customer aktif: semua invoice
-                        ->orWhere(function ($q) {
-                            $q->whereNotNull('customer.deleted_at') // Customer deleted
-                                ->whereExists(function ($existsQuery) {
-                                    $existsQuery->select(DB::raw(1))
-                                        ->from('status')
-                                        ->whereColumn('status.id', 'invoice.status_id')
-                                        ->where('status.nama_status', 'Sudah Bayar');
-                                });
-                        });
-                })
-                ->orderBy('jatuh_tempo', 'desc');
+                $query->whereHas('customer', function ($q) {
+                    $q->whereNull('deleted_at'); // Customer aktif
+                })->orWhere(function ($q) {
+                    $q->whereHas('customer', function ($q) {
+                        $q->whereNotNull('deleted_at'); // Customer deleted
+                    })->whereHas('status', function ($q) {
+                        $q->where('nama_status', 'Sudah Bayar'); // Hanya yang sudah bayar
+                    });
+                });
+                });
         }
 
         // Filter status
@@ -2038,69 +2040,51 @@ class KeuanganController extends Controller
             }
         }
 
-        // Untuk pagination, kita perlu query yang berbeda
-        if ($filterMonth !== 'all') {
-            // Untuk filter bulan tertentu, gunakan query dengan join
-            $invoices = (clone $latestInvoicesQuery)
-                ->withMax('pembayaran', 'tanggal_bayar')
-                ->orderByDesc('pembayaran_max_tanggal_bayar')
-                ->paginate($perPage)
-                ->appends($request->all());
-        } else {
-            // Untuk semua bulan, gunakan query sederhana
-            $invoices = (clone $latestInvoicesQuery)
-                ->withMax('pembayaran', 'tanggal_bayar')
-                ->orderByDesc('pembayaran_max_tanggal_bayar')
-                ->paginate($perPage)
-                ->appends($request->all());
-        }
+        // Untuk pagination
+        $invoices = $latestInvoicesQuery
+            ->withMax('pembayaran', 'tanggal_bayar')
+            ->orderByDesc('pembayaran_max_tanggal_bayar')
+            ->paginate($perPage)
+            ->appends($request->all());
 
-        // HITUNG KHUSUS UNTUK CUSTOMER YANG SUDAH DIHAPUS DAN SUDAH BAYAR
-        $deletedCustomersPaidQuery = Invoice::with(['customer' => function ($q) {
-            $q->withTrashed()->with('paket');
-        }, 'status', 'pembayaran.user'])
-            ->whereHas('customer', function ($q) use ($id) {
-                $q->onlyTrashed() // HANYA customer yang sudah dihapus
-                    ->where('agen_id', $id)
-                    ->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+        // HITUNG TOTAL UNTUK STATISTIK - menggunakan query yang sama dengan data utama
+        $totalQuery = Invoice::select('invoice.*')
+            ->join(DB::raw('(
+            SELECT customer_id, MAX(id) as latest_invoice_id 
+            FROM invoice 
+            WHERE ' . ($filterMonth !== 'all' ? 'MONTH(jatuh_tempo) = ' . intval($filterMonth) . ' AND ' : '') . '
+            YEAR(jatuh_tempo) = ' . date('Y') . '
+            GROUP BY customer_id
+        ) as latest'), function ($join) {
+                $join->on('invoice.id', '=', 'latest.latest_invoice_id');
             })
-            ->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar')) // Hanya yang sudah bayar
-            ->whereYear('jatuh_tempo', date('Y'));
-
-        // Apply month filter untuk deleted customers
-        if ($filterMonth !== 'all') {
-            $deletedCustomersPaidQuery->whereMonth('jatuh_tempo', intval($filterMonth));
-        }
-
-        $deletedCustomersPaidInvoices = $deletedCustomersPaidQuery->get();
-
-        // Hitung total untuk customer yang sudah dihapus dan sudah bayar
-        $totalDeletedPaid = $deletedCustomersPaidInvoices->sum(function ($invoice) {
-            return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
-        });
-
-        $countDeletedPaid = $deletedCustomersPaidInvoices->count();
-
-        // Hitung total semua invoice (untuk perbandingan)
-        if ($filterMonth !== 'all') {
-            $allInvoices = (clone $latestInvoicesQuery)->get();
-        } else {
-            $allInvoices = Invoice::with(['customer' => function ($q) {
+            ->with(['customer' => function ($q) {
                 $q->withTrashed()->with('paket');
-            }, 'status', 'pembayaran.user'])
-                ->whereHas('customer', $baseCustomerQuery)
-                ->whereYear('jatuh_tempo', date('Y'))
-                ->get();
-        }
+            }, 'status'])
+            ->whereHas('customer', $baseCustomerQuery)
+            // Kondisi yang sama dengan query utama
+            ->where(function ($query) {
+                $query->whereHas('customer', function ($q) {
+                    $q->whereNull('deleted_at'); // Customer aktif
+                })->orWhere(function ($q) {
+                    $q->whereHas('customer', function ($q) {
+                        $q->whereNotNull('deleted_at'); // Customer deleted
+                    })->whereHas('status', function ($q) {
+                        $q->where('nama_status', 'Sudah Bayar'); // Hanya yang sudah bayar
+                    });
+                });
+            });
 
-        // Apply status filter untuk total calculation
+        // Apply status filter untuk total calculation juga
         if ($filterStatus) {
             if ($filterStatus == 'Sudah Bayar') {
-                $allInvoices = $allInvoices->where('status.nama_status', 'Sudah Bayar');
+                $totalQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
             } elseif ($filterStatus == 'Belum Bayar') {
-                $allInvoices = $allInvoices->where('status.nama_status', 'Belum Bayar');
+                $totalQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
             }
         }
+
+        $allInvoices = $totalQuery->get();
 
         // HITUNG TOTAL PAID: termasuk customer aktif dan customer deleted yang sudah bayar
         $totalPaid = $allInvoices
@@ -2122,16 +2106,23 @@ class KeuanganController extends Controller
 
         // HITUNG TOTAL AMOUNT: semua yang seharusnya ditampilkan
         $totalAmount = $allInvoices
-            ->filter(function ($invoice) {
-                // Include: customer aktif (bayar/belum bayar) + customer deleted yang sudah bayar
-                // Exclude: customer deleted yang belum bayar
-                return !$invoice->customer ||
-                    !$invoice->customer->trashed() ||
-                    ($invoice->customer->trashed() && $invoice->status->nama_status == 'Sudah Bayar');
-            })
             ->sum(function ($invoice) {
                 return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
             });
+
+        // Hitung khusus untuk customer yang sudah dihapus dan sudah bayar
+        $deletedCustomersPaid = $allInvoices
+            ->filter(function ($invoice) {
+                return $invoice->customer &&
+                    $invoice->customer->trashed() &&
+                    $invoice->status->nama_status == 'Sudah Bayar';
+            });
+
+        $totalDeletedPaid = $deletedCustomersPaid->sum(function ($invoice) {
+            return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+        });
+
+        $countDeletedPaid = $deletedCustomersPaid->count();
 
         // Data untuk view
         $monthNames = [
@@ -2160,8 +2151,8 @@ class KeuanganController extends Controller
             'totalPaid' => $totalPaid,
             'totalUnpaid' => $totalUnpaid,
             'totalAmount' => $totalAmount,
-            'totalDeletedPaid' => $totalDeletedPaid,       // Total untuk customer deleted yang sudah bayar
-            'countDeletedPaid' => $countDeletedPaid,       // Count untuk customer deleted yang sudah bayar
+            'totalDeletedPaid' => $totalDeletedPaid,
+            'countDeletedPaid' => $countDeletedPaid,
             'currentMonth' => $currentMonth,
             'filterMonth' => $filterMonth,
             'filterStatus' => $filterStatus,
