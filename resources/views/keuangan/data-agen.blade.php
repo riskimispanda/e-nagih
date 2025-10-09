@@ -338,7 +338,7 @@ kbd {
                                     <td class="agen-hp">{{ $a->no_hp ?? '-' }}</td>
                                     <td>
                                         <span class="badge bg-info bg-opacity-10 text-info">
-                                            {{ $a->customer_count }} Pelanggan
+                                            {{ $a->total_customer }} Pelanggan
                                         </span>
                                     </td>
                                     <td>
