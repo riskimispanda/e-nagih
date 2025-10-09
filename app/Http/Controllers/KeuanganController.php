@@ -1906,7 +1906,7 @@ class KeuanganController extends Controller
         return view('/keuangan/data-agen',[
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
-            'agen' => $agen,
+            'agen' => $agen
         ]);
     }
 
@@ -1974,7 +1974,6 @@ class KeuanganController extends Controller
 
         // SOLUSI: Gunakan subquery yang lebih stabil dengan fromSub
         if ($filterMonth !== 'all') {
-            // Subquery untuk mendapatkan latest invoice ID per customer
             $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
                 ->whereMonth('jatuh_tempo', intval($filterMonth))
                 ->whereYear('jatuh_tempo', date('Y'))
@@ -1983,20 +1982,22 @@ class KeuanganController extends Controller
                 })
                 ->groupBy('customer_id');
 
-            // Query utama menggunakan fromSub
             $latestInvoicesQuery = Invoice::with([
-                'customer' => function ($q) {
-                    $q->withTrashed()->with('paket');
+                'customer' => function ($q) use ($id) {
+                    $q->withTrashed()->where('agen_id', $id)->with('paket');
                 },
                 'status',
                 'pembayaran' => function ($q) {
-                    $q->orderBy('id', 'desc')->take(1); // AMBIL HANYA 1 PEMBAYARAN TERAKHIR
+                    $q->orderBy('id', 'desc')->take(1);
                 },
                 'pembayaran.user'
             ])
                 ->whereIn('id', function ($query) use ($latestInvoiceSubquery) {
                     $query->select('latest_invoice_id')
                         ->fromSub($latestInvoiceSubquery, 'latest_invoices');
+                })
+                ->whereHas('customer', function ($query) use ($id) {
+                    $query->where('agen_id', $id);
                 })
                 ->where(function ($query) {
                 $query->whereHas('customer', function ($q) {
@@ -2010,7 +2011,6 @@ class KeuanganController extends Controller
                 });
                 });
         } else {
-            // Untuk "Semua Bulan"
             $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
                 ->whereYear('jatuh_tempo', date('Y'))
                 ->whereHas('customer', function ($q) use ($id) {
@@ -2019,18 +2019,21 @@ class KeuanganController extends Controller
                 ->groupBy('customer_id');
 
             $latestInvoicesQuery = Invoice::with([
-                'customer' => function ($q) {
-                    $q->withTrashed()->with('paket');
+                'customer' => function ($q) use ($id) {
+                    $q->withTrashed()->where('agen_id', $id)->with('paket');
                 },
                 'status',
                 'pembayaran' => function ($q) {
-                    $q->orderBy('id', 'desc')->take(1); // AMBIL HANYA 1 PEMBAYARAN TERAKHIR
+                    $q->orderBy('id', 'desc')->take(1);
                 },
                 'pembayaran.user'
             ])
                 ->whereIn('id', function ($query) use ($latestInvoiceSubquery) {
                     $query->select('latest_invoice_id')
                         ->fromSub($latestInvoiceSubquery, 'latest_invoices');
+                })
+                ->whereHas('customer', function ($query) use ($id) {
+                    $query->where('agen_id', $id);
                 })
                 ->where(function ($query) {
                 $query->whereHas('customer', function ($q) {
