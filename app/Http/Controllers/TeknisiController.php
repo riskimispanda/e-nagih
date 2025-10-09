@@ -310,8 +310,9 @@ class TeknisiController extends Controller
 
                 LOG::info('Invoice created', [
                     'invoice_id' => $invoice->id,
-                    'customer_id' => $customer->id,
+                    'Nama Customer' => $customer->nama_customer,
                     'tagihan' => $invoice->tagihan,
+                    'Tanggal Selesai' => $invoice->customer->tanggal_selesai,
                     'merchant_ref' => $merchant,
                     'jatuh_tempo' => $invoice->jatuh_tempo,
                 ]);
