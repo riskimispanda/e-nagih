@@ -1,4 +1,4 @@
-@extends('layouts/contentNavbarLayout')
+@extends('layouts.contentNavbarLayout')
 
 @section('title', 'Antrian Instalasi')
 
@@ -54,25 +54,26 @@
         border-collapse: collapse;
         margin-bottom: 0;
         background: #fff;
+        font-size: 0.8rem;
     }
     
     .table-minimalist th {
         background: #f8f9fa;
         font-weight: 600;
         color: #495057;
-        font-size: 0.8rem;
-        padding: 1rem;
+        padding: 0.75rem;
         border-bottom: 2px solid #e9ecef;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        white-space: nowrap;
     }
     
     .table-minimalist td {
-        padding: 1rem;
+        padding: 0.75rem;
         border-bottom: 1px solid #f8f9fa;
         color: #4a5568;
-        font-size: 0.875rem;
         transition: all 0.2s ease;
+        vertical-align: middle;
     }
     
     .table-minimalist tbody tr {
@@ -88,11 +89,12 @@
 
     /* Badge Styles */
     .badge-minimal {
-        padding: 0.35rem 0.75rem;
-        font-size: 0.75rem;
+        padding: 0.35rem 0.5rem;
+        font-size: 0.7rem;
         font-weight: 500;
         border-radius: 6px;
         border: 1px solid;
+        white-space: nowrap;
     }
     
     .badge-waiting {
@@ -121,18 +123,19 @@
 
     /* Button Styles */
     .btn-icon {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 8px;
+        border-radius: 6px;
         border: 1px solid #e0e0e0;
         background: #fff;
         color: #6c757d;
         transition: all 0.2s ease;
         margin: 0 0.125rem;
+        font-size: 0.8rem;
     }
     
     .btn-icon:hover {
@@ -158,17 +161,25 @@
     .customer-info {
         display: flex;
         flex-direction: column;
+        min-width: 120px;
     }
     
     .customer-name {
         font-weight: 600;
         color: #2c3e50;
         margin-bottom: 0.125rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .customer-phone {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: #6c757d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* Search & Controls */
@@ -176,9 +187,9 @@
         border-radius: 8px;
         border: 1px solid #e0e0e0;
         padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         width: 100%;
-        max-width: 240px;
+        max-width: 200px;
         transition: all 0.2s ease;
     }
     
@@ -200,19 +211,19 @@
     
     .pagination-info {
         color: #6c757d;
-        font-size: 0.875rem;
+        font-size: 0.8rem;
         font-weight: 500;
     }
 
     /* Empty State */
     .empty-state {
-        padding: 3rem 1rem;
+        padding: 2rem 1rem;
         text-align: center;
         color: #6c757d;
     }
     
     .empty-state-icon {
-        font-size: 3rem;
+        font-size: 2.5rem;
         color: #dee2e6;
         margin-bottom: 1rem;
     }
@@ -220,23 +231,44 @@
     .empty-state-title {
         font-weight: 600;
         margin-bottom: 0.5rem;
+        font-size: 0.9rem;
     }
 
     /* ==================== */
-    /* RESPONSIVE DESIGN */
+    /* RESPONSIVE DESIGN - TABLET & MOBILE */
     /* ==================== */
 
-    @media (max-width: 1024px) {
-        .table-minimalist th:nth-child(4),
-        .table-minimalist td:nth-child(4),
-        .table-minimalist th:nth-child(5),
-        .table-minimalist td:nth-child(5) {
-            display: none;
+    @media (max-width: 1200px) {
+        .table-minimalist {
+            font-size: 0.75rem;
+        }
+        
+        .table-minimalist th,
+        .table-minimalist td {
+            padding: 0.6rem 0.5rem;
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.7rem;
+        }
+        
+        .badge-minimal {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.65rem;
         }
     }
 
-    @media (max-width: 768px) {
-        /* Card Header */
+    @media (max-width: 992px) {
+        /* Hide less important columns on tablet */
+        .table-minimalist th:nth-child(3),
+        .table-minimalist td:nth-child(3),
+        .table-minimalist th:nth-child(4),
+        .table-minimalist td:nth-child(4) {
+            display: none;
+        }
+        
         .card-header-elements {
             flex-direction: column;
             align-items: flex-start;
@@ -244,21 +276,133 @@
         }
         
         .card-header-elements .d-flex {
-            flex-direction: column;
             width: 100%;
-        }
-        
-        .card-header-elements .d-flex > * {
-            margin-bottom: 0.75rem;
-            width: 100%;
+            justify-content: space-between;
         }
         
         .search-input {
-            max-width: 100%;
-            margin-right: 0 !important;
+            max-width: 180px;
         }
+    }
 
-        /* Filter */
+    @media (max-width: 768px) {
+        .table-minimalist {
+            font-size: 0.7rem;
+        }
+        
+        .table-minimalist th,
+        .table-minimalist td {
+            padding: 0.5rem 0.3rem;
+        }
+        
+        /* Hide more columns on smaller tablets */
+        .table-minimalist th:nth-child(5),
+        .table-minimalist td:nth-child(5) {
+            display: none;
+        }
+        
+        .customer-info {
+            min-width: 100px;
+        }
+        
+        .customer-name {
+            font-size: 0.75rem;
+        }
+        
+        .customer-phone {
+            font-size: 0.65rem;
+        }
+        
+        .btn-icon {
+            width: 26px;
+            height: 26px;
+            margin: 0 0.1rem;
+        }
+        
+        .search-input {
+            max-width: 150px;
+            font-size: 0.75rem;
+        }
+        
+        .card-header {
+            padding: 1rem;
+        }
+        
+        .card-title {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        /* Mobile - Keep table layout but make it horizontally scrollable */
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table-minimalist {
+            min-width: 600px; /* Force horizontal scroll on very small screens */
+            font-size: 0.7rem;
+        }
+        
+        .table-minimalist th,
+        .table-minimalist td {
+            padding: 0.4rem 0.3rem;
+        }
+        
+        /* Show only essential columns on very small screens */
+        .table-minimalist th:nth-child(1),
+        .table-minimalist td:nth-child(1),
+        .table-minimalist th:nth-child(2),
+        .table-minimalist td:nth-child(2),
+        .table-minimalist th:nth-child(3),
+        .table-minimalist td:nth-child(3),
+        .table-minimalist th:nth-child(4),
+        .table-minimalist td:nth-child(4),
+        .table-minimalist th:nth-child(5),
+        .table-minimalist td:nth-child(5),
+        .table-minimalist th:nth-child(6),
+        .table-minimalist td:nth-child(6),
+        .table-minimalist th:nth-child(7),
+        .table-minimalist td:nth-child(7) {
+            display: table-cell;
+        }
+        
+        /* Hide additional columns */
+        .table-minimalist th:nth-child(8),
+        .table-minimalist td:nth-child(8) {
+            display: none;
+        }
+        
+        .customer-info {
+            min-width: 80px;
+        }
+        
+        .customer-name {
+            font-size: 0.7rem;
+        }
+        
+        .customer-phone {
+            font-size: 0.6rem;
+        }
+        
+        .btn-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 0.65rem;
+        }
+        
+        .badge-minimal {
+            padding: 0.2rem 0.3rem;
+            font-size: 0.6rem;
+        }
+        
+        .search-input {
+            max-width: 120px;
+            font-size: 0.7rem;
+            padding: 0.4rem 0.6rem;
+        }
+        
         .filter-container {
             flex-direction: column;
             align-items: flex-start;
@@ -267,96 +411,23 @@
         
         .month-filter {
             min-width: 100%;
-        }
-
-        /* Table Mobile Layout */
-        .table-minimalist {
-            display: block;
+            font-size: 0.8rem;
         }
         
-        .table-minimalist thead {
-            display: none;
+        .card-header-elements .d-flex {
+            flex-direction: column;
+            gap: 0.75rem;
         }
         
-        .table-minimalist tbody,
-        .table-minimalist tr,
-        .table-minimalist td {
-            display: block;
+        .card-header-elements .d-flex > * {
             width: 100%;
         }
         
-        .table-minimalist tr {
-            margin-bottom: 1rem;
-            border: 1px solid #f0f0f0;
-            border-radius: 12px;
-            padding: 1rem;
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        .search-input {
+            max-width: 100%;
+            margin-right: 0 !important;
         }
         
-        .table-minimalist td {
-            padding: 0.75rem 0.5rem;
-            border: none;
-            position: relative;
-            padding-left: 45%;
-            display: flex;
-            align-items: center;
-            min-height: 44px;
-            border-bottom: 1px solid #f8f9fa;
-        }
-        
-        .table-minimalist td:last-child {
-            border-bottom: none;
-            justify-content: center;
-            padding: 1rem 0.5rem;
-        }
-        
-        .table-minimalist td::before {
-            content: attr(data-label);
-            position: absolute;
-            left: 0.5rem;
-            width: 40%;
-            font-weight: 600;
-            color: #495057;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        /* Hide less important columns on mobile */
-        .table-minimalist td:nth-child(3),
-        .table-minimalist td:nth-child(4),
-        .table-minimalist td:nth-child(5) {
-            display: none;
-        }
-
-        /* Customer info mobile optimization */
-        .customer-info {
-            width: 100%;
-        }
-        
-        .customer-name {
-            font-size: 0.9rem;
-        }
-        
-        .customer-phone {
-            font-size: 0.7rem;
-        }
-
-        /* Badge mobile optimization */
-        .badge-minimal {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.7rem;
-        }
-
-        /* Button mobile optimization */
-        .btn-icon {
-            width: 40px;
-            height: 40px;
-            margin: 0 0.25rem;
-        }
-
-        /* Pagination mobile */
         .pagination-container {
             flex-direction: column;
             gap: 1rem;
@@ -364,33 +435,20 @@
         }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
+        .table-minimalist {
+            min-width: 550px;
+            font-size: 0.65rem;
+        }
+        
+        .table-minimalist th,
         .table-minimalist td {
-            padding-left: 50%;
-            min-height: 40px;
-            font-size: 0.8rem;
-        }
-        
-        .table-minimalist td::before {
-            width: 45%;
-            font-size: 0.7rem;
-        }
-        
-        .table-minimalist tr {
-            padding: 0.75rem;
+            padding: 0.35rem 0.25rem;
         }
         
         .btn-icon {
-            width: 36px;
-            height: 36px;
-        }
-        
-        .card {
-            margin-bottom: 1.5rem;
-        }
-        
-        .card-header {
-            padding: 1.25rem;
+            width: 22px;
+            height: 22px;
         }
     }
 
@@ -400,7 +458,28 @@
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        line-height: 1.4;
+        line-height: 1.3;
+        max-width: 200px;
+    }
+
+    /* Ensure table maintains proper layout */
+    .table-minimalist {
+        table-layout: auto;
+    }
+    
+    .table-minimalist th,
+    .table-minimalist td {
+        /* white-space: nowrap; */
+    }
+    
+    .table-minimalist td:first-child,
+    .table-minimalist th:first-child {
+        width: 60px;
+    }
+    
+    .table-minimalist td:last-child,
+    .table-minimalist th:last-child {
+        width: 100px;
     }
 </style>
 @endsection
@@ -492,7 +571,7 @@
                                 </td>
                                 <td data-label="Alamat">
                                     <span class="text-truncate-2" title="{{ $item->alamat }}">
-                                        {{ Str::limit($item->alamat, 50) }}
+                                        {{ $item->alamat }}
                                     </span>
                                 </td>
                                 <td class="text-center" data-label="Lokasi">
@@ -512,7 +591,7 @@
                                     </a>
                                 </td>
                                 <td data-label="Tanggal">
-                                    <span class="text-muted">
+                                    <span class="badge bg-label-info">
                                         {{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}
                                     </span>
                                 </td>
@@ -634,7 +713,7 @@
                                 </td>
                                 <td data-label="Alamat">
                                     <span class="text-truncate-2" title="{{ $item->alamat }}">
-                                        {{ Str::limit($item->alamat, 50) }}
+                                        {{ $item->alamat }}
                                     </span>
                                 </td>
                                 <td class="text-center" data-label="Lokasi">
@@ -654,7 +733,7 @@
                                     </a>
                                 </td>
                                 <td data-label="Tanggal">
-                                    <span class="text-muted">
+                                    <span class="badge bg-label-info">
                                         {{ $item->created_at->format('d M Y') }}
                                     </span>
                                 </td>
@@ -785,7 +864,7 @@
                                 </td>
                                 <td data-label="Alamat">
                                     <span class="text-truncate-2" title="{{ $item->alamat }}">
-                                        {{ Str::limit($item->alamat, 40) }}
+                                        {{ $item->alamat }}
                                     </span>
                                 </td>
                                 <td class="text-center" data-label="Lokasi">
@@ -795,7 +874,7 @@
                                     </a>
                                 </td>
                                 <td data-label="Tanggal">
-                                    <span class="text-muted">
+                                    <span class="badge bg-label-info">
                                         {{ $item->created_at->format('d M Y') }}
                                     </span>
                                 </td>
