@@ -1960,94 +1960,262 @@ class KeuanganController extends Controller
         // Get agen info
         $agen = User::findOrFail($id);
 
-        // Bulan dan tahun saat ini
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
-
+        // Bulan saat ini
+        $currentMonth = now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
-        $filterYear = $request->get('year', $currentYear);
-        $perPage = $request->get('per_page', 10);
 
+        // Get per_page parameter, default to 10
+        $perPage = $request->get('per_page', 10);
         if ($perPage === 'all') {
-            $perPage = 999999; // Angka besar untuk menampilkan semua data
+            $perPage = 999999;
         } else {
             $perPage = (int) $perPage;
         }
 
-        // Query customers dengan eager loading
-        $customersQuery = Customer::with([
-            'paket',
-            'invoice' => function ($query) use ($filterMonth, $filterYear) {
-                $query->when($filterMonth !== 'all', function ($q) use ($filterMonth, $filterYear) {
-                    $q->whereMonth('jatuh_tempo', $filterMonth)
-                        ->whereYear('jatuh_tempo', $filterYear);
+        // Base query untuk customer dengan agen_id (include soft deleted)
+        $baseCustomerQuery = function ($q) use ($id) {
+            $q->withTrashed()
+                ->where('agen_id', $id)
+                ->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+        };
+
+        // SOLUSI: Gunakan subquery yang lebih stabil dengan fromSub
+        if ($filterMonth !== 'all') {
+            $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
+                ->whereMonth('jatuh_tempo', intval($filterMonth))
+                ->whereYear('jatuh_tempo', date('Y'))
+                ->whereHas('customer', function ($q) use ($id) {
+                    $q->where('agen_id', $id);
                 })
-                    ->when($filterMonth === 'all', function ($q) use ($filterYear) {
-                        $q->whereYear('jatuh_tempo', $filterYear);
-                    })
-                    ->with(['status', 'pembayaran' => function ($q) {
-                        $q->latest()->with('user');
-                    }])
-                    ->latest('jatuh_tempo');
-            }
-        ])
-            ->where('agen_id', $id)
-            ->whereIn('status_id', [3, 4, 9]);
+                ->groupBy('customer_id');
 
-        // Filter status pembayaran
-        if ($request->has('status') && in_array($request->status, ['Sudah Bayar', 'Belum Bayar'])) {
-            $customersQuery->whereHas('invoice.status', function ($q) use ($request) {
-                $q->where('nama_status', $request->status);
+            $latestInvoicesQuery = Invoice::with([
+                'customer' => function ($q) use ($id) {
+                    $q->withTrashed()->where('agen_id', $id)->with('paket');
+                },
+                'status',
+                'pembayaran' => function ($q) {
+                    $q->orderBy('id', 'desc')->take(1);
+                },
+                'pembayaran.user'
+            ])
+                ->whereIn('id', function ($query) use ($latestInvoiceSubquery) {
+                    $query->select('latest_invoice_id')
+                        ->fromSub($latestInvoiceSubquery, 'latest_invoices');
+                })
+                ->whereHas('customer', function ($query) use ($id) {
+                    $query->where('agen_id', $id);
+                })
+                ->where(function ($query) {
+                    $query->whereHas('customer', function ($q) {
+                        $q->whereNull('deleted_at');
+                    })->orWhere(function ($q) {
+                        $q->whereHas('customer', function ($q) {
+                            $q->whereNotNull('deleted_at');
+                        })->whereHas('status', function ($q) {
+                            $q->where('nama_status', 'Sudah Bayar');
+                        });
+                    });
+                });
+        } else {
+            $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
+                ->whereYear('jatuh_tempo', date('Y'))
+                ->whereHas('customer', function ($q) use ($id) {
+                    $q->where('agen_id', $id);
+                })
+                ->groupBy('customer_id');
+
+            $latestInvoicesQuery = Invoice::with([
+                'customer' => function ($q) use ($id) {
+                    $q->withTrashed()->where('agen_id', $id)->with('paket');
+                },
+                'status',
+                'pembayaran' => function ($q) {
+                    $q->orderBy('id', 'desc')->take(1);
+                },
+                'pembayaran.user'
+            ])
+                ->whereIn('id', function ($query) use ($latestInvoiceSubquery) {
+                    $query->select('latest_invoice_id')
+                        ->fromSub($latestInvoiceSubquery, 'latest_invoices');
+                })
+                ->whereHas('customer', function ($query) use ($id) {
+                    $query->where('agen_id', $id);
+                })
+                ->where(function ($query) {
+                    $query->whereHas('customer', function ($q) {
+                        $q->whereNull('deleted_at');
+                    })->orWhere(function ($q) {
+                        $q->whereHas('customer', function ($q) {
+                            $q->whereNotNull('deleted_at');
+                        })->whereHas('status', function ($q) {
+                            $q->where('nama_status', 'Sudah Bayar');
+                        });
+                    });
+                });
+        }
+
+        // Filter status
+        $filterStatus = $request->get('status');
+        if ($filterStatus) {
+            if ($filterStatus == 'Sudah Bayar') {
+                $latestInvoicesQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
+            } elseif ($filterStatus == 'Belum Bayar') {
+                $latestInvoicesQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
+            }
+        }
+
+        // SOLUSI: Tambahkan order by yang stabil
+        $invoices = $latestInvoicesQuery
+            ->withMax('pembayaran', 'tanggal_bayar')
+            ->orderByDesc('pembayaran_max_tanggal_bayar')
+            ->orderBy('id', 'desc') // TAMBAHKAN ORDER BY STABIL
+            ->paginate($perPage)
+            ->appends($request->all());
+
+        // DEBUG: Cek duplikasi
+        $duplicateCheck = $invoices->groupBy('customer_id')
+            ->filter(function ($group) {
+                return $group->count() > 1;
             });
+
+        if ($duplicateCheck->isNotEmpty()) {
+            Log::warning('DUPLICATE CUSTOMERS FOUND IN PAGINATION', [
+                'page' => $request->get('page', 1),
+                'total_duplicates' => $duplicateCheck->count(),
+                'duplicates' => $duplicateCheck->map(function ($invoices, $customerId) {
+                    return [
+                        'customer_id' => $customerId,
+                        'customer_name' => $invoices->first()->customer->nama_customer ?? 'Unknown',
+                        'invoice_count' => $invoices->count(),
+                        'invoice_ids' => $invoices->pluck('id')->toArray()
+                    ];
+                })->values()->toArray()
+            ]);
+
+            // FALLBACK: Jika masih ada duplikat, gunakan manual grouping
+            $uniqueInvoices = $invoices->groupBy('customer_id')->map->first();
+            $invoices = new \Illuminate\Pagination\LengthAwarePaginator(
+                $uniqueInvoices->values(),
+                $invoices->total(),
+                $perPage,
+                $request->get('page', 1),
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
 
-        $customers = $customersQuery->paginate($perPage);
+        // HITUNG TOTAL UNTUK STATISTIK - menggunakan approach yang sama
+        $totalQuery = Invoice::whereIn('id', function ($query) use ($filterMonth, $baseCustomerQuery) {
+            $subquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
+                ->whereYear('jatuh_tempo', date('Y'))
+                ->whereHas('customer', $baseCustomerQuery);
 
-        // Hitung totals
-        $totalPaid = 0;
-        $totalUnpaid = 0;
-        $totalAmount = 0;
+            if ($filterMonth !== 'all') {
+                $subquery->whereMonth('jatuh_tempo', intval($filterMonth));
+            }
 
-        foreach ($customers as $customer) {
-            $latestInvoice = $customer->invoice->first();
-            if ($latestInvoice) {
-                $amount = floatval($latestInvoice->tagihan ?? 0) + floatval($latestInvoice->tambahan ?? 0);
-                $totalAmount += $amount;
+            $query->select('latest_invoice_id')
+                ->fromSub($subquery->groupBy('customer_id'), 'latest_invoices');
+        })
+            ->with(['customer' => function ($q) {
+                $q->withTrashed()->with('paket');
+            }, 'status'])
+            ->where(function ($query) {
+                $query->whereHas('customer', function ($q) {
+                    $q->whereNull('deleted_at');
+                })->orWhere(function ($q) {
+                    $q->whereHas('customer', function ($q) {
+                        $q->whereNotNull('deleted_at');
+                    })->whereHas('status', function ($q) {
+                        $q->where('nama_status', 'Sudah Bayar');
+                    });
+                });
+            });
 
-                if ($latestInvoice->status->nama_status === 'Sudah Bayar') {
-                    $totalPaid += $amount;
-                } else {
-                    $totalUnpaid += $amount;
-                }
+        // Apply status filter untuk total calculation
+        if ($filterStatus) {
+            if ($filterStatus == 'Sudah Bayar') {
+                $totalQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
+            } elseif ($filterStatus == 'Belum Bayar') {
+                $totalQuery->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
             }
         }
+
+        $allInvoices = $totalQuery->get();
+
+        // HITUNG TOTAL PAID: termasuk customer aktif dan customer deleted yang sudah bayar
+        $totalPaid = $allInvoices
+            ->where('status.nama_status', 'Sudah Bayar')
+            ->sum(function ($invoice) {
+                return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+            });
+
+        // HITUNG TOTAL UNPAID: HANYA customer aktif yang belum bayar (exclude customer deleted)
+        $totalUnpaid = $allInvoices
+            ->where('status.nama_status', 'Belum Bayar')
+            ->filter(function ($invoice) {
+                // Hanya hitung jika customer masih aktif (tidak dihapus)
+                return $invoice->customer && !$invoice->customer->trashed();
+            })
+            ->sum(function ($invoice) {
+                return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+            });
+
+        // HITUNG TOTAL AMOUNT: semua yang seharusnya ditampilkan
+        $totalAmount = $allInvoices
+            ->sum(function ($invoice) {
+                return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+            });
+
+        // Hitung khusus untuk customer yang sudah dihapus dan sudah bayar
+        $deletedCustomersPaid = $allInvoices
+            ->filter(function ($invoice) {
+                return $invoice->customer &&
+                    $invoice->customer->trashed() &&
+                    $invoice->status->nama_status == 'Sudah Bayar';
+            });
+
+        $totalDeletedPaid = $deletedCustomersPaid->sum(function ($invoice) {
+            return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+        });
+
+        $countDeletedPaid = $deletedCustomersPaid->count();
+
+        // Data untuk view
+        $monthNames = [
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember'
+        ];
+
+        $currentMonthNum = now()->format('m');
+        $currentMonthName = $monthNames[$currentMonthNum];
 
         return view('keuangan.data-pelanggan-agen', [
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
-            'customers' => $customers,
+            'invoices' => $invoices,
             'agen' => $agen,
             'totalPaid' => $totalPaid,
             'totalUnpaid' => $totalUnpaid,
             'totalAmount' => $totalAmount,
-            'filterMonth' => $filterMonth,
-            'filterYear' => $filterYear,
-            'filterStatus' => $request->get('status'),
-            'monthNames' => [
-                '1' => 'Januari',
-                '2' => 'Februari',
-                '3' => 'Maret',
-                '4' => 'April',
-                '5' => 'Mei',
-                '6' => 'Juni',
-                '7' => 'Juli',
-                '8' => 'Agustus',
-                '9' => 'September',
-                '10' => 'Oktober',
-                '11' => 'November',
-                '12' => 'Desember'
-            ],
+            'totalDeletedPaid' => $totalDeletedPaid,
+            'countDeletedPaid' => $countDeletedPaid,
             'currentMonth' => $currentMonth,
+            'filterMonth' => $filterMonth,
+            'filterStatus' => $filterStatus,
+            'monthNames' => $monthNames,
+            'currentMonthNum' => $currentMonthNum,
+            'currentMonthName' => $currentMonthName,
         ]);
     }
 
