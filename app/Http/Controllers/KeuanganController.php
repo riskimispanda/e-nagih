@@ -1872,7 +1872,7 @@ class KeuanganController extends Controller
     {
         $currentMonth = now()->format('m');
 
-        $agenQuery = User::whereIn('roles_id', [6, 7])
+        $agenQuery = User::where('roles_id', 6)
             ->with(['customer'])
             ->withCount(['customer as total_customer' => function ($query) use ($currentMonth) {
                 // Count customers with status 1, 2, 3, 4, 5, 9 that have invoices in current month
