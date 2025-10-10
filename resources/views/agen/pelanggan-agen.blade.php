@@ -71,6 +71,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-flex justify-content-end mt-5">
+                    {{ $pelanggan->links('pagination::bootstrap-5') }}
+                </div>
             </div>
         </div>
     </div>
