@@ -166,24 +166,22 @@
         @php
         // Mapping bulan dalam bahasa Indonesia
         $monthNames = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
+            '1' => 'Januari', '2' => 'Februari', '3' => 'Maret', '4' => 'April',
+            '5' => 'Mei', '6' => 'Juni', '7' => 'Juli', '8' => 'Agustus',
+            '9' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
         ];
 
-        $currentMonthNum = now()->format('m');
+        $currentMonthNum = now()->month;
         $currentMonthName = $monthNames[$currentMonthNum];
 
         // Handle display period
         $displayPeriod = 'Bulan Ini (' . $currentMonthName . ' ' . now()->year . ')';
-        $selectedMonth = request()->get('month');
+        $selectedMonth = request()->get('month', $currentMonthNum);
 
-        if($selectedMonth) {
-            if($selectedMonth == 'all') {
-                $displayPeriod = 'Semua Periode';
-            } elseif(isset($monthNames[$selectedMonth])) {
-                $displayPeriod = $monthNames[$selectedMonth] . ' ' . now()->year;
-            }
+        if($selectedMonth == 'all') {
+            $displayPeriod = 'Semua Periode';
+        } elseif(isset($monthNames[$selectedMonth])) {
+            $displayPeriod = $monthNames[$selectedMonth] . ' ' . now()->year;
         }
 
         // Tambahkan informasi status filter
@@ -195,10 +193,6 @@
 
         // Set selected values untuk dropdown
         $selectedMonthDropdown = request()->get('month', $currentMonthNum);
-        if (!request()->has('month')) {
-            $selectedMonthDropdown = $currentMonthNum;
-        }
-
         $selectedStatusDropdown = request()->get('status', '');
         $selectedPerPage = request()->get('per_page', 10);
         @endphp
@@ -207,7 +201,7 @@
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="bx bx-calendar me-2"></i>
             <strong>Periode Aktif:</strong> Menampilkan data invoice untuk <strong>{{ $displayPeriod }}</strong>.
-            @if(!request()->has('month') || (request()->has('month') && request()->get('month') == now()->format('Y-m')))
+            @if($selectedMonth == $currentMonthNum)
             Secara default sistem menampilkan invoice bulan sekarang. Gunakan filter bulan untuk melihat periode lain.
             @else
             Gunakan filter bulan untuk mengubah periode tampilan data.
@@ -220,12 +214,12 @@
             <div class="card-header modern-card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }} - {{ $displayPeriod }}{{ $displayStatus }}</h4>
-                        <small class="card-subtitle text-muted">Daftar invoice pelanggan periode {{ $displayPeriod }}{{ $displayStatus }} yang terdaftar di bawah agen {{ $agen->name }}</small>
+                        <h4 class="card-title fw-bold mb-1">Data Pelanggan Agen {{ $agen->name }} - {{ $displayPeriod }}{{ $displayStatus }}</h4>
+                        <small class="card-subtitle text-muted">Daftar pelanggan periode {{ $displayPeriod }}{{ $displayStatus }} yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
                     <div class="text-end d-flex align-items-center gap-2">
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
-                            <i class="bx bx-receipt me-1"></i>{{ $invoices->total() }} Invoice
+                            <i class="bx bx-user me-1"></i>{{ $customers->total() }} Pelanggan
                         </span>
                     </div>
                 </div>
@@ -239,11 +233,11 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">
                         <i class="bx bx-info-circle me-1"></i>
-                        <span id="statsIndicator">Menampilkan total dari semua data ({{ $invoices->total() }} invoice)</span>
+                        <span id="statsIndicator">Total berdasarkan filter periode dan status</span>
                     </small>
                     <small class="text-muted" id="filterInfo" style="display: none;">
                         <span class="badge bg-info bg-opacity-10 text-info">
-                            <i class="bx bx-filter me-1"></i>Data Terfilter
+                            <i class="bx bx-search me-1"></i>Pencarian Aktif
                         </span>
                     </small>
                 </div>
@@ -257,17 +251,19 @@
                                 <i class="bx bx-check-circle"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-success" id="totalPaid">{{ 'Rp ' . number_format($totalPaid, 0, ',', '.') }}</div>
+                                <!-- HAPUS id="totalPaid" karena tidak di-update oleh JS -->
+                                <div class="stats-number text-success">{{ 'Rp ' . number_format($totalPaid, 0, ',', '.') }}</div>
                                 <div class="stats-label">Total Sudah Bayar</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-trending-up text-success"></i>
-                                    <span class="text-success">Lunas</span>
+                                    <span class="text-success">Berdasarkan filter</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
             <div class="col-lg-3 col-md-6 mb-3">
                 <div class="card stats-card stats-card-danger h-100">
                     <div class="card-body">
@@ -276,11 +272,12 @@
                                 <i class="bx bx-x-circle"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-danger" id="totalUnpaid">{{ 'Rp ' . number_format($totalUnpaid, 0, ',', '.') }}</div>
+                                <!-- HAPUS id="totalUnpaid" -->
+                                <div class="stats-number text-danger">{{ 'Rp ' . number_format($totalUnpaid, 0, ',', '.') }}</div>
                                 <div class="stats-label">Total Belum Bayar</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-trending-down text-danger"></i>
-                                    <span class="text-danger">Pending</span>
+                                    <span class="text-danger">Berdasarkan filter</span>
                                 </div>
                             </div>
                         </div>
@@ -296,11 +293,12 @@
                                 <i class="bx bx-calculator"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-primary" id="totalAmount">{{ 'Rp ' . number_format($totalAmount, 0, ',', '.') }}</div>
+                                <!-- HAPUS id="totalAmount" -->
+                                <div class="stats-number text-primary">{{ 'Rp ' . number_format($totalAmount, 0, ',', '.') }}</div>
                                 <div class="stats-label">Total Keseluruhan</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-bar-chart-alt-2 text-primary"></i>
-                                    <span class="text-primary">Summary</span>
+                                    <span class="text-primary">Berdasarkan filter</span>
                                 </div>
                             </div>
                         </div>
@@ -393,6 +391,7 @@
                             <tr>
                                 <th>No</th>
                                 <th>Nama Pelanggan</th>
+                                <th>Paket</th>
                                 <th>Alamat</th>
                                 <th>Status Tagihan</th>
                                 <th>Total Tagihan</th>
@@ -406,61 +405,64 @@
                         </thead>
                         <tbody class="text-center">
                             @php 
-                                $rowNumber = ($invoices->currentPage() - 1) * $invoices->perPage() + 1;
-                                $displayedCustomers = [];
+                                $rowNumber = ($customers->currentPage() - 1) * $customers->perPage() + 1;
                             @endphp
                             
-                            @forelse ($invoices as $invoice)
-                                {{-- Skip jika customer null atau sudah ditampilkan (safety check) --}}
-                                @if(!$invoice->customer || in_array($invoice->customer_id, $displayedCustomers))
-                                    @continue
-                                @endif
-                                
+                            @forelse ($customers as $customer)
                                 @php
-                                    $displayedCustomers[] = $invoice->customer_id;
-                                    $latestPembayaran = $invoice->pembayaran->first();
+                                    $latestInvoice = $customer->invoice->first();
+                                    $latestPembayaran = $latestInvoice ? $latestInvoice->pembayaran->first() : null;
                                 @endphp
                         
-                                <tr class="customer-row" data-id="{{ $invoice->customer->id }}"
-                                    data-nama="{{ strtolower($invoice->customer->nama_customer) }}"
-                                    data-alamat="{{ strtolower($invoice->customer->alamat) }}"
-                                    data-jatuh-tempo="{{ $invoice->jatuh_tempo ? $invoice->jatuh_tempo : '' }}"
-                                    data-tagihan="{{ $invoice->tagihan ?? 0 }}"
-                                    data-status="{{ $invoice->status ? $invoice->status->nama_status : '' }}">
-                                    <td class="text-center">{{ $rowNumber++ }}</td>
-                                    <td class="customer-name fw-bold">{{ $invoice->customer->nama_customer }}</td>
-                                    <td class="customer-address">{{ $invoice->customer->alamat }}</td>
+                                <tr class="customer-row" 
+                                    data-id="{{ $customer->id }}"
+                                    data-nama="{{ strtolower($customer->nama_customer) }}"
+                                    data-alamat="{{ strtolower($customer->alamat) }}">
+                                    
+                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="customer-name fw-bold">{{ $customer->nama_customer }}</td>
                                     <td>
-                                        @if($invoice->status)
+                                        <span class="badge bg-info bg-opacity-10 text-info">
+                                            {{ $customer->paket->nama_paket ?? '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="customer-address">{{ $customer->alamat }}</td>
+                                    <td>
+                                        @if($latestInvoice && $latestInvoice->status)
                                         <span class="badge
-                                                @if($invoice->status->id == 1) bg-info bg-opacity-10 text-info
-                                                @elseif($invoice->status->id == 8) bg-success bg-opacity-10 text-success
-                                                @elseif($invoice->status->id == 7) bg-danger bg-opacity-10 text-danger
+                                                @if($latestInvoice->status->nama_status == 'Sudah Bayar') bg-success bg-opacity-10 text-success
+                                                @elseif($latestInvoice->status->nama_status == 'Belum Bayar') bg-danger bg-opacity-10 text-danger
                                                 @else bg-secondary bg-opacity-10 text-secondary
                                                 @endif">
-                                        {{ $invoice->status->nama_status }}
+                                        {{ $latestInvoice->status->nama_status }}
                                     </span>
                                     @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Status</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Invoice</span>
                                     @endif
                                 </td>
-                                <td>Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}</td>
                                 <td>
-                                    @if($invoice->jatuh_tempo)
+                                    @if($latestInvoice)
+                                        Rp {{ number_format($latestInvoice->tagihan + $latestInvoice->tambahan, 0, ',', '.') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($latestInvoice && $latestInvoice->jatuh_tempo)
                                     @php
                                     try {
-                                        $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
-                                        $isOverdue = $jatuhTempo->isPast() && $invoice->status && $invoice->status->nama_status != 'Sudah Bayar';
+                                        $jatuhTempo = \Carbon\Carbon::parse($latestInvoice->jatuh_tempo);
+                                        $isOverdue = $jatuhTempo->isPast() && $latestInvoice->status && $latestInvoice->status->nama_status != 'Sudah Bayar';
                                     } catch (\Exception $e) {
                                         $jatuhTempo = null;
                                         $isOverdue = false;
                                     }
                                     @endphp
                                     @if($jatuhTempo)
-                                    <span class="badge {{ $isOverdue ? 'bg-danger bg-opacity-10 text-danger' : ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar' ? 'bg-success bg-opacity-10 text-success' : 'bg-info bg-opacity-10 text-info') }}">
+                                    <span class="badge {{ $isOverdue ? 'bg-danger bg-opacity-10 text-danger' : ($latestInvoice->status && $latestInvoice->status->nama_status == 'Sudah Bayar' ? 'bg-success bg-opacity-10 text-success' : 'bg-info bg-opacity-10 text-info') }}">
                                         {{ $jatuhTempo->format('d M Y') }}
                                         @if($isOverdue)
-                                        @elseif($invoice->status && $invoice->status->nama_status == 'Sudah Bayar')
+                                        <i class="bx bx-time-five ms-1"></i>
                                         @endif
                                     </span>
                                     @else
@@ -490,14 +492,14 @@
                                     @if($latestPembayaran && $latestPembayaran->bukti_bayar)
                                         <a href="{{ asset('storage/' . $latestPembayaran->bukti_bayar) }}" target="_blank"
                                             data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti">
-                                            <i class="bx bx-info-circle text-info"></i>
+                                            <i class="bx bx-image text-primary"></i>
                                         </a>                                     
                                     @else
                                         -
                                     @endif
                                 </td>
                                 <td>
-                                    @if($invoice->customer && $invoice->customer->trashed())
+                                    @if($customer->trashed())
                                     <span class="badge bg-label-danger fw-bold">Deaktivasi</span>
                                     @else
                                     <span class="badge bg-label-success fw-bold">Aktif</span>
@@ -506,7 +508,7 @@
                                 <td>
                                     @if ($latestPembayaran && $latestPembayaran->user)
                                         <span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">
-                                            {{ $latestPembayaran->user->name }} / {{ $latestPembayaran->user->roles->name }}
+                                            {{ $latestPembayaran->user->name }} / {{ $latestPembayaran->user->roles->name ?? '-' }}
                                         </span>
                                     @elseif($latestPembayaran)
                                         <span class="badge bg-secondary">By Tripay</span>
@@ -517,11 +519,11 @@
                             </tr>
                         @empty
                         <tr class="empty-state-row">
-                            <td colspan="11" class="text-center py-5">
+                            <td colspan="12" class="text-center py-5">
                                 <div class="d-flex flex-column align-items-center">
-                                    <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                                    <h5 class="text-dark mt-3 mb-2">Tidak ada data invoice</h5>
-                                    <p class="text-muted mb-0">Belum ada invoice untuk pelanggan di bawah agen {{ $agen->name }}</p>
+                                    <i class="bx bx-user-x text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-dark mt-3 mb-2">Tidak ada data pelanggan</h5>
+                                    <p class="text-muted mb-0">Belum ada pelanggan untuk agen {{ $agen->name }}</p>
                                 </div>
                             </td>
                         </tr>
@@ -531,9 +533,9 @@
             </div>
             
             <!-- Pagination -->
-            @if($invoices->hasPages())
+            @if($customers->hasPages())
             <div class="d-flex justify-content-center mt-4">
-                {{ $invoices->appends(request()->all())->links() }}
+                {{ $customers->appends(request()->all())->links() }}
             </div>
             @endif
         </div>
@@ -549,60 +551,34 @@
         const statsIndicator = document.getElementById('statsIndicator');
         const filterInfo = document.getElementById('filterInfo');
         
-        // Store original totals from server
-        const originalTotals = {
-            paid: {{ $totalPaid }},
-            unpaid: {{ $totalUnpaid }},
-            total: {{ $totalAmount }}
-        };
-        
         function filterTable() {
             const nameQuery = searchName.value.toLowerCase();
             let visibleRows = 0;
-            let totalPaid = 0;
-            let totalUnpaid = 0;
-            let totalAmount = 0;
-
-            const hasClientFilters = nameQuery;
-
+    
             customerRows.forEach(row => {
                 const name = row.dataset.nama || '';
                 const alamat = row.dataset.alamat || '';
-                const tagihan = parseFloat(row.dataset.tagihan || 0);
-                const status = row.dataset.status || '';
-
+    
                 // Check name match (client-side filter)
                 const matchesName = name.includes(nameQuery) || alamat.includes(nameQuery);
-
+    
                 if (matchesName) {
                     row.style.display = '';
                     visibleRows++;
-
-                    // Only calculate filtered statistics if client-side filters are applied
-                    if (hasClientFilters) {
-                        totalAmount += tagihan;
-
-                        if (status === 'Sudah Bayar') {
-                            totalPaid += tagihan;
-                        } else {
-                            totalUnpaid += tagihan;
-                        }
-                    }
                 } else {
                     row.style.display = 'none';
                 }
             });
-
-            // Update statistics cards and indicators
-            if (hasClientFilters) {
-                // Show filtered totals for client-side filtering
-                updateStatistics(totalPaid, totalUnpaid, totalAmount);
-                statsIndicator.textContent = `Menampilkan total dari data terfilter (${visibleRows} invoice)`;
+    
+            // UPDATE: TIDAK ADA PERUBAHAN STATISTICS - biarkan tetap dari server
+            // Statistics TIDAK di-update sama sekali
+            
+            // Update indicator saja
+            if (nameQuery) {
+                statsIndicator.textContent = `Menampilkan ${visibleRows} dari {{ $customers->total() }} pelanggan`;
                 filterInfo.style.display = 'inline-block';
             } else {
-                // Show original totals from all data (server-side filtered)
-                updateStatistics(originalTotals.paid, originalTotals.unpaid, originalTotals.total);
-                statsIndicator.textContent = `Menampilkan total dari semua data ({{ $invoices->total() }} invoice)`;
+                statsIndicator.textContent = `Menampilkan {{ $customers->total() }} pelanggan`;
                 filterInfo.style.display = 'none';
             }
             
@@ -618,24 +594,11 @@
             }
         }
         
-        function updateStatistics(paid, unpaid, total) {
-            document.getElementById('totalPaid').textContent = formatCurrency(paid);
-            document.getElementById('totalUnpaid').textContent = formatCurrency(unpaid);
-            document.getElementById('totalAmount').textContent = formatCurrency(total);
-        }
-        
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
+        // HAPUS function updateStatistics sama sekali
         
         // Add event listeners
         searchName.addEventListener('input', filterTable);
-
+    
         // ESC key to reset filters
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
@@ -650,7 +613,7 @@
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         
-        // Initial display with original totals
+        // Initial display
         filterTable();
     });
     
@@ -660,85 +623,60 @@
         const statusSelect = document.getElementById('filterStatus');
         const selectedMonth = monthSelect.value;
         const selectedStatus = statusSelect.value;
-
+    
         // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengambil data invoice untuk periode yang dipilih</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        // Buat URL dengan parameter bulan dan pertahankan parameter status
+        showLoadingIndicator();
+    
         const currentUrl = new URL(window.location.href);
-
+    
         if (selectedMonth === 'all') {
             currentUrl.searchParams.set('month', 'all');
         } else {
             currentUrl.searchParams.set('month', selectedMonth);
         }
-
+    
         if (selectedStatus && selectedStatus !== '') {
             currentUrl.searchParams.set('status', selectedStatus);
         } else {
             currentUrl.searchParams.delete('status');
         }
-
+    
+        // Reset ke page 1
         currentUrl.searchParams.delete('page');
-
+    
         window.location.href = currentUrl.toString();
     }
-
+    
     // Function untuk filter berdasarkan status tagihan (server-side)
     function filterByStatus() {
         const statusSelect = document.getElementById('filterStatus');
         const monthSelect = document.getElementById('filterMonth');
         const selectedStatus = statusSelect.value;
         const selectedMonth = monthSelect.value;
-
+    
         // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengambil data invoice untuk status yang dipilih</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
+        showLoadingIndicator();
+    
         const currentUrl = new URL(window.location.href);
-
+    
         if (selectedStatus && selectedStatus !== '') {
             currentUrl.searchParams.set('status', selectedStatus);
         } else {
             currentUrl.searchParams.delete('status');
         }
-
+    
         if (selectedMonth && selectedMonth !== 'all') {
             currentUrl.searchParams.set('month', selectedMonth);
         } else {
             currentUrl.searchParams.set('month', 'all');
         }
-
+    
+        // Reset ke page 1
         currentUrl.searchParams.delete('page');
-
+    
         window.location.href = currentUrl.toString();
     }
-
+    
     // Function untuk mengubah jumlah data per halaman (server-side)
     function changeEntriesPerPage() {
         const entriesSelect = document.getElementById('entriesPerPage');
@@ -747,43 +685,51 @@
         const selectedPerPage = entriesSelect.value;
         const selectedMonth = monthSelect.value;
         const selectedStatus = statusSelect.value;
-
+    
         // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengubah jumlah data per halaman</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
+        showLoadingIndicator();
+    
         const currentUrl = new URL(window.location.href);
-
+    
         currentUrl.searchParams.set('per_page', selectedPerPage);
-
+    
         if (selectedMonth && selectedMonth !== 'all') {
             currentUrl.searchParams.set('month', selectedMonth);
         } else {
             currentUrl.searchParams.set('month', 'all');
         }
-
+    
         if (selectedStatus && selectedStatus !== '') {
             currentUrl.searchParams.set('status', selectedStatus);
         } else {
             currentUrl.searchParams.delete('status');
         }
-
+    
+        // Reset ke page 1
         currentUrl.searchParams.delete('page');
-
+    
         window.location.href = currentUrl.toString();
     }
-</script>
+    
+    // Helper function untuk loading indicator
+    function showLoadingIndicator() {
+        const tableBody = document.querySelector('#customerTable tbody');
+        if (tableBody) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="12" class="text-center py-5">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
+                            <p class="text-muted mb-0">Sedang mengambil data terbaru</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    }
+    </script>
 
 @endsection
