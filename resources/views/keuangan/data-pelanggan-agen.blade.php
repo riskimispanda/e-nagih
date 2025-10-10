@@ -437,7 +437,7 @@
                                         {{ $latestInvoice->status->nama_status }}
                                     </span>
                                     @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Invoice</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Belum bayar bulan sebelumnya</span>
                                     @endif
                                 </td>
                                 <td>
