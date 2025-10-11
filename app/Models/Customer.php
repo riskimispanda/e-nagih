@@ -51,6 +51,10 @@ class Customer extends Model
 
     protected $dates = ['deleted_at'];
 
+    protected $casts = [
+        'tanggal_selesai' => 'datetime',
+    ];
+
     protected static function boot()
     {
         parent::boot();
