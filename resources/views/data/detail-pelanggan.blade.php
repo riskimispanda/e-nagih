@@ -764,6 +764,18 @@
                                                     </a>
                                                 </div>
                                             </div>
+                                            <div class="col-md-6">
+                                                <div class="info-group">
+                                                    <span class="info-label">
+                                                        <i class="bx bx-image text-primary"></i> Foto Rumah
+                                                    </span>
+                                                    <a href="{{ asset($customer->foto_rumah) }}"
+                                                        class="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                                                        target="_blank">
+                                                        <i class="bx bx-image-alt"></i> Lihat Foto
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
