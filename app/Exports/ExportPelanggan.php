@@ -3,6 +3,7 @@ namespace App\Exports;
 
 use App\Models\Customer;
 use App\Models\Paket;
+use App\Models\Pembayaran;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -61,13 +62,14 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
         $query = Customer::with([
             'paket',
             'odp.odc.olt.server',
-            'router', 
-            'agen', 
-            'teknisi', 
-            'koneksi', 
-            'perangkat', 
-            'media'
-        ])->withTrashed(); // INCLUDE SOFT DELETED CUSTOMERS
+            'router',
+            'agen',
+            'teknisi',
+            'koneksi',
+            'perangkat',
+            'media',
+            'invoice' // Load invoice untuk mengambil pembayaran
+        ])->withTrashed();
 
         switch ($this->type) {
             case 'aktif':
@@ -78,7 +80,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                 return $query->where('paket_id', $this->paketId)->get();
             case 'ringkasan':
                 return Paket::withCount(['customer' => function ($q) {
-                    $q->withTrashed(); // Include soft deleted dalam count
+                    $q->withTrashed();
                 }])->get();
             case 'bulan':
                 $month = $this->paketId['month'] ?? date('m');
@@ -121,13 +123,30 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             $statusCustomer = 'Deaktivasi';
         }
 
+        // **TAMBAHAN: Pembayaran Terakhir - SAMA SEPERTI DI CONTROLLER**
+        $pembayaranTerakhir = '-';
+        if ($customer->invoice && $customer->invoice->count() > 0) {
+            $invoiceIds = $customer->invoice->pluck('id');
+            $lastPembayaran = Pembayaran::whereIn('invoice_id', $invoiceIds)
+                ->latest('tanggal_bayar')
+                ->first();
+
+            if ($lastPembayaran && $lastPembayaran->tanggal_bayar) {
+                try {
+                    $pembayaranTerakhir = Carbon::parse($lastPembayaran->tanggal_bayar)->format('d-M-y');
+                } catch (\Exception $e) {
+                    $pembayaranTerakhir = '-';
+                }
+            }
+        }
+
         return [
             $customer->id,
             $customer->nama_customer,
             $customer->no_hp,
             $customer->email,
             $status,
-            $statusCustomer, // **KOLOM BARU: Status Customer**
+            $statusCustomer,
             $customer->paket?->nama_paket ?? '-',
             $customer->odp->odc->olt->server->lokasi_server ?? '-',
             $customer->odp->odc->olt->nama_lokasi ?? '-',
@@ -149,7 +168,8 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             $customer->access_point ?? '-',
             $customer->station ?? '-',
             $customer->created_at?->format('d-m-Y H:i:s') ?? '-',
-            $tanggalSelesai
+            $tanggalSelesai,
+            $pembayaranTerakhir, // **KOLOM BARU: Pembayaran Terakhir**
         ];
     }
 
@@ -161,7 +181,9 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             3 => 'Aktif',
             4 => 'Maintenance',
             5 => 'Assigment',
-            9 => 'Blokir'
+            9 => 'Blokir',
+            16 => 'Menunggu',
+            17 => 'Menunggu'
         ];
 
         return $statusMap[$statusId] ?? '-';
@@ -179,8 +201,8 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             'Nama Pelanggan',
             'No HP',
             'Email',
-            'Status',
-            'Status Customer', // **HEADING BARU**
+            'Status Koneksi',
+            'Status Customer',
             'Paket',
             'Server',
             'OLT',
@@ -202,7 +224,8 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             'Access Point',
             'Station',
             'Tanggal Registrasi',
-            'Tanggal Installasi'
+            'Tanggal Installasi',
+            'Pembayaran Terakhir', // **KOLOM BARU**
         ];
     }
 
@@ -236,14 +259,14 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                     $headings = ['Nama Paket', 'Jumlah Pelanggan'];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
                 } else {
-                    $totalColumns = 28; // 28 kolom (A sampai AB) - DITAMBAH 1 KOLOM
+                    $totalColumns = 29; // 29 kolom (A sampai AC) - DITAMBAH 1 KOLOM
                     $headings = [
                         'ID',
                         'Nama Pelanggan',
                         'No HP',
                         'Email',
-                        'Status',
-                        'Status Customer', // **HEADING BARU**
+                        'Status Koneksi',
+                        'Status Customer',
                         'Paket',
                         'Server',
                         'OLT',
@@ -265,9 +288,10 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                         'Access Point',
                         'Station',
                         'Tanggal Registrasi',
-                        'Tanggal Installasi'
+                        'Tanggal Installasi',
+                        'Pembayaran Terakhir', // **KOLOM BARU**
                     ];
-                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AB
+                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AC
                 }
 
                 // Hapus heading otomatis yang sudah di-generate
@@ -336,7 +360,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                     $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
                 }
 
-                // Style untuk header kolom (row 4) - SEMUA KOLOM SAMA
+                // Style untuk header kolom (row 4)
                 $headerRange = "A4:{$maxColumn}4";
                 $sheet->getStyle($headerRange)->applyFromArray([
                     'font' => [
@@ -378,29 +402,26 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                         ],
                     ]);
 
-                    // Style khusus untuk kolom tertentu
                     if ($this->type !== 'ringkasan') {
-                        // Center alignment untuk ID, Status, Status Customer, Paket, dan Tanggal
-                        $centerColumns = [0, 4, 5, 6, 26, 27]; // A, E, F, G, AB, AC
+                        // Center alignment untuk kolom tertentu
+                        $centerColumns = [0, 4, 5, 6, 7, 27, 28]; // ID, Status, Status Customer, Paket, Pembayaran Terakhir, Tanggal
                         foreach ($centerColumns as $colIndex) {
                             $columnLetter = $this->getColumnLetter($colIndex);
-                            for ($row = 5; $row <= $lastRow; $row++) {
-                                $sheet->getStyle("{$columnLetter}{$row}")->getAlignment()
-                                    ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                            }
+                            $sheet->getStyle("{$columnLetter}5:{$columnLetter}{$lastRow}")
+                                ->getAlignment()
+                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         }
 
                         // Left alignment untuk teks panjang
-                        $leftColumns = [1, 2, 3]; // B, C, D (Nama, No HP, Email)
+                        $leftColumns = [1, 2, 3]; // Nama, No HP, Email
                         foreach ($leftColumns as $colIndex) {
                             $columnLetter = $this->getColumnLetter($colIndex);
-                            for ($row = 5; $row <= $lastRow; $row++) {
-                                $sheet->getStyle("{$columnLetter}{$row}")->getAlignment()
-                                    ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                            }
+                            $sheet->getStyle("{$columnLetter}5:{$columnLetter}{$lastRow}")
+                                ->getAlignment()
+                                ->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         }
 
-                        // **CONDITIONAL FORMATTING untuk Status Customer**
+                        // Conditional formatting untuk Status Customer
                         for ($row = 5; $row <= $lastRow; $row++) {
                             $statusValue = $sheet->getCell($this->getColumnLetter(5) . $row)->getValue();
                             if ($statusValue === 'Deaktivasi') {
@@ -411,20 +432,14 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                                     ],
                                     'fill' => [
                                         'fillType' => Fill::FILL_SOLID,
-                                        'startColor' => ['argb' => 'FEE2E2'], // Light red background
+                                        'startColor' => ['argb' => 'FEE2E2'],
                                     ],
                                 ]);
                             }
                         }
-                    } else {
-                        // Center alignment untuk jumlah pelanggan
-                        for ($row = 5; $row <= $lastRow; $row++) {
-                            $sheet->getStyle("B{$row}")->getAlignment()
-                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        }
                     }
 
-                    // Alternating row colors untuk readability
+                    // Alternating row colors
                     for ($row = 5; $row <= $lastRow; $row++) {
                         if ($row % 2 == 0) {
                             $sheet->getStyle("A{$row}:{$maxColumn}{$row}")
@@ -441,9 +456,6 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
 
                 // Tambahkan filter pada header
                 $sheet->setAutoFilter("A4:{$maxColumn}4");
-
-                // Tambahkan protection pada sheet (optional)
-                $sheet->getProtection()->setSheet(true);
             },
         ];
     }

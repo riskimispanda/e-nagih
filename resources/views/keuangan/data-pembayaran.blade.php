@@ -387,7 +387,7 @@
         <!-- Monthly Payments -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="payment-card p-4">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center mb-5">
                     <div>
                         <p class="text-muted small mb-1 fw-medium">Pembayaran Bulan Ini</p>
                         <h5 class="fw-bold text-dark mb-0">Rp {{ number_format($monthlyPayments ?? 0, 0, ',', '.') }}</h5>
@@ -396,9 +396,9 @@
                         <i class="bx bx-calendar"></i>
                     </div>
                 </div>
-                <div class="d-flex justify-content-end mt-3">
-                    <a href="#" data-bs-toggle="tooltip" data-bs-placement="top"
-                        title="Lihat detail pembayaran bulan ini">
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small class="fw-medium text-muted">Jumlah Pelanggan: {{$totalCustomer}}</small>
+                    <a href="#" data-bs-toggle="tooltip" data-bs-placement="top" title="Lihat detail pembayaran bulan ini">
                         <div class="stat-icon bg-warning bg-opacity-10 text-warning">
                             <i class='bx bx-show'></i>
                         </div>

@@ -252,7 +252,7 @@
                         <h5 id="monthlyRevenueValue" class="fw-bold text-dark mb-0">Rp {{ number_format($monthlyRevenue ?? 0, 0, ',', '.') }}
                         </h5>
                     </div>
-                    <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info">
                         <i class="bx bx-calendar"></i>
                     </div>
                 </div>
@@ -281,11 +281,11 @@
         <div class="revenue-card p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <p class="text-muted small mb-1 fw-medium">Total Invoice</p>
+                    <p class="text-muted small mb-1 fw-medium">Jumlah Pelanggan</p>
                     <h5 id="totalInvoicesValue" class="fw-bold text-dark mb-0">{{ number_format($totalInvoices ?? 0, 0, ',', '.') }}</h5>
                 </div>
-                <div class="stat-icon bg-info bg-opacity-10 text-info">
-                    <i class="bx bx-receipt"></i>
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bx bxs-user"></i>
                 </div>
             </div>
         </div>
@@ -312,10 +312,13 @@
             
             <div class="col-12 col-lg-4">
                 <label class="form-label">Bulan</label>
-                <select name="bulan" id="bulan" class="form-select" onchange="filterBulan()">
+                <select name="bulan" id="bulan" class="form-select">
                     <option value="">Semua Bulan</option>
+                    @php
+                    $currentMonth = date('n'); // Bulan sekarang (1-12)
+                    @endphp
                     @for ($i = 1; $i <= 12; $i++)
-                    <option value="{{ $i }}" {{ (isset($bulan) && $bulan == $i) ? 'selected' : '' }}>
+                    <option value="{{ $i }}" {{ (isset($bulan) && $bulan == $i) ? 'selected' : (($bulan === null || $bulan === '') && $i == $currentMonth ? 'selected' : '') }}>
                         {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
                     </option>
                     @endfor
@@ -337,7 +340,7 @@
 <div class="table-card mb-5" id="invoiceTable">
     <div class="p-6 border-bottom">
         <h5 class="fw-bold text-dark mb-0">Daftar Invoice Customer</h5>
-        <small class="fw-semibold badge bg-danger bg-opacity-10 text-danger mt-3">Estimasi Pendapatan Bulan {{ date('M') }} : Rp {{ number_format($tes ?? 0, 0, ',', '.') }}</small>
+        <small class="fw-semibold badge bg-danger bg-opacity-10 text-danger mt-3 mb-3">Estimasi Pendapatan Bulan {{ date('M') }} : Rp {{ number_format($tes ?? 0, 0, ',', '.') }}</small>
     </div>
     
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-4 border-bottom">
@@ -382,17 +385,6 @@
                         </a>
                     </li>
                     @endforeach
-            
-                    {{-- <li><hr class="dropdown-divider"></li>
-            
-                    <!-- Export Berdasarkan Custom Date Range -->
-                    <li><h6 class="dropdown-header">Export Berdasarkan Tanggal</h6></li>
-                    <li>
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customDateModal">
-                            <i class="bx bx-calendar-event"></i>
-                            Pilih Tanggal
-                        </a>
-                    </li> --}}
                 </ul>
             </div>
             <label class="form-label mb-0 text-muted small">Tampilkan:</label>
@@ -419,7 +411,7 @@
                         <th>Tagihan Tambahan</th>
                         <th>Tunggakan</th>
                         <th>Sisa Saldo</th>
-                        <th>Jatuh Tempo</th>
+                        <th>Periode</th>
                         <th>Status</th>
                         <th>Aksi</th>
                     </tr>
@@ -481,7 +473,7 @@
                             <td style="font-size: 14px;">
                                 <div class="d-flex align-items-center">
                                     <i class="bx bx-calendar text-danger me-2"></i>
-                                    {{ \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('d/m/Y') }}
+                                    {{ \Carbon\Carbon::parse($invoice->jatuh_tempo)->locale('id')->translatedFormat('F') }}
                                 </div>
                             </td>
                             <td>
@@ -907,45 +899,43 @@
 @section('page-script')
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-      function toRupiah(n) {
-        return "Rp " + (n || 0).toLocaleString("id-ID");
-      }
-  
-      function recalcTotal(invoiceId) {
-        let total = 0;
-  
-        // 1) Jumlahkan komponen (tagihan, tambahan, tunggakan) yang dicentang
-        document
-          .querySelectorAll('.pilihan[data-id="' + invoiceId + '"]:checked:not([data-type="saldo"])')
-          .forEach(function (item) {
-            const amount = parseInt(item.getAttribute("data-amount")) || 0;
-            total += amount;
-          });
-  
-        // 2) Jika saldo dicentang, kurangi total dengan saldo (ambil dari data-amount atau value)
-        const saldoCb = document.querySelector('.pilihan[data-id="' + invoiceId + '"][data-type="saldo"]');
-        if (saldoCb && saldoCb.checked) {
-          const saldoAmount =
-            parseInt(saldoCb.getAttribute("data-amount")) ||
-            parseInt(saldoCb.value) || 0;
-          total = Math.max(total - saldoAmount, 0);
+        // Fungsi format Rupiah untuk modal
+        function toRupiah(n) {
+            return "Rp " + (n || 0).toLocaleString("id-ID");
         }
-  
-        // Tampilkan
-        const totalInput = document.getElementById("total" + invoiceId);
-        if (totalInput) totalInput.value = toRupiah(total);
-      }
-  
-      // Binding event ke semua checkbox
-      document.querySelectorAll(".pilihan").forEach(function (checkbox) {
-        checkbox.addEventListener("change", function () {
-          recalcTotal(this.getAttribute("data-id"));
+
+        function recalcTotal(invoiceId) {
+            let total = 0;
+
+            // 1) Jumlahkan komponen (tagihan, tambahan, tunggakan) yang dicentang
+            const checkedItems = document.querySelectorAll('.pilihan[data-id="' + invoiceId + '"]:checked:not([data-type="saldo"])');
+            checkedItems.forEach(function (item) {
+                const amount = parseInt(item.getAttribute("data-amount")) || 0;
+                total += amount;
+            });
+
+            // 2) Jika saldo dicentang, kurangi total dengan saldo
+            const saldoCb = document.querySelector('.pilihan[data-id="' + invoiceId + '"][data-type="saldo"]');
+            if (saldoCb && saldoCb.checked) {
+                const saldoAmount = parseInt(saldoCb.getAttribute("data-amount")) || parseInt(saldoCb.value) || 0;
+                total = Math.max(total - saldoAmount, 0);
+            }
+
+            // Tampilkan
+            const totalInput = document.getElementById("total" + invoiceId);
+            if (totalInput) totalInput.value = toRupiah(total);
+        }
+
+        // Binding event ke semua checkbox
+        document.querySelectorAll(".pilihan").forEach(function (checkbox) {
+            checkbox.addEventListener("change", function () {
+                recalcTotal(this.getAttribute("data-id"));
+            });
         });
-      });
-  
-      // Hitung awal (optional)
-      const ids = new Set([...document.querySelectorAll(".pilihan")].map(el => el.getAttribute("data-id")));
-      ids.forEach(id => recalcTotal(id));
+
+        // Hitung awal (optional)
+        const ids = new Set([...document.querySelectorAll(".pilihan")].map(el => el.getAttribute("data-id")));
+        ids.forEach(id => recalcTotal(id));
     });
 </script>
 <script>
@@ -957,6 +947,11 @@
         initializeSearch();
         initializeFilters();
         initializeEntriesPerPage();
+        initializePendapatanFilter();
+        initializeTooltips();
+        
+        // Load data otomatis dengan filter bulan default
+        loadDataWithAjax(getCurrentPerPage(), 1);
     });
     
     // Initialize search functionality
@@ -967,19 +962,22 @@
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
-                    applyFilters();
-                }, 500); // Delay 500ms after user stops typing
+                    // Reset ke page 1 saat search
+                    loadDataWithAjax(getCurrentPerPage(), 1);
+                }, 800); // Kurangi delay menjadi 800ms
             });
         }
     }
     
     // Initialize filter functionality
-    function initializeFilters() {
+    function initializeFilters() 
+    {
         const bulanSelect = document.getElementById('bulan');
         
         if (bulanSelect) {
             bulanSelect.addEventListener('change', function() {
-                applyFilters();
+                // Reset ke page 1 saat filter berubah
+                loadDataWithAjax(getCurrentPerPage(), 1);
             });
         }
     }
@@ -992,6 +990,45 @@
             entriesSelect.addEventListener('change', function() {
                 const selectedValue = this.value;
                 loadDataWithAjax(selectedValue);
+            });
+        }
+    }
+
+    // Initialize pendapatan filter (jika ada)
+    function initializePendapatanFilter() {
+        const pendapatanElement = document.getElementById('pendapatan');
+        
+        if (pendapatanElement) {
+            pendapatanElement.addEventListener('change', function() {
+                const selectedValue = this.value;
+                const invoiceTable = document.getElementById('invoiceTable');
+                const revenueTable = document.getElementById('revenueTable');
+                
+                if (invoiceTable && revenueTable) {
+                    if (selectedValue === 'langganan') {
+                        invoiceTable.style.display = 'block';
+                        revenueTable.style.display = 'none';
+                    } else if (selectedValue === 'lain-lain') {
+                        invoiceTable.style.display = 'none';
+                        revenueTable.style.display = 'block';
+                    } else if (selectedValue === 'semua') {
+                        invoiceTable.style.display = 'block';
+                        revenueTable.style.display = 'block';
+                    } else {
+                        invoiceTable.style.display = 'none';
+                        revenueTable.style.display = 'none';
+                    }
+                }
+            });
+        }
+    }
+
+    // Initialize Bootstrap tooltips
+    function initializeTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        if (typeof bootstrap !== 'undefined' && tooltipTriggerList.length > 0) {
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
             });
         }
     }
@@ -1013,6 +1050,11 @@
             }
         }
         
+        // Debug: log search parameters
+        const searchValue = document.getElementById('searchInput').value;
+        const bulanValue = document.getElementById('bulan').value;
+        console.log('AJAX Request - Search:', searchValue, 'Bulan:', bulanValue);
+        
         // Add per_page and page parameters
         params.append('per_page', perPage);
         if (page > 1) {
@@ -1029,18 +1071,24 @@
             }
         })
         .then(response => {
+            console.log('Response Status:', response.status);
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                // Try to get error message from response
+                return response.json().then(errorData => {
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
             }
             return response.json();
         })
         .then(data => {
+            console.log('AJAX Response:', data);
             if (data.success) {
                 updateTableWithAjax(data.data.invoices, data.data.pagination);
                 updateStatistics(data.data.statistics);
                 updatePaginationWithAjax(data.data.pagination, perPage);
                 
-                // Show notification
                 const totalVisible = perPage === 'all' ? data.data.invoices.length : Math.min(parseInt(perPage), data.data.invoices.length);
                 showNotification(`Menampilkan ${totalVisible} entri`, 'success');
             } else {
@@ -1048,8 +1096,8 @@
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showNotification('Terjadi kesalahan saat memuat data', 'error');
+            console.error('AJAX Error:', error);
+            showNotification('Terjadi kesalahan saat memuat data: ' + error.message, 'error');
         })
         .finally(() => {
             hideLoading();
@@ -1152,6 +1200,9 @@
         });
         
         tableBody.innerHTML = tableHTML;
+        
+        // Re-initialize tooltips setelah update table
+        initializeTooltips();
     }
     
     // Update pagination with AJAX data
@@ -1276,28 +1327,13 @@
         });
     }
     
-    // Update pagination visibility based on entries selection
-    function updatePaginationVisibility(entriesCount) {
-        const paginationContainer = document.querySelector('.p-4.border-top');
-        
-        if (paginationContainer) {
-            if (entriesCount === 'all') {
-                // Hide pagination when showing all entries
-                paginationContainer.style.display = 'none';
-            } else {
-                // Show pagination for limited entries
-                paginationContainer.style.display = 'block';
-            }
-        }
-    }
-    
     // Get current per page value
     function getCurrentPerPage() {
         const entriesSelect = document.getElementById('entriesPerPage');
         return entriesSelect ? entriesSelect.value : 25;
     }
     
-    // Apply filters using form submission (server-side)
+    // Apply filters using AJAX (tidak redirect)
     function applyFilters() {
         if (isLoading) return;
         
@@ -1312,151 +1348,36 @@
             }
         }
         
-        // Redirect to same page with filters
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.location.href = newUrl;
-    }
-    
-    // Update table with new data
-    function updateTable(invoices, pagination) {
-        const tableBody = document.getElementById('tableBody');
-        
-        if (!tableBody) return;
-        
-        if (invoices.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="text-center py-5">
-                        <div class="d-flex flex-column align-items-center">
-                            <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                            <p class="text-muted mb-0">Belum ada data invoice yang tersedia</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-        
-        let tableHTML = '';
-        invoices.forEach((invoice, index) => {
-            const startIndex = ((pagination.current_page - 1) * pagination.per_page) + 1;
-            const rowNumber = startIndex + index;
-            
-            tableHTML += `
-                <tr>
-                    <td class="fw-medium">${rowNumber}</td>
-                    <td>
-                        <div>
-                            <div class="fw-medium text-dark">${invoice.customer?.nama_customer || 'N/A'}</div>
-                            <small class="text-muted">${invoice.customer?.alamat ? invoice.customer.alamat.substring(0, 30) + (invoice.customer.alamat.length > 30 ? '...' : '') : ''}</small>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge bg-info bg-opacity-10 text-primary">
-                            ${invoice.paket?.nama_paket || 'N/A'}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <i class="bx bx-money text-secondary me-2"></i>
-                            <span class="fw-bold text-secondary">
-                                Rp ${formatNumber(invoice.tagihan || 0)}
-                            </span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <i class="bx bx-plus-circle text-warning me-2"></i>
-                            <span class="fw-semibold text-warning">
-                                Rp ${formatNumber(invoice.tambahan || 0)}
-                            </span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <i class="bx bx-plus-circle text-warning me-2"></i>
-                            <span class="fw-semibold text-warning">
-                                Rp ${formatNumber(invoice.tunggakan || 0)}
-                            </span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <i class="bx bx-wallet text-success me-2"></i>
-                            <span class="fw-semibold text-dark">
-                                Rp ${formatNumber(invoice.saldo || 0)}
-                            </span>
-                        </div>
-                    </td>
-                    <td style="font-size: 14px;">
-                        <div class="d-flex align-items-center">
-                            <i class="bx bx-calendar text-danger me-2"></i>
-                            ${formatDate(invoice.jatuh_tempo)}
-                        </div>
-                    </td>
-                    <td>
-                        ${getStatusBadge(invoice.status)}
-                    </td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            ${getActionButtons(invoice)}
-                        </div>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        tableBody.innerHTML = tableHTML;
+        // GUNAKAN AJAX, BUKAN REDIRECT
+        loadDataWithAjax(getCurrentPerPage(), 1);
     }
     
     // Update statistics cards
     function updateStatistics(stats) {
-        console.log('Updating statistics:', stats); // Debug log
-        
+        console.log('Updating statistics:', stats);
+
         // Update Total Pendapatan using ID
         const totalRevenueElement = document.getElementById('totalRevenueValue');
         if (totalRevenueElement) {
             totalRevenueElement.textContent = `Rp ${formatNumber(stats.totalRevenue || 0)}`;
-            console.log('Updated Total Pendapatan:', stats.totalRevenue);
-        } else {
-            console.log('Total Revenue element not found');
         }
-        
+
         // Update Jumlah Pembayaran using ID
         const monthlyRevenueElement = document.getElementById('monthlyRevenueValue');
         if (monthlyRevenueElement) {
             monthlyRevenueElement.textContent = `Rp ${formatNumber(stats.monthlyRevenue || 0)}`;
-            console.log('Updated Jumlah Pembayaran:', stats.monthlyRevenue);
-        } else {
-            console.log('Monthly Revenue element not found');
-        }
-
-        // Perkiraan pendapatan bulanan
-        const perkiraanPerBulan = document.getElementById('perkiraan');
-        if (perkiraanPerBulan) {
-            perkiraanPerBulan.textContent = `Rp ${formatNumber(stats.perkiraan || 0)}`;
-            console.log('Perkiraan Pendapatan bulanan:', stats.perkiraan);
-        } else {
-            console.log('Not Found');
         }
 
         // Update Pendapatan Tertunda using ID
         const pendingRevenueElement = document.getElementById('pendingRevenueValue');
         if (pendingRevenueElement) {
             pendingRevenueElement.textContent = `Rp ${formatNumber(stats.pendingRevenue || 0)}`;
-            console.log('Updated Pendapatan Tertunda:', stats.pendingRevenue);
-        } else {
-            console.log('Pending Revenue element not found');
         }
         
         // Update Total Invoice using ID
         const totalInvoicesElement = document.getElementById('totalInvoicesValue');
         if (totalInvoicesElement) {
             totalInvoicesElement.textContent = formatNumber(stats.totalInvoices || 0);
-            console.log('Updated Total Invoice:', stats.totalInvoices);
-        } else {
-            console.log('Total Invoices element not found');
         }
     }
     
@@ -1470,9 +1391,7 @@
         if (!dateString) return '';
         const date = new Date(dateString);
         return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
+            month: 'long',
         });
     }
     
@@ -1515,18 +1434,20 @@
                 <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran${invoice.id}" data-bs-toggle="modal">
                     <i class="bx bx-money"></i>
                 </button>
-                <a href="/riwayatPembayaran/${invoice.customer_id}" class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="History Pembayaran {{ $invoice->customer->nama_customer ?? 'Not Found' }}">
-                                        <i class="bx bx-history"></i>
-                                    </a>
+                <a href="/riwayatPembayaran/${invoice.customer_id}" class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="History Pembayaran">
+                    <i class="bx bx-history"></i>
+                </a>
             `;
         }
-        let csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        
         buttons += `
             <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
                 <i class="bx bx-message"></i>
             </a>
             <form action="/tripay/sync-payment/${invoice.id}" method="POST" style="display:inline">
-                <input type="hidden" name="_token" value="${csrf}">
+                <input type="hidden" name="_token" value="${csrfToken}">
                 <button type="submit" 
                     class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" 
                     data-bs-toggle="tooltip" data-bs-placement="bottom" 
@@ -1539,55 +1460,38 @@
         return buttons;
     }
     
-    // Filter Bulan (legacy function for compatibility)
-    function filterBulan() {
-        applyFilters();
-    }
     
-    // Refresh data
+    // Refresh data - gunakan AJAX untuk konsistensi
     function refreshData() {
         if (isLoading) return;
         
         showLoading();
         
-        // Get current filters
-        const formData = new FormData(document.getElementById('filterForm'));
-        const params = new URLSearchParams();
+        // Reset form tapi tetap pertahankan bulan default
+        const currentMonth = new Date().getMonth() + 1; // Bulan sekarang (1-12)
+        document.getElementById('filterForm').reset();
+        document.getElementById('bulan').value = currentMonth; // Set ke bulan sekarang
         
-        for (let [key, value] of formData.entries()) {
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-        
-        // Reload with current filters
-        window.location.href = `{{ route('pendapatan') }}?${params.toString()}`;
-    }
-    
-    // View invoice details
-    function viewInvoice(invoiceId) {
-        // Show modal with invoice details
-        $(`#detailInvoice${invoiceId}`).modal('show');
-    }
-    
-    // Process payment
-    function processPayment(invoiceId) {
-        if (confirm('Apakah Anda yakin ingin memproses pembayaran ini?')) {
-            // You can implement payment processing logic here
-            window.location.href = `/payment/${invoiceId}`;
-        }
+        // Load data dengan AJAX
+        loadDataWithAjax(getCurrentPerPage(), 1);
     }
     
     // Show loading overlay
     function showLoading() {
         isLoading = true;
-        document.getElementById('loadingOverlay').classList.remove('d-none');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('d-none');
+        }
     }
     
     // Hide loading overlay
     function hideLoading() {
         isLoading = false;
-        document.getElementById('loadingOverlay').classList.add('d-none');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('d-none');
+        }
     }
     
     // Show notification
@@ -1603,16 +1507,16 @@
         type === 'success' ? 'alert-success' : 'alert-primary';
         
         notification.innerHTML = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    <i class="bx ${
-                        type === 'error' ? 'bx-error' :
-                        type === 'success' ? 'bx-check' :
-                        'bx-info-circle'
-                    } me-2"></i>
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <i class="bx ${
+                    type === 'error' ? 'bx-error' :
+                    type === 'success' ? 'bx-check' :
+                    'bx-info-circle'
+                } me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
         
         document.body.appendChild(notification);
         
@@ -1660,6 +1564,25 @@
             }
         }
     });
+
+    // Format input as Rupiah currency
+    function formatRupiah(el, id) {
+        let angka = el.value.replace(/[^0-9]/g, '');
+        let number = parseInt(angka, 10) || 0;
+        
+        // Format tampilan
+        el.value = number.toLocaleString('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        });
+        
+        // Simpan nilai bersih ke input hidden
+        const rawInput = document.getElementById('raw' + id);
+        if (rawInput) {
+            rawInput.value = number;
+        }
+    }
 </script>
 
 <script>
@@ -1703,31 +1626,33 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    $('.sync-payment-btn').click(function(e) {
-        e.preventDefault(); // cegah link default
+    // jQuery untuk sync payment (jika diperlukan)
+    if (typeof jQuery !== 'undefined') {
+        $(document).ready(function() {
+            $('.sync-payment-btn').click(function(e) {
+                e.preventDefault();
 
-        var invoiceId = $(this).data('invoice-id');
+                var invoiceId = $(this).data('invoice-id');
 
-        $.ajax({
-            url: '/tripay/sync-payment/' + invoiceId,
-            type: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            beforeSend: function() {
-                // opsional: tampilkan loading
-            },
-            success: function(response) {
-                alert(response.message || 'Sync berhasil!');
-                // opsional: reload atau update row invoice
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON.message || 'Terjadi error saat sync');
-            }
+                $.ajax({
+                    url: '/tripay/sync-payment/' + invoiceId,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    beforeSend: function() {
+                        // opsional: tampilkan loading
+                    },
+                    success: function(response) {
+                        alert(response.message || 'Sync berhasil!');
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON.message || 'Terjadi error saat sync');
+                    }
+                });
+            });
         });
-    });
-});
+    }
 </script>
 
 @endsection

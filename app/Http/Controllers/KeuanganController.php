@@ -260,19 +260,11 @@ class KeuanganController extends Controller
             // ✅ Pending Revenue - HANYA untuk customer AKTIF (tidak soft delete)
             $pendingRevenue = Invoice::where('status_id', 7)
                 ->whereHas('customer', function ($q) {
-                    $q->whereNull('deleted_at'); // ❌ Hanya customer aktif
-                })
-                ->sum('tagihan') +
-                Invoice::where('status_id', 7)
-                ->whereHas('customer', function ($q) {
-                    $q->whereNull('deleted_at'); // ❌ Hanya customer aktif
-                })
-                ->sum('tambahan') +
-                Invoice::where('status_id', 7)
-                ->whereHas('customer', function ($q) {
-                    $q->whereNull('deleted_at'); // ❌ Hanya customer aktif
-                })
-                ->sum('tunggakan');
+                $q->whereNull('deleted_at');
+            })
+                ->selectRaw('SUM(tagihan + tambahan + tunggakan - saldo) as total')
+                ->value('total');
+
 
             // ✅ Total Invoices - HANYA untuk customer AKTIF yang belum bayar
             $totalInvoices = Invoice::where('status_id', 7)
@@ -304,6 +296,13 @@ class KeuanganController extends Controller
             })
             ->sum('jumlah_bayar');
 
+        $customerCountQuery = clone $query;
+
+        // Hitung jumlah unique customer dari invoice yang difilter
+        $jumlahCustomer = $customerCountQuery
+            ->distinct('customer_id')
+            ->count('customer_id');
+
         return view('keuangan.data-pendapatan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -324,21 +323,30 @@ class KeuanganController extends Controller
             'totalPembayaran' => $totalPembayaran,
             'pembayaran' => $pembayaran,
             'perkiraanPendapatan' => $estimasi,
-            'tes' => $tes
+            'tes' => $tes,
+            'jumlah_customer' => $jumlahCustomer
         ]);
     }
 
     public function getAjaxData(Request $request)
     {
         try {
-            // Get filter parameters
-            $search = $request->get('search');
-            $status = $request->get('status');
-            $startDate = $request->get('start_date');
-            $endDate = $request->get('end_date');
-            $bulan = $request->get('bulan');
+            // Get filter parameters dengan default values
+            $search = $request->get('search', '');
+            $status = $request->get('status', '');
+            $startDate = $request->get('start_date', '');
+            $endDate = $request->get('end_date', '');
+            $bulan = $request->get('bulan', '');
             $perPage = $request->get('per_page', 25);
             $page = $request->get('page', 1);
+
+            Log::info('AJAX Request Parameters:', [
+                'search' => $search,
+                'status' => $status,
+                'bulan' => $bulan,
+                'perPage' => $perPage,
+                'page' => $page
+            ]);
 
             // Build query for invoices with relationships
             $query = Invoice::with(['customer', 'paket', 'status'])
@@ -346,26 +354,30 @@ class KeuanganController extends Controller
                 ->whereIn('status_id', [1, 7]); // Exclude 'Dibatalkan' status
 
             // Apply search filter
-            if ($search) {
-                $query->whereHas('customer', function($q) use ($search) {
-                    $q->where('nama_customer', 'like', '%' . $search . '%');
-                })->orWhereHas('paket', function($q) use ($search) {
-                    $q->where('nama_paket', 'like', '%' . $search . '%');
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->where('nama_customer', 'like', '%' . $search . '%')
+                            ->orWhere('no_hp', 'like', '%' . $search . '%')
+                            ->orWhere('alamat', 'like', '%' . $search . '%');
+                    })->orWhereHas('paket', function ($paketQuery) use ($search) {
+                        $paketQuery->where('nama_paket', 'like', '%' . $search . '%');
+                    });
                 });
             }
 
             // Apply status filter
-            if ($status) {
+            if (!empty($status)) {
                 $query->where('status_id', $status);
             }
 
             // Apply month filter
-            if ($bulan && $bulan !== '' && $bulan !== null) {
+            if (!empty($bulan) && $bulan !== '') {
                 $query->whereMonth('jatuh_tempo', $bulan);
             }
 
             // Apply date range filter
-            if ($startDate && $endDate) {
+            if (!empty($startDate) && !empty($endDate)) {
                 $query->whereBetween('jatuh_tempo', [
                     Carbon::parse($startDate)->startOfDay(),
                     Carbon::parse($endDate)->endOfDay()
@@ -373,6 +385,9 @@ class KeuanganController extends Controller
             }
 
             // Get paginated results
+            $invoices = [];
+            $paginationData = [];
+
             if ($perPage === 'all') {
                 $invoices = $query->get();
                 $paginationData = [
@@ -384,11 +399,10 @@ class KeuanganController extends Controller
                     'to' => $invoices->count(),
                 ];
             } else {
-                // Set current page for pagination
                 \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($page) {
                     return $page;
                 });
-                
+
                 $invoicesPaginated = $query->paginate((int)$perPage);
                 $invoices = $invoicesPaginated->items();
                 $paginationData = [
@@ -401,45 +415,35 @@ class KeuanganController extends Controller
                 ];
             }
 
-            // Calculate statistics based on filtered data
-            $statisticsQuery = clone $query;
-            
-            if ($bulan && $bulan !== '' && $bulan !== null) {
-                $filteredInvoices = $statisticsQuery->get();
-                $totalRevenue = 0;
-                $pendingRevenue = 0;
-                $totalInvoices = 0;
+            // ===== STATISTICS CALCULATION =====
 
-                foreach ($filteredInvoices as $invoice) {
-                    if ($invoice->status_id == 7) {
-                        $totalInvoices++;
-                    }
-                    if ($invoice->status_id == 8) {
-                        $totalRevenue += ($invoice->tagihan + $invoice->tambahan - $invoice->tunggakan);
-                    } elseif ($invoice->status_id == 7) {
-                        $pendingRevenue += ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
-                    }
-                }
-            } else {
-                $totalRevenue = Invoice::where('status_id', 8)
-                    ->sum('tagihan') + Invoice::where('status_id', 8)
-                    ->sum('tambahan') - Invoice::where('status_id', 8)
-                    ->sum('tunggakan');
-                $pendingRevenue = Invoice::where('status_id', 7)
-                    ->sum('tagihan') + Invoice::where('status_id', 7)
-                    ->sum('tambahan') + Invoice::where('status_id', 7)
-                    ->sum('tunggakan');
-                $totalInvoices = Invoice::where('status_id', 7)->count();
-            }
+            // Total Revenue - All successful payments
+            $totalRevenue = Pembayaran::sum('jumlah_bayar');
 
-            // Monthly revenue from payments
-            if ($bulan && $bulan !== '' && $bulan !== null) {
-                $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $bulan)
-                    ->whereYear('tanggal_bayar', Carbon::now()->year)
-                    ->sum('jumlah_bayar');
-            } else {
-                $monthlyRevenue = Pembayaran::sum('jumlah_bayar');
-            }
+            // Monthly Revenue - Based on selected month or current month
+            $currentMonthForRevenue = !empty($bulan) ? $bulan : date('n');
+            $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $currentMonthForRevenue)
+                ->whereYear('tanggal_bayar', Carbon::now()->year)
+                ->sum('jumlah_bayar');
+
+            // Pending Revenue - All unpaid invoices
+            $pendingRevenue = Invoice::where('status_id', 7)
+                ->whereMonth('jatuh_tempo', $bulan)
+                ->whereYear('jatuh_tempo', Carbon::now()->year)
+                ->get()
+                ->sum(function ($invoice) {
+                    return ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
+                });
+
+            // Total Invoices - All active invoices
+            $totalInvoices = Invoice::where('status_id', 7)->whereMonth('jatuh_tempo', $bulan)->whereYear('jatuh_tempo', Carbon::now()->year)->count();
+
+            Log::info('Statistics Calculated:', [
+                'totalRevenue' => $totalRevenue,
+                'monthlyRevenue' => $monthlyRevenue,
+                'pendingRevenue' => $pendingRevenue,
+                'totalInvoices' => $totalInvoices
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -454,11 +458,15 @@ class KeuanganController extends Controller
                     ]
                 ]
             ]);
-
         } catch (\Exception $e) {
+            Log::error('Error in getAjaxData: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -721,6 +729,13 @@ class KeuanganController extends Controller
         }
 
         $ewalletCount = $ewalletCount->count();
+        $totalCustomer = Invoice::distinct('customer_id')
+            ->where('status_id', 8)
+            ->whereHas('pembayaran', function ($q) use ($month) {
+                $q->whereMonth('tanggal_bayar', $month);
+                $q->whereYear('tanggal_bayar', Carbon::now()->year);
+            })
+            ->count('customer_id');
 
         return view('/keuangan/data-pembayaran',[
             'users' => auth()->user(),
@@ -745,6 +760,7 @@ class KeuanganController extends Controller
             'cashCount' => $CashCount,
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
+            'totalCustomer' => $totalCustomer
         ]);
     }
 
@@ -1466,9 +1482,6 @@ class KeuanganController extends Controller
 
         // Get subscription revenue (Pembayaran) by month
         $pembayaranData = Pembayaran::with(['invoice.customer', 'invoice.status', 'invoice.paket'])
-            ->whereHas('invoice.status', function ($q) {
-                $q->where('nama_status', 'Sudah Bayar');
-            })
             ->whereYear('tanggal_bayar', $year)
             ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
             ->groupBy('month')
@@ -1572,6 +1585,8 @@ class KeuanganController extends Controller
             ]);
         }
 
+        $pengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
+
         return view('/keuangan/pendapatan-global', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -1579,6 +1594,7 @@ class KeuanganController extends Controller
             'summaryData' => $summaryData,
             'selectedYear' => $year,
             'availableYears' => $availableYears,
+            'pengeluaran' => $pengeluaran
         ]);
     }
 
@@ -1593,10 +1609,7 @@ class KeuanganController extends Controller
         $monthlyOperationalCost = array_fill(1, 12, 0);
 
         // Get subscription revenue by month
-        $pembayaranData = Pembayaran::whereHas('invoice.status', function ($q) {
-            $q->where('nama_status', 'Sudah Bayar');
-        })
-            ->whereYear('tanggal_bayar', $year)
+        $pembayaranData = Pembayaran::whereYear('tanggal_bayar', Carbon::now()->year)
             ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
             ->groupBy('month')
             ->get();
@@ -1873,13 +1886,18 @@ class KeuanganController extends Controller
         $currentMonth = now()->month;
         $currentYear = now()->year;
 
+        // $agenQuery = User::where('roles_id', 6)
+        //     ->withCount(['customer as total_customer' => function ($query) use ($currentMonth, $currentYear) {
+        //         $query->whereIn('status_id', [1, 2, 3, 4, 5, 9])
+        //         ->whereHas('invoice', function ($invoiceQuery) use ($currentMonth, $currentYear) {
+        //             $invoiceQuery->whereMonth('jatuh_tempo', $currentMonth)
+        //             ->whereYear('jatuh_tempo', $currentYear);
+        //             });
+        //     }]);
         $agenQuery = User::where('roles_id', 6)
-            ->withCount(['customer as total_customer' => function ($query) use ($currentMonth, $currentYear) {
-                $query->whereIn('status_id', [1, 2, 3, 4, 5, 9])
-                ->whereHas('invoice', function ($invoiceQuery) use ($currentMonth, $currentYear) {
-                    $invoiceQuery->whereMonth('jatuh_tempo', $currentMonth)
-                    ->whereYear('jatuh_tempo', $currentYear);
-                    });
+            ->withCount(['customer as total_customer' => function ($query) {
+                $query->whereIn('status_id', [3, 4, 9])
+                    ->withTrashed();
             }]);
 
         // Apply search filter if provided
@@ -1898,7 +1916,7 @@ class KeuanganController extends Controller
         // Debug: Cek hasil count
         if ($request->has('debug')) {
             foreach ($agen as $a) {
-                \Log::info("Agen {$a->name} - Total Customer: {$a->total_customer}");
+                Log::info("Agen {$a->name} - Total Customer: {$a->total_customer}");
             }
         }
 
@@ -1976,7 +1994,7 @@ class KeuanganController extends Controller
         $baseCustomerQuery = function ($q) use ($id) {
             $q->withTrashed()
                 ->where('agen_id', $id)
-                ->whereIn('status_id', [1, 2, 3, 4, 5, 9]);
+                ->whereIn('status_id', [3, 4, 9]);
         };
 
         // SOLUSI: Gunakan subquery yang lebih stabil dengan fromSub
@@ -2199,7 +2217,9 @@ class KeuanganController extends Controller
 
         $currentMonthNum = now()->format('m');
         $currentMonthName = $monthNames[$currentMonthNum];
-
+        $totalPelanggan = Invoice::distinct('customer_id')->whereHas('customer', function ($q) use ($id) {
+            $q->where('agen_id', $id)->whereIn('status_id', [3, 4, 9])->withTrashed();
+        })->count();
         return view('keuangan.data-pelanggan-agen', [
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
@@ -2216,6 +2236,7 @@ class KeuanganController extends Controller
             'monthNames' => $monthNames,
             'currentMonthNum' => $currentMonthNum,
             'currentMonthName' => $currentMonthName,
+            'totalPelanggan' => $totalPelanggan
         ]);
     }
 
@@ -2293,9 +2314,8 @@ class KeuanganController extends Controller
 
         // Add month filter if specified
         if ($month !== 'all') {
-            $subscriptionQuery->whereMonth('tanggal_bayar', $month);
-            $nonSubscriptionQuery->whereMonth('tanggal', $month);
-            $expensesQuery->whereMonth('tanggal_pengeluaran', $month);
+            // $subscriptionQuery->whereMonth('tanggal_bayar', $month);
+            // $nonSubscriptionQuery->whereMonth('tanggal', $month);
         }
 
         // Current period totals
@@ -2371,7 +2391,9 @@ class KeuanganController extends Controller
             })->sum(DB::raw('tagihan + tambahan + COALESCE(tunggakan, 0)'));
 
         // **Hitung pelanggan lunas - Termasuk yang sudah di-soft delete**
-        $pelangganLunas = $pelangganLunasQuery->sum(DB::raw('tagihan + tambahan + COALESCE(tunggakan, 0)'));
+        $pelangganLunas = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)
+            ->whereYear('tanggal_bayar', Carbon::now()->year)
+            ->sum('jumlah_bayar');
 
         // **PERUBAHAN: Query untuk pelanggan belum lunas - EXCLUDE SOFT DELETED**
         $pelangganBelumLunasQuery = Invoice::whereYear('jatuh_tempo', $customerYear)
@@ -2391,25 +2413,27 @@ class KeuanganController extends Controller
         $totalPendapatan = $pelangganLunas + $pelangganBelumLunas;
 
         // **PERUBAHAN: Count paid customers - Termasuk yang sudah di-soft delete**
-        $paidCustomers = Invoice::whereYear('jatuh_tempo', $customerYear)
-            ->where('status_id', 8) // Status LUNAS
-            ->when($month !== 'all', function ($q) use ($customerMonth) {
-                $q->whereMonth('jatuh_tempo', $customerMonth);
+        $paidCustomers = Invoice::distinct('customer_id')
+            ->where('status_id', 8)
+            ->whereHas('customer', function ($q) {
+                $q->withTrashed();
             })
-            ->distinct('customer_id')
-            ->count();
+            ->whereHas('pembayaran', function ($q) use ($customerMonth, $month) {
+                $q->whereMonth('tanggal_bayar', Carbon::now()->month)->whereYear('tanggal_bayar', Carbon::now()->year)
+                    ->when($month !== 'all', function ($r) use ($customerMonth) {
+                        $r->whereMonth('tanggal_bayar', $customerMonth);
+                    });
+            })->count();
 
         // **PERUBAHAN: Count unpaid customers - Hanya yang tidak di-soft delete**
-        $unpaidCustomers = Invoice::whereYear('jatuh_tempo', $customerYear)
+        $unpaidCustomers = Invoice::distinct('customer_id')
             ->where('status_id', 7) // Status BELUM LUNAS
             ->whereHas('customer', function ($q) {
-                $q->whereNull('deleted_at'); // Exclude soft deleted
+            $q->whereNull('deleted_at');
             })
             ->when($month !== 'all', function ($q) use ($customerMonth) {
                 $q->whereMonth('jatuh_tempo', $customerMonth);
-            })
-            ->distinct('customer_id')
-            ->count();
+            })->count();
 
         return [
             'totalSubscription' => (float) $totalSubscription,

@@ -239,6 +239,23 @@ class DataController extends Controller
             + ($sumData->total_tambahan ?? 0)
             + ($sumData->total_tunggakan ?? 0)
             - ($sumData->total_saldo ?? 0);
+
+        $sudahBayar = Invoice::distinct('customer_id')
+            ->where('status_id', 8)
+            ->whereHas('pembayaran', function ($q) {
+                $q->whereMonth('tanggal_bayar', Carbon::now()->month);
+                $q->whereYear('tanggal_bayar', Carbon::now()->year);
+            })
+            ->count();
+
+        $belumBayar = Invoice::distinct('customer_id')
+            ->where('status_id', 7)
+            ->whereHas('pembayaran', function ($q) {
+                $q->whereMonth('tanggal_bayar', Carbon::now()->month);
+                $q->whereYear('tanggal_bayar', Carbon::now()->year);
+            })
+            ->count();
+
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -256,7 +273,9 @@ class DataController extends Controller
             'nonAktif' => $nonAktif,
             'importData' => $import,
             'countAgen' => $countAgen,
-            'totalPendapatan' => $totalPendapatan
+            'totalPendapatan' => $totalPendapatan,
+            'sudahBayar' => $sudahBayar,
+            'belumBayar' => $belumBayar
         ]);
     }
 
@@ -287,7 +306,9 @@ class DataController extends Controller
             // Apply search filter
             if ($search) {
                 $query->whereHas('customer', function($q) use ($search) {
-                    $q->where('nama_customer', 'like', '%' . $search . '%');
+                    $q->where('nama_customer', 'like', '%' . $search . '%')
+                        ->orWhere('no_hp', 'like', '%' . $search . '%')
+                        ->orWhere('alamat', 'like', '%' . $search . '%');
                 })->orWhereHas('paket', function($q) use ($search) {
                     $q->where('nama_paket', 'like', '%' . $search . '%');
                 });

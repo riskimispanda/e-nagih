@@ -13,7 +13,66 @@
 @section('page-script')
     @vite('resources/assets/js/dashboards-analytics.js')
 @endsection
-
+<style>
+    .toggle-icon {
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 18px;
+        margin-left: 8px;
+    }
+    
+    .toggle-icon:hover {
+        transform: scale(1.2);
+    }
+    
+    .dots-placeholder {
+        font-size: 24px;
+        letter-spacing: 3px;
+        color: #6c757d;
+    }
+    @media (max-width: 991.98px) {
+        .card-title {
+            font-size: 1.3rem;
+        }
+    }
+    
+    /* Mobile Landscape */
+    @media (max-width: 767.98px) {
+        .card-title {
+            font-size: 1.1rem;
+        }
+        
+        .card-body {
+            padding: 1rem;
+        }
+    }
+    
+    /* Mobile Portrait */
+    @media (max-width: 575.98px) {
+        .card-title {
+            font-size: 1rem;
+        }
+        
+        .card-body {
+            padding: 0.75rem;
+        }
+        
+        /* Adjust avatar size untuk mobile */
+        .avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+        
+        .avatar i {
+            font-size: 1rem;
+        }
+        
+        /* Adjust badge size */
+        .badge {
+            font-size: 0.7rem;
+        }
+    }
+</style>
 @section('content')
     <div class="row">
         <div class="col-sm-12 mb-2">
@@ -57,7 +116,7 @@
         </div>
         <div class="col-lg-12 col-md-12 order-1">
             <div class="row">
-                <div class="col-lg-4 col-md-12 col-6 mb-6">
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between mb-4">
@@ -71,7 +130,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-12 col-6 mb-6">
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between mb-4">
@@ -84,7 +143,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-12 col-6 mb-6">
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="card-title d-flex align-items-start justify-content-between mb-4">
@@ -105,12 +164,37 @@
                                     <i class="bx bxs-wallet text-success fw-bold"></i>
                                 </div>
                             </div>
-                            <p class="mb-1">Pelanggan Lunas</p>
-                            <h4 class="card-title mb-3">Rp {{ number_format($pelangganLunas, 0, ',', '.') }}</h4>
-                            <small class="badge bg-label-success"><i class="bx bxs-user me-1 fs-6"></i>{{ $countLunas }} Invoice</small>
+                            <p class="mb-1">Laba/Rugi</p>
+                            <h4 class="card-title mb-3">Rp {{ number_format($laba, 0, ',', '.') }}</h4>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="row">
+
+                <div class="col-lg-3 col-md-12 col-6 mb-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="card-title d-flex align-items-start justify-content-between mb-4">
+                                <div class="avatar flex-shrink-0 bg-success bg-opacity-10 d-flex align-items-center justify-content-center rounded">
+                                    <i class="bx bxs-wallet text-success fw-bold"></i>
+                                </div>
+                            </div>
+                            <p class="mb-1">Pelanggan Lunas</p>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h4 class="card-title mb-0 amount-text" id="lunas-amount">
+                                    <span class="nominal-text">Rp {{ number_format($pelangganLunas, 0, ',', '.') }}</span>
+                                    <span class="dots-placeholder d-none">•••••••</span>
+                                </h4>
+                                <i class="bx bx-show toggle-icon text-muted" data-target="lunas-card"></i>
+                            </div>
+                            <small class="badge bg-label-success customer-count" id="lunas-count">
+                                <i class="bx bxs-user me-1 fs-6"></i>{{ $countLunas }} Pelanggan
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="col-lg-3 col-md-12 col-6 mb-6">
                     <div class="card h-100">
                         <div class="card-body">
@@ -120,8 +204,16 @@
                                 </div>
                             </div>
                             <p class="mb-1">Pelanggan Belum Lunas</p>
-                            <h4 class="card-title mb-3">Rp {{ number_format($pelangganBelumLunas, 0, ',', '.') }}</h4>
-                            <small class="badge bg-label-danger"><i class="bx bxs-user me-1 fs-6"></i>{{ $countBelumLunas }} Invoice</small>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h4 class="card-title mb-0 amount-text" id="belum-lunas-amount">
+                                    <span class="nominal-text">Rp {{ number_format($pelangganBelumLunas, 0, ',', '.') }}</span>
+                                    <span class="dots-placeholder d-none">•••••••</span>
+                                </h4>
+                                <i class="bx bx-show toggle-icon text-muted" data-target="belum-lunas-card"></i>
+                            </div>
+                            <small class="badge bg-label-danger customer-count" id="belum-lunas-count">
+                                <i class="bx bxs-user me-1 fs-6"></i>{{ $countBelumLunas }} Pelanggan
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -359,4 +451,85 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
     legend.addTo(map);
 });
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi state dari localStorage - default hide
+        initializeCardStates();
+        
+        // Event listener untuk ikon toggle
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.addEventListener('click', function() {
+                const target = this.getAttribute('data-target');
+                toggleCardVisibility(target, this);
+            });
+        });
+        
+        function toggleCardVisibility(target, icon) {
+            const cardElement = document.querySelector(`.card:has([data-target="${target}"])`);
+            const nominalText = cardElement.querySelector('.nominal-text');
+            const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
+            
+            if (nominalText.style.display !== 'none') {
+                // Hide - tampilkan dots
+                nominalText.style.display = 'none';
+                dotsPlaceholder.classList.remove('d-none');
+                icon.classList.remove('bx-show');
+                icon.classList.add('bx-hide');
+                icon.classList.remove('text-muted');
+                icon.classList.add('text-success');
+                
+                // Simpan state ke localStorage
+                localStorage.setItem(`card-${target}-hidden`, 'true');
+            } else {
+                // Show - tampilkan teks asli
+                nominalText.style.display = 'inline';
+                dotsPlaceholder.classList.add('d-none');
+                icon.classList.remove('bx-hide');
+                icon.classList.add('bx-show');
+                icon.classList.remove('text-success');
+                icon.classList.add('text-muted');
+                
+                // Simpan state ke localStorage
+                localStorage.setItem(`card-${target}-hidden`, 'false');
+            }
+        }
+        
+        function initializeCardStates() {
+            const cards = [
+                { target: 'lunas-card' },
+                { target: 'belum-lunas-card' }
+            ];
+            
+            cards.forEach(card => {
+                // Default hide (true) jika belum ada setting di localStorage
+                const isHidden = localStorage.getItem(`card-${card.target}-hidden`) !== 'false';
+                const icon = document.querySelector(`[data-target="${card.target}"]`);
+                const cardElement = document.querySelector(`.card:has([data-target="${card.target}"])`);
+                
+                if (cardElement && icon) {
+                    const nominalText = cardElement.querySelector('.nominal-text');
+                    const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
+                    
+                    if (isHidden) {
+                        // Set state hidden
+                        nominalText.style.display = 'none';
+                        dotsPlaceholder.classList.remove('d-none');
+                        icon.classList.remove('bx-show');
+                        icon.classList.add('bx-hide');
+                        icon.classList.remove('text-muted');
+                        icon.classList.add('text-success');
+                    } else {
+                        // Set state visible
+                        nominalText.style.display = 'inline';
+                        dotsPlaceholder.classList.add('d-none');
+                        icon.classList.remove('bx-hide');
+                        icon.classList.add('bx-show');
+                        icon.classList.remove('text-success');
+                        icon.classList.add('text-muted');
+                    }
+                }
+            });
+        }
+    });
 </script>

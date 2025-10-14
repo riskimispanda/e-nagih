@@ -74,6 +74,7 @@ use Symfony\Component\HttpFoundation\Request;
 use RouterOS\Client;
 use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
+use App\Http\Controllers\WhatspieControllers;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
 
@@ -245,6 +246,42 @@ Route::middleware(['auth'])->group(function () {
         }
     })->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
 
+    // * WhatsPie End Point
+    Route::prefix('whatspie')->name('whatspie.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [WhatsPieControllers::class, 'dashboard'])->name('dashboard');
+
+        // Send Message
+        Route::post('/send-message', [WhatsPieControllers::class, 'sendMessage'])->name('send.message');
+
+        // Test Payload
+        Route::post('/test-payload', [WhatsPieControllers::class, 'testPayload'])->name('test.payload');
+
+        // Device Info
+        Route::get('/device/{deviceId}', [WhatsPieControllers::class, 'deviceDetail'])->name('device.detail');
+
+        // === TAMBAHAN BARU ===
+        // Device Management
+        Route::post('/devices/add', [WhatsPieControllers::class, 'addDevice'])->name('devices.add');
+        Route::delete('/devices/{device}', [WhatsPieControllers::class, 'deleteDevice'])->name('devices.delete');
+        Route::post('/devices/{device}/restart', [WhatsPieControllers::class, 'restartDevice'])->name('devices.restart');
+        Route::get('/devices/{device}/qr', [WhatsPieControllers::class, 'getDeviceQr'])->name('devices.qr');
+        Route::get('/connection-test', [WhatsPieControllers::class, 'testConnection'])->name('connection.test');
+    });
+
+    // API Routes untuk frontend
+    Route::prefix('api/whatspie')->name('api.whatspie.')->group(function () {
+        Route::get('/devices', [WhatsPieControllers::class, 'apiGetDevices'])->name('devices');
+        Route::post('/send-message', [WhatsPieControllers::class, 'apiSendMessage'])->name('send.message');
+
+        // === TAMBAHAN BARU ===
+        Route::post('/devices/add', [WhatsPieControllers::class, 'apiAddDevice'])->name('devices.add');
+        Route::delete('/devices/{device}', [WhatsPieControllers::class, 'apiDeleteDevice'])->name('devices.delete');
+        Route::post('/devices/{device}/restart', [WhatsPieControllers::class, 'apiRestartDevice'])->name('devices.restart');
+        Route::get('/devices/{device}/qr', [WhatsPieControllers::class, 'apiGetDeviceQr'])->name('devices.qr');
+        Route::get('/connection-test', [WhatsPieControllers::class, 'apiTestConnection'])->name('connection.test');
+    });
+    // ***
     //dashboard
     Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard')->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
     Route::get('/dashboard-debug', function () {

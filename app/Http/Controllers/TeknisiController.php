@@ -269,6 +269,8 @@ class TeknisiController extends Controller
                 'gps'             => $request->gps,
             ]);
 
+            $customer->refresh();
+
             LOG::info('Konfirmasi Installasi', [
                 'customer_id' => $customer->id,
                 'tanggal_selesai' => $tanggalSelesai,

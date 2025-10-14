@@ -225,7 +225,7 @@
                     </div>
                     <div class="text-end d-flex align-items-center gap-2">
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
-                            <i class="bx bx-receipt me-1"></i>{{ $invoices->total() }} Invoice
+                            <i class="bx bx-user me-1"></i>{{ $totalPelanggan }} Pelanggan
                         </span>
                     </div>
                 </div>

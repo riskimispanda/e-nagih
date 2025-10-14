@@ -56,18 +56,31 @@ class Analytics extends Controller
       ->get();
 
     $today = Carbon::today()->toDateString();
-    $pelangganLunas = Invoice::where('status_id', 8)
-      ->whereHas('customer', fn($q) => $q->withTrashed())
-      ->get()
-      ->reduce(fn($carry, $invoice) => $carry + $invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - $invoice->saldo, 0);
+    $pelangganLunas = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)
+      ->whereYear('tanggal_bayar', Carbon::now()->year)
+      ->whereHas('invoice', function ($q) {
+        $q->whereHas('customer', function ($r) {
+          $r->withTrashed();
+        });
+      })
+      ->sum('jumlah_bayar');
 
-    $countPelangganLunas = Invoice::where('status_id', 8)
-      ->whereHas('customer', fn($q) => $q->withTrashed())
-      ->count();
+    $countPelangganLunas = Invoice::distinct('customer_id')
+      ->where('status_id', 8)
+      ->whereHas('customer', function ($query) {
+        $query->withTrashed();
+      })
+      ->whereHas('pembayaran', function ($q) {
+        $q->whereMonth('tanggal_bayar', Carbon::now()->month);
+        $q->whereYear('tanggal_bayar', Carbon::now()->year);
+      })
+      ->count('customer_id');
 
     // Lebih efisien dengan sum di database
     $pelangganBelumLunas = Invoice::where('status_id', 7)
       ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
+      ->whereMonth('jatuh_tempo', Carbon::now()->month)
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
       ->get()
       ->sum(function ($invoice) {
         return ($invoice->tagihan ?? 0) +
@@ -76,9 +89,11 @@ class Analytics extends Controller
           ($invoice->saldo ?? 0);
       });
 
-    $countPelangganBelumLunas = Invoice::where('status_id', 7)
+    $countPelangganBelumLunas = Invoice::distinct('customer_id')->where('status_id', 7)
       ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
-      ->count();
+      ->whereMonth('jatuh_tempo', Carbon::now()->month)
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
+      ->count('customer_id');
 
     $todaySchedules = Schedules::active()
       ->where('user_id', auth()->id())
@@ -89,7 +104,9 @@ class Analytics extends Controller
     $langganan = Pembayaran::sum('jumlah_bayar');
     $nonLangganan = Pendapatan::sum('jumlah_pendapatan');
     $pengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
-    $totalPendapatan = $langganan + $nonLangganan - $pengeluaran;
+    $totalPendapatan = $langganan + $nonLangganan;
+
+    $labaRugi = $langganan + $nonLangganan - $pengeluaran;
 
     // Total Pengeluaran - tetap include semua
     $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
@@ -112,7 +129,8 @@ class Analytics extends Controller
       'pelangganBelumLunas' => $pelangganBelumLunas,
       'countBelumLunas' => $countPelangganBelumLunas,
       'open' => $open,
-      'closed' => $closed
+      'closed' => $closed,
+      'laba' => $labaRugi
     ]);
   }
 
