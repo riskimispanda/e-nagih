@@ -18,7 +18,7 @@ class GenerateInvoice extends Command
         $jatuhTempoBulanDepan = $bulanDepan->endOfMonth();
 
         // Hanya ambil customer aktif yang TIDAK di-soft delete
-        $pelangganAktif = Customer::where('status_id', 3)
+        $pelangganAktif = Customer::whereIn('status_id', [3, 4, 9])
             ->whereNull('deleted_at') // Pastikan tidak soft deleted
             ->get();
 
@@ -40,13 +40,6 @@ class GenerateInvoice extends Command
 
             if (!$invoiceTerakhir) {
                 $this->info("⛔ {$customer->nama_customer} belum punya invoice. Lewati.");
-                $skippedCount++;
-                continue;
-            }
-
-            // Gunakan status_id untuk cek pembayaran (8 = sudah bayar)
-            if ($invoiceTerakhir->status_id != 8) {
-                $this->warn("❌ {$customer->nama_customer} status invoice terakhir belum dibayar (status_id = {$invoiceTerakhir->status_id}). Lewati.");
                 $skippedCount++;
                 continue;
             }

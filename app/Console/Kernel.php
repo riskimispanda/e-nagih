@@ -18,11 +18,13 @@ class Kernel extends ConsoleKernel
         // Jalankan pengecekan pembayaran setiap hari pada pukul 00:05 WIB (GMT+7)
         $schedule->command('app:cek-payment')
             ->monthlyOn(10, '00:01')
-            ->timezone('Asia/Jakarta')
-            ->appendOutputTo(storage_path('logs/cek-payment.log'));
+            ->timezone('Asia/Jakarta');
 
         $schedule->command('app:test-command')->everyMinute();
-        $schedule->command('app:generate-invoice')->everyMinute();
+        $schedule->command('app:generate-invoice')
+            ->monthlyOn(1, '00:01')
+            ->timezone('Asia/Jakarta') // Sesuaikan timezone
+            ->description('Generate invoice untuk bulan depan');
         $schedule->command('app:send-warning')->dailyAt('08:00');
         $schedule->call(function () {
             foreach (Router::all() as $router) {
