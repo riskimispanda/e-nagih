@@ -6,11 +6,12 @@ use Illuminate\Console\Command;
 use App\Models\Customer;
 use App\Models\Invoice;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class GenerateInvoice extends Command
 {
     protected $signature = 'app:generate-invoice';
-    protected $description = 'Buat invoice bulan depan jika invoice terakhir statusnya sudah dibayar (status_id = 8)';
+    protected $description = 'Buat invoice bulan depan untuk semua customer aktif';
 
     public function handle()
     {
@@ -72,6 +73,14 @@ class GenerateInvoice extends Command
             $this->info("✅ Invoice dibuat untuk {$customer->nama_customer} | Rp " . number_format($invoice->tagihan, 0, ',', '.') . " | Jatuh Tempo: " . $invoice->jatuh_tempo->format('d-m-Y'));
             $generatedCount++;
         }
+
+        // Di akhir method handle()
+        Log::info('Generate Invoice Completed', [
+            'generated' => $generatedCount,
+            'skipped' => $skippedCount,
+            'soft_deleted' => $softDeletedCount,
+            'bulan_depan' => $bulanDepan->format('F Y')
+        ]);
 
         // Summary
         $this->info("\n🎯 SUMMARY GENERATE INVOICE:");
