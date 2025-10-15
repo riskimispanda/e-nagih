@@ -1320,7 +1320,7 @@
                                     <td>
                                         <div>
                                             <div>{{$item->nama_customer}}</div>
-                                            <div>{{ $item->alamat }}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
                                         </div>
                                     </td>
                                     <td>
@@ -1373,7 +1373,7 @@
                                     <td>
                                         <div>
                                             <div>{{$item->nama_customer}}</div>
-                                            <div>{{ $item->alamat }}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
                                         </div>
                                     </td>
                                     <td>
@@ -1421,7 +1421,7 @@
                                     <td>
                                         <div>
                                             <div>{{$item->nama_customer}}</div>
-                                            <div class="text-muted">{{ $item->alamat }}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
                                         </div>
                                     </td>
                                     <td>
@@ -1475,7 +1475,7 @@
                                     <td>
                                         <div>
                                             <div>{{$item->nama_customer}}</div>
-                                            <div>{{ $item->alamat }}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
                                         </div>
                                     </td>
                                     <td>{{$item->no_hp}}</td>
@@ -1526,7 +1526,7 @@
                                     <td>
                                         <div>
                                             <div>{{$item->nama_customer}}</div>
-                                            <div>{{ $item->alamat }}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
                                         </div>
                                     </td>
                                     <td>{{$item->no_hp}}</td>
