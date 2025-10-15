@@ -1767,7 +1767,7 @@ class KeuanganController extends Controller
                 'bukti_bayar'     => $buktiPath,
                 'saldo'           => $saldoBaru,
             ]);
-
+            $pembayaran->refresh();
             // Notifikasi
             $chat = new ChatServices();
             $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);

@@ -886,7 +886,8 @@
 </div>
 @endforeach
 
-
+<!-- Tambahkan ini di bagian bawah content, sebelum loading overlay -->
+<div id="ajaxModalsContainer"></div>
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay d-none">
     <div class="loading-content">
@@ -926,16 +927,23 @@
             if (totalInput) totalInput.value = toRupiah(total);
         }
 
-        // Binding event ke semua checkbox
-        document.querySelectorAll(".pilihan").forEach(function (checkbox) {
-            checkbox.addEventListener("change", function () {
-                recalcTotal(this.getAttribute("data-id"));
+        // Binding event ke semua checkbox - VERSI UPDATE UNTUK MODAL AJAX
+        function initializeModalCheckboxes() {
+            document.querySelectorAll(".pilihan").forEach(function (checkbox) {
+                // Hapus event listener lama jika ada
+                checkbox.removeEventListener("change", handleCheckboxChange);
+                // Tambah event listener baru
+                checkbox.addEventListener("change", handleCheckboxChange);
             });
-        });
+        }
 
-        // Hitung awal (optional)
-        const ids = new Set([...document.querySelectorAll(".pilihan")].map(el => el.getAttribute("data-id")));
-        ids.forEach(id => recalcTotal(id));
+        function handleCheckboxChange() {
+            const invoiceId = this.getAttribute("data-id");
+            recalcTotal(invoiceId);
+        }
+
+        // Initialize pertama kali
+        initializeModalCheckboxes();
     });
 </script>
 <script>
@@ -964,14 +972,13 @@
                 searchTimeout = setTimeout(() => {
                     // Reset ke page 1 saat search
                     loadDataWithAjax(getCurrentPerPage(), 1);
-                }, 800); // Kurangi delay menjadi 800ms
+                }, 800);
             });
         }
     }
     
     // Initialize filter functionality
-    function initializeFilters() 
-    {
+    function initializeFilters() {
         const bulanSelect = document.getElementById('bulan');
         
         if (bulanSelect) {
@@ -1050,11 +1057,6 @@
             }
         }
         
-        // Debug: log search parameters
-        const searchValue = document.getElementById('searchInput').value;
-        const bulanValue = document.getElementById('bulan').value;
-        console.log('AJAX Request - Search:', searchValue, 'Bulan:', bulanValue);
-        
         // Add per_page and page parameters
         params.append('per_page', perPage);
         if (page > 1) {
@@ -1071,9 +1073,7 @@
             }
         })
         .then(response => {
-            console.log('Response Status:', response.status);
             if (!response.ok) {
-                // Try to get error message from response
                 return response.json().then(errorData => {
                     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
                 }).catch(() => {
@@ -1083,11 +1083,13 @@
             return response.json();
         })
         .then(data => {
-            console.log('AJAX Response:', data);
             if (data.success) {
                 updateTableWithAjax(data.data.invoices, data.data.pagination);
                 updateStatistics(data.data.statistics);
                 updatePaginationWithAjax(data.data.pagination, perPage);
+                
+                // GENERATE MODAL DARI DATA AJAX
+                generateModalsFromAjaxData(data.data.invoices);
                 
                 const totalVisible = perPage === 'all' ? data.data.invoices.length : Math.min(parseInt(perPage), data.data.invoices.length);
                 showNotification(`Menampilkan ${totalVisible} entri`, 'success');
@@ -1102,6 +1104,205 @@
         .finally(() => {
             hideLoading();
         });
+    }
+    
+    // GENERATE MODAL DARI DATA AJAX
+    function generateModalsFromAjaxData(invoices) {
+        const modalContainer = document.getElementById('ajaxModalsContainer');
+        if (!modalContainer) return;
+        
+        // Hapus modal lama
+        modalContainer.innerHTML = '';
+        
+        // Generate modal baru untuk setiap invoice
+        invoices.forEach(invoice => {
+            const modalHTML = createModalHTML(invoice);
+            modalContainer.innerHTML += modalHTML;
+        });
+        
+        // Re-initialize modal event listeners
+        initializeModalEventListeners();
+    }
+    
+    // CREATE MODAL HTML DARI DATA INVOICE
+    function createModalHTML(invoice) {
+        const jatuhTempo = invoice.jatuh_tempo ? new Date(invoice.jatuh_tempo).toISOString().split('T')[0] : '';
+        
+        return `
+        <div class="modal fade" id="konfirmasiPembayaran${invoice.id}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title mb-6">
+                            <i class="bx bx-wallet me-2 text-danger"></i>
+                            Konfirmasi Pembayaran <span class="text-danger fw-bold">${invoice.customer?.nama_customer || 'N/A'}</span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="/request/pembayaran/${invoice.id}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <input type="hidden" name="invoice_id" value="${invoice.id}">
+                            
+                            <div class="row">
+                                <div class="col mb-4">
+                                    <label class="form-label">Tanggal Jatuh Tempo</label>
+                                    <input type="date" class="form-control" value="${jatuhTempo}" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col mb-4">
+                                    <label class="form-label">Tipe Pembayaran</label>
+                                    <select name="tipe_pembayaran" class="form-select" required>
+                                        <option value="">Pilih Tipe Pembayaran</option>
+                                        <option value="reguler">Pembayaran Reguler</option>
+                                        <option value="diskon">Pembayaran Diskon</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col mb-4 col-lg-4">
+                                    <label class="form-label mb-2">Tagihan</label>
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input pilihan" 
+                                               name="bayar[]" 
+                                               value="tagihan" 
+                                               data-amount="${invoice.tagihan || 0}" 
+                                               data-id="${invoice.id}">
+                                        <label class="form-check-label">
+                                            Rp ${formatNumber(invoice.tagihan || 0)}
+                                        </label>
+                                    </div>
+                                </div>
+                            
+                                <div class="col mb-4 col-lg-4">
+                                    <label class="form-label mb-2">Biaya Tambahan</label>
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input pilihan" 
+                                               name="bayar[]" 
+                                               value="tambahan" 
+                                               data-amount="${invoice.tambahan || 0}" 
+                                               data-id="${invoice.id}">
+                                        <label class="form-check-label">
+                                            Rp ${formatNumber(invoice.tambahan || 0)}
+                                        </label>
+                                    </div>
+                                </div>
+                            
+                                <div class="col mb-4 col-lg-4">
+                                    <label class="form-label mb-2">Tunggakan</label>
+                                    <div class="form-check">
+                                        <input type="checkbox" 
+                                               class="form-check-input pilihan" 
+                                               name="bayar[]" 
+                                               value="tunggakan" 
+                                               data-amount="${invoice.tunggakan || 0}" 
+                                               data-id="${invoice.id}">
+                                        <label class="form-check-label">
+                                            Rp ${formatNumber(invoice.tunggakan || 0)}
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col mb-4 col-lg-4">
+                                    <label class="form-label mb-2">Sisa Saldo</label>
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                            class="form-check-input pilihan"
+                                            name="saldo"
+                                            value="${invoice.saldo || 0}"
+                                            data-amount="${invoice.saldo || 0}"
+                                            data-id="${invoice.id}"
+                                            data-type="saldo">
+                                        <label class="form-check-label">
+                                            Rp ${formatNumber(invoice.saldo || 0)}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-12 mb-4 col-lg-12">
+                                    <label class="form-label">Total</label>
+                                    <input type="text" id="total${invoice.id}" class="form-control" name="total" value="Rp 0" readonly>
+                                </div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col mb-4 col-lg-6">
+                                    <label class="form-label">Jumlah Bayar</label>
+                                    <input type="text" class="form-control" id="revenueAmount${invoice.id}" name="revenueAmount" oninput="formatRupiah(this, ${invoice.id})" placeholder="Masukkan jumlah bayar" required>
+                                    <input type="hidden" id="raw${invoice.id}" name="jumlah_bayar">
+                                </div>
+                                <div class="col mb-4 col-lg-6">
+                                    <label class="form-label">Metode Pembayaran</label>
+                                    <select name="metode_id" class="form-select">
+                                        <option value="" selected disabled>Pilih Metode Pembayaran</option>
+                                        ${generateMetodeOptions()}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col mb-4 col-lg-12">
+                                    <label class="form-label">Bukti Pembayaran</label>
+                                    <input type="file" class="form-control" name="bukti_pembayaran">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="bx bx-send me-1"></i>Confirm
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        `;
+    }
+    
+    // GENERATE METODE OPTIONS (gunakan data dari PHP yang sudah ada di page)
+    function generateMetodeOptions() {
+        // Anda bisa mengembalikan string kosong, atau jika perlu bisa ditambahkan logic
+        // untuk generate options dari data yang sudah ada
+        return '';
+    }
+    
+    // INITIALIZE MODAL EVENT LISTENERS
+    function initializeModalEventListeners() {
+        // Re-initialize checkbox calculations untuk modal yang baru
+        document.querySelectorAll(".pilihan").forEach(function (checkbox) {
+            checkbox.addEventListener("change", function () {
+                const invoiceId = this.getAttribute("data-id");
+                recalcTotalModal(invoiceId);
+            });
+        });
+    }
+    
+    // RECALC TOTAL UNTUK MODAL (VERSI UPDATE)
+    function recalcTotalModal(invoiceId) {
+        let total = 0;
+
+        const checkedItems = document.querySelectorAll('.pilihan[data-id="' + invoiceId + '"]:checked:not([data-type="saldo"])');
+        checkedItems.forEach(function (item) {
+            const amount = parseInt(item.getAttribute("data-amount")) || 0;
+            total += amount;
+        });
+
+        const saldoCb = document.querySelector('.pilihan[data-id="' + invoiceId + '"][data-type="saldo"]');
+        if (saldoCb && saldoCb.checked) {
+            const saldoAmount = parseInt(saldoCb.getAttribute("data-amount")) || parseInt(saldoCb.value) || 0;
+            total = Math.max(total - saldoAmount, 0);
+        }
+
+        const totalInput = document.getElementById("total" + invoiceId);
+        if (totalInput) totalInput.value = "Rp " + (total || 0).toLocaleString("id-ID");
     }
     
     // Update table with AJAX data
@@ -1136,7 +1337,7 @@
             }
             
             tableHTML += `
-                <tr>
+                <tr class="${invoice.customer?.trashed ? 'bg-danger bg-opacity-10' : ''}">
                     <td class="fw-medium">${rowNumber}</td>
                     <td>
                         <div>
@@ -1148,6 +1349,7 @@
                         <span class="badge bg-info bg-opacity-10 text-primary">
                             ${invoice.paket?.nama_paket || 'N/A'}
                         </span>
+                        ${invoice.customer?.trashed ? '<span class="badge bg-label-danger mt-2">Deaktivasi</span>' : ''}
                     </td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -1212,7 +1414,6 @@
         if (!paginationContainer) return;
         
         if (perPage === 'all') {
-            // Show info for all entries but hide pagination controls
             paginationContainer.style.display = 'block';
             const totalRecords = pagination ? pagination.total : 0;
             paginationContainer.innerHTML = `
@@ -1226,20 +1427,16 @@
         }
         
         if (!pagination) {
-            // Hide pagination when no pagination data
             paginationContainer.style.display = 'none';
             return;
         }
         
-        // Show pagination container
         paginationContainer.style.display = 'block';
         
-        // Generate pagination info
         const fromRecord = pagination.from || 0;
         const toRecord = pagination.to || 0;
         const totalRecords = pagination.total || 0;
         
-        // Generate pagination HTML with info
         let paginationHTML = `
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
                 <div class="text-muted small">
@@ -1250,7 +1447,6 @@
                         <ul class="pagination pagination-sm justify-content-center mb-0">
         `;
         
-        // Previous button
         if (pagination.current_page > 1) {
             paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
@@ -1261,7 +1457,6 @@
             </li>`;
         }
         
-        // Page numbers
         const startPage = Math.max(1, pagination.current_page - 2);
         const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
         
@@ -1295,7 +1490,6 @@
             </li>`;
         }
         
-        // Next button
         if (pagination.current_page < pagination.last_page) {
             paginationHTML += `<li class="page-item">
                 <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
@@ -1313,10 +1507,8 @@
             </div>
         `;
         
-        // Update pagination container
         paginationContainer.innerHTML = paginationHTML;
         
-        // Add event listeners to pagination links
         const paginationLinks = paginationContainer.querySelectorAll('.ajax-pagination');
         paginationLinks.forEach(link => {
             link.addEventListener('click', function(e) {
@@ -1333,48 +1525,23 @@
         return entriesSelect ? entriesSelect.value : 25;
     }
     
-    // Apply filters using AJAX (tidak redirect)
-    function applyFilters() {
-        if (isLoading) return;
-        
-        showLoading();
-        
-        const formData = new FormData(document.getElementById('filterForm'));
-        const params = new URLSearchParams();
-        
-        for (let [key, value] of formData.entries()) {
-            if (value.trim() !== '') {
-                params.append(key, value);
-            }
-        }
-        
-        // GUNAKAN AJAX, BUKAN REDIRECT
-        loadDataWithAjax(getCurrentPerPage(), 1);
-    }
-    
     // Update statistics cards
     function updateStatistics(stats) {
-        console.log('Updating statistics:', stats);
-
-        // Update Total Pendapatan using ID
         const totalRevenueElement = document.getElementById('totalRevenueValue');
         if (totalRevenueElement) {
             totalRevenueElement.textContent = `Rp ${formatNumber(stats.totalRevenue || 0)}`;
         }
 
-        // Update Jumlah Pembayaran using ID
         const monthlyRevenueElement = document.getElementById('monthlyRevenueValue');
         if (monthlyRevenueElement) {
             monthlyRevenueElement.textContent = `Rp ${formatNumber(stats.monthlyRevenue || 0)}`;
         }
 
-        // Update Pendapatan Tertunda using ID
         const pendingRevenueElement = document.getElementById('pendingRevenueValue');
         if (pendingRevenueElement) {
             pendingRevenueElement.textContent = `Rp ${formatNumber(stats.pendingRevenue || 0)}`;
         }
         
-        // Update Total Invoice using ID
         const totalInvoicesElement = document.getElementById('totalInvoicesValue');
         if (totalInvoicesElement) {
             totalInvoicesElement.textContent = formatNumber(stats.totalInvoices || 0);
@@ -1431,10 +1598,19 @@
         
         if (invoice.status && invoice.status.nama_status === 'Belum Bayar') {
             buttons += `
-                <button class="action-btn bg-success bg-opacity-10 text-success btn-sm" data-bs-target="#konfirmasiPembayaran${invoice.id}" data-bs-toggle="modal">
+                <button class="action-btn bg-success bg-opacity-10 text-success btn-sm 
+                    ${invoice.customer?.trashed ? 'disabled' : ''}" 
+                    data-bs-target="#konfirmasiPembayaran${invoice.id}" 
+                    data-bs-toggle="modal"
+                    ${invoice.customer?.trashed ? 'disabled' : ''}>
                     <i class="bx bx-money"></i>
                 </button>
-                <a href="/riwayatPembayaran/${invoice.customer_id}" class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="History Pembayaran">
+                <a href="/riwayatPembayaran/${invoice.customer_id}" 
+                   class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary 
+                   ${invoice.customer?.trashed ? 'disabled' : ''}" 
+                   data-bs-toggle="tooltip" 
+                   data-bs-placement="bottom" 
+                   title="History Pembayaran">
                     <i class="bx bx-history"></i>
                 </a>
             `;
@@ -1443,15 +1619,24 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         
         buttons += `
-            <a href="/kirim/invoice/${invoice.id}" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice">
+            <a href="/kirim/invoice/${invoice.id}" 
+               class="action-btn bg-warning bg-opacity-10 text-warning btn-sm 
+               ${invoice.customer?.trashed ? 'disabled' : ''}" 
+               data-bs-toggle="tooltip" 
+               data-bs-placement="bottom" 
+               title="Kirim Invoice"
+               ${invoice.customer?.trashed ? 'onclick="return false;"' : ''}>
                 <i class="bx bx-message"></i>
             </a>
             <form action="/tripay/sync-payment/${invoice.id}" method="POST" style="display:inline">
                 <input type="hidden" name="_token" value="${csrfToken}">
                 <button type="submit" 
-                    class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" 
-                    data-bs-toggle="tooltip" data-bs-placement="bottom" 
-                    title="Sync Payment">
+                    class="action-btn bg-danger bg-opacity-10 text-danger btn-sm 
+                    ${invoice.customer?.trashed ? 'disabled' : ''}" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="bottom" 
+                    title="Sync Payment"
+                    ${invoice.customer?.trashed ? 'disabled' : ''}>
                     <i class="bx bx-cart"></i>
                 </button>
             </form>
@@ -1460,19 +1645,16 @@
         return buttons;
     }
     
-    
-    // Refresh data - gunakan AJAX untuk konsistensi
+    // Refresh data
     function refreshData() {
         if (isLoading) return;
         
         showLoading();
         
-        // Reset form tapi tetap pertahankan bulan default
-        const currentMonth = new Date().getMonth() + 1; // Bulan sekarang (1-12)
+        const currentMonth = new Date().getMonth() + 1;
         document.getElementById('filterForm').reset();
-        document.getElementById('bulan').value = currentMonth; // Set ke bulan sekarang
+        document.getElementById('bulan').value = currentMonth;
         
-        // Load data dengan AJAX
         loadDataWithAjax(getCurrentPerPage(), 1);
     }
     
@@ -1496,7 +1678,6 @@
     
     // Show notification
     function showNotification(message, type = 'info') {
-        // Create notification element
         const notification = document.createElement('div');
         notification.className = `position-fixed top-0 end-0 p-3`;
         notification.style.zIndex = '9999';
@@ -1520,7 +1701,6 @@
         
         document.body.appendChild(notification);
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
@@ -1534,34 +1714,7 @@
             e.preventDefault();
             const link = e.target.closest('.ajax-pagination');
             const page = link.getAttribute('data-page');
-            
-            // Use AJAX for pagination navigation
             loadDataWithAjax(getCurrentPerPage(), page);
-        } else if (e.target.closest('.pagination a')) {
-            e.preventDefault();
-            const link = e.target.closest('.pagination a');
-            
-            // Check if it's an AJAX pagination link
-            if (link.classList.contains('ajax-pagination')) {
-                const page = link.getAttribute('data-page');
-                loadDataWithAjax(getCurrentPerPage(), page);
-            } else {
-                // Handle regular pagination (fallback to page reload)
-                const url = new URL(link.href);
-                
-                // Get current form data
-                const formData = new FormData(document.getElementById('filterForm'));
-                
-                // Add form data to pagination URL
-                for (let [key, value] of formData.entries()) {
-                    if (value.trim() !== '') {
-                        url.searchParams.set(key, value);
-                    }
-                }
-                
-                showLoading();
-                window.location.href = url.toString();
-            }
         }
     });
 
@@ -1570,14 +1723,12 @@
         let angka = el.value.replace(/[^0-9]/g, '');
         let number = parseInt(angka, 10) || 0;
         
-        // Format tampilan
         el.value = number.toLocaleString('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0
         });
         
-        // Simpan nilai bersih ke input hidden
         const rawInput = document.getElementById('raw' + id);
         if (rawInput) {
             rawInput.value = number;
@@ -1591,14 +1742,12 @@
         let angka = el.value.replace(/[^0-9]/g, '');
         let number = parseInt(angka, 10) || 0;
         
-        // Format tampilan
         el.value = number.toLocaleString('id-ID', {
             style: 'currency',
             currency: 'IDR',
             minimumFractionDigits: 0
         });
         
-        // Simpan nilai bersih ke input hidden
         const rawInput = document.getElementById('raw' + id);
         if (rawInput) {
             rawInput.value = number;
@@ -1621,27 +1770,20 @@
             document.getElementById('revenueTable').style.display = 'none';
         }
     });
-    
 </script>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // jQuery untuk sync payment (jika diperlukan)
     if (typeof jQuery !== 'undefined') {
         $(document).ready(function() {
             $('.sync-payment-btn').click(function(e) {
                 e.preventDefault();
-
                 var invoiceId = $(this).data('invoice-id');
-
                 $.ajax({
                     url: '/tripay/sync-payment/' + invoiceId,
                     type: 'POST',
                     data: {
                         _token: '{{ csrf_token() }}'
-                    },
-                    beforeSend: function() {
-                        // opsional: tampilkan loading
                     },
                     success: function(response) {
                         alert(response.message || 'Sync berhasil!');
