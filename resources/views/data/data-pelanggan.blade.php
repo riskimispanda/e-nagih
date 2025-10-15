@@ -1317,7 +1317,12 @@
                             @forelse ($antrian as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <div>{{ $item->alamat }}</div>
+                                        </div>
+                                    </td>
                                     <td>
                                         @if ($item->status_id == 1)
                                             <span class="badge bg-warning bg-opacity-10 text-warning">Menunggu</span>
@@ -1365,7 +1370,12 @@
                             @forelse ($selesai as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <div>{{ $item->alamat }}</div>
+                                        </div>
+                                    </td>
                                     <td>
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
@@ -1408,7 +1418,12 @@
                             @forelse ($installasiBulanan as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <div class="text-muted">{{ $item->alamat }}</div>
+                                        </div>
+                                    </td>
                                     <td>
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
@@ -1422,7 +1437,7 @@
                                 </tr>
                             @empty
                             <tr>
-                                <td colspan="4">Tidak ada data</td>
+                                <td colspan="6">Tidak ada data</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -1457,7 +1472,12 @@
                             @forelse ($nonAktif as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <div>{{ $item->alamat }}</div>
+                                        </div>
+                                    </td>
                                     <td>{{$item->no_hp}}</td>
                                     <td>
                                         <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
@@ -1503,7 +1523,12 @@
                             @forelse ($maintenance as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{$item->nama_customer}}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <div>{{ $item->alamat }}</div>
+                                        </div>
+                                    </td>
                                     <td>{{$item->no_hp}}</td>
                                     <td>
                                         <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
