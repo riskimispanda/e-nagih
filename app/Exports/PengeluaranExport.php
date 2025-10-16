@@ -41,8 +41,9 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
             'Keterangan',
             'Jumlah Pengeluaran',
             'Metode Pengeluaran',
+            'Jenis Kas',
             'Status',
-            'Admin'
+            'Admin',
         ];
     }
 
@@ -57,9 +58,10 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
             $pengeluaran->jenis_pengeluaran,
             $pengeluaran->keterangan,
             $pengeluaran->jumlah_pengeluaran,
-            $pengeluaran->metode_pengeluaran,
+            $pengeluaran->metode_bayar,
+            $pengeluaran->kas->jenis_kas,
             $this->getStatusText($pengeluaran->status_id),
-            $pengeluaran->user->name ?? 'N/A'
+            $pengeluaran->user->name ?? 'N/A',
         ];
     }
 
@@ -95,8 +97,9 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
             'D' => 30, // Keterangan
             'E' => 18, // Jumlah
             'F' => 18, // Metode
-            'G' => 20, // Status
-            'H' => 15, // Admin
+            'G' => 15, // Jenis Kas
+            'H' => 20, // Status
+            'I' => 15, // Admin
         ];
     }
 
