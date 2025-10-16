@@ -246,6 +246,11 @@ Route::middleware(['auth'])->group(function () {
         }
     })->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')->name('pelanggan');
 
+    // * Export Pengeluaran
+    // Routes untuk Export Excel Pengeluaran
+    Route::get('/pengeluaran/export/all', [PengeluaranController::class, 'exportAll'])->name('pengeluaran.export.all');
+    Route::get('/pengeluaran/export/month/{month}', [PengeluaranController::class, 'exportByMonth'])->name('pengeluaran.export.month');
+
     // * WhatsPie End Point
     Route::prefix('whatspie')->name('whatspie.')->group(function () {
         // Dashboard

@@ -88,6 +88,42 @@ class WhatspieServices
         }
     }
 
+    public function getPhoneNumber()
+    {
+        try {
+            $devicesResult = $this->getDevices();
+
+            if ($devicesResult['success'] && !empty($devicesResult['data'])) {
+                $phones = [];
+
+                foreach ($devicesResult['data'] as $device) {
+                    if (isset($device['phone']) && !empty($device['phone'])) {
+                        $phones[] = $device['phone']; // Langsung push string phone
+                    }
+                }
+
+                return [
+                    'success' => true,
+                    'phones' => $phones, // Sekarang berisi array of strings
+                    'total' => count($phones)
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => $devicesResult['error'] ?? 'No devices found',
+                'phones' => []
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsPieService getPhoneNumber Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'phones' => []
+            ];
+        }
+    }
+
     /**
      * GET /devices/{phone} - Device info berdasarkan nomor
      */
@@ -240,7 +276,7 @@ class WhatspieServices
     /**
      * POST /devices - Tambah device baru di Whatspie
      */
-    public function addNewDevice($customDeviceName = null, $package = 'Beta Tester')
+    public function addNewDevice($customDeviceName = null, $package = 'BETA')
     {
         try {
             $url = $this->baseUrl . '/devices';

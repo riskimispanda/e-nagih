@@ -168,15 +168,6 @@
             "Super Admin",
             "Admin Keuangan"
           ]
-        },
-        {
-          "url": "/data/pengeluaran",
-          "name": "Data Pengeluaran",
-          "slug": "pengeluaran",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
         }
       ]
     },

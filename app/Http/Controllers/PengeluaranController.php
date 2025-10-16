@@ -13,6 +13,9 @@ use Carbon\Carbon;
 use Spatie\Activitylog\Models\Activity;
 use App\Models\Pendapatan;
 use App\Models\Pembayaran;
+use App\Exports\PengeluaranExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PengeluaranController extends Controller
 {
@@ -157,6 +160,11 @@ class PengeluaranController extends Controller
             'status_id' => 1
         ]);
 
+        // Log
+        activity('Request Hapus Pengeluaran')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' Request Hapus Pengeluaran');
+
         return redirect()->back()->with('success', 'Pengeluaran berhasil direquest');
     }
 
@@ -193,7 +201,10 @@ class PengeluaranController extends Controller
             Rab::where('id', $hapus->rab_id)->update([
                 'status_id' => 11
             ]);
-
+            // Log
+            activity('Tolak Hapus Pengeluaran')
+                ->causedBy(auth()->user())
+                ->log(auth()->user()->name . ' Tolak Hapus Pengeluaran');
             return redirect('/pengeluaran/global')->with('success', 'Pengeluaran berhasil ditolak');
         }
 
@@ -210,7 +221,10 @@ class PengeluaranController extends Controller
             Rab::where('id', $hapus->rab_id)->update([
                 'status_id' => 12
             ]);
-
+            // Log
+            activity('Konrifmasi Hapus Pengeluaran')
+                ->causedBy(auth()->user())
+                ->log(auth()->user()->name . ' Mengkonfirmasi Hapus Pengeluaran');
             return redirect('/pengeluaran/global')->with('success', 'Pengeluaran berhasil dihapus');
         }
 
@@ -238,6 +252,11 @@ class PengeluaranController extends Controller
         $pengeluaran = Pengeluaran::findOrFail($id);
         // dd($pengeluaran);
         $pengeluaran->update($request->all());
+
+        // Log
+        activity('Request Hapus Pengeluaran')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' melakukan Edit data pengeluaran');
         return redirect('/pengeluaran/global')->with('toast_success', 'Pengeluaran Berhasil diperbarui');
     }
 
@@ -303,5 +322,64 @@ class PengeluaranController extends Controller
         ];
 
         return response()->json($data);
+    }
+
+    public function exportAll(): BinaryFileResponse
+    {
+        // Increase memory limit and execution time
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300);
+
+        $filename = 'pengeluaran-semua-data-' . date('Y-m-d-His') . '.xlsx';
+
+        // Log
+        activity('Export Pengeluaran')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' Melakukan export semua data pengeluaran');
+
+        return Excel::download(new PengeluaranExport(), $filename, \Maatwebsite\Excel\Excel::XLSX, [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
+    }
+
+    /**
+     * Export data pengeluaran berdasarkan bulan ke Excel dengan memory management
+     */
+    public function exportByMonth($month): BinaryFileResponse
+    {
+        // Increase memory limit and execution time
+        ini_set('memory_limit', '256M');
+        ini_set('max_execution_time', 180);
+
+        $bulan = [
+            '1' => 'Januari',
+            '2' => 'Februari',
+            '3' => 'Maret',
+            '4' => 'April',
+            '5' => 'Mei',
+            '6' => 'Juni',
+            '7' => 'Juli',
+            '8' => 'Agustus',
+            '9' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember'
+        ];
+
+        $namaBulan = $bulan[$month] ?? 'Bulan';
+        $filename = 'pengeluaran-' . strtolower($namaBulan) . '-' . date('Y') . '.xlsx';
+
+        // Log
+        activity('Export Pengeluaran')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' Melakukan export data pengeluaran bulan: ' . $namaBulan);
+
+        return Excel::download(new PengeluaranExport($month), $filename, \Maatwebsite\Excel\Excel::XLSX, [
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
     }
 }

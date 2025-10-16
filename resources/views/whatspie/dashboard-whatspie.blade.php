@@ -301,7 +301,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Package</label>
                                 <select id="devicePackage" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200">
                                     <option value="STARTUP240K">STARTUP240K</option>
-                                    <option value="Beta Tester">BETA</option>
+                                    <option value="BETA">BETA</option>
                                     <!-- Tambahkan package lain sesuai yang tersedia di akun Anda -->
                                 </select>
                             </div>

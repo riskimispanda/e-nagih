@@ -204,7 +204,7 @@
                 
                 <!-- Summary Cards -->
                 <div class="row mb-5 g-3">
-
+                    
                     <div class="col-lg-6 col-md-6">
                         <div class="card shadow-sm border-0 bg-info hover-shadow" style="transition: all 0.3s ease;">
                             <div class="card-body p-3 p-sm-4">
@@ -237,7 +237,7 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     <div class="col-lg-3 col-md-6">
                         <div class="card shadow-sm border-0 bg-primary hover-shadow" style="transition: all 0.3s ease;">
                             <div class="card-body p-3 p-sm-4">
@@ -309,15 +309,38 @@
                 </div>
                 
                 <hr>
-                
                 <!-- Table -->
-                <div class="d-flex justify-content-start mb-4">
-                    <div class="col-sm-12">
-                        <div class="row">
-                            <div class="col-sm-4">
+                <div class="d-flex justify-content-between mb-4 gap-4">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="col-sm-4 mb-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalScrollable">
                                     <i class="bx bx-plus"></i>Tambah
                                 </button>
+                            </div>
+                            <div class="col-sm-4">
+                                <!-- Dropdown Export Excel -->
+                                <div class="dropdown">
+                                    <button class="btn btn-success btn-sm dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bx bx-export me-1"></i> Export Excel
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.all') }}">Semua Data</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '1']) }}">Januari</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '2']) }}">Februari</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '3']) }}">Maret</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '4']) }}">April</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '5']) }}">Mei</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '6']) }}">Juni</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '7']) }}">Juli</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '8']) }}">Agustus</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '9']) }}">September</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '10']) }}">Oktober</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '11']) }}">November</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('pengeluaran.export.month', ['month' => '12']) }}">Desember</a></li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -340,11 +363,17 @@
                             @forelse ($pengeluarans as $key => $pengeluaran)
                             <tr class="text-center">
                                 <td>{{ $key + 1 }}</td>
-                                <td>{{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}</td>
+                                <td>
+                                    <span class="badge bg-label-info">
+                                        {{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}
+                                    </span>
+                                </td>
                                 <td>{{ $pengeluaran->jenis_pengeluaran }}</td>
                                 <td>{{ $pengeluaran->keterangan }}</td>
                                 <td data-amount="{{ $pengeluaran->jumlah_pengeluaran }}">
-                                    Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
+                                    <span class="badge bg-label-warning">
+                                        Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
+                                    </span>
                                 </td>
                                 <td>
                                     @if ($pengeluaran->status_id == 1)
@@ -439,7 +468,7 @@
                             </select>
                         </div>
                     </div>
-
+                    
                     <div class="row">
                         <div class="col-sm-6">
                             <div class="mb-4" id="jumlah-item-group" style="display: none;">
@@ -549,13 +578,13 @@
     function formatRupiah(input) {
         // Remove non-digit characters
         let value = input.value.replace(/\D/g, '');
-
+        
         // Update numeric input
         const numericInput = document.getElementById('jumlahPengeluaranNumeric');
         if (numericInput) {
             numericInput.value = value; // Update numeric input with raw number
         }
-
+        
         // Convert to number and format for display
         if (value !== '') {
             value = parseInt(value);
@@ -637,40 +666,40 @@
 
 @section('page-script')
 <script>
-$(document).ready(function() {
-    // Fungsi untuk memuat data pengeluaran
-    function loadPengeluaran() {
-        $.ajax({
-            url: '{{ route("pengeluaran.ajax-filter") }}',
-            type: 'GET',
-            data: {
-                month: $('#monthFilter').val()
-            },
-            success: function(response) {
-                // Update tabel dan pagination
-                $('#pengeluaranTable tbody').html(response.table);
-                $('.pagination-container').html(response.pagination);
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr);
-            }
+    $(document).ready(function() {
+        // Fungsi untuk memuat data pengeluaran
+        function loadPengeluaran() {
+            $.ajax({
+                url: '{{ route("pengeluaran.ajax-filter") }}',
+                type: 'GET',
+                data: {
+                    month: $('#monthFilter').val()
+                },
+                success: function(response) {
+                    // Update tabel dan pagination
+                    $('#pengeluaranTable tbody').html(response.table);
+                    $('.pagination-container').html(response.pagination);
+                },
+                error: function(xhr) {
+                    console.error('Error:', xhr);
+                }
+            });
+        }
+        
+        // Event listener untuk filter bulan
+        $('#monthFilter').on('change', function() {
+            loadPengeluaran();
         });
-    }
-
-    // Event listener untuk filter bulan
-    $('#monthFilter').on('change', function() {
-        loadPengeluaran();
-    });
-
-    // Event listener untuk pagination
-    $(document).on('click', '.pagination a', function(e) {
-        e.preventDefault();
-        var page = $(this).attr('href').split('page=')[1];
-        $.get('{{ route("pengeluaran.ajax-filter") }}?page=' + page + '&month=' + $('#monthFilter').val(), function(data) {
-            $('#pengeluaranTable tbody').html(data.table);
-            $('.pagination-container').html(data.pagination);
+        
+        // Event listener untuk pagination
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+            var page = $(this).attr('href').split('page=')[1];
+            $.get('{{ route("pengeluaran.ajax-filter") }}?page=' + page + '&month=' + $('#monthFilter').val(), function(data) {
+                $('#pengeluaranTable tbody').html(data.table);
+                $('.pagination-container').html(data.pagination);
+            });
         });
     });
-});
 </script>
 @endsection
