@@ -139,7 +139,7 @@ class WhatsPieControllers extends Controller
             return response()->json($result);
 
         } catch (\Exception $e) {
-            Log::error('Get device QR error: ' . $e->getMessage());
+            Log::info('Get device QR error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'status' => 500,

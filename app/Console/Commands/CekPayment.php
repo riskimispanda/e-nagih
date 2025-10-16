@@ -160,12 +160,7 @@ class CekPayment extends Command
 
             Log::info("🔍 Cek invoice untuk blokir", [
                 'customer' => $customer->nama_customer,
-                'invoice_id' => $invoice->id,
-                'jatuh_tempo' => $invoice->jatuh_tempo->format('Y-m-d'),
-                'tanggal_blokir' => $tanggalBlokir->format('Y-m-d H:i:s'),
-                'hari_ini' => $tanggalHariIni->format('Y-m-d H:i:s'),
-                'should_block' => $tanggalHariIni >= $tanggalBlokir ? 'Ya' : 'Tidak',
-                'has_berita_acara' => $activeBeritaAcara ? true : false
+                'invoice_id' => $invoice->id
             ]);
 
             if ($tanggalHariIni >= $tanggalBlokir) {
@@ -233,8 +228,8 @@ class CekPayment extends Command
         $chatService = new ChatServices();
 
         foreach ($unpaidInvoices as $invoice) {
-            // Kirim WA hanya untuk invoice yang jatuh tempo hari ini
-            if ($tanggalHariIni->toDateString() == $invoice->jatuh_tempo->toDateString()) {
+            $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo); // konversi string jadi Carbon
+            if ($tanggalHariIni->toDateString() == $jatuhTempo->toDateString()) {
                 $this->handleWAReminder($invoice, $customer, $chatService, $isDryRun, $activeBeritaAcara);
                 break; // Hanya kirim 1x per customer
             }

@@ -50,7 +50,73 @@ class WhatspieServices
                         $deviceName = $device['name'] ?? $device['device_name'] ?? 'Unknown Device';
                         $devicePhone = $device['phone'] ?? $device['number'] ?? $deviceId;
                         $deviceStatus = $device['status'] ?? $device['connection_status'] ?? 'unknown';
-                        
+
+                        if ($devicePhone) {
+                            $formattedDevices[] = [
+                                'value' => $deviceId, // Nomor telepon sebagai value
+                                'text' => $deviceName . ' - ' . $this->formatPhoneForDisplay($devicePhone),
+                                'status' => $deviceStatus,
+                                'name' => $deviceName,
+                                'phone' => $devicePhone,
+                                'raw' => $device
+                            ];
+                        }
+                    }
+                }
+
+                return [
+                    'success' => true,
+                    'status' => $response->status(),
+                    'data' => $formattedDevices,
+                    'raw' => $body,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'status' => $response->status(),
+                'error' => $body['message'] ?? 'Unknown error',
+                'body' => $response->body(),
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsPieService getDevices Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'status' => 500,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getDevicesPhone()
+    {
+        try {
+            $url = $this->baseUrl . '/devices';
+
+            Log::info("WhatsPie GET devices: {$url}");
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Accept' => 'application/json',
+            ])->timeout($this->timeout)
+                ->get($url);
+
+            Log::info("WhatsPie GET devices status: " . $response->status());
+
+            $body = $response->json();
+
+            if ($response->successful()) {
+                $devices = $body['data'] ?? [];
+
+                // Format data untuk dropdown
+                $formattedDevices = [];
+                if (is_array($devices)) {
+                    foreach ($devices as $device) {
+                        $deviceId = $device['device_id'] ?? $device['id'] ?? null;
+                        $deviceName = $device['name'] ?? $device['device_name'] ?? 'Unknown Device';
+                        $devicePhone = $device['phone'] ?? $device['number'] ?? $deviceId;
+                        $deviceStatus = $device['status'] ?? $device['connection_status'] ?? 'unknown';
+
                         if ($devicePhone) {
                             $formattedDevices[] = [
                                 'value' => $devicePhone, // Nomor telepon sebagai value
@@ -276,7 +342,7 @@ class WhatspieServices
     /**
      * POST /devices - Tambah device baru di Whatspie
      */
-    public function addNewDevice($customDeviceName = null, $package = 'BETA')
+    public function addNewDevice($customDeviceName = null, $package = 'STARTUP60K')
     {
         try {
             $url = $this->baseUrl . '/devices';
@@ -445,26 +511,52 @@ class WhatspieServices
     public function getDeviceQr($deviceIdentifier)
     {
         try {
-            $url = $this->baseUrl . '/devices/' . $deviceIdentifier . '/qr';
+            // Pastikan device identifier adalah angka/numeric
+            if (!is_numeric($deviceIdentifier)) {
+                return [
+                    'success' => false,
+                    'status' => 400,
+                    'error' => 'Device identifier must be numeric',
+                ];
+            }
+
+            // Tambahkan parameter response_type seperti di dokumentasi
+            $url = $this->baseUrl . '/devices/' . $deviceIdentifier . '/qr?response_type=url';
 
             Log::info("WhatsPie getDeviceQr URL: " . $url);
+            Log::info("WhatsPie API Key: " . substr($this->apiKey, 0, 10) . '...'); // Log partial API key untuk debug
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
-                'Accept' => 'application/json',
+                'Accept' => 'application/json; charset=utf-8', // Sesuai dokumentasi
+                'Content-Type' => 'application/json', // Tambahkan ini
             ])->timeout($this->timeout)
-            ->get($url);
+                ->get($url);
 
             Log::info("WhatsPie getDeviceQr status: " . $response->status());
+            Log::info("WhatsPie getDeviceQr headers: " . json_encode($response->headers()));
+            Log::info("WhatsPie getDeviceQr body: " . $response->body());
 
             $body = $response->json();
+
+            // Handle 400 error specifically
+            if ($response->status() === 400) {
+                return [
+                    'success' => false,
+                    'status' => 400,
+                    'error' => $body['message'] ?? 'Invalid device ID',
+                    'device_id' => $deviceIdentifier,
+                    'suggestion' => 'Device mungkin belum terdaftar atau sudah expired'
+                ];
+            }
 
             if ($response->successful()) {
                 return [
                     'success' => true,
                     'status' => $response->status(),
                     'data' => $body['data'] ?? $body,
-                    'qr_code' => $body['data']['qr'] ?? $body['qr'] ?? null,
+                    'qr_code' => $body['data']['qr'] ?? $body['qr'] ?? $body['data']['qrcode'] ?? null,
+                    'qr_url' => $body['data']['url'] ?? $body['url'] ?? null,
                     'raw' => $body
                 ];
             }
@@ -472,10 +564,9 @@ class WhatspieServices
             return [
                 'success' => false,
                 'status' => $response->status(),
-                'error' => $body['message'] ?? 'Unknown error',
+                'error' => $body['message'] ?? 'Unknown error: ' . $response->body(),
                 'body' => $response->body(),
             ];
-
         } catch (Exception $e) {
             Log::error('WhatsPieService getDeviceQr Error: ' . $e->getMessage());
             return [

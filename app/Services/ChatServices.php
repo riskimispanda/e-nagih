@@ -8,32 +8,27 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use App\Models\Invoice;
-
+use App\Services\WhatspieServices;
+use App\Model\WhatsAppLog as ModelLog;
+use App\Models\WhatsAppLog;
 
 class ChatServices
 {
     protected $baseURL;
+    protected $apiKey;
+    protected $whatspie;
 
     public function __construct(){
-        $this->baseURL = env('WHATSAPP_BOT_CHAT', 'https://enagih-chat.niscala.net:3000');
+        $this->baseURL = env('WHATSPIE_BASE_URL');
+        $this->apiKey = env('WHATSPIE_API_KEY');
+        $this->whatspie = new WhatspieServices(); // Inisialisasi WhatsPie service
     }
 
     public function CustomerBaru($to, $customer)
     {
-        $response = Http::post("{$this->baseURL}/send-pesan",[
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$customer->nama_customer}, pendaftaran Anda berhasil. Kami akan menghubungi Anda segera untuk proses pemasangan."
-        ]);
+        $pesan = "Halo {$customer->nama_customer}, pendaftaran Anda berhasil. Kami akan menghubungi Anda segera untuk proses pemasangan.";
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
 
     public function pembayaranBerhasil($to, $pembayaran)
@@ -52,30 +47,18 @@ class ChatServices
         $tunggakan = max($sisaTagihan, 0);
         $tanggalBayar = Carbon::parse($pembayaran->tanggal_bayar)->locale('id')->isoFormat('dddd, D MMMM Y');
 
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
-                "📅 Tanggal Pembayaran: " . $tanggalBayar . "\n" .
-                        "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
-                        "💵 Tunggakan: Rp ". number_format($tunggakan ?? 0, 0,',','.') . "\n".
-                "💳 Tipe Pembayaran: " . $pembayaran->tipe_pembayaran . "\n" .
-                        "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
-                        "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
-                        "Terima kasih telah menggunakan layanan kami 🙏\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+        $pesan = "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
+            "📅 Tanggal Pembayaran: " . $tanggalBayar . "\n" .
+            "💰 Jumlah Dibayar: Rp " . number_format($pembayaran->jumlah_bayar, 0, ',', '.') . "\n" .
+            "💵 Tunggakan: Rp " . number_format($tunggakan ?? 0, 0, ',', '.') . "\n" .
+            "💳 Tipe Pembayaran: " . $pembayaran->tipe_pembayaran . "\n" .
+            "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
+            "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
+            "Terima kasih telah menggunakan layanan kami 🙏\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
-
 
     public function kirimInvoice($to, $invoice)
     {
@@ -96,40 +79,23 @@ class ChatServices
                 ->format('d-m-Y');
         }
 
-
-
         // Hitung total tagihan
         $totalTagihan = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
 
         // Buat kode invoice unik berdasarkan tanggal
         $time = now()->format('dmY');
 
-        // Kirim pesan ke API WhatsApp bot
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
-                        "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
-                        "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
-                        "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n" .
+        $pesan = "Halo {$invoice->customer->nama_customer}, berikut adalah tagihan Anda:\n\n" .
+            "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
+            "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
+            "💵 Tunggakan: Rp " . number_format($invoice->tunggakan ?? 0, 0, ',', '.') . "\n" .
                 "📄 Nomor Invoice: INV-NBilling-{$invoice->customer->nama_customer}-{$time}\n\n" .
-                        "🔗 Link Pembayaran:\n{$url}\n\n" .
-                        "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+            "🔗 Link Pembayaran:\n{$url}\n\n" .
+            "Silakan lakukan pembayaran untuk menghindari pemutusan layanan.\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        // Cek apakah berhasil
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        // Jika gagal
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
-
 
     public function kirimInvoiceMassal($customer, $invoices)
     {
@@ -148,23 +114,10 @@ class ChatServices
             $pesan .= "--------------------------\n";
         }
 
-        $pesan .= "\nSilakan lakukan pembayaran sebelum tanggal jatuh tempo untuk menghindari pemutusan layanan.\n\n";
+        $pesan .= "\nSilakan lakukan pembayaran untuk menghindari pemutusan layanan.\n\n";
         $pesan .= "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $customer->no_hp . '@c.us',
-            'pesan' => $pesan,
-        ]);
-
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($customer->no_hp, $pesan);
     }
 
     public function invoiceProrate($to, $invoice)
@@ -193,28 +146,15 @@ class ChatServices
         $totalTagihan = $invoice->tagihan + $invoice->tambahan - $invoice->saldo;
         $time = now()->format('dmY');
 
-        // Kirim pesan ke WhatsApp melalui endpoint
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$invoice->customer->nama_customer}, Selamat proses instalasi Anda telah selesai. Berikut adalah tagihan Anda:\n\n" .
-                    "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
-                    "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
+        $pesan = "Halo {$invoice->customer->nama_customer}, Selamat proses instalasi Anda telah selesai. Berikut adalah tagihan Anda:\n\n" .
+            "📅 Tanggal Tagihan: " . now()->format('d-m-Y') . "\n" .
+            "💰 Jumlah Tagihan: Rp " . number_format($totalTagihan, 0, ',', '.') . "\n" .
                 "📄 Nomor Invoice: INV-NBilling-{$invoice->customer->nama_customer}-{$time}\n\n" .
-                    "🔗 Link Pembayaran:\n{$url}\n\n" .
-                    "Silakan lakukan pembayaran sebelum tanggal {$tanggalLengkap} untuk menghindari pemutusan layanan.\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+            "🔗 Link Pembayaran:\n{$url}\n\n" .
+            "Silakan lakukan pembayaran untuk menghindari pemutusan layanan.\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        // Respons
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
 
     public function kirimNotifikasiBlokir($to, $inv)
@@ -229,98 +169,56 @@ class ChatServices
 
         $url = url('/payment/invoice/' . $inv->id);
 
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "⚠️ Halo {$inv->customer->nama_customer}, layanan internet Anda telah *diblokir* karena tagihan belum dibayar.\n\n" .
-                        "📅 Tanggal Blokir: " . now()->format('d-m-Y') . "\n" .
-                       "Silakan segera lakukan pembayaran untuk menghindari pemutusan permanen.\n" .
-                       "🔗 Link Pembayaran:\n{$url}\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+        $pesan = "⚠️ Halo {$inv->customer->nama_customer}, layanan internet Anda telah *diblokir* karena tagihan belum dibayar.\n\n" .
+            "📅 Tanggal Blokir: " . now()->format('d-m-Y') . "\n" .
+            "Silakan segera lakukan pembayaran untuk menghindari pemutusan permanen.\n" .
+            "🔗 Link Pembayaran:\n{$url}\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
+
+        $response = $this->sendWhatsPieMessage($to, $pesan);
 
         Log::info("📩 Kirim Notifikasi Blokir ke {$to}", [
-            'status' => $response->status(),
-            'body' => $response->body(),
+            'status' => $response['status'] ?? 'unknown',
+            'success' => $response['success'] ?? false,
         ]);
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $response;
     }
 
     public function kirimNotifikasiTeknisi($to, $tek)
     {
         $url = url('/teknisi/antrian');
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$tek->name}, Antrian Instalasi Pelanggan baru tersedia. Silakan login ke aplikasi untuk melihat detail.\n\n" .
-                        "🔗 Link Aplikasi:\n{$url}\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+        $pesan = "Halo {$tek->name}, Antrian Instalasi Pelanggan baru tersedia. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+            "🔗 Link Aplikasi:\n{$url}\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
 
     public function kirimNotifikasiNoc($to, $noc ,$customer)
     {
         $url = url('/data/antrian-noc');
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$noc->name}, Antrian Pelanggan baru tersedia untuk di proses. Silakan login ke aplikasi untuk melihat detail.\n\n" .
-                        "Nama Pelanggan: {$customer->nama_customer}\n" .
-                        "Nama Agen: " . ($customer->agen->nama_agen ?? '-') . "\n" .
-                        "🔗 Link Aplikasi:\n{$url}\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+        $pesan = "Halo {$noc->name}, Antrian Pelanggan baru tersedia untuk di proses. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+            "Nama Pelanggan: {$customer->nama_customer}\n" .
+            "Nama Agen: " . ($customer->agen->nama_agen ?? '-') . "\n" .
+            "🔗 Link Aplikasi:\n{$url}\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
 
     public function kirimNotifikasiTiketOpen($to, $user, $tiket)
     {
         $url = url('/helpdesk/tiket-open');
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to' => $to . '@c.us',
-            'pesan' => "Halo {$user->name}, Tiket Open baru telah ditambahkan. Silakan login ke aplikasi untuk melihat detail.\n\n" .
-                        "Nama Pelanggan: {$tiket->customer->nama_customer}\n" .
-                        "Kategori: {$tiket->kategori->nama_kategori}\n" .
-                        "Keterangan: {$tiket->keterangan}\n" .
-                        "By Admin: {$tiket->user->name}\n" .
-                        "🔗 Link Aplikasi:\n{$url}\n\n" .
-                "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️"
-        ]);
+        $pesan = "Halo {$user->name}, Tiket Open baru telah ditambahkan. Silakan login ke aplikasi untuk melihat detail.\n\n" .
+            "Nama Pelanggan: {$tiket->customer->nama_customer}\n" .
+            "Kategori: {$tiket->kategori->nama_kategori}\n" .
+            "Keterangan: {$tiket->keterangan}\n" .
+            "By Admin: {$tiket->user->name}\n" .
+            "🔗 Link Aplikasi:\n{$url}\n\n" .
+            "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return [
-            'error' => true,
-            'status' => $response->status(),
-            'pesan' => $response->body(),
-        ];
+        return $this->sendWhatsPieMessage($to, $pesan);
     }
 
     public function kirimWarningBayar($customer)
@@ -358,20 +256,120 @@ class ChatServices
         $pesan .= "Jika sudah melakukan pembayaran, abaikan pesan ini 🙏\n\n";
         $pesan .= "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 
-        // kirim pesan sekali saja (gabungan semua invoice)
-        $response = Http::post("{$this->baseURL}/send-pesan", [
-            'to'   => $customer->no_hp . '@c.us',
-            'pesan'=> $pesan,
-        ]);
+        return $this->sendWhatsPieMessage($customer->no_hp, $pesan);
+    }
 
-        if ($response->successful()) {
-            return $response->json();
+    /**
+     * Helper method untuk mengirim pesan menggunakan WhatsPie
+     */
+    private function sendWhatsPieMessage($to, $pesan)
+    {
+        try {
+            // Format nomor telepon (hapus karakter non-digit dan pastikan format internasional)
+            $phone = $this->formatPhoneNumber($to);
+
+            // Dapatkan device ID default
+            $deviceId = $this->getDefaultDevice();
+
+            if (!$deviceId) {
+                throw new \Exception('Tidak ada device WhatsApp yang tersedia');
+            }
+
+            // Kirim pesan menggunakan WhatsPie
+            $response = $this->whatspie->sendMessage(
+                $phone,        // receiver
+                $pesan,        // message
+                $deviceId,     // device ID
+                false          // simulate typing
+            );
+
+            // Log hasil pengiriman
+            Log::info("WhatsPie Message Sent", [
+                'to' => $phone,
+                'device_id' => $deviceId,
+                'success' => $response['success'] ?? false,
+                'status' => $response['status'] ?? 'unknown'
+            ]);
+
+            return $response;
+        } catch (\Exception $e) {
+            Log::error('WhatsPie Send Message Error: ' . $e->getMessage(), [
+                'to' => $to,
+                'message_length' => strlen($pesan)
+            ]);
+
+            return [
+                'success' => false,
+                'status' => 500,
+                'error' => 'Failed to send message via WhatsPie: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Helper method untuk memformat nomor telepon
+     */
+    private function formatPhoneNumber($phone)
+    {
+        // Hapus semua karakter non-digit
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+
+        // Jika nomor diawali dengan 0, ganti dengan 62
+        if (substr($cleanPhone, 0, 1) === '0') {
+            $cleanPhone = '62' . substr($cleanPhone, 1);
         }
 
-        return [
-            'error'  => true,
-            'status' => $response->status(),
-            'pesan'  => $response->body(),
-        ];
+        // Jika nomor sudah diawali dengan 62, biarkan saja
+        // Jika nomor diawali dengan 8, tambahkan 62
+        if (substr($cleanPhone, 0, 1) === '8') {
+            $cleanPhone = '62' . $cleanPhone;
+        }
+
+        return $cleanPhone;
+    }
+
+    /**
+     * Helper method untuk mendapatkan device ID default
+     */
+    private function getDefaultDevice()
+    {
+        try {
+            // Coba ambil devices dari WhatsPie
+            $devicesResponse = $this->whatspie->getDevicesPhone();
+
+            if ($devicesResponse['success'] && !empty($devicesResponse['data'])) {
+                // Cari device yang connected/active
+                foreach ($devicesResponse['data'] as $device) {
+                    $deviceData = $device['raw'] ?? $device;
+                    $status = $deviceData['paired_status'] ?? 'UNPAIRED';
+                    $isActive = ($deviceData['status'] ?? '') === 'ACTIVE';
+
+                    // Ambil nomor telepon device (bukan ID)
+                    $devicePhone = $deviceData['phone'] ?? $device['phone'] ?? $device['value'] ?? null;
+
+                    if ($status === 'PAIRED' && $isActive && $devicePhone) {
+                        Log::info("Using connected device: {$devicePhone}");
+                        return $devicePhone;
+                    }
+                }
+
+                // Jika tidak ada yang connected, ambil device pertama yang ada nomornya
+                foreach ($devicesResponse['data'] as $device) {
+                    $deviceData = $device['raw'] ?? $device;
+                    $devicePhone = $deviceData['phone'] ?? $device['phone'] ?? $device['value'] ?? null;
+
+                    if ($devicePhone) {
+                        Log::info("Using first available device: {$devicePhone}");
+                        return $devicePhone;
+                    }
+                }
+            }
+
+            Log::warning('No available WhatsApp devices found');
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error getting default device: ' . $e->getMessage());
+            return null;
+        }
     }
 }
