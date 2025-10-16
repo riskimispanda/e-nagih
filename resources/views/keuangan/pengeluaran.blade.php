@@ -525,7 +525,7 @@
                     <div class="row mb-3">
                         <div class="col-sm-12">
                             <label for="buktiPengeluaran" class="form-label fw-medium">Bukti Pengeluaran</label>
-                            <input name="buktiPengeluaran" type="file" class="form-control" id="buktiPengeluaran" required accept=".jpg,.jpeg,.png,.pdf">
+                            <input name="buktiPengeluaran" type="file" class="form-control" id="buktiPengeluaran" accept=".jpg,.jpeg,.png,.pdf">
                             <div class="form-text text-muted">
                                 <i class="bx bx-info-circle me-1"></i>
                                 Format file: JPG, PNG, PDF. Maksimal ukuran 2MB.
