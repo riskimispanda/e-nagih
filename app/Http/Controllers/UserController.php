@@ -13,7 +13,7 @@ class UserController extends Controller
     */
     public function index()
     {
-        $user = User::whereNot('roles_id', 8)->get();
+        $user = User::whereNot('roles_id', 8)->paginate(10);
         // dd($user);
         $role = Roles::whereNot('name', 'Customer')->get();
         // dd($role);

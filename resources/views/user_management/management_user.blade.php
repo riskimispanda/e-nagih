@@ -110,6 +110,9 @@
                         </tbody>
                     </table>
                 </div>
+                <div class="d-flex mt-5 mb-0">
+                    {{ $user->links('pagination::bootstrap-5') }}
+                </div>
             </div>
         </div>
     </div>
