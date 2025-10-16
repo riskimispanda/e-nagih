@@ -55,7 +55,8 @@
       "roles": [
         "Super Admin",
         "Admin Keuangan",
-        "Admin Logistik"
+        "Admin Logistik",
+        "Helpdesk"
       ]
     },
     {
