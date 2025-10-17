@@ -123,7 +123,7 @@ class NocController extends Controller
             'status_id' => 5,
             'remote' => $request->remote,
         ]);
-
+        $customer->refresh();
         // 🔌 Connect ke router sekali saja
         $client = MikrotikServices::connect($router);
 
@@ -147,6 +147,11 @@ class NocController extends Controller
 
             $chat->kirimNotifikasiTeknisi($nomor, $tek);
         }
+
+        // ? Catat Log
+        activity('Dial Customer')
+            ->causedBy(auth()->user())
+            ->log(auth()->user()->name . ' Membuat dial untuk pelanggan ' . $customer->nama_customer);
 
         return redirect('/data/antrian-noc')->with('success', 'Antrian assigned successfully');
     }
