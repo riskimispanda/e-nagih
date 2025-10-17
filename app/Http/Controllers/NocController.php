@@ -138,15 +138,15 @@ class NocController extends Controller
         ]);
 
         // Notif Ke Teknisi
-        $chat = new ChatServices();
-        foreach ($teknisi as $tek) {
-            $nomor = preg_replace('/[^0-9]/', '', $tek->no_hp);
-            if (str_starts_with($nomor, '0')) {
-                $nomor = '62' . substr($nomor, 1);
-            }
+        // $chat = new ChatServices();
+        // foreach ($teknisi as $tek) {
+        //     $nomor = preg_replace('/[^0-9]/', '', $tek->no_hp);
+        //     if (str_starts_with($nomor, '0')) {
+        //         $nomor = '62' . substr($nomor, 1);
+        //     }
 
-            $chat->kirimNotifikasiTeknisi($nomor, $tek);
-        }
+        //     $chat->kirimNotifikasiTeknisi($nomor, $tek);
+        // }
 
         // ? Catat Log
         activity('Dial Customer')

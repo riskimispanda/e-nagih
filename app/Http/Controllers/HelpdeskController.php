@@ -202,8 +202,8 @@ class HelpdeskController extends Controller
                 'identitas' => $identitas_file,
                 'created_at' => $request->tanggal_reg,
             ]);
-            
-            $noc = User::where('roles_id', 4)->get();
+
+            // $noc = User::where('roles_id', 4)->get();
             activity('customer')
                 ->causedBy(auth()->user())
                 ->performedOn($data)
@@ -216,18 +216,18 @@ class HelpdeskController extends Controller
                 ])
                 ->log(auth()->user()->name . ' Menambahkan data pelanggan baru ' . $data->nama_customer . ' pada ' . Carbon::parse($data->created_at)->locale('id')->isoFormat('dddd, D MMMM Y H:mm:ss') . ' PIC: ' . ($data->agen?->name ?? '-'));
 
-            try {
-                foreach($noc as $n)
-                {
-                    $nomor = preg_replace('/[^0-9]/', '', $n->no_hp);
-                    if (str_starts_with($nomor, '0')) {
-                        $nomor = '62' . substr($nomor, 1);
-                    }
-                    $chat->kirimNotifikasiNoc($nomor, $n, $data);
-                }
-            } catch (\Throwable $e) {
-                Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
-            }
+            // try {
+            //     foreach($noc as $n)
+            //     {
+            //         $nomor = preg_replace('/[^0-9]/', '', $n->no_hp);
+            //         if (str_starts_with($nomor, '0')) {
+            //             $nomor = '62' . substr($nomor, 1);
+            //         }
+            //         $chat->kirimNotifikasiNoc($nomor, $n, $data);
+            //     }
+            // } catch (\Throwable $e) {
+            //     Log::error('Gagal kirim WhatsApp: ' . $e->getMessage());
+            // }
 
             return redirect()->back()->with('success', 'Antrian berhasil ditambahkan');
         } catch (\Throwable $e) {
