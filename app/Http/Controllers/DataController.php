@@ -477,7 +477,7 @@ class DataController extends Controller
 
             // Update langsung tanpa filter
             $pelanggan->update($data);
-
+            $pelanggan->refresh();
             // Tentukan router & paket (selalu ambil dari request)
             $router = Router::findOrFail($request->router);
             $paket  = Paket::findOrFail($request->paket);
@@ -509,7 +509,7 @@ class DataController extends Controller
             );
             activity('Edit Pelanggan')
                 ->causedBy(auth()->user())
-                ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan');
+                ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan ' . $pelanggan->nama_customer);
             DB::commit();
 
             return redirect('/data/pelanggan')->with('success', 'Data pelanggan berhasil diperbarui.');
@@ -556,6 +556,11 @@ class DataController extends Controller
             $modem = ModemDetail::where('cek', 'Imported')->delete();
 
             Log::info('Berhasil menghapus data import sementara.', ['deleted_rows' => $deletedRows, 'deleted_invoice' => $invoice, 'deleted_modem' => $modem]);
+
+            // ! Catat Log Critical
+            activity('Hapus data Import')
+                ->causedBy(auth()->user())
+                ->log(auth()->user()->name . ' Menghapus data import');
 
             return redirect('/setting')->with('success', 'Data import sementara berhasil dihapus.');
         } catch (\Exception $e) {
