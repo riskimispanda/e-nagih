@@ -95,6 +95,7 @@
         border: 1px solid var(--border);
         border-left: 0;
         transition: var(--transition);
+        cursor: pointer;
     }
     
     .input-group-merge:focus-within .input-group-text {
@@ -202,7 +203,7 @@
                                 <input type="password" id="password" class="form-control" name="password"
                                 placeholder="&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;&#xb7;"
                                 aria-describedby="password" required />
-                                <span class="input-group-text cursor-pointer"><i class="bx bx-hide"></i></span>
+                                <span class="input-group-text cursor-pointer" id="passwordToggle"><i class="bx bx-hide"></i></span>
                             </div>
                         </div>
                         <div class="mb-3 mt-5">
@@ -215,32 +216,61 @@
     </div>
 </div>
 <script>
-    // Menambahkan efek loading pada tombol login
-    document.getElementById('formAuthentication').addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.classList.add('btn-loading');
-        submitBtn.disabled = true;
-        
-        // Simulasi loading (bisa dihapus di implementasi sebenarnya)
-        setTimeout(() => {
-            submitBtn.classList.remove('btn-loading');
-            submitBtn.disabled = false;
-        }, 2000);
-    });
+    // Debug: Cek apakah script berjalan
+    console.log('Script loaded');
     
-    // Toggle visibility password
-    document.querySelector('.input-group-text').addEventListener('click', function() {
-        const passwordInput = document.getElementById('password');
-        const icon = this.querySelector('i');
+    // Tunggu sampai DOM sepenuhnya dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded');
         
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            icon.classList.remove('bx-hide');
-            icon.classList.add('bx-show');
-        } else {
-            passwordInput.type = 'password';
-            icon.classList.remove('bx-show');
-            icon.classList.add('bx-hide');
+        // Toggle visibility password - PENDEKATAN LEBIH SIMPLE
+        const passwordToggle = document.getElementById('passwordToggle');
+        const passwordInput = document.getElementById('password');
+        
+        if (passwordToggle && passwordInput) {
+            passwordToggle.addEventListener('click', function() {
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    this.innerHTML = '<i class="bx bx-show"></i>';
+                } else {
+                    passwordInput.type = 'password';
+                    this.innerHTML = '<i class="bx bx-hide"></i>';
+                }
+            });
+        }
+        
+        // Menambahkan efek loading pada tombol login
+        const form = document.getElementById('formAuthentication');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.classList.add('btn-loading');
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    submitBtn.classList.remove('btn-loading');
+                    submitBtn.disabled = false;
+                }, 2000);
+            });
+        }
+    });
+
+    // Alternatif: Event delegation untuk memastikan event terpasang
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#passwordToggle') || e.target.closest('.input-group-text')) {
+            const passwordInput = document.getElementById('password');
+            const toggleElement = e.target.closest('#passwordToggle') || e.target.closest('.input-group-text');
+            
+            if (passwordInput && toggleElement) {
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    toggleElement.innerHTML = '<i class="bx bx-show"></i>';
+                } else {
+                    passwordInput.type = 'password';
+                    toggleElement.innerHTML = '<i class="bx bx-hide"></i>';
+                }
+            }
         }
     });
 </script>
