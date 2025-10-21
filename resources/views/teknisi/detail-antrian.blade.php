@@ -629,7 +629,7 @@
                                         </div>
                                         <div class="mb-4">
                                             <label class="form-label"><i class="bx bx-link me-2"></i>Panjang Kabel</label>
-                                            <input type="text" name="panjang_kabel" class="form-control" placeholder="Contoh: 10m">
+                                            <input type="text" name="panjang_kabel" class="form-control" placeholder="Contoh: 10m" required>
                                         </div>
                                         <div class="mb-4">
                                             <label class="form-label"><i class="bx bx-radio me-2"></i>Nilai Redam</label>
