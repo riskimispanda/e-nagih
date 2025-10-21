@@ -104,23 +104,23 @@ class UpgradeCustomer implements ToModel, WithHeadingRow
                 'tagihan'       => $harga,
             ]);
 
-            try {
-                $paket = Paket::find($customer->paket_id);
+            // try {
+            //     $paket = Paket::find($customer->paket_id);
 
-                if ($paket && $customer->usersecret) {
-                    $router = $customer->router; 
-                    if ($router) {
-                        $client = MikrotikServices::connect($router);
-                        if ($client) {
-                            MikrotikServices::changeProfileUpgrade($client, $customer->usersecret, $paket->paket_name, $customer->local_address, $customer->remote_address);
-                            MikrotikServices::removeActiveConnections($client, $customer->usersecret);
-                            Log::info('Berhasil Upgrade melalui Import untuk Customer: ' . $customer->nama_customer);
-                        }
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::error("Gagal upgrade profile untuk {$customer->nama_customer}: " . $e->getMessage());
-            }
+            //     if ($paket && $customer->usersecret) {
+            //         $router = $customer->router; 
+            //         if ($router) {
+            //             $client = MikrotikServices::connect($router);
+            //             if ($client) {
+            //                 MikrotikServices::changeProfileUpgrade($client, $customer->usersecret, $paket->paket_name, $customer->local_address, $customer->remote_address);
+            //                 MikrotikServices::removeActiveConnections($client, $customer->usersecret);
+            //                 Log::info('Berhasil Upgrade melalui Import untuk Customer: ' . $customer->nama_customer);
+            //             }
+            //         }
+            //     }
+            // } catch (\Throwable $e) {
+            //     Log::error("Gagal upgrade profile untuk {$customer->nama_customer}: " . $e->getMessage());
+            // }
         });
     }
 }
