@@ -73,8 +73,10 @@ class TeknisiController extends Controller
             ];
         }
 
-        // Query untuk data Customer dengan filter bulan dan pagination
-        $customerQuery = Customer::where('status_id', 5);
+        // Query untuk data Customer dengan filter bulan dan pagination - DATA TERBARU
+        $customerQuery = Customer::where('status_id', 5)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->latest(); // Menambahkan ini untuk data terbaru
 
         if ($currentMonth) {
             $customerQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
@@ -83,8 +85,9 @@ class TeknisiController extends Controller
 
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
 
-        // Query untuk antrian (status_id = 2) dengan filter bulan dan pagination
-        $antrianQuery = Customer::whereIn('status_id', [2, 3]);
+        // Query untuk antrian (status_id = 2) dengan filter bulan dan pagination - DATA TERBARU
+        $antrianQuery = Customer::whereIn('status_id', [2, 3])
+            ->latest(); // Menambahkan ini untuk data terbaru
 
         if ($currentMonth) {
             $antrianQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
@@ -93,11 +96,12 @@ class TeknisiController extends Controller
 
         $antrian = $antrianQuery->paginate($progressPerPage, ['*'], 'progress_page')->withQueryString();
 
-        // Query untuk corporate dengan filter bulan dan pagination
+        // Query untuk corporate dengan filter bulan dan pagination - DATA TERBARU
         $corpQuery = Perusahaan::where('status_id', 1)
             ->when($user->roles_id != 4, function ($query) use ($user) {
                 $query->where('admin_id', $user->id);
-            });
+            })
+            ->latest('tanggal'); // Menambahkan ini untuk data terbaru, menggunakan kolom tanggal
 
         if ($currentMonth) {
             $corpQuery->whereYear('tanggal', Carbon::parse($currentMonth)->year)
