@@ -85,7 +85,7 @@ class TeknisiController extends Controller
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
 
         // Query untuk antrian (status_id = 2,3) dengan filter bulan dan pagination
-        $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
+        $antrianQuery = Customer::where('status_id', 2)->latest();
 
         // Filter untuk teknisi hanya melihat data mereka sendiri
         if (auth()->user()->roles_id == 5) { // Asumsi roles_id 4 adalah Teknisi
