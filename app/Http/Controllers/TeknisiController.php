@@ -84,7 +84,12 @@ class TeknisiController extends Controller
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
 
         // Query untuk antrian (status_id = 2) dengan filter bulan dan pagination
-        $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
+        if (auth()->user()->roles == 'Teknisi') {
+            $antrianQuery = Customer::where('teknisi_id', $teknisi)->whereIn('status_id', [2, 3])->latest();
+        } else {
+            $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
+        }
+
 
         if ($currentMonth) {
             $antrianQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
