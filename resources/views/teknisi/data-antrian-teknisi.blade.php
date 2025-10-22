@@ -630,7 +630,8 @@
                     </table>
                 </div>
                 
-                @if($corp->hasPages() && $corpPerPage > 0)
+                <!-- Di bagian Priority Section pagination -->
+                @if(auth()->user()->roles_id != 4 && $corpPerPage > 0 && method_exists($corp, 'hasPages') && $corp->hasPages())
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $corp->firstItem() }} - {{ $corp->lastItem() }} dari {{ $corp->total() }} data
@@ -642,7 +643,7 @@
                 @elseif($corpPerPage == 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Menampilkan semua {{ $corp->total() }} data
+                        Menampilkan semua {{ count($corp) }} data
                     </div>
                 </div>
                 @endif
@@ -779,7 +780,8 @@
                     </table>
                 </div>
                 
-                @if($data->hasPages() && $waitingPerPage > 0)
+                <!-- Di bagian Waiting Section pagination -->
+                @if(auth()->user()->roles_id != 4 && $waitingPerPage > 0 && method_exists($data, 'hasPages') && $data->hasPages())
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} data
@@ -791,7 +793,7 @@
                 @elseif($waitingPerPage == 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Menampilkan semua {{ $data->total() }} data
+                        Menampilkan semua {{ count($data) }} data
                     </div>
                 </div>
                 @endif
@@ -937,19 +939,20 @@
                     </table>
                 </div>
                 
-                @if($progressData->hasPages() && $progressPerPage > 0)
+                <!-- Di bagian Progress Section pagination -->
+                @if(auth()->user()->roles_id != 4 && $progressPerPage > 0 && method_exists($progressData, 'hasPages') && $progressData->hasPages())
                 <div class="pagination-container">
                     <div class="pagination-info">
                         Menampilkan {{ $progressData->firstItem() }} - {{ $progressData->lastItem() }} dari {{ $progressData->total() }} data
                     </div>
                     <div>
-                        {{ $progressData->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
+                        {{ $progressData->withQueryString()->onEachSide(1)->links() }}
                     </div>
                 </div>
                 @elseif($progressPerPage == 0)
                 <div class="pagination-container">
                     <div class="pagination-info">
-                        Menampilkan semua {{ $progressData->total() }} data
+                        Menampilkan semua {{ count($progressData) }} data
                     </div>
                 </div>
                 @endif

@@ -74,8 +74,9 @@ class TeknisiController extends Controller
         }
 
         // Query untuk data Customer dengan filter bulan dan pagination
-        $customerQuery = Customer::where('status_id', 5)->whereMonth('created_at', Carbon::now()->month)->latest();
+        $customerQuery = Customer::where('status_id', 5)->latest();
 
+        // Hapus whereMonth yang fixed, gunakan filter bulan dari request
         if ($currentMonth) {
             $customerQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
                 ->whereMonth('created_at', Carbon::parse($currentMonth)->month);
@@ -83,13 +84,13 @@ class TeknisiController extends Controller
 
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
 
-        // Query untuk antrian (status_id = 2) dengan filter bulan dan pagination
-        if (auth()->user()->roles == 'Teknisi') {
-            $antrianQuery = Customer::where('teknisi_id', $teknisi)->whereIn('status_id', [2, 3])->latest();
-        } else {
-            $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
-        }
+        // Query untuk antrian (status_id = 2,3) dengan filter bulan dan pagination
+        $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
 
+        // Filter untuk teknisi hanya melihat data mereka sendiri
+        if (auth()->user()->roles_id == 5) { // Asumsi roles_id 4 adalah Teknisi
+            $antrianQuery->where('teknisi_id', $teknisi)->latest();
+        }
 
         if ($currentMonth) {
             $antrianQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
@@ -99,10 +100,12 @@ class TeknisiController extends Controller
         $antrian = $antrianQuery->paginate($progressPerPage, ['*'], 'progress_page')->withQueryString();
 
         // Query untuk corporate dengan filter bulan dan pagination
-        $corpQuery = Perusahaan::where('status_id', 1)
-            ->when($user->roles_id != 4, function ($query) use ($user) {
-                $query->where('admin_id', $user->id);
-            });
+        $corpQuery = Perusahaan::where('status_id', 1)->latest();
+
+        // Filter admin hanya melihat data mereka sendiri
+        if ($user->roles_id != 5) { // Bukan teknisi
+            $corpQuery->where('admin_id', $user->id);
+        }
 
         if ($currentMonth) {
             $corpQuery->whereYear('tanggal', Carbon::parse($currentMonth)->year)
