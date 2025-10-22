@@ -42,7 +42,6 @@ class UpgradeCustomer implements ToModel, WithHeadingRow
         }
 
         return tap(Customer::updateOrCreate(
-            ['usersecret' => $row['usersecret']],
             [
                 'nama_customer'  => $row['nama_customer'],
                 'email'          => $row['email'] ?? null,
