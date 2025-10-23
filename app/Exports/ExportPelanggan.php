@@ -69,7 +69,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             'perangkat',
             'media',
             'invoice' // Load invoice untuk mengambil pembayaran
-        ])->withTrashed();
+        ])->whereNull('deleted_at');
 
         switch ($this->type) {
             case 'aktif':
