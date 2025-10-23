@@ -467,7 +467,7 @@
         {
           "url": "/noc/data-server",
           "name": "Data Server",
-          "slug": "server",
+          "slug": "data-server",
           "roles": [
             "NOC"
           ]

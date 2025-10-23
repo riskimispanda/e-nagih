@@ -348,7 +348,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/noc/data-olt', [Jaringan::class, 'index'])->name('olt');
     Route::get('/noc/data-odp', [Jaringan::class, 'odp'])->name('odp');
     Route::get('/noc/data-odc', [Jaringan::class, 'odc'])->name('odc');
-    Route::get('/noc/data-server', [Jaringan::class, 'server'])->name('server');
+    Route::get('/noc/data-server', [Jaringan::class, 'server'])->name('data-server');
     Route::post('/olt/add', [Jaringan::class, 'addOlt'])->name('olt.store');
     Route::post('/odc/add', [Jaringan::class, 'addOdc'])->name('odc.store');
     Route::post('/odp/add', [Jaringan::class, 'addOdp'])->name('odp.store');

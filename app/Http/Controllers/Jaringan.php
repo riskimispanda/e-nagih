@@ -14,24 +14,52 @@ class Jaringan extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 10);
+
+        $query = Lokasi::withCount('odc')->with('odc.odp', 'server');
+
+        if ($search) {
+            $query->where('nama_lokasi', 'like', "%{$search}%")
+                ->orWhereHas('server', function ($q) use ($search) {
+                    $q->where('lokasi_server', 'like', "%{$search}%");
+                });
+        }
+
+        $lokasi = $query->paginate($perPage)->appends($request->query());
+
+        $lokasi->getCollection()->transform(function ($olt) {
+            $olt->odp_count = $olt->odc->sum(fn($odc) => $odc->odp->count());
+            return $olt;
+        });
         return view('/NOC/data-olt', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'lokasi' => Lokasi::all(),
-            'odc' => ODC::with('olt')->get(),
-            'odp' => ODP::with('odc')->get(),
+            'lokasi' => $lokasi,
             'server' => Server::all(),
         ]);
     }
 
-    public function server()
+    public function server(Request $request)
     {
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 10);
+
+        $query = Server::query();
+
+        if ($search) {
+            $query->where('lokasi_server', 'like', "%{$search}%")
+                ->orWhere('ip_address', 'like', "%{$search}%");
+        }
+
+        $servers = $query->paginate($perPage)->appends($request->query());
+
         return view('/NOC/data-server', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'server' => Server::all(),
+            'server' => $servers,
         ]);
     }
 
@@ -89,25 +117,50 @@ class Jaringan extends Controller
         ]);
     }
 
-    public function odc()
+    public function odc(Request $request)
     {
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 10);
+
+        $query = ODC::withCount('odp')->with('olt');
+
+        if ($search) {
+            $query->where('nama_odc', 'like', "%{$search}%")
+                ->orWhereHas('olt', function ($q) use ($search) {
+                    $q->where('nama_lokasi', 'like', "%{$search}%");
+                });
+        }
+
+        $odcs = $query->paginate($perPage)->appends($request->query());
+
         return view('/NOC/data-odc', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'lokasi' => Lokasi::all(),
-            'odc' => ODC::all(),
-            'odp' => ODP::all(),
+            'odc' => $odcs,
         ]);
     }
 
-    public function odp()
+    public function odp(Request $request)
     {
+        $search = $request->get('search');
+        $perPage = $request->get('per_page', 10);
+
+        $query = ODP::withCount('customer')->with('odc');
+
+        if ($search) {
+            $query->where('nama_odp', 'like', "%{$search}%")
+                ->orWhereHas('odc', function ($q) use ($search) {
+                    $q->where('nama_odc', 'like', "%{$search}%");
+                });
+        }
+
+        $odps = $query->paginate($perPage)->appends($request->query());
         return view('/NOC/data-odp', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'odp' => ODP::all(),
+            'odp' => $odps,
             'lokasi' => ODC::all(),
-            'customer' => Customer::all(),
         ]);
     }
 

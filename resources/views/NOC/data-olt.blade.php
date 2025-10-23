@@ -20,7 +20,17 @@
                     </button>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive text-nowrap">
+                    <div class="row mb-4">
+                        <div class="col-sm-4">
+                            <form action="{{ route('olt') }}" method="GET">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="search" placeholder="Cari berdasarkan nama OLT atau nama Server..." value="{{ request('search') }}">
+                                    <button class="btn btn-primary" type="submit"><i class="bx bx-search"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-dark text-center">
                                 <tr>
@@ -33,9 +43,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($lokasi as $index => $olt)
+                                @forelse ($lokasi as $olt)
                                     <tr class="text-uppercase">
-                                        <td class="text-center">{{ $index + 1 }}</td>
+                                        <td class="text-center">{{ $loop->iteration + ($lokasi->currentPage() - 1) * $lokasi->perPage() }}</td>
                                         <td class="fw-semibold">
                                             <i class="bx bx-terminal me-1 text-primary"></i>{{ $olt->nama_lokasi }}
                                         </td>
@@ -52,12 +62,12 @@
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-warning">
-                                                {{ $odc->where('lokasi_id', $olt->id)->count() }}
+                                                {{ $olt->odc_count }}
                                             </span>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-warning">
-                                                {{ $odp->where('odc_id', $olt->id)->count() }}
+                                                {{ $olt->odp_count }}
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -73,12 +83,17 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center">Tidak ada data</td>
+                                        <td colspan="6" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($lokasi->hasPages())
+                        <div class="d-flex justify-content-end mt-3">
+                            {{ $lokasi->links() }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

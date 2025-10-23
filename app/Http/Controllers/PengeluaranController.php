@@ -94,8 +94,12 @@ class PengeluaranController extends Controller
         }
 
         // ✅ Upload bukti pengeluaran
-        $path = $request->file('buktiPengeluaran')->getClientOriginalName();
-        $request->file('buktiPengeluaran')->storeAs('public/uploads', $path);
+        if ($request->bukti_pengeluaran != null) {
+            $path = $request->file('buktiPengeluaran')->getClientOriginalName();
+            $request->file('buktiPengeluaran')->storeAs('public/uploads', $path);
+        } else {
+            $path = null;
+        }
 
         // ✅ Simpan ke tabel pengeluaran
         $pengeluaran = new Pengeluaran();

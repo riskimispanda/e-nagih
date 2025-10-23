@@ -20,6 +20,16 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-sm-4">
+                            <form action="{{ route('odc') }}" method="GET">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="search" placeholder="Cari berdasarkan nama ODC atau nama OLT..." value="{{ request('search') }}">
+                                    <button class="btn btn-primary" type="submit"><i class="bx bx-search"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-dark text-center">
@@ -32,9 +42,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($odc as $index => $od)
+                                @forelse ($odc as $od)
                                     <tr class="text-uppercase">
-                                        <td class="text-center">{{ $index + 1 }}</td>
+                                        <td class="text-center">{{ $loop->iteration + ($odc->currentPage() - 1) * $odc->perPage() }}</td>
                                         <td class="fw-semibold">
                                             <i class="bx bx-terminal me-1 text-primary"></i>{{ $od->nama_odc }}
                                         </td>
@@ -51,7 +61,7 @@
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-warning">
-                                                {{ $odp->where('odc_id', $od->id)->count() }}
+                                                {{ $od->odp_count }}
                                             </span>
                                         </td>
                                         <td class="text-center">
@@ -67,11 +77,16 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center">Tidak ada data</td>
+                                        <td colspan="5" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
+                        @if ($odc->hasPages())
+                            <div class="d-flex justify-content-end mt-3">
+                                {{ $odc->links() }}
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

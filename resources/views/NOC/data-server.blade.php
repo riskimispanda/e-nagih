@@ -21,6 +21,16 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-sm-4">
+                            <form action="{{ route('data-server') }}" method="GET">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="search" placeholder="Cari berdasarkan lokasi atau IP..." value="{{ request('search') }}">
+                                    <button class="btn btn-primary" type="submit"><i class="bx bx-search"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover">
                             <thead class="table-dark text-center">
@@ -33,9 +43,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($server as $index => $s)
+                                @forelse ($server as $s)
                                     <tr class="text-uppercase">
-                                        <td class="text-center">{{ $index + 1 }}</td>
+                                        <td class="text-center">{{ $loop->iteration + ($server->currentPage() - 1) * $server->perPage() }}</td>
                                         <td class="fw-semibold">
                                             <i class="bx bx-server me-1 text-primary"></i>{{ $s->lokasi_server }}
                                         </td>
@@ -68,12 +78,17 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center">Tidak ada data</td>
+                                        <td colspan="5" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
+                    @if ($server->hasPages())
+                        <div class="d-flex justify-content-end mt-3">
+                            {{ $server->links() }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
