@@ -827,7 +827,7 @@
                                 <div class="data-label">Jumlah Pelanggan</div>
                                 <div class="data-value">
                                     <span class="badge bg-primary rounded-pill">
-                                        {{ $data->total() }}
+                                        {{ $pelangganAktif }}
                                     </span>
                                 </div>
                             </div>

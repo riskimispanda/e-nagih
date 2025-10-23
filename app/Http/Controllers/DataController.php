@@ -154,6 +154,7 @@ class DataController extends Controller
             ->count();
 
         $nonAktif = Customer::where('status_id', 9)->get();
+        $countPelangganAktif = Customer::where('status_id', 3)->count();
 
         // Handle AJAX requests
         if ($request->ajax()) {
@@ -275,7 +276,8 @@ class DataController extends Controller
             'countAgen' => $countAgen,
             'totalPendapatan' => $totalPendapatan,
             'sudahBayar' => $sudahBayar,
-            'belumBayar' => $belumBayar
+            'belumBayar' => $belumBayar,
+            'pelangganAktif' => $countPelangganAktif
         ]);
     }
 
