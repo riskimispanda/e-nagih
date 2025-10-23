@@ -72,7 +72,6 @@ class PengeluaranController extends Controller
     {
         $request->validate([
             'jumlahPengeluaran' => 'required|numeric|min:1',
-            'buktiPengeluaran' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
             // tambahkan validasi lain sesuai kebutuhan
         ]);
 
