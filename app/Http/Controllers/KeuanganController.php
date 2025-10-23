@@ -1897,7 +1897,7 @@ class KeuanganController extends Controller
         $agenQuery = User::where('roles_id', 6)
             ->withCount(['customer as total_customer' => function ($query) {
                 $query->whereIn('status_id', [3, 4, 9])
-                    ->withTrashed();
+                ->whereNull('deleted_at');
             }]);
 
         // Apply search filter if provided
