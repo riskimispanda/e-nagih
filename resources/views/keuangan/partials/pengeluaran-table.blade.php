@@ -1,11 +1,20 @@
 @forelse ($pengeluarans as $key => $pengeluaran)
 <tr class="text-center">
     <td>{{ $pengeluarans->firstItem() + $key }}</td>
-    <td>{{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}</td>
+    <td>
+        <span class="badge bg-label-info">
+            {{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}
+        </span>
+    </td>
     <td>{{ $pengeluaran->jenis_pengeluaran }}</td>
     <td>{{ $pengeluaran->keterangan }}</td>
     <td data-amount="{{ $pengeluaran->jumlah_pengeluaran }}">
         Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
+    </td>
+    <td>
+        <span class="badge bg-label-primary">
+            {{ $pengeluaran->kas->jenis_kas ?? '-'}}
+        </span>
     </td>
     <td>
         @if ($pengeluaran->status_id == 1)
