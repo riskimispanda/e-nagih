@@ -354,6 +354,7 @@
                                 <th>Jenis Pengeluaran</th>
                                 <th>Keterangan</th>
                                 <th>Jumlah</th>
+                                <th>Jenis Kas</th>
                                 <th>Status</th>
                                 <th>Admin</th>
                                 <th>Aksi</th>
@@ -373,6 +374,11 @@
                                 <td data-amount="{{ $pengeluaran->jumlah_pengeluaran }}">
                                     <span class="badge bg-label-warning">
                                         Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-label-primary">
+                                        {{ $pengeluaran->kas->jenis_kas ?? '-'}}
                                     </span>
                                 </td>
                                 <td>
