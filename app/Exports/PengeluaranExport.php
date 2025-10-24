@@ -59,7 +59,7 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
             $pengeluaran->keterangan,
             $pengeluaran->jumlah_pengeluaran,
             $pengeluaran->metode_bayar,
-            $pengeluaran->kas->jenis_kas,
+            $pengeluaran->kas->jenis_kas ?? '-',
             $this->getStatusText($pengeluaran->status_id),
             $pengeluaran->user->name ?? 'N/A',
         ];
