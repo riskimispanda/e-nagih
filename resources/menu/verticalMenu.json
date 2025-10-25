@@ -286,7 +286,8 @@
         "NOC",
         "Helpdesk",
         "Admin Logistik",
-        "Admin Keuangan"
+        "Admin Keuangan",
+        "Teknisi"
       ]
     },
     {
@@ -299,7 +300,8 @@
         "Super Admin",
         "Helpdesk",
         "Admin Logistik",
-        "Admin Keuangan"
+        "Admin Keuangan",
+        "Teknisi"
       ],
       "submenu": [
         {
@@ -323,7 +325,8 @@
             "Super Admin",
             "Admin Logistik",
             "Admin Keuangan",
-            "Helpdesk"
+            "Helpdesk",
+            "Teknisi"
           ]
         },
         {
