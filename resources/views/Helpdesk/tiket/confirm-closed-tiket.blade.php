@@ -301,7 +301,7 @@
                     <div class="d-flex align-items-center">
                         <div class="text-end me-3">
                             <small class="text-muted d-block">Dibuat oleh</small>
-                            <span class="badge bg-label-info status-badge">{{ $kategori->user->name ?? '-'}}</span>
+                            <span class="badge bg-label-info status-badge">{{ $kategori?->user->name ?? '-'}}</span>
                         </div>
                         <i class="bx bx-chevron-down collapse-icon"></i>
                     </div>
