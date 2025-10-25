@@ -365,6 +365,18 @@
     new TomSelect('#router',{
         create: false,
     });
+
+    new TomSelect('#olt',{
+        create: false,
+    });
+
+    new TomSelect('#odc',{
+        create: false,
+    });
+    new TomSelect('#odp',{
+        create: false,
+    });
+
 </script>
 
 <script>
