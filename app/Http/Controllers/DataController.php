@@ -424,7 +424,7 @@ class DataController extends Controller
         $odp = ODP::all();
         $koneksi = Koneksi::all();
         $media = MediaKoneksi::all();
-        $perangkat = Perangkat::all();
+        $perangkat = Perangkat::whereIn('kategori_id', [1, 4, 5])->get();
         $agen = User::where('roles_id', 6)->get();
 
         return view('/pelanggan/edit',[

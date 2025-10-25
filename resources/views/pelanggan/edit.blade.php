@@ -376,6 +376,12 @@
     new TomSelect('#odp',{
         create: false,
     });
+    new TomSelect('#bts',{
+        create: false,
+    });
+    new TomSelect('#perangkat',{
+        create: false,
+    });
 
 </script>
 
