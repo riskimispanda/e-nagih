@@ -795,7 +795,7 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bxs-devices"></i></span>
                                     <select name="modem_lama_id" class="form-select" readonly disabled>
-                                        <option value="{{ $modemLama->perangkat->id }}">{{$modemLama->perangkat->nama_perangkat}}</option>
+                                        <option value="{{ $modemLama->perangkat->id ?? '-'}}">{{$modemLama->perangkat->nama_perangkat ?? '-'}}</option>
                                     </select>
                                 </div>
                             </div>
