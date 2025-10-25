@@ -438,6 +438,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/requestEdit/pembayaran', [SuperAdmin::class, 'requestEdit'])->middleware('auth','roles:Super Admin,Admin Keuangan');
     Route::get('/konfirmasiEditPembayaran/{id}', [SuperAdmin::class, 'konfirmasiEditPembayaran'])->middleware('auth','roles:Super Admin');
     Route::get('/rejectEditPembayaran/{id}', [SuperAdmin::class, 'rejectEditPembayaran'])->middleware('auth','roles:Super Admin');
+    Route::post('/konfirmasi-tiket/{id}', [TiketController::class, 'confirmDeaktivasi']);
+    Route::post('/konfirmasi-tiket-gangguan/{id}', [TiketController::class, 'confirmGangguan']);
 
     Route::get('/keuangan/global-pendapatan-data', [KeuanganController::class, 'getGlobalPendapatanData'])->name('keuangan.getGlobalPendapatanData');
 

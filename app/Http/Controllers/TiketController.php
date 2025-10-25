@@ -134,7 +134,7 @@ class TiketController extends Controller
             $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
         }])
             ->whereHas('customer', function ($query) {
-            $query->where('status_id', 4)
+            $query->whereIn('status_id', [3, 4])
                 ->withTrashed(); // ✅ Juga untuk whereHas
         })
             ->whereIn('status_id', [3, 6]);
@@ -283,5 +283,44 @@ class TiketController extends Controller
         });
 
         return redirect('/tiket-closed')->with('success', 'Berhasil deaktivasi pelanggan dan perangkat dikembalikan ke stok');
+    }
+
+    public function confirmGangguan(Request $request, $id)
+    {
+        $tiket = TiketOpen::findOrFail($id);
+        $tiket->update([
+            'keterangan' => $request->keterangan,
+            'status_id' => 3,
+            'tanggal_selesai' => $request->tanggal
+        ]);
+        $tiket->refresh();
+
+        // Validasi
+        if ($request->modem_baru_id != null) {
+            $mac = $request->mac_address;
+            $sni = $request->sni;
+            $modemBaru = $request->modem_baru_id;
+        } else {
+            $mac = $tiket->customer->mac_address;
+            $sni = $tiket->customer->seri_perangkat;
+            $modemBaru = $tiket->customer->perangkat_id;
+        }
+
+        $customer = Customer::where('id', $tiket->customer_id)->first();
+        $customer->update([
+            'status_id' => 3,
+            'perangkat_id' => $modemBaru,
+            'mac_address' => $mac,
+            'seri_perangkat' => $sni
+        ]);
+
+        $modemDetail = ModemDetail::where('customer_id', $tiket->customer_id)->first();
+        $modemDetail->update([
+            'logistik_id' => $modemBaru,
+            'mac_address' => $mac,
+            'serial_number' => $sni
+        ]);
+
+        return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
     }
 }

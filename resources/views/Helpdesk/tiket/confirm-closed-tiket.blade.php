@@ -787,7 +787,7 @@
             </div>
             <div class="collapse show" id="formDeaktivasiCollapse">
                 <div class="card-body">
-                    <form action="/konfirmasi-tiket/{{ $tiket->id }}" method="POST" enctype="multipart/form-data">
+                    <form action="/konfirmasi-tiket-gangguan/{{ $tiket->id }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row">
                             <div class="col-sm-6 mb-3">
