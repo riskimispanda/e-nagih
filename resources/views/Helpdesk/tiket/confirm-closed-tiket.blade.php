@@ -774,7 +774,7 @@
         @endif
 
         {{-- Form Gangguan --}}
-        @if($kategori->kategori->nama_kategori == 'Gangguan')
+        @if($kategori->kategori->nama_kategori == 'Gangguan' || $kategori->kategori->nama_kategori == 'Maintenance')
         <div class="card">
             <div class="card-header" data-bs-toggle="collapse" data-bs-target="#formDeaktivasiCollapse" aria-expanded="true">
                 <div class="d-flex justify-content-between align-items-center">
@@ -803,7 +803,7 @@
                                 <label class="form-label">Modem Baru</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bxs-devices"></i></span>
-                                    <select name="modem_baru_id" id="modem-baru" class="form-select" required>
+                                    <select name="modem_baru_id" id="modem-baru" class="form-select">
                                         <option value="" selected>Pilih Modem Baru</option>
                                         @foreach ($perangkat as $item)
                                             <option value="{{ $item->id }}" 
@@ -824,14 +824,14 @@
                                     <label class="form-label">MAC Address Modem Baru</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bx bxs-network-chart"></i></span>
-                                        <input type="text" name="mac_address" id="mac-address" class="form-control" placeholder="Masukkan MAC Address" required>
+                                        <input type="text" name="mac_address" id="mac-address" class="form-control" placeholder="Masukkan MAC Address">
                                     </div>
                                 </div>
                                 <div class="col-sm-6 mb-3">
                                     <label class="form-label">SNI Modem Baru</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bx bxs-barcode"></i></span>
-                                        <input type="text" name="sni" id="sni" class="form-control" placeholder="Masukkan SNI" required>
+                                        <input type="text" name="sni" id="sni" class="form-control" placeholder="Masukkan SNI">
                                     </div>
                                 </div>
                             </div>
@@ -840,7 +840,7 @@
                                 <label class="form-label">Foto Modem</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bxs-image"></i></span>
-                                    <input type="file" name="foto" class="form-control" required>
+                                    <input type="file" name="foto" class="form-control">
                                 </div>
                             </div>
                             <div class="col-sm-6 mb-3">
