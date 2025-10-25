@@ -209,7 +209,7 @@ class ChatServices
 
     public function kirimNotifikasiTiketOpen($to, $user, $tiket)
     {
-        $url = url('/helpdesk/tiket-open');
+        $url = url('/tiket-closed');
         $pesan = "Halo {$user->name}, Tiket Open baru telah ditambahkan. Silakan login ke aplikasi untuk melihat detail.\n\n" .
             "Nama Pelanggan: {$tiket->customer->nama_customer}\n" .
             "Kategori: {$tiket->kategori->nama_kategori}\n" .
