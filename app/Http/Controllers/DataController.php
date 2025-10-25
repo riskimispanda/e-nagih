@@ -449,17 +449,8 @@ class DataController extends Controller
         $invoice = Invoice::where('customer_id', $id)->latest()->first();
 
         DB::beginTransaction();
-
         try {
             $pelanggan = Customer::findOrFail($id);
-
-            // Simpan data lama untuk perbandingan
-            $oldData = [
-                'router_id' => $pelanggan->router_id,
-                'paket_id' => $pelanggan->paket_id,
-                'usersecret' => $pelanggan->usersecret,
-                'pass_secret' => $pelanggan->pass_secret,
-            ];
 
             // Data request langsung diassign ke pelanggan
             $data = [
@@ -489,34 +480,37 @@ class DataController extends Controller
             $pelanggan->update($data);
             $pelanggan->refresh();
 
-            // Cek apakah ada perubahan yang memerlukan update ke Mikrotik
-            $needsMikrotikUpdate = (
-                $oldData['router_id'] != $request->router ||
-                $oldData['paket_id'] != $request->paket ||
-                $oldData['usersecret'] != $request->usersecret ||
-                $oldData['pass_secret'] != $request->pass_secret
-            );
-
             // Tentukan router & paket (selalu ambil dari request)
             $router = Router::findOrFail($request->router);
             $paket  = Paket::findOrFail($request->paket);
 
-            if ($needsMikrotikUpdate) {
-                // Update invoice jika paket berubah
-                if ($invoice && $oldData['paket_id'] != $paket->id) {
-                    $invoice->update([
-                        'paket_id' => $paket->id,
-                        'tagihan'  => $paket->harga,
-                    ]);
-                }
+            $invoice->update([
+                'paket_id' => $paket->id,
+                'tagihan'  => $paket->harga,
+            ]);
 
-                // Update profile di MikroTik
-                $client = MikrotikServices::connect($router);
+
+            // Update profile di MikroTik
+            $konek = strtolower($pelanggan->koneksi->nama_koneksi);
+
+            $client = MikrotikServices::connect($router);
+            $existingSecret = MikrotikServices::checkPPPSecret($client, $pelanggan->usersecret);
+            if ($existingSecret) {
                 MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket->paket_name);
                 MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
-
-                Log::info('Success update profile Pelanggan di Mikrotik: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket->paket_name);
+            } else {
+                MikrotikServices::addPPPSecret($client, [
+                    'name' => $pelanggan->usersecret,
+                    'password' => $pelanggan->password,
+                    'remoteAddress' => $pelanggan->remote_address,
+                    'localAddress' => $pelanggan->local_address,
+                    'profile' => $pelanggan->paket->paket_name,
+                    'service' => $konek,
+                ]);
             }
+
+
+            Log::info('Success update profile Pelanggan di Mikrotik: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket->paket_name);
 
             // Update Data Modem
             ModemDetail::updateOrCreate(

@@ -14,8 +14,9 @@ use App\Models\Paket;
 use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\DB;
 use App\Models\Invoice;
+use App\Models\ModemDetail;
 use Carbon\Carbon;
-
+use App\Models\Perangkat;
 class TiketController extends Controller
 {
     public function TiketOpen(Request $request)
@@ -125,22 +126,33 @@ class TiketController extends Controller
         return redirect('/tiket-open')->with('success', 'Tiket Open Berhasil Ditambahkan');
     }
 
-    public function closedTiket()
+    public function closedTiket(Request $request)
     {
-        $coba = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+        $search = $request->get('search');
+
+        $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
             $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
         }])
             ->whereHas('customer', function ($query) {
             $query->where('status_id', 4)
                 ->withTrashed(); // ✅ Juga untuk whereHas
         })
-            ->whereIn('status_id', [3, 6])
-            ->paginate(10);
+            ->whereIn('status_id', [3, 6]);
+
+        if ($search) {
+            $query->whereHas('customer', function ($q) use ($search) {
+                $q->where('nama_customer', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%");
+            });
+        }
+
+        $customer = $query->paginate(10)->appends(['search' => $search]);
 
         return view('Helpdesk.tiket.closed-tiket', [
             'users'    => auth()->user(),
             'roles'    => auth()->user()->roles,
-            'customer' => $coba,
+            'customer' => $customer,
+            'search' => $search,
         ]);
     }
 
@@ -151,6 +163,9 @@ class TiketController extends Controller
         $kategori = TiketOpen::where('kategori_id', $tiket->kategori_id)->first();
         $router = Router::with('paket')->get();
         $paket = Paket::with('router')->get();
+        $modemLama = ModemDetail::with('perangkat')->where('customer_id', $id)->first();
+        $perangkat = Perangkat::whereIn('kategori_id', [1, 4, 5])->get();
+
         return view('Helpdesk.tiket.confirm-closed-tiket',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -158,6 +173,8 @@ class TiketController extends Controller
             'kategori' => $kategori,
             'router' => $router,
             'paket' => $paket,
+            'modemLama' => $modemLama,
+            'perangkat' => $perangkat
         ]);
     }
 

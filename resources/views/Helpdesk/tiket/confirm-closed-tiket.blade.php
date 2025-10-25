@@ -772,6 +772,105 @@
             </div>
         </div>
         @endif
+
+        {{-- Form Gangguan --}}
+        @if($kategori->kategori->nama_kategori == 'Gangguan')
+        <div class="card">
+            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#formDeaktivasiCollapse" aria-expanded="true">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="bx bx-power-off me-2"></i>
+                        <h5 class="card-title mb-0">Form Konfirmasi Gangguan</h5>
+                    </div>
+                    <i class="bx bx-chevron-down collapse-icon"></i>
+                </div>
+            </div>
+            <div class="collapse show" id="formDeaktivasiCollapse">
+                <div class="card-body">
+                    <form action="/konfirmasi-tiket/{{ $tiket->id }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <label class="form-label">Modem Lama</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bxs-devices"></i></span>
+                                    <select name="modem_lama_id" class="form-select" readonly disabled>
+                                        <option value="{{ $modemLama->perangkat->id }}">{{$modemLama->perangkat->nama_perangkat}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label class="form-label">Modem Baru</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bxs-devices"></i></span>
+                                    <select name="modem_baru_id" id="modem-baru" class="form-select" required>
+                                        <option value="" selected>Pilih Modem Baru</option>
+                                        @foreach ($perangkat as $item)
+                                            <option value="{{ $item->id }}" 
+                                                    data-stok="{{ $item->jumlah_stok ?? $item->stok_count ?? 0 }}"
+                                                    data-mac="{{ $item->mac_address ?? '' }}"
+                                                    data-sni="{{ $item->sni ?? '' }}">
+                                                {{ $item->nama_perangkat }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <small class="text-muted" id="info-stok">Pilih modem baru jika ganti modem. (Optional)</small>
+                            </div>
+
+                            {{-- Form tambahan yang muncul ketika modem dipilih --}}
+                            <div id="form-tambahan" style="display: none;">
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label">MAC Address Modem Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bxs-network-chart"></i></span>
+                                        <input type="text" name="mac_address" id="mac-address" class="form-control" placeholder="Masukkan MAC Address" required>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label">SNI Modem Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bxs-barcode"></i></span>
+                                        <input type="text" name="sni" id="sni" class="form-control" placeholder="Masukkan SNI" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-6 mb-3">
+                                <label class="form-label">Foto Modem</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bxs-image"></i></span>
+                                    <input type="file" name="foto" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label class="form-label">Tanggal Konfirmasi Gangguan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bxs-calendar"></i></span>
+                                    <input type="date" name="tanggal" class="form-control" value="{{ now()->format('Y-m-d') }}" readonly>
+                                </div>
+                            </div>
+                            <div class="col-sm-12 mb-3">
+                                <label class="form-label">Keterangan Kondisi Modem</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bxs-message"></i></span>
+                                    <textarea name="keterangan" class="form-control" cols="30" rows="5" required></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="javascript:window.history.back()" class="btn btn-secondary btn-sm"><i class="bx bxs-chevrons-left me-2"></i>Kembali</a>
+                                    <button class="btn btn-warning btn-sm" type="submit"><i class="bx bxs-check-circle me-2"></i>Konfirmasi</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 
@@ -871,6 +970,53 @@
         remoteAddressInput.addEventListener('focus', function() {
             manualEdit = false;
         });
+    });
+</script>
+
+{{-- JavaScript --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modemBaruSelect = document.getElementById('modem-baru');
+        const formTambahan = document.getElementById('form-tambahan');
+        const macAddressInput = document.getElementById('mac-address');
+        const sniInput = document.getElementById('sni');
+        const infoStok = document.getElementById('info-stok');
+    
+        modemBaruSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value) {
+                // Tampilkan form tambahan
+                formTambahan.style.display = 'block';
+                
+                // Isi data MAC Address dan SNI jika ada
+                const mac = selectedOption.getAttribute('data-mac');
+                const sni = selectedOption.getAttribute('data-sni');
+                const stok = selectedOption.getAttribute('data-stok');
+                
+                macAddressInput.value = mac || '';
+                sniInput.value = sni || '';
+                
+                // Update info stok
+                infoStok.textContent = `Stok tersedia: ${stok} unit`;
+                infoStok.className = stok > 0 ? 'text-success' : 'text-danger';
+                
+                // Jika stok 0, beri peringatan
+                if (stok == 0) {
+                    infoStok.innerHTML += ' <i class="bx bx-error"></i> Stok habis!';
+                }
+            } else {
+                // Sembunyikan form tambahan jika tidak ada pilihan
+                formTambahan.style.display = 'none';
+                infoStok.textContent = 'Pilih modem baru jika ganti modem. (Optional)';
+                infoStok.className = 'text-muted';
+            }
+        });
+    
+        // Trigger change event saat pertama kali load jika ada value yang terpilih
+        if (modemBaruSelect.value) {
+            modemBaruSelect.dispatchEvent(new Event('change'));
+        }
     });
 </script>
 @endsection

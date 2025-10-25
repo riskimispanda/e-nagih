@@ -380,38 +380,68 @@ class MikrotikServices
                 return false;
             }
 
-            // Cari user
+            // Cari user dengan approach yang lebih safe
             $query = new Query('/ppp/secret/print');
             $query->where('name', $usersecret);
             $users = $client->query($query)->read();
-            $user = $users[0] ?? null;
 
-            if (!$user) {
+            // Debug: Log response dari Mikrotik
+            Log::info("Mikrotik User Search Response", [
+                'usersecret' => $usersecret,
+                'users_count' => count($users),
+                'users_data' => $users
+            ]);
+
+            if (empty($users)) {
                 Log::warning("UpgradeDowngrade: user tidak ditemukan", [
                     'usersecret' => $usersecret
                 ]);
                 return false;
             }
 
-            // ✅ TAMBAHAN: Check jika profile sudah sama
-            if (($user['profile'] ?? null) === $newProfile) {
+            $user = $users[0] ?? null;
+
+            if (!$user) {
+                Log::warning("UpgradeDowngrade: user data kosong", [
+                    'usersecret' => $usersecret
+                ]);
+                return false;
+            }
+
+            // Cek jika .id exists dalam response
+            if (!isset($user['.id'])) {
+                Log::error("UpgradeDowngrade: .id tidak ditemukan dalam response", [
+                    'usersecret' => $usersecret,
+                    'user_data' => $user
+                ]);
+                return false;
+            }
+
+            $userId = $user['.id'];
+
+            // ✅ Check jika profile sudah sama
+            $currentProfile = $user['profile'] ?? null;
+            if ($currentProfile === $newProfile) {
                 Log::info("UpgradeDowngrade: profile sama, skip update", [
                     'usersecret' => $usersecret,
                     'profile' => $newProfile
                 ]);
-                return true; // Langsung return true, tidak perlu update
+                return true;
             }
 
-            // Update profile
+            // Update profile dengan approach yang lebih robust
             $setQuery = new Query('/ppp/secret/set');
-            $setQuery->equal('.id', $user['.id']);
+            $setQuery->equal('.id', $userId);
             $setQuery->equal('profile', $newProfile);
-            $client->query($setQuery);
 
-            Log::info("UpgradeDowngrade: profile updated", [
+            $result = $client->query($setQuery)->read();
+
+            Log::info("UpgradeDowngrade: profile updated successfully", [
                 'usersecret' => $usersecret,
-                'oldProfile' => $user['profile'] ?? null,
+                'oldProfile' => $currentProfile,
                 'newProfile' => $newProfile,
+                'user_id' => $userId,
+                'result' => $result
             ]);
 
             return true;
@@ -419,7 +449,8 @@ class MikrotikServices
             Log::error("UpgradeDowngrade ERROR", [
                 'usersecret' => $usersecret,
                 'newProfile' => $newProfile,
-                'error'      => $e->getMessage(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return false;
         }
@@ -489,12 +520,27 @@ class MikrotikServices
         }
     }
 
+    // Di MikrotikServices
+    public static function checkUserExists($client, $usersecret)
+    {
+        try {
+            $client->write('/ppp/secret/print', [
+                '?name' => $usersecret
+            ]);
+            $users = $client->read();
+
+            return !empty($users);
+        } catch (\Exception $e) {
+            Log::error('Check User Error: ' . $e->getMessage());
+            return false;
+        }
+    }
     public static function getPPPSecret(Client $client)
     {
         try {
             $query = new Query('/ppp/secret/print');
-            $query->where('comment', 'Created by NBilling');
-            // $query->where('name', 'asaaaaa@niscala.net.id');
+            // $query->where('comment', 'Created by NBilling');
+            $query->where('name', 'owow@nis.net');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());

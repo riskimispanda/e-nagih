@@ -24,4 +24,8 @@ class Perangkat extends Model
         return $this->belongsTo(KategoriLogistik::class);
     }
 
+    public function modem()
+    {
+        return $this->hasMany(ModemDetail::class, 'perangkat_id');
+    }
 }
