@@ -1534,7 +1534,7 @@
                                         <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-danger bg-opacity-10 text-danger">ISOLIRE BILLING</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">Maintenance</span>
                                     </td>
                                 </tr>
                             @empty
