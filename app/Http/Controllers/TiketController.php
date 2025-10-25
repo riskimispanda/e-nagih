@@ -83,7 +83,7 @@ class TiketController extends Controller
         $user = auth()->user()->id;
         // dd($user);
 
-        $karyawan = User::whereIn('roles_id', [1, 4, 5])->get();
+        $karyawan = User::whereIn('roles_id', [4, 5])->get();
 
         $foto = null;
         if ($request->hasFile('foto')) {
