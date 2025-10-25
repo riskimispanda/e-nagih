@@ -1992,9 +1992,9 @@ class KeuanganController extends Controller
 
         // Base query untuk customer dengan agen_id (include soft deleted)
         $baseCustomerQuery = function ($q) use ($id) {
-            $q->withTrashed()
-                ->where('agen_id', $id)
-                ->whereIn('status_id', [3, 4, 9]);
+            $q->where('agen_id', $id)
+                ->whereIn('status_id', [3, 4, 9])
+                ->whereNull('deleted_at');
         };
 
         // SOLUSI: Gunakan subquery yang lebih stabil dengan fromSub
