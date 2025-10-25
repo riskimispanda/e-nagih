@@ -301,7 +301,7 @@
                     <div class="d-flex align-items-center">
                         <div class="text-end me-3">
                             <small class="text-muted d-block">Dibuat oleh</small>
-                            <span class="badge bg-label-info status-badge">{{ $kategori?->user->name ?? '-'}}</span>
+                            <span class="badge bg-label-info status-badge">{{ $kategori->user->name ?? '-'}}</span>
                         </div>
                         <i class="bx bx-chevron-down collapse-icon"></i>
                     </div>
@@ -524,7 +524,7 @@
                                         <i class="bx bx-hard-hat text-success"></i>
                                         <div>
                                             <small class="text-muted">Teknisi</small>
-                                            <p class="mb-0 fw-semibold">{{ $tiket->customer->teknisi->name }}</p>
+                                            <p class="mb-0 fw-semibold">{{ $tiket->customer->teknisi->name ?? '-' }}</p>
                                         </div>
                                     </div>
                                 </div>
