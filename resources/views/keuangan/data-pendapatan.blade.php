@@ -1305,7 +1305,7 @@
         if (totalInput) totalInput.value = "Rp " + (total || 0).toLocaleString("id-ID");
     }
     
-    // Update table with AJAX data
+    // Di function updateTableWithAjax
     function updateTableWithAjax(invoices, pagination) {
         const tableBody = document.getElementById('tableBody');
         
@@ -1336,20 +1336,31 @@
                 rowNumber = index + 1;
             }
             
+            // PERBAIKAN: Safe access untuk nested properties
+            const customer = invoice.customer || {};
+            const customerName = customer.nama_customer || 'N/A';
+            const customerAddress = customer.alamat || '';
+            const isCustomerDeleted = customer.deleted_at !== null && customer.deleted_at !== undefined;
+            
+            const paket = invoice.paket || {};
+            const packageName = paket.nama_paket || 'N/A';
+            
+            const status = invoice.status || {};
+            
             tableHTML += `
-                <tr class="${invoice.customer?.trashed ? 'bg-danger bg-opacity-10' : ''}">
+                <tr class="${isCustomerDeleted ? 'bg-danger bg-opacity-10' : ''}">
                     <td class="fw-medium">${rowNumber}</td>
                     <td>
                         <div>
-                            <div class="fw-medium text-dark">${invoice.customer?.nama_customer || 'N/A'}</div>
-                            <small class="text-muted">${invoice.customer?.alamat ? invoice.customer.alamat.substring(0, 30) + (invoice.customer.alamat.length > 30 ? '...' : '') : ''}</small>
+                            <div class="fw-medium text-dark">${customerName}</div>
+                            <small class="text-muted">${customerAddress.substring(0, 30)}${customerAddress.length > 30 ? '...' : ''}</small>
                         </div>
                     </td>
                     <td>
                         <span class="badge bg-info bg-opacity-10 text-primary">
-                            ${invoice.paket?.nama_paket || 'N/A'}
+                            ${packageName}
                         </span>
-                        ${invoice.customer?.trashed ? '<span class="badge bg-label-danger mt-2">Deaktivasi</span>' : ''}
+                        ${isCustomerDeleted ? '<span class="badge bg-label-danger mt-2">Deaktivasi</span>' : ''}
                     </td>
                     <td>
                         <div class="d-flex align-items-center">
@@ -1390,11 +1401,11 @@
                         </div>
                     </td>
                     <td>
-                        ${getStatusBadge(invoice.status)}
+                        ${getStatusBadge(status)}
                     </td>
                     <td>
                         <div class="d-flex gap-2">
-                            ${getActionButtons(invoice)}
+                            ${getActionButtons(invoice, customer)}
                         </div>
                     </td>
                 </tr>
@@ -1402,8 +1413,6 @@
         });
         
         tableBody.innerHTML = tableHTML;
-        
-        // Re-initialize tooltips setelah update table
         initializeTooltips();
     }
     

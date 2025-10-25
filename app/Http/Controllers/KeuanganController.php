@@ -348,16 +348,23 @@ class KeuanganController extends Controller
                 'page' => $page
             ]);
 
-            // Build query for invoices with relationships
-            $query = Invoice::with(['customer', 'paket', 'status'])
+            // PERBAIKAN: Gunakan withTrashed() untuk customer relationship
+            $query = Invoice::with([
+                'customer' => function ($query) {
+                    $query->withTrashed(); // ✅ INI YANG PERLU DITAMBAHKAN
+                },
+                'paket',
+                'status'
+            ])
                 ->orderBy('created_at', 'desc')
-                ->whereIn('status_id', [1, 7]); // Exclude 'Dibatalkan' status
+                ->whereIn('status_id', [1, 7]);
 
-            // Apply search filter
+            // Apply search filter - PERBAIKI: Include withTrashed() di search juga
             if (!empty($search)) {
                 $query->where(function ($q) use ($search) {
                     $q->whereHas('customer', function ($customerQuery) use ($search) {
-                        $customerQuery->where('nama_customer', 'like', '%' . $search . '%')
+                        $customerQuery->withTrashed() // ✅ INI JUGA
+                            ->where('nama_customer', 'like', '%' . $search . '%')
                             ->orWhere('no_hp', 'like', '%' . $search . '%')
                             ->orWhere('alamat', 'like', '%' . $search . '%');
                     })->orWhereHas('paket', function ($paketQuery) use ($search) {
@@ -417,7 +424,7 @@ class KeuanganController extends Controller
 
             // ===== STATISTICS CALCULATION =====
 
-            // Total Revenue - All successful payments
+            // PERBAIKAN: Untuk statistics, gunakan withTrashed() secara konsisten
             $totalRevenue = Pembayaran::sum('jumlah_bayar');
 
             // Monthly Revenue - Based on selected month or current month
@@ -426,17 +433,34 @@ class KeuanganController extends Controller
                 ->whereYear('tanggal_bayar', Carbon::now()->year)
                 ->sum('jumlah_bayar');
 
-            // Pending Revenue - All unpaid invoices
-            $pendingRevenue = Invoice::where('status_id', 7)
-                ->whereMonth('jatuh_tempo', $bulan)
-                ->whereYear('jatuh_tempo', Carbon::now()->year)
-                ->get()
+            // PERBAIKAN: Pending Revenue - Include soft deleted customers
+            $pendingRevenueQuery = Invoice::where('status_id', 7)
+                ->whereHas('customer', function ($q) {
+                    $q->withTrashed(); // ✅ Include soft deleted
+                });
+
+            if (!empty($bulan)) {
+                $pendingRevenueQuery->whereMonth('jatuh_tempo', $bulan)
+                    ->whereYear('jatuh_tempo', Carbon::now()->year);
+            }
+
+            $pendingRevenue = $pendingRevenueQuery->get()
                 ->sum(function ($invoice) {
                     return ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
                 });
 
-            // Total Invoices - All active invoices
-            $totalInvoices = Invoice::where('status_id', 7)->whereMonth('jatuh_tempo', $bulan)->whereYear('jatuh_tempo', Carbon::now()->year)->count();
+            // PERBAIKAN: Total Invoices - Include soft deleted customers
+            $totalInvoicesQuery = Invoice::where('status_id', 7)
+                ->whereHas('customer', function ($q) {
+                    $q->withTrashed(); // ✅ Include soft deleted
+                });
+
+            if (!empty($bulan)) {
+                $totalInvoicesQuery->whereMonth('jatuh_tempo', $bulan)
+                    ->whereYear('jatuh_tempo', Carbon::now()->year);
+            }
+
+            $totalInvoices = $totalInvoicesQuery->count();
 
             Log::info('Statistics Calculated:', [
                 'totalRevenue' => $totalRevenue,
