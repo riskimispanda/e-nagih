@@ -259,9 +259,7 @@
                 </div>
                 @if ($customer->hasPages())
                     <div class="d-flex justify-content-start mt-3">
-                        <div class="pagination-wrapper">
-                            {{ $customer->links() }}
-                        </div>
+                        {{ $customer->links() }}
                     </div>
                 @endif
             </div>
