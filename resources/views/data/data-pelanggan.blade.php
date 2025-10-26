@@ -869,7 +869,7 @@
                                 <i class="bx bx-loader"></i>
                             </div>
                             <div class="data-card-content">
-                                <div class="data-label">Maintenance Hari Ini</div>
+                                <div class="data-label">List Tiket</div>
                                 <div class="data-value">
                                     <span class="badge bg-danger rounded-pill">
                                         {{ $maintenance->count() }}
@@ -1504,7 +1504,7 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel4">Pelanggan Maintenance</h5>
+                <h5 class="modal-title fw-bold" id="exampleModalLabel4">List Tiket Open</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1516,7 +1516,8 @@
                                 <th>Nama Pelanggan</th>
                                 <th>No HP</th>
                                 <th>Paket</th>
-                                <th>Status</th>
+                                <th>Status Tiket</th>
+                                <th>Kategori Tiket</th>
                             </tr>
                         </thead>
                         <tbody class="text-center">
@@ -1525,16 +1526,21 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td>
                                         <div>
-                                            <div>{{$item->nama_customer}}</div>
-                                            <small class="text-muted">{{ $item->alamat }}</small>
+                                            <div>{{$item->customer->nama_customer}}</div>
+                                            <small class="text-muted">{{ $item->customer->alamat }}</small>
                                         </div>
                                     </td>
-                                    <td>{{$item->no_hp}}</td>
+                                    <td>{{$item->customer->no_hp}}</td>
                                     <td>
-                                        <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                                        <span class="badge bg-info">{{$item->customer->paket->nama_paket}}</span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-danger bg-opacity-10 text-danger">Maintenance</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger">{{ $item->status->nama_status }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-warning">
+                                            {{ $item->kategori->nama_kategori }}
+                                        </span>
                                     </td>
                                 </tr>
                             @empty

@@ -27,6 +27,7 @@ use App\Imports\CustomerImport;
 use App\Imports\CustomerKhusus;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\ModemDetail;
+use App\Models\TiketOpen;
 use App\Models\User;
 
 class DataController extends Controller
@@ -126,7 +127,11 @@ class DataController extends Controller
             ->count();
         // $menunggu = Customer::whereIn('status_id', [1, 2, 3])->count();
 
-        $maintenance = Customer::where('status_id', 4)->withTrashed()->get();
+        $maintenance = TiketOpen::where('status_id', 6)
+            ->whereHas('customer', function ($query) {
+                $query->withTrashed();
+            })
+            ->get();
 
         $antrian = Customer::whereIn('status_id', [1, 2, 5])
             ->whereDate('created_at', today())
