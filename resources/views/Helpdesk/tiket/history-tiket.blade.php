@@ -273,7 +273,7 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td><span class="badge bg-label-primary">{{ $ticket->kategori->nama_kategori }}</span></td>
-                            <td>{{ Str::limit($ticket->keterangan, 50) }}</td>
+                            <td>{{ Str::limit($ticket->keterangan, 200) }}</td>
                             <td>
                                 <span class="badge bg-label-warning">
                                     {{ $ticket->created_at->translatedFormat('d M Y, H:i') }}
