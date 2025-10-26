@@ -208,7 +208,7 @@
                                     <i class="bx bx-wifi"></i>
                                     <div>
                                         <small>Jenis Koneksi</small>
-                                        <p class="fw-semibold mb-0">{{ $customer->koneksi->nama_koneksi }}</p>
+                                        <p class="fw-semibold mb-0">{{ $customer->koneksi->nama_koneksi ?? 'Tidak ada'}}</p>
                                     </div>
                                 </div>
                             </div>
@@ -217,7 +217,7 @@
                                     <i class="bx bx-wifi"></i>
                                     <div>
                                         <small>Perangkat</small>
-                                        <p class="fw-semibold mb-0">{{ $customer->perangkat->nama_perangkat }}</p>
+                                        <p class="fw-semibold mb-0">{{ $customer->perangkat->nama_perangkat ?? 'Tidak ada' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -226,7 +226,7 @@
                                     <i class="bx bx-wifi"></i>
                                     <div>
                                         <small>Mac Address</small>
-                                        <p class="fw-semibold mb-0">{{ $customer->mac_address }}</p>
+                                        <p class="fw-semibold mb-0">{{ $customer->mac_address ?? 'Tidak ada'}}</p>
                                     </div>
                                 </div>
                             </div>
@@ -235,7 +235,7 @@
                                     <i class="bx bx-wifi"></i>
                                     <div>
                                         <small>Serial Number</small>
-                                        <p class="fw-semibold mb-0">{{ $customer->seri_perangkat }}</p>
+                                        <p class="fw-semibold mb-0">{{ $customer->seri_perangkat ?? 'Tidak ada'}}</p>
                                     </div>
                                 </div>
                             </div>
