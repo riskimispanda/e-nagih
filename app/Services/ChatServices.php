@@ -212,6 +212,8 @@ class ChatServices
         $url = url('/tiket-closed');
         $pesan = "Halo {$user->name}, Tiket Open baru telah ditambahkan. Silakan login ke aplikasi untuk melihat detail.\n\n" .
             "Nama Pelanggan: {$tiket->customer->nama_customer}\n" .
+            "Alamat Pelanggan: {$tiket->customer->alamat}\n" .
+            "No HP Pelanggan: {$tiket->customer->no_hp}\n" .
             "Kategori: {$tiket->kategori->nama_kategori}\n" .
             "Keterangan: {$tiket->keterangan}\n" .
             "By Admin: {$tiket->user->name}\n" .
