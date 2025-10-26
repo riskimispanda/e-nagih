@@ -602,15 +602,20 @@
                                 </td>
                                 
                                 <td class="table-col-action text-center">
-                                    @if($item->status->nama_status != 'Maintenance')
-                                    <a href="/open-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" title="Buka Tiket" data-bs-placement="bottom">
-                                        <i class="bx bx-lock-open-alt"></i>
-                                    </a>
-                                    @else
-                                    <button class="btn btn-action btn-locked" disabled data-bs-toggle="tooltip" title="Sedang Diproses" data-bs-placement="bottom">
-                                        <i class="bx bx-lock"></i>
-                                    </button>
-                                    @endif
+                                    <div class="d-flex justify-content-center gap-2">
+                                        @if($item->status->nama_status != 'Maintenance')
+                                        <a href="/open-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" title="Buka Tiket" data-bs-placement="bottom">
+                                            <i class="bx bx-lock-open-alt"></i>
+                                        </a>
+                                        @else
+                                        <button class="btn btn-action btn-locked" disabled data-bs-toggle="tooltip" title="Sedang Diproses" data-bs-placement="bottom">
+                                            <i class="bx bx-lock"></i>
+                                        </button>
+                                        @endif
+                                        <a href="/history-tiket/{{ $item->id }}" class="btn btn-outline-info btn-sm" data-bs-placement="bottom" data-bs-toggle="tooltip" title="Lihat History Tiket">
+                                            <i class="bx bx-show"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @empty

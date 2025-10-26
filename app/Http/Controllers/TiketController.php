@@ -324,4 +324,21 @@ class TiketController extends Controller
 
         return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
     }
+
+    public function historyTiket($id)
+    {
+        // Asumsi $id adalah customer_id
+        $customer = Customer::findOrFail($id);
+        $tickets = TiketOpen::where('customer_id', $id)
+            ->with(['kategori', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('Helpdesk.tiket.history-tiket', [
+            'users' => auth()->user(),
+            'roles' => auth()->user()->roles,
+            'customer' => $customer,
+            'tickets' => $tickets,
+        ]);
+    }
 }

@@ -391,6 +391,7 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');
+    Route::get('/history-tiket/{id}', [TiketController::class, 'historyTiket']);
 
     // Keuangan
     Route::get('/pengeluaran/filter', [PengeluaranController::class, 'filterByMonth'])->name('pengeluaran.filter');
