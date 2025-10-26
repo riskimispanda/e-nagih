@@ -259,7 +259,9 @@
                 </div>
                 @if ($customer->hasPages())
                     <div class="d-flex justify-content-start mt-3">
-                        {{ $customer->links() }}
+                        <div class="row">
+                            {{ $customer->links() }}
+                        </div>
                     </div>
                 @endif
             </div>
