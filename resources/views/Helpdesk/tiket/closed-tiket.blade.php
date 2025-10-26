@@ -258,8 +258,10 @@
                     </div>
                 </div>
                 @if ($customer->hasPages())
-                    <div class="card-footer pagination-wrapper">
-                        {{ $customer->links() }}
+                    <div class="d-flex justify-content-start mt-3">
+                        <div class="pagination-wrapper">
+                            {{ $customer->links() }}
+                        </div>
                     </div>
                 @endif
             </div>
