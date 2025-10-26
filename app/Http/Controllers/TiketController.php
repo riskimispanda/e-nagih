@@ -137,7 +137,8 @@ class TiketController extends Controller
             $query->whereIn('status_id', [3, 4])
                 ->withTrashed(); // ✅ Juga untuk whereHas
         })
-            ->whereIn('status_id', [3, 6]);
+            ->whereIn('status_id', [3, 6])
+            ->orderBy('created_at', 'desc');
 
         if ($search) {
             $query->whereHas('customer', function ($q) use ($search) {
