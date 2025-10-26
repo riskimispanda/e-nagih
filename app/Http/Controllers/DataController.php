@@ -126,9 +126,7 @@ class DataController extends Controller
             ->count();
         // $menunggu = Customer::whereIn('status_id', [1, 2, 3])->count();
 
-        $maintenance = Customer::whereDate('updated_at', today())
-            ->where('status_id', 4)
-            ->get();
+        $maintenance = Customer::where('status_id', 4)->withTrashed()->get();
 
         $antrian = Customer::whereIn('status_id', [1, 2, 5])
             ->whereDate('created_at', today())
