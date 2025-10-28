@@ -189,6 +189,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update-photo/{id}', [UserController::class, 'updatePhoto'])->name('update-photo');
     Route::post('/update/user/{id}', [UserController::class, 'updateUser'])->name('update-user');
     Route::get('/data/invoice/{name}', [Customer::class, 'dataInvoice'])->name('invoice');
+    Route::get('/cancel-tiket/{id}', [TiketController::class, 'cancelTiket']);
 
     // SuperAdmin
     Route::get('/payment/approve', [SuperAdmin::class, 'approvalPembayaran'])->name('payment.approve');

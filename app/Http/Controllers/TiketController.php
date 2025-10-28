@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+// Models and Plugin
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\User;
@@ -17,6 +18,8 @@ use App\Models\Invoice;
 use App\Models\ModemDetail;
 use Carbon\Carbon;
 use App\Models\Perangkat;
+
+// Class Controller
 class TiketController extends Controller
 {
     public function TiketOpen(Request $request)
@@ -53,6 +56,8 @@ class TiketController extends Controller
         }
 
         $tiketAktif = TiketOpen::count();
+        $tiketOpenAktif = TiketOpen::where('status_id', 6)->count();
+        $tiketClosed = TiketOpen::where('status_id', 3)->count();
 
         return view('Helpdesk.tiket-open-pelanggan',[
             'users' => auth()->user(),
@@ -60,7 +65,9 @@ class TiketController extends Controller
             'customer' => $customer,
             'search' => $search,
             'perPage' => $perPage,
-            'tiketAktif' => $tiketAktif
+            'tiketAktif' => $tiketAktif,
+            'tiketOpenAktif' => $tiketOpenAktif,
+            'tiketClosed' => $tiketClosed
         ]);
     }
 
@@ -85,6 +92,7 @@ class TiketController extends Controller
         // dd($user);
 
         $karyawan = User::whereIn('roles_id', [4, 5])->get();
+        $noc = User::where('roles_id', 4)->get();
 
         $foto = null;
         if ($request->hasFile('foto')) {
@@ -103,25 +111,40 @@ class TiketController extends Controller
         $tiket->user_id = $user;
         $tiket->status_id = 6;
         $tiket->save();
+        $tiket->refresh();
 
         $customer = Customer::findOrFail($request->customer_id);
         $customer->update(['status_id' => 4]);
 
-        // Kirim Notif
-        $chat = new ChatServices();
-        foreach ($karyawan as $kar) {
-            $nomor = preg_replace('/[^0-9]/', '', $kar->no_hp);
-            if (str_starts_with($nomor, '0')) {
-                $nomor = '62' . substr($nomor, 1);
+        if ($tiket->kategori_id == 4 || $tiket->kategori_id == 6 || $tiket->kategori_id == 7) {
+            // Kirim Notif ke NOC
+            $chat = new ChatServices();
+            foreach ($noc as $kar) {
+                $nomor = preg_replace('/[^0-9]/', '', $kar->no_hp);
+                if (str_starts_with($nomor, '0')) {
+                    $nomor = '62' . substr($nomor, 1);
+                }
+                $chat->kirimNotifikasiTiketOpen($nomor, $kar, $tiket);
             }
-            $chat->kirimNotifikasiTiketOpen($nomor, $kar, $tiket);
+        }
+
+        if ($tiket->kategori_id == 1 || $tiket->kategori_id == 2 || $tiket->kategori_id == 5) {
+            // Kirim Notif ke Teknisi
+            $chat = new ChatServices();
+            foreach ($karyawan as $kar) {
+                $nomor = preg_replace('/[^0-9]/', '', $kar->no_hp);
+                if (str_starts_with($nomor, '0')) {
+                    $nomor = '62' . substr($nomor, 1);
+                }
+                $chat->kirimNotifikasiTiketOpen($nomor, $kar, $tiket);
+            }
         }
 
         // Log Activity
         activity('tiket')
             ->performedOn($tiket)
             ->causedBy(auth()->user())
-            ->log('Menambah Tiket Open');
+            ->log(auth()->user()->name . ' Membuka tiket untuk pelanggan ' . $customer->nama_customer);
 
         return redirect('/tiket-open')->with('success', 'Tiket Open Berhasil Ditambahkan');
     }
@@ -129,32 +152,106 @@ class TiketController extends Controller
     public function closedTiket(Request $request)
     {
         $search = $request->get('search');
+        $month = $request->get('month');
 
-        $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-            $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
-        }])
-            ->whereHas('customer', function ($query) {
-            $query->whereIn('status_id', [3, 4])
-                ->withTrashed(); // ✅ Juga untuk whereHas
-        })
-            ->whereIn('status_id', [3, 6])
-            ->orderBy('created_at', 'desc');
-
-        if ($search) {
-            $query->whereHas('customer', function ($q) use ($search) {
-                $q->where('nama_customer', 'like', "%{$search}%")
-                    ->orWhere('alamat', 'like', "%{$search}%");
-            });
+        // Condition
+        if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3) {
+            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+            }])
+                ->whereHas('customer', function ($query) {
+                    $query->whereIn('status_id', [3, 4])
+                        ->withTrashed(); // ✅ Juga untuk whereHas
+                })
+                ->whereIn('status_id', [3, 6])
+                ->orderBy('created_at', 'desc');
+        } elseif (auth()->user()->roles_id == 4) {
+            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+            }])
+                ->whereHas('kategori', function ($k) {
+                    $k->whereIn('id', [4, 6, 7]);
+                })
+                ->whereHas('customer', function ($query) {
+                    $query->whereIn('status_id', [3, 4])
+                        ->withTrashed(); // ✅ Juga untuk whereHas
+                })
+                ->whereIn('status_id', [3, 6])
+                ->orderBy('created_at', 'desc');
+        } elseif (auth()->user()->roles_id == 5) {
+            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+            }])
+                ->whereHas('kategori', function ($k) {
+                    $k->whereIn('id', [1, 2, 3, 5]);
+                })
+                ->whereHas('customer', function ($query) {
+                    $query->whereIn('status_id', [3, 4])
+                        ->withTrashed(); // ✅ Juga untuk whereHas
+                })
+                ->whereIn('status_id', [3, 6])
+                ->orderBy('created_at', 'desc');
         }
 
-        $customer = $query->paginate(10)->appends(['search' => $search]);
+
+        // $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+        //     $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+        // }])
+        //     ->whereHas('customer', function ($query) {
+        //     $query->whereIn('status_id', [3, 4])
+        //         ->withTrashed(); // ✅ Juga untuk whereHas
+        // })
+        //     ->whereIn('status_id', [3, 6])
+        //     ->orderBy('created_at', 'desc');
+
+        // if ($search) {
+        //     $query->whereHas('customer', function ($q) use ($search) {
+        //         $q->where('nama_customer', 'like', "%{$search}%")
+        //             ->orWhere('alamat', 'like', "%{$search}%")
+        //             ->orWhere('no_hp', 'like', "%{$search}%");
+        //     });
+        // }
+
+        // Filter by month if provided
+        if ($month && $month != 'all') {
+            $query->whereMonth('created_at', $month);
+        }
+
+        $customer = $query->paginate(10)->appends($request->query());
+
+        // Generate all months from January to December for the dropdown
+        $months = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $months[$m] = Carbon::create()->month($m)->translatedFormat('F');
+        }
 
         return view('Helpdesk.tiket.closed-tiket', [
             'users'    => auth()->user(),
             'roles'    => auth()->user()->roles,
             'customer' => $customer,
             'search' => $search,
+            'months' => $months,
+            'selectedMonth' => $month,
         ]);
+    }
+
+    public function cancelTiket(Request $request, $id)
+    {
+        $tiket = TiketOpen::findOrFail($id);
+        $tiket->update([
+            'status_id' => 3
+        ]);
+
+        $customer = Customer::where('id', $tiket->customer_id)->first();
+        $customer->update([
+            'status_id' => 3
+        ]);
+
+        activity('Cancel Tiket')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Membatalkan tiket untuk pelanggan ' . $customer->nama_customer);
+
+        return redirect('/tiket-closed')->with('success', 'Tiket Berhasil Dibatalkan');
     }
 
 
@@ -194,6 +291,11 @@ class TiketController extends Controller
 
         DB::transaction(function () use ($request, $tiket) {
             $customer = Customer::findOrFail($tiket->customer_id);
+
+            $tiket->update([
+                'teknisi_id' => auth()->user()->id,
+                'tanggal_selesai' => Carbon::now()->toDate()
+            ]);
 
             // Jika router berbeda → tambah PPP secret di router baru
             if ($request->router != $customer->router_id) {
@@ -268,6 +370,7 @@ class TiketController extends Controller
             $tiket->update([
                 'status_id' => 3,
                 'keterangan' => $request->keterangan,
+                'teknisi_id' => auth()->user()->id,
                 'tanggal_selesai' => Carbon::now()->toDate()
             ]);
 
@@ -279,7 +382,7 @@ class TiketController extends Controller
 
             // Log activity
             activity()
-                ->performedOn($customer)
+                ->causedBy(auth()->user()->id)
                 ->log("Customer {$customer->nama_customer} dideaktivasi via tiket #{$tiket->id}");
         });
 
@@ -292,7 +395,8 @@ class TiketController extends Controller
         $tiket->update([
             'keterangan' => $request->keterangan,
             'status_id' => 3,
-            'tanggal_selesai' => $request->tanggal
+            'tanggal_selesai' => $request->tanggal,
+            'teknisi_id' => auth()->user()->id
         ]);
         $tiket->refresh();
 
@@ -314,6 +418,7 @@ class TiketController extends Controller
             'mac_address' => $mac,
             'seri_perangkat' => $sni
         ]);
+        $customer->refresh();
 
         $modemDetail = ModemDetail::where('customer_id', $tiket->customer_id)->first();
         $modemDetail->update([
@@ -321,6 +426,11 @@ class TiketController extends Controller
             'mac_address' => $mac,
             'serial_number' => $sni
         ]);
+
+        // Catat Log
+        activity('Closed Tiket')
+            ->causedBy(auth()->user()->id)
+            ->log(auth()->user()->name . ' Mengkonfirmasi tiket untuk pelanggan ' . $customer->nama_customer);
 
         return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
     }

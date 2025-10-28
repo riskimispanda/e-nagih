@@ -837,7 +837,7 @@
                             </div>
 
                             <div class="col-sm-6 mb-3">
-                                <label class="form-label">Foto Modem</label>
+                                <label class="form-label">Foto</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bxs-image"></i></span>
                                     <input type="file" name="foto" class="form-control">
@@ -851,7 +851,7 @@
                                 </div>
                             </div>
                             <div class="col-sm-12 mb-3">
-                                <label class="form-label">Keterangan Kondisi Modem</label>
+                                <label class="form-label">Keterangan</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bx bxs-message"></i></span>
                                     <textarea name="keterangan" class="form-control" cols="30" rows="5" required></textarea>

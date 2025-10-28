@@ -414,7 +414,7 @@
                     <div class="d-flex flex-column">
                         <h6 class="card-title text-muted mb-2">Tiket Aktif</h6>
                         <h3 class="text-danger mb-0">
-                            {{ $customer->where('status.nama_status', 'Maintenance')->count() }}
+                            {{ $tiketOpenAktif }}
                         </h3>
                     </div>
                     <div class="avatar">
@@ -433,7 +433,7 @@
                     <div class="d-flex flex-column">
                         <h6 class="card-title text-muted mb-2">Tiket Closed</h6>
                         <h3 class="text-success mb-0">
-                            {{ $customer->where('status.nama_status', 'Maintenance')->count() }}
+                            {{ $tiketClosed }}
                         </h3>
                     </div>
                     <div class="avatar">

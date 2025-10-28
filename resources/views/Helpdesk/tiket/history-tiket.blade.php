@@ -266,6 +266,7 @@
                             <th class="text-center">Status</th>
                             <th>Ditutup Pada</th>
                             <th>Dibuat Oleh</th>
+                            <th>Diclose Oleh</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -296,10 +297,11 @@
                                 @endif
                             </td>
                             <td>{{ $ticket->user->name }}</td>
+                            <td>{{$ticket->teknisi->name ?? '-'}}</td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5">
+                            <td colspan="8" class="text-center py-5">
                                 <i class="bx bx-info-circle fs-1 text-muted mb-2"></i>
                                 <h6 class="text-muted">Tidak Ada Riwayat Tiket</h6>
                                 <p class="text-muted mb-0">Belum ada tiket yang pernah dibuat untuk pelanggan ini.</p>
