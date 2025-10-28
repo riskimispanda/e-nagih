@@ -400,14 +400,14 @@ class Analytics extends Controller
     $customer = Customer::with('odp.odc.olt.server')->find($id);
     // dd($customer->odp->odc->olt->server->lokasi_server);
     $invoice = Invoice::where("customer_id", $id)->first();
-    $profile = User::where("name", $customer->nama_customer)->first();
+    // $profile = User::where("name", $customer->nama_customer)->first();
     // dd($profile);
     return view("/data/detail-pelanggan", [
       "users" => auth()->user(),
       "roles" => auth()->user()->roles,
       "customer" => $customer,
       "invoice" => $invoice,
-      "profile" => $profile,
+      // "profile" => $profile,
     ]);
   }
 
