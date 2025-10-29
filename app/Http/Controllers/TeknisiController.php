@@ -279,13 +279,6 @@ class TeknisiController extends Controller
 
             $customer->refresh();
 
-            LOG::info('Konfirmasi Installasi', [
-                'customer_id' => $customer->id,
-                'tanggal_selesai' => $tanggalSelesai,
-                'Nama Customer' => $customer->nama_customer,
-                'Nama Teknisi' => $customer->teknisi->name
-            ]);
-
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
 
             $panjangKabel = (int) $request->panjang_kabel;
