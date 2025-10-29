@@ -155,23 +155,10 @@ class TiketController extends Controller
         $month = $request->get('month');
 
         // Condition
-        if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3) {
+        if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3 || auth()->user()->roles_id == 4) {
             $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
                 $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
             }])
-                ->whereHas('customer', function ($query) {
-                    $query->whereIn('status_id', [3, 4])
-                        ->withTrashed(); // ✅ Juga untuk whereHas
-                })
-                ->whereIn('status_id', [3, 6])
-                ->orderBy('created_at', 'desc');
-        } elseif (auth()->user()->roles_id == 4) {
-            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
-            }])
-                ->whereHas('kategori', function ($k) {
-                    $k->whereIn('id', [4, 6, 7]);
-                })
                 ->whereHas('customer', function ($query) {
                     $query->whereIn('status_id', [3, 4])
                         ->withTrashed(); // ✅ Juga untuk whereHas
