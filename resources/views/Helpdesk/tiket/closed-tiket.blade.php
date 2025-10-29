@@ -449,7 +449,7 @@
                             Menampilkan {{ $customer->firstItem() }} - {{ $customer->lastItem() }} dari {{ $customer->total() }} entri
                         </div>
                         <div>
-                            {{ $customer->links() }}
+                            {{ $customer->links('pagination::bootstrap-5') }}
                         </div>
                     </div>
                 </div>
