@@ -443,7 +443,7 @@
                 </div>
             </div>
             @if ($customer->hasPages())
-                <div class="card-footer border-top-0">
+                <div class="card-footer mt-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="footer">
                             {{ $customer->links('pagination::bootstrap-5') }}
