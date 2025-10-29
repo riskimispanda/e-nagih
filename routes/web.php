@@ -455,7 +455,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Agen
     Route::get('/agen/data-pelanggan', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pembayaran');
-    Route::get('/agen/data-pelanggan/search', [AgenController::class, 'search'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-search');
+    Route::get('/agen/data-pelanggan/search', [AgenController::class, 'index'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-search');
     Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])->middleware('auth', 'roles:Super Admin,Agen')->name('data-pelanggan-agen-statistics');
     Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name('request-pembayaran-agen');
     Route::get('/pelanggan-agen', [AgenController::class, 'pelanggan'])->middleware('auth', 'roles:Super Admin,Agen')->name('pelanggan-agen');

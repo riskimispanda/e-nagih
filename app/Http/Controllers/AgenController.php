@@ -21,10 +21,11 @@ class AgenController extends Controller
         $agen = Auth::user()->id;
 
         // Get current month as default filter
+        $currentYear = Carbon::now()->format('Y');
         $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
 
-        // Query dari Invoice sebagai utama
+        // Query dari Invoice sebagai basis
         $query = Invoice::with([
             'status',
             'pembayaran.user',
@@ -32,22 +33,20 @@ class AgenController extends Controller
                 $q->withTrashed()->with('paket');
             }
         ])
-            ->where(function ($mainQuery) use ($agen) {
-                // ✅ Untuk customer AKTIF: tampilkan SEMUA invoice
-                $mainQuery->whereHas('customer', function ($q) use ($agen) {
-                    $q->where('agen_id', $agen)
-                        ->whereIn('status_id', [3, 4, 9])
-                        ->whereNull('deleted_at'); // Hanya yang aktif
-                });
-
-            // ✅ Untuk customer DELETED: hanya tampilkan invoice yang SUDAH BAYAR
-            $mainQuery->orWhere(function ($deletedQuery) use ($agen) {
-                $deletedQuery->whereHas('customer', function ($q) use ($agen) {
-                    $q->onlyTrashed() // Hanya yang deleted
-                        ->where('agen_id', $agen)
-                            ->whereIn('status_id', [3, 4, 9]);
+            ->whereHas('customer', function ($q) use ($agen) {
+                $q->withTrashed()->where('agen_id', $agen);
+            })
+            ->where(function ($q) {
+                // Kondisi 1: Tampilkan semua invoice dari customer yang aktif
+                $q->whereHas('customer', function ($subQ) {
+                    $subQ->whereNull('deleted_at');
+                })
+                    // Kondisi 2: Atau, tampilkan HANYA invoice yang sudah lunas dari customer yang sudah dihapus
+                    ->orWhere(function ($subQ) {
+                        $subQ->whereHas('customer', function ($customerQuery) {
+                            $customerQuery->onlyTrashed();
                     })->whereHas('status', function ($statusQuery) {
-                        $statusQuery->where('nama_status', 'Sudah Bayar'); // Hanya yang sudah bayar
+                    $statusQuery->where('nama_status', 'Sudah Bayar');
                     });
                 });
             })
@@ -55,7 +54,8 @@ class AgenController extends Controller
 
         // Apply month filter
         if ($filterMonth !== 'all') {
-            $query->whereMonth('jatuh_tempo', intval($filterMonth));
+            $query->whereYear('jatuh_tempo', $currentYear)
+                ->whereMonth('jatuh_tempo', intval($filterMonth));
         }
 
         // Apply search filter
@@ -63,14 +63,17 @@ class AgenController extends Controller
             $search = $request->search;
             $query->whereHas('customer', function ($q) use ($search) {
                 $q->where(function ($subQ) use ($search) {
-                    $subQ->where('nama_customer', 'LIKE', "%{$search}%")
-                        ->orWhere('alamat', 'LIKE', "%{$search}%")
-                        ->orWhere('no_hp', 'LIKE', "%{$search}%");
-            });
+                    $subQ->where('nama_customer', 'like', '%' . $search . '%')
+                        ->orWhere('alamat', 'like', '%' . $search . '%')
+                        ->orWhere('no_hp', 'like', '%' . $search . '%')
+                        ->orWhereHas('paket', function ($paketQuery) use ($search) {
+                            $paketQuery->where('nama_paket', 'like', '%' . $search . '%');
+                        });
+                });
             });
         }
 
-        $invoices = $query->paginate(10);
+        $invoices = $query->paginate(10)->withQueryString(); // withQueryString() untuk memperbaiki bug pagination
 
         // Calculate statistics
         $searchTerm = $request->get('search', '');
@@ -86,9 +89,11 @@ class AgenController extends Controller
         // AJAX response
         if ($request->ajax()) {
             return response()->json([
-                'success' => true,
-                'data' => $invoices,
-                'html' => view('agen.partials.customer-table-rows', compact('invoices'))->render()
+                'table_html' => view('agen.partials.customer-table-rows', compact('invoices'))->render(),
+                'pagination_html' => $invoices->links()->toHtml(),
+                'statistics' => $statistics,
+                'visible_count' => $invoices->count(),
+                'total_count' => $invoices->total(),
             ]);
         }
 
@@ -102,66 +107,6 @@ class AgenController extends Controller
             'selectedMonth' => $filterMonth,
             'selectedMonthName' => $selectedMonthName,
             'statistics' => $statistics,
-        ]);
-    }
-
-    public function search(Request $request)
-    {
-        $agen = Auth::user()->id;
-
-        // Get current month as default filter
-        $currentMonth = Carbon::now()->format('m');
-        $filterMonth = $request->get('month', $currentMonth);
-
-        // Query dari Invoice sebagai utama (konsisten dengan index)
-        $query = Invoice::with([
-            'status',
-            'pembayaran.user',
-            'customer' => function ($q) {
-                $q->withTrashed()->with('paket');
-            }
-        ])
-            ->whereHas('customer', function ($q) use ($agen) {
-                $q->withTrashed()
-                    ->where('agen_id', $agen)
-                    ->whereIn('status_id', [3, 4, 9]);
-            })
-            ->orderBy('jatuh_tempo', 'desc');
-
-        // Apply month filter
-        if ($filterMonth !== 'all') {
-            $query->whereMonth('jatuh_tempo', intval($filterMonth));
-        }
-
-        // Apply search filter
-        if ($request->has('search') && !empty($request->search)) {
-            $search = $request->search;
-            $query->whereHas('customer', function ($q) use ($search) {
-                $q->where(function ($subQ) use ($search) {
-                    $subQ->where('nama_customer', 'LIKE', "%{$search}%")
-                        ->orWhere('alamat', 'LIKE', "%{$search}%")
-                        ->orWhere('no_hp', 'LIKE', "%{$search}%");
-            });
-            });
-        }
-
-        $invoices = $query->paginate(10);
-
-        // Calculate statistics
-        $searchTerm = $request->get('search', '');
-        $statistics = $this->calculateStatistics($agen, $filterMonth, $searchTerm);
-
-        return response()->json([
-            'success' => true,
-            'data' => $invoices->items(),
-            'statistics' => $statistics,
-            'pagination' => [
-                'current_page' => $invoices->currentPage(),
-                'last_page' => $invoices->lastPage(),
-                'per_page' => $invoices->perPage(),
-                'total' => $invoices->total(),
-            ],
-            'html' => view('agen.partials.customer-table-rows', compact('invoices'))->render()
         ]);
     }
 
@@ -657,10 +602,34 @@ class AgenController extends Controller
     }
 
 
-    public function pelanggan()
+    public function pelanggan(Request $request)
     {
-        $pelanggan = Customer::where('agen_id', auth()->user()->id)->paginate(10);
-        // dd($pelanggan->nama_customer);
+        $agenId = auth()->user()->id;
+        $search = $request->get('search');
+
+        $query = Customer::where('agen_id', $agenId)
+            ->with(['paket', 'status'])->whereNull('deleted_at')
+            ->withTrashed(); // Ambil juga yang soft-deleted untuk menampilkan statusnya
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_customer', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%")
+                    ->orWhere('no_hp', 'like', "%{$search}%");
+            });
+        }
+
+        $pelanggan = $query->orderBy('nama_customer', 'asc')->paginate(10)->withQueryString();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'table_html' => view('agen.partials.pelanggan-agen-rows', compact('pelanggan'))->render(),
+                'pagination_html' => $pelanggan->links('pagination::bootstrap-5')->toHtml(),
+                'visible_count' => $pelanggan->count(),
+                'total_count' => $pelanggan->total(),
+            ]);
+        }
+
         return view('agen.pelanggan-agen',[
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,

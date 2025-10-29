@@ -524,167 +524,12 @@
                 </tr>
             </thead>
             <tbody class="text-center">
-                @php $rowNumber = 1; @endphp
-                @forelse ($invoices as $invoice)
-                    @php
-                        $customer = $invoice->customer;
-                    @endphp
-                    <tr class="customer-row text-center {{ $customer && $customer->trashed() ? 'customer-deleted' : '' }}" 
-                        data-id="{{ $customer->id ?? '-' }}"
-                        data-tagihan="{{ $invoice->status ? ($invoice->status->nama_status == 'Sudah Bayar' ? '0' : ($invoice->tagihan ?? '0')) : '0' }}"
-                        data-customer-id="{{ $customer->id ?? '-' }}"
-                        data-invoice-id="{{ $invoice->id }}"
-                        data-tagihan-tambahan="{{ $invoice->tambahan ?? '0' }}"
-                        data-status-tagihan="{{ $invoice->status->nama_status ?? 'N/A' }}"
-                        data-jatuh-tempo="{{ $invoice->jatuh_tempo ?? '' }}"
-                        data-bulan-tempo="{{ $invoice->jatuh_tempo ? \Carbon\Carbon::parse($invoice->jatuh_tempo)->format('F') : '' }}"
-                        data-customer-deleted="{{ $customer && $customer->trashed() ? 'true' : 'false' }}">
-                        
-                        <td class="fw-bold text-center">{{ $rowNumber++ }}</td>
-            
-                        {{-- Nama --}}
-                        <td class="text-start customer-name">
-                            {{ $customer->nama_customer ?? 'Tidak Diketahui' }}
-                        </td>
-                        
-                        {{-- Alamat --}}
-                        <td class="text-start customer-address">
-                            {{ $customer->alamat ?? '-' }}
-                        </td>
-                        
-                        {{-- Nomor HP --}}
-                        <td class="nomor-hp">{{ $customer->no_hp ?? '-' }}</td>
-            
-                        {{-- Paket --}}
-                        <td class="text-center">
-                            @if($customer && $customer->paket)
-                                <span class="badge bg-warning bg-opacity-10 text-warning">
-                                    {{ $customer->paket->nama_paket }}
-                                </span>
-                            @endif
-                            @if($customer && $customer->status_id == 3)
-                                <small class="badge bg-success bg-opacity-10 text-success mt-1">Aktif</small>
-                            @elseif($customer && $customer->status_id == 9)
-                                <small class="badge bg-danger bg-opacity-10 text-danger mt-1">Non Aktif</small>
-                            @else
-                                <small class="badge bg-secondary bg-opacity-10 text-secondary mt-1">-</small>
-                            @endif
-                        </td>
-            
-                        {{-- Total tagihan --}}
-                        <td class="text-end">
-                            Rp {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - ($invoice->saldo ?? 0)), 0, ',', '.') }}
-                        </td>
-            
-                        {{-- Status pembayaran --}}
-                        <td class="text-center">
-                            @if ($invoice->status)
-                                <span class="badge
-                                    bg-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}
-                                    bg-opacity-10
-                                    text-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}">
-                                    {{ $invoice->status->nama_status }}
-                                </span>
-                            @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-                            @endif
-                        </td>
-            
-                        {{-- Jatuh tempo --}}
-                        <td class="text-center">
-                            @php
-                                try {
-                                    $jatuhTempo = $invoice->jatuh_tempo ? \Carbon\Carbon::parse($invoice->jatuh_tempo) : null;
-                                    $isOverdue = $jatuhTempo && $jatuhTempo->isPast() && optional($invoice->status)->nama_status != 'Sudah Bayar';
-                                } catch (\Exception $e) {
-                                    $jatuhTempo = null;
-                                    $isOverdue = false;
-                                }
-                            @endphp
-                            @if($jatuhTempo)
-                                <span class="badge {{ $isOverdue ? 'bg-danger' : 'bg-info' }} bg-opacity-10 {{ $isOverdue ? 'text-danger' : 'text-info' }}">
-                                    {{ $jatuhTempo->format('d M Y') }}
-                                    @if($isOverdue)
-                                        <br><small>Terlambat</small>
-                                    @endif
-                                </span>
-                            @else
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-                            @endif
-                        </td>
-            
-                        {{-- Tanggal pembayaran terakhir --}}
-                        <td class="text-center">
-                            @if($invoice->pembayaran()->exists())
-                                <span class="badge bg-success">
-                                    {{ $invoice->pembayaran()->latest()->first()->created_at->format('d M Y H:i:s') }}
-                                </span>
-                            @else
-                                <span class="badge bg-secondary">-</span>
-                            @endif
-                        </td>
-            
-                        {{-- Tombol aksi --}}
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-2">
-                                @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar' && (!$customer || !$customer->trashed()))
-                                    <button class="btn btn-outline-success btn-sm mb-1"
-                                            data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
-                                            data-bs-toggle="modal"
-                                            title="Request Pembayaran">
-                                        <i class="bx bx-money"></i>
-                                    </button>
-                                @elseif($customer && $customer->trashed())
-                                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
-                                        title="Pelanggan sudah dihapus">
-                                        <i class="bx bx-block"></i>
-                                    </span>
-                                @else
-                                    <span class="btn btn-outline-secondary btn-sm mb-1 disabled"
-                                        title="Sudah Dibayar">
-                                        <i class="bx bx-check"></i>
-                                    </span>
-                                @endif
-            
-                                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" 
-                                    class="btn btn-outline-info btn-sm mb-1"
-                                    title="Histori pembayaran {{ $customer->nama_customer ?? '' }}">
-                                    <i class="bx bx-history"></i>
-                                </a>
-                            </div>
-                        </td>
-                        <td>
-                            @if($invoice->customer->trashed())
-                            <span class="badge bg-label-danger">
-                                Deaktivasi
-                            </span>
-                            @else
-                            <span class="badge bg-label-success">
-                                Aktif
-                            </span>
-                            @endif
-                        </td>
-                        {{-- Keterangan --}}
-                        <td class="text-start">
-                            {{ $invoice->pembayaran->first()->keterangan ?? '-' }}
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="12" class="text-center py-5">
-                            <div class="d-flex flex-column align-items-center">
-                                <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                                <p class="text-muted mb-0">Belum ada Data Pelanggan</p>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
+                @include('agen.partials.customer-table-rows', ['invoices' => $invoices])
             </tbody>
         </table> <!-- Tag penutup table yang sebelumnya hilang -->
     </div>
-    <div class="d-flex justify-content-center">
-        {{ $invoices->links() }}
+    <div class="d-flex justify-content-center" id="pagination-container">
+        {{ $invoices->links('pagination::bootstrap-5') }}
     </div>
 </div>
 
@@ -865,6 +710,124 @@
 @endsection
 
 @section('page-script')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let searchTimeout;
+        const searchInput = document.getElementById('searchCustomer');
+        const tableBody = document.querySelector('#customerTable tbody');
+        const paginationContainer = document.getElementById('pagination-container');
+        const visibleCountEl = document.getElementById('visibleCount');
+        const totalCountEl = document.getElementById('totalCount');
+
+        function fetchData(page = 1, search = '', month = '') {
+            const url = new URL("{{ route('data-pelanggan-agen-search') }}");
+            url.searchParams.append('page', page);
+            if (search) url.searchParams.append('search', search);
+            if (month) url.searchParams.append('month', month);
+
+            // Add loading indicator
+            tableBody.innerHTML = `<tr><td colspan="12" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>`;
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Update table content
+                tableBody.innerHTML = data.table_html;
+
+                // Update pagination
+                paginationContainer.innerHTML = data.pagination_html;
+
+                // Update statistics
+                updateStatisticsCards(data.statistics);
+
+                // Update counts
+                visibleCountEl.textContent = data.visible_count;
+                totalCountEl.textContent = data.total_count;
+
+                // Re-initialize tooltips for new content
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                tableBody.innerHTML = `<tr><td colspan="12" class="text-center py-5 text-danger">Gagal memuat data. Silakan coba lagi.</td></tr>`;
+            });
+        }
+
+        // Search input handler
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = searchInput.value;
+                const month = document.getElementById('bulan').value;
+                fetchData(1, searchTerm, month);
+            }, 500); // Debounce
+        });
+
+        // Month filter handler
+        document.getElementById('bulan').addEventListener('change', function() {
+            const searchTerm = searchInput.value;
+            const month = this.value;
+            fetchData(1, searchTerm, month);
+        });
+
+        // Pagination handler
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.pagination a')) {
+                e.preventDefault();
+                const page = new URL(e.target.href).searchParams.get('page');
+                const searchTerm = searchInput.value;
+                const month = document.getElementById('bulan').value;
+                fetchData(page, searchTerm, month);
+            }
+        });
+
+        // Reset filters handler
+        document.getElementById('resetFilters').addEventListener('click', function() {
+            searchInput.value = '';
+            document.getElementById('statusTagihan').value = '';
+            // Set month to current month
+            const currentMonth = new Date().getMonth() + 1;
+            document.getElementById('bulan').value = String(currentMonth).padStart(2, '0');
+            fetchData(1, '', String(currentMonth).padStart(2, '0'));
+        });
+
+        function updateStatisticsCards(statistics) {
+            const paidCard = document.querySelector('.border-success .card-body');
+            if (paidCard) {
+                paidCard.querySelector('h4').textContent = `Rp ${formatNumber(statistics.total_paid || 0)}`;
+                paidCard.querySelector('small').textContent = `${statistics.count_paid || 0} Invoice`;
+                paidCard.querySelector('.progress-bar').style.width = `${statistics.percentage_paid || 0}%`;
+                paidCard.querySelector('.text-muted:last-child').textContent = `${statistics.percentage_paid || 0}% dari total`;
+            }
+
+            const unpaidCard = document.querySelector('.border-danger .card-body');
+            if (unpaidCard) {
+                unpaidCard.querySelector('h4').textContent = `Rp ${formatNumber(statistics.total_unpaid || 0)}`;
+                unpaidCard.querySelector('small').textContent = `${statistics.count_unpaid || 0} Invoice`;
+                unpaidCard.querySelector('.progress-bar').style.width = `${statistics.percentage_unpaid || 0}%`;
+                unpaidCard.querySelector('.text-muted:last-child').textContent = `${statistics.percentage_unpaid || 0}% dari total`;
+            }
+
+            const totalCard = document.querySelector('.border-primary .card-body');
+            if (totalCard) {
+                totalCard.querySelector('h4').textContent = `Rp ${formatNumber(statistics.total_amount || 0)}`;
+                totalCard.querySelector('small').textContent = `${statistics.count_total || 0} Invoice`;
+            }
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('id-ID').format(num);
+        }
+
+    });
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const searchInput = document.getElementById('searchCustomer');
