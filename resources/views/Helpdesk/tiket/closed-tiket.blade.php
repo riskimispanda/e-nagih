@@ -445,10 +445,7 @@
             @if ($customer->hasPages())
                 <div class="card-footer border-top-0">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-muted small">
-                            Menampilkan {{ $customer->firstItem() }} - {{ $customer->lastItem() }} dari {{ $customer->total() }} entri
-                        </div>
-                        <div>
+                        <div class="footer">
                             {{ $customer->links('pagination::bootstrap-5') }}
                         </div>
                     </div>
