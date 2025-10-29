@@ -27,8 +27,7 @@ class TiketController extends Controller
         $search = $request->get('search');
         $perPage = $request->get('per_page', 10);
 
-        $query = Customer::with(['status', 'paket'])
-            ->whereIn('status_id', [3, 4]);
+        $query = Customer::with(['status', 'paket']);
 
         // Search filter
         if ($search) {
