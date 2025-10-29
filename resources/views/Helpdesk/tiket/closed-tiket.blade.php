@@ -408,21 +408,23 @@
                                         </span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        @if ($item->status_id == 3)
-                                            <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
-                                                data-bs-placement="top" title="Tiket sudah selesai">
-                                                <i class="bx bx-check-double"></i>
-                                            </button>
-                                        @else
-                                            <a href="/tiket-open/{{ $item->id }}"
-                                                class="btn btn-sm btn-action btn-outline-warning" data-bs-toggle="tooltip"
-                                                data-bs-placement="top" title="Proses & Tutup Tiket">
-                                                <i class="bx bx-wrench"></i>
-                                            </a>
-                                            <a href="/cancel-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-action btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
-                                                <i class="bx bx-x"></i>
-                                            </a>
-                                        @endif
+                                        <div class="d-flex justify-content-center">
+                                            @if ($item->status_id == 3)
+                                                <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" title="Tiket sudah selesai">
+                                                    <i class="bx bx-check-double"></i>
+                                                </button>
+                                            @else
+                                                <a href="/tiket-open/{{ $item->id }}"
+                                                    class="btn btn-sm btn-action btn-outline-warning" data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" title="Proses & Tutup Tiket">
+                                                    <i class="bx bx-wrench"></i>
+                                                </a>
+                                                <a href="/cancel-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-action btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
+                                                    <i class="bx bx-x"></i>
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
