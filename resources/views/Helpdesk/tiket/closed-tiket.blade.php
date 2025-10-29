@@ -330,6 +330,19 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Filter Group (Kategori) -->
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <label class="form-label mb-0">Kategori:</label>
+                            <select id="kategoriFilter" class="form-select">
+                                <option value="all" {{ !$selectedKategori ? 'selected' : '' }}>Semua</option>
+                                @foreach($kategoriTiket as $kategori)
+                                    <option value="{{ $kategori->id }}" {{ $selectedKategori == $kategori->id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                     
                     <!-- Search Form -->
                     <div class="filter-item">
@@ -460,16 +473,18 @@
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('searchInput');
     const monthFilter = document.getElementById('monthFilter');
+    const kategoriFilter = document.getElementById('kategoriFilter');
     const hiddenMonthInput = document.getElementById('hiddenMonthInput');
-    const searchForm = document.getElementById('searchForm');
     let searchTimeout;
 
     function fetchData(page = 1) {
         const search = searchInput.value;
         const month = monthFilter.value;
+        const kategori = kategoriFilter.value;
         const url = new URL(window.location.href);
         url.searchParams.set('search', search);
         url.searchParams.set('month', month);
+        url.searchParams.set('kategori', kategori);
         url.searchParams.set('page', page);
         url.searchParams.set('ajax', 1);
 
@@ -523,6 +538,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Event listener untuk filter kategori
+    if (kategoriFilter) {
+        kategoriFilter.addEventListener('change', function () {
+            fetchData(1);
+        });
+    }
+
     // Event listener untuk pagination (delegasi event)
     document.addEventListener('click', function(e) {
         if (e.target.matches('.pagination a, .pagination a *')) {
@@ -533,14 +555,6 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchData(page);
         }
     });
-
-    // Mencegah submit form tradisional saat menekan Enter di search input
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            fetchData(1);
-        });
-    }
 
     function initializeTooltips() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

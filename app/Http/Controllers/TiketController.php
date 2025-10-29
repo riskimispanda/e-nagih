@@ -153,6 +153,7 @@ class TiketController extends Controller
     {
         $search = $request->get('search');
         $month = $request->get('month');
+        $kategoriId = $request->get('kategori');
 
         // Condition
         if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3 || auth()->user()->roles_id == 4) {
@@ -180,28 +181,22 @@ class TiketController extends Controller
                 ->orderBy('created_at', 'desc');
         }
 
-
-        // $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-        //     $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
-        // }])
-        //     ->whereHas('customer', function ($query) {
-        //     $query->whereIn('status_id', [3, 4])
-        //         ->withTrashed(); // ✅ Juga untuk whereHas
-        // })
-        //     ->whereIn('status_id', [3, 6])
-        //     ->orderBy('created_at', 'desc');
-
-        // if ($search) {
-        //     $query->whereHas('customer', function ($q) use ($search) {
-        //         $q->where('nama_customer', 'like', "%{$search}%")
-        //             ->orWhere('alamat', 'like', "%{$search}%")
-        //             ->orWhere('no_hp', 'like', "%{$search}%");
-        //     });
-        // }
+        if ($search) {
+            $query->whereHas('customer', function ($q) use ($search) {
+                $q->where('nama_customer', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%")
+                    ->orWhere('no_hp', 'like', "%{$search}%");
+            });
+        }
 
         // Filter by month if provided
         if ($month && $month != 'all') {
             $query->whereMonth('created_at', $month);
+        }
+
+        // Filter by category if provided
+        if ($kategoriId && $kategoriId != 'all') {
+            $query->where('kategori_id', $kategoriId);
         }
 
         $customer = $query->paginate(10)->appends($request->query());
@@ -212,12 +207,16 @@ class TiketController extends Controller
             $months[$m] = Carbon::create()->month($m)->translatedFormat('F');
         }
 
+        $kategoriTiket = KategoriTiket::all();
+
         return view('Helpdesk.tiket.closed-tiket', [
             'users'    => auth()->user(),
             'roles'    => auth()->user()->roles,
             'customer' => $customer,
             'search' => $search,
             'months' => $months,
+            'kategoriTiket' => $kategoriTiket,
+            'selectedKategori' => $kategoriId,
             'selectedMonth' => $month,
         ]);
     }
