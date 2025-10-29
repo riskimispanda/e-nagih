@@ -290,50 +290,37 @@ class TeknisiController extends Controller
                 ? $hargaPaket
                 : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
 
-            // 🔍 Cek apakah sudah ada invoice bulan ini
-            $existingInvoice = Invoice::where('customer_id', $customer->id)
-                ->whereMonth('jatuh_tempo', $jatuhTempo->month)
-                ->whereYear('jatuh_tempo', $jatuhTempo->year)
-                ->first();
-
             // Generate Merchant Reference
             $merchant = 'INV-' . $customer->id . '-' . time();
 
-            if (!$existingInvoice) {
-                // Buat invoice baru
-                $invoice = Invoice::create([
-                    'customer_id'  => $customer->id,
-                    'status_id'    => 7,
-                    'paket_id'     => $customer->paket_id,
-                    'tagihan'      => $tagihanProrate,
-                    'merchant_ref' => $merchant,
-                    'jatuh_tempo'  => $jatuhTempo,
-                    'tambahan'     => $tagihanTambahan,
-                ]);
+            // Buat invoice baru
+            $invoice = Invoice::create([
+                'customer_id'  => $customer->id,
+                'status_id'    => 7,
+                'paket_id'     => $customer->paket_id,
+                'tagihan'      => $tagihanProrate,
+                'merchant_ref' => $merchant,
+                'jatuh_tempo'  => $jatuhTempo,
+                'tambahan'     => $tagihanTambahan,
+            ]);
 
-                LOG::info('Invoice created', [
-                    'invoice_id' => $invoice->id,
-                    'Nama Customer' => $customer->nama_customer,
-                    'tagihan' => $invoice->tagihan,
-                    'Tanggal Selesai' => $invoice->customer->tanggal_selesai,
-                    'merchant_ref' => $merchant,
-                    'jatuh_tempo' => $invoice->jatuh_tempo,
-                ]);
+            LOG::info('Invoice created', [
+                'invoice_id' => $invoice->id,
+                'Nama Customer' => $customer->nama_customer,
+                'tagihan' => $invoice->tagihan,
+                'Tanggal Selesai' => $invoice->customer->tanggal_selesai,
+                'merchant_ref' => $merchant,
+                'jatuh_tempo' => $invoice->jatuh_tempo,
+            ]);
 
-                // Kirim WA hanya kalau invoice baru dibuat
-                $chat = new ChatServices();
-                $chat->invoiceProrate($customer->no_hp, $invoice);
+            // Kirim WA hanya kalau invoice baru dibuat
+            $chat = new ChatServices();
+            $chat->invoiceProrate($customer->no_hp, $invoice);
 
-                LOG::info('WA sent', [
-                    'customer_id' => $customer->id,
-                    'no_hp' => $customer->no_hp,
-                ]);
-            } else {
-                LOG::info('Invoice sudah ada, tidak dibuat ulang', [
-                    'customer_id' => $customer->id,
-                    'invoice_id'  => $existingInvoice->id,
-                ]);
-            }
+            LOG::info('WA sent', [
+                'customer_id' => $customer->id,
+                'no_hp' => $customer->no_hp,
+            ]);
 
             // Simpan modem detail
             ModemDetail::create([
