@@ -408,7 +408,7 @@
                                         </span>
                                     </td>
                                     <td class="text-center pe-4">
-                                        <div class="d-flex justify-content-center">
+                                        <div class="d-flex justify-content-center gap-2">
                                             @if ($item->status_id == 3)
                                                 <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
                                                     data-bs-placement="top" title="Tiket sudah selesai">
