@@ -395,7 +395,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/history-tiket/{id}', [TiketController::class, 'historyTiket']);
 
     // Keuangan
-    Route::get('/pengeluaran/filter', [PengeluaranController::class, 'filterByMonth'])->name('pengeluaran.filter');
     Route::get('/pengeluaran/ajax-filter', [PengeluaranController::class, 'ajaxFilter'])->name('pengeluaran.ajax-filter');
     Route::get('/data/pendapatan', [KeuanganController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan');
     Route::get('/data/pendapatan/filter', [DataController::class, 'filterPendapatan'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('pendapatan.filter');

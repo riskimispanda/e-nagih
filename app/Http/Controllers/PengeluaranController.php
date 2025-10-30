@@ -52,6 +52,12 @@ class PengeluaranController extends Controller
         $totalPendapatan = Pendapatan::sum('jumlah_pendapatan');
         $totalSaldo = $totalPembayaran + $totalPendapatan - $totalPengeluaran;
 
+        // Mengambil semua jenis pengeluaran yang unik untuk filter
+        $kategoriPengeluaran = Pengeluaran::where('status_id', 3)
+            ->whereNotNull('jenis_pengeluaran')
+            ->where('jenis_pengeluaran', '!=', '')
+            ->distinct()->pluck('jenis_pengeluaran');
+
         return view('keuangan.pengeluaran',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -64,7 +70,8 @@ class PengeluaranController extends Controller
             'rab' => $rab,
             'totalRequest' => $totalRequest,
             'saldoBulanIni' => $totalSaldoBulanIni,
-            'total' => $totalSaldo
+            'total' => $totalSaldo,
+            'kategoriPengeluaran' => $kategoriPengeluaran
         ]);
     }
 
@@ -316,12 +323,27 @@ class PengeluaranController extends Controller
             $query->whereMonth('tanggal_pengeluaran', $request->month);
         }
 
-        $pengeluarans = $query->paginate(10);
+        // Filter berdasarkan kategori
+        if ($request->kategori) {
+            $query->where('jenis_pengeluaran', 'like', '%' . $request->kategori . '%');
+        }
+
+        // Filter berdasarkan pencarian
+        if ($request->search) {
+            $query->where(function ($q) use ($request) {
+                $q->where('keterangan', 'like', '%' . $request->search . '%')
+                    ->orWhere('jenis_pengeluaran', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $pengeluarans = $query->paginate(10)->appends($request->except('page'));
 
         // Update data untuk tampilan
         $data = [
             'table' => view('keuangan.partials.pengeluaran-table', compact('pengeluarans'))->render(),
             'pagination' => $pengeluarans->links('pagination::bootstrap-5')->toHtml(),
+            'total' => $pengeluarans->total(),
+            'count' => $pengeluarans->count(),
         ];
 
         return response()->json($data);

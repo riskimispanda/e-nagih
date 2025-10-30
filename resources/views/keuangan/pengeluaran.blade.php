@@ -169,7 +169,7 @@
                 
                 <!-- Filter -->
                 <div class="row mb-4 g-3">
-                    <div class="col-sm-3">
+                    <div class="col-sm-4">
                         <label class="form-label">Filter Bulan</label>
                         <select name="month" id="monthFilter" class="form-select">
                             <option value="all" {{ request('month') == 'all' || !request('month') ? 'selected' : '' }}>Semua Bulan</option>
@@ -187,17 +187,18 @@
                             <option value="12" {{ request('month') == '12' ? 'selected' : '' }}>Desember</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label for="kategoriFilter" class="form-label">Kategori</label>
                         <select class="form-select" id="kategoriFilter">
-                            <option value="">Semua Kategori</option>
-                            <option value="operasional">Operasional</option>
-                            <option value="gaji">Gaji</option>
-                            <option value="lainnya">Lainnya</option>
+                            <option value="" selected>Semua Kategori</option>
+                            @foreach ($kategoriPengeluaran as $kategori)
+                                <option value="{{ $kategori }}" {{ request('kategori') == $kategori ? 'selected' : '' }}>
+                                    {{ ucfirst($kategori) }}</option>
+                            @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <label for="searchInput" class="form-label">Pencarian</label>
+                    <div class="col-md-4">
+                        <label for="searchInput" class="form-label">Search</label>
                         <input type="text" class="form-control" id="searchInput" placeholder="Cari...">
                     </div>
                 </div>
@@ -578,20 +579,13 @@
 </div>
 @endforeach
 
-
 <script>
-    // Function to format currency and update numeric input
     function formatRupiah(input) {
-        // Remove non-digit characters
         let value = input.value.replace(/\D/g, '');
-        
-        // Update numeric input
         const numericInput = document.getElementById('jumlahPengeluaranNumeric');
         if (numericInput) {
-            numericInput.value = value; // Update numeric input with raw number
+            numericInput.value = value;
         }
-        
-        // Convert to number and format for display
         if (value !== '') {
             value = parseInt(value);
             input.value = new Intl.NumberFormat('id-ID', {
@@ -602,109 +596,57 @@
             }).format(value);
         } else {
             if (numericInput) {
-                numericInput.value = ''; // Clear numeric input if empty
+                numericInput.value = '';
             }
         }
     }
-    
-    
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize sorting
-        document.querySelectorAll('th').forEach(header => {
-            header.addEventListener('click', () => {
-                const table = header.closest('table');
-                const index = Array.from(header.parentElement.children).indexOf(header);
-                sortTable(table, index);
-            });
-        });
-        
-        // Calculate total
-        function calculateTotal() {
-            const amounts = Array.from(document.querySelectorAll('td[data-amount]'))
-            .map(td => parseFloat(td.dataset.amount) || 0);
-            const total = amounts.reduce((sum, amount) => sum + amount, 0);
-            document.getElementById('totalPengeluaran').textContent = 
-            `Rp ${total.toLocaleString('id-ID')}`;
-        }
-        
-        // Search and filter functionality
-        const searchInput = document.getElementById('searchInput');
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
-        const kategoriFilter = document.getElementById('kategoriFilter');
-        
-        [searchInput, startDate, endDate, kategoriFilter].forEach(element => {
-            element.addEventListener('change', filterTable);
-        });
-        
-        function filterTable() {
-            const searchValue = searchInput.value.toLowerCase();
-            const start = startDate.value ? new Date(startDate.value) : null;
-            const end = endDate.value ? new Date(endDate.value) : null;
-            const kategori = kategoriFilter.value;
-            
-            const rows = document.querySelectorAll('#pengeluaranTable tbody tr');
-            rows.forEach(row => {
-                const dateCell = row.cells[0].textContent;
-                const jenisCell = row.cells[1].textContent.toLowerCase();
-                const keteranganCell = row.cells[2].textContent.toLowerCase();
-                const amountCell = row.cells[3].textContent.replace(/[^0-9]/g, '');
-                
-                const date = new Date(dateCell);
-                const isDateInRange = (!start || date >= start) && (!end || date <= end);
-                const isKategoriMatch = !kategori || jenisCell.includes(kategori);
-                const isSearchMatch = jenisCell.includes(searchValue) || 
-                keteranganCell.includes(searchValue) ||
-                amountCell.includes(searchValue);
-                
-                if (isDateInRange && isKategoriMatch && isSearchMatch) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            calculateTotal();
-        }
-    });
 </script>
 
 @section('page-script')
 <script>
     $(document).ready(function() {
+        let searchTimeout;
+
         // Fungsi untuk memuat data pengeluaran
-        function loadPengeluaran() {
+        function loadPengeluaran(page = 1) {
             $.ajax({
                 url: '{{ route("pengeluaran.ajax-filter") }}',
                 type: 'GET',
                 data: {
-                    month: $('#monthFilter').val()
+                    month: $('#monthFilter').val(),
+                    kategori: $('#kategoriFilter').val(),
+                    search: $('#searchInput').val(),
+                    page: page
                 },
                 success: function(response) {
                     // Update tabel dan pagination
                     $('#pengeluaranTable tbody').html(response.table);
                     $('.pagination-container').html(response.pagination);
+                    $('#customPaginationInfo').text(`Menampilkan ${response.count} dari ${response.total} records`);
                 },
                 error: function(xhr) {
                     console.error('Error:', xhr);
                 }
             });
         }
-        
-        // Event listener untuk filter bulan
-        $('#monthFilter').on('change', function() {
-            loadPengeluaran();
+
+        // Event listener untuk semua filter
+        $('#monthFilter, #kategoriFilter').on('change', function() {
+            loadPengeluaran(1);
+        });
+
+        $('#searchInput').on('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                loadPengeluaran(1);
+            }, 500); // Debounce to avoid too many requests
         });
         
         // Event listener untuk pagination
         $(document).on('click', '.pagination a', function(e) {
             e.preventDefault();
             var page = $(this).attr('href').split('page=')[1];
-            $.get('{{ route("pengeluaran.ajax-filter") }}?page=' + page + '&month=' + $('#monthFilter').val(), function(data) {
-                $('#pengeluaranTable tbody').html(data.table);
-                $('.pagination-container').html(data.pagination);
-            });
+            loadPengeluaran(page);
         });
     });
 </script>
