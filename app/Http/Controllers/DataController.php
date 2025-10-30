@@ -589,8 +589,7 @@ class DataController extends Controller
 
     public function cekImport()
     {
-        $customers = Customer::onlyTrashed()->get();
-        $customers->each->forceDelete(); // Hapus permanen
-        dd('Customer deleted: ' . $customers->count() . ' records');
+        $customer = Customer::onlyTrashed()->count();
+        dd('Customer: ' . $customer);
     }
 }
