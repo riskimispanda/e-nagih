@@ -197,7 +197,7 @@
                         </div>
                     </div>
                 </div>
-                {{-- <div class="col-sm-12">
+                <div class="col-sm-12">
                     <div class="row">
                         <div class="col-sm-4">
                             <div class="d-flex justify-content-start mb-4">
@@ -207,7 +207,7 @@
                             </div>
                         </div>
                     </div>
-                </div> --}}
+                </div>
             </div>
         </div>
     </div>
