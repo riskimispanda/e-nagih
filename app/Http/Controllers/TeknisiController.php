@@ -279,48 +279,61 @@ class TeknisiController extends Controller
 
             $customer->refresh();
 
+            // Cek apakah invoice untuk periode ini sudah ada
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
+            $existingInvoice = Invoice::where('customer_id', $customer->id)
+                ->whereYear('jatuh_tempo', $jatuhTempo->year)
+                ->whereMonth('jatuh_tempo', $jatuhTempo->month)
+                ->first();
 
-            $panjangKabel = (int) $request->panjang_kabel;
-            $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
+            if ($existingInvoice) {
+                LOG::warning('Invoice creation skipped: An invoice already exists for this period.', [
+                    'customer_id' => $customer->id,
+                    'existing_invoice_id' => $existingInvoice->id,
+                    'jatuh_tempo' => $jatuhTempo->format('Y-m'),
+                ]);
+            } else {
+                $panjangKabel = (int) $request->panjang_kabel;
+                $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
 
-            $hargaPaket = $customer->paket->harga;
-            $tanggalMulaiLangganan = Carbon::parse($customer->tanggal_selesai);
-            $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
-                ? $hargaPaket
-                : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
+                $hargaPaket = $customer->paket->harga;
+                $tanggalMulaiLangganan = Carbon::parse($customer->tanggal_selesai);
+                $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
+                    ? $hargaPaket
+                    : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
 
-            // Generate Merchant Reference
-            $merchant = 'INV-' . $customer->id . '-' . time();
+                // Generate Merchant Reference
+                $merchant = 'INV-' . $customer->id . '-' . time();
 
-            // Buat invoice baru
-            $invoice = Invoice::create([
-                'customer_id'  => $customer->id,
-                'status_id'    => 7,
-                'paket_id'     => $customer->paket_id,
-                'tagihan'      => $tagihanProrate,
-                'merchant_ref' => $merchant,
-                'jatuh_tempo'  => $jatuhTempo,
-                'tambahan'     => $tagihanTambahan,
-            ]);
+                // Buat invoice baru
+                $invoice = Invoice::create([
+                    'customer_id'  => $customer->id,
+                    'status_id'    => 7,
+                    'paket_id'     => $customer->paket_id,
+                    'tagihan'      => $tagihanProrate,
+                    'merchant_ref' => $merchant,
+                    'jatuh_tempo'  => $jatuhTempo,
+                    'tambahan'     => $tagihanTambahan,
+                ]);
 
-            LOG::info('Invoice created', [
-                'invoice_id' => $invoice->id,
-                'Nama Customer' => $customer->nama_customer,
-                'tagihan' => $invoice->tagihan,
-                'Tanggal Selesai' => $invoice->customer->tanggal_selesai,
-                'merchant_ref' => $merchant,
-                'jatuh_tempo' => $invoice->jatuh_tempo,
-            ]);
+                LOG::info('Invoice created', [
+                    'invoice_id' => $invoice->id,
+                    'Nama Customer' => $customer->nama_customer,
+                    'tagihan' => $invoice->tagihan,
+                    'Tanggal Selesai' => $invoice->customer->tanggal_selesai,
+                    'merchant_ref' => $merchant,
+                    'jatuh_tempo' => $invoice->jatuh_tempo,
+                ]);
 
-            // Kirim WA hanya kalau invoice baru dibuat
-            $chat = new ChatServices();
-            $chat->invoiceProrate($customer->no_hp, $invoice);
+                // Kirim WA hanya kalau invoice baru dibuat
+                $chat = new ChatServices();
+                $chat->invoiceProrate($customer->no_hp, $invoice);
 
-            LOG::info('WA sent', [
-                'customer_id' => $customer->id,
-                'no_hp' => $customer->no_hp,
-            ]);
+                LOG::info('WA sent', [
+                    'customer_id' => $customer->id,
+                    'no_hp' => $customer->no_hp,
+                ]);
+            }
 
             // Simpan modem detail
             ModemDetail::create([
