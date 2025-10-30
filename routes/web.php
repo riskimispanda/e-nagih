@@ -393,6 +393,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');
     Route::get('/history-tiket/{id}', [TiketController::class, 'historyTiket']);
+    Route::get('/cek/dataImport', [DataController::class, 'cekImport'])->name('cek-import');
 
     // Keuangan
     Route::get('/pengeluaran/ajax-filter', [PengeluaranController::class, 'ajaxFilter'])->name('pengeluaran.ajax-filter');

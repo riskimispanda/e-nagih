@@ -197,6 +197,17 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-sm-12">
+                    <div class="row">
+                        <div class="col-sm-4">
+                            <div class="d-flex justify-content-start mb-4">
+                                <a href="/cek/dataImport" method="GET">
+                                    <button class="btn btn-primary btn-sm"><i class="bx bx-search me-1"></i>Cek Import Data</button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

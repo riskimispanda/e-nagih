@@ -586,4 +586,10 @@ class DataController extends Controller
             return redirect('/data/pelanggan')->with('error', 'Terjadi kesalahan saat menghapus data import sementara.');
         }
     }
+
+    public function cekImport()
+    {
+        $customer = Customer::onlyTrashed()->count();
+        dd('Customer: ' . $customer);
+    }
 }
