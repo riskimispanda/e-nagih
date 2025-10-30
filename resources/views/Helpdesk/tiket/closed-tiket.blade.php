@@ -510,9 +510,11 @@ document.addEventListener('DOMContentLoaded', function () {
             
             const paginationContainer = document.querySelector('.card-footer');
             if (paginationContainer && newPagination) {
+                // Jika ada pagination baru, perbarui isinya
                 paginationContainer.innerHTML = newPagination.innerHTML;
             } else if (paginationContainer && !newPagination) {
-                paginationContainer.remove();
+                // Jika tidak ada pagination baru, kosongkan isinya, jangan hapus elemennya
+                paginationContainer.innerHTML = '';
             }
             
             // Re-initialize tooltips
