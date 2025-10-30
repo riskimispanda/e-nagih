@@ -590,6 +590,17 @@ class DataController extends Controller
     public function cekImport()
     {
         $customer = Customer::where('nama_customer', 'Anis Aminasari')->first();
-        dd('Customer: ' . $customer);
+        $merchant = 'INV-' . $customer->id . '-' . time();
+        $jatuhTempo = Carbon::create(now()->year, 12, 31);;
+        // Buat invoice baru
+        $invoice = Invoice::create([
+            'customer_id'  => $customer->id,
+            'status_id'    => 7,
+            'paket_id'     => $customer->paket_id,
+            'tagihan'      => $customer->paket->harga,
+            'merchant_ref' => $merchant,
+            'jatuh_tempo'  => $jatuhTempo,
+        ]);
+        dd('Customer: ' . $customer . 'Invoice: ' . $invoice);
     }
 }
