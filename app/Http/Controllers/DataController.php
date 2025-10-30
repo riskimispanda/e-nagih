@@ -589,7 +589,7 @@ class DataController extends Controller
 
     public function cekImport()
     {
-        $customer = Customer::onlyTrashed()->count();
+        $customer = Customer::where('nama_customer', 'Anis Aminasari')->first();
         dd('Customer: ' . $customer);
     }
 }
