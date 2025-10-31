@@ -150,55 +150,93 @@ class TiketController extends Controller
 
     public function closedTiket(Request $request)
     {
-        $search = $request->get('search');
-        $month = $request->get('month');
-        $kategoriId = $request->get('kategori');
+        // Filter untuk tabel "Tiket Proses"
+        $searchProses = $request->get('search_proses');
+        $monthProses = $request->get('month_proses');
+        $kategoriProses = $request->get('kategori_proses');
 
-        // Condition
+        // Filter untuk tabel "Tiket Selesai"
+        $searchSelesai = $request->get('search_selesai');
+        $monthSelesai = $request->get('month_selesai');
+        $kategoriSelesai = $request->get('kategori_selesai');
+
+        // QUERY UTAMA untuk tiket yang sedang diproses (status_id 6)
         if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3 || auth()->user()->roles_id == 4) {
             $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+                $query->withTrashed();
             }])
                 ->whereHas('customer', function ($query) {
                     $query->whereIn('status_id', [3, 4])
-                        ->withTrashed(); // ✅ Juga untuk whereHas
+                    ->withTrashed();
                 })
-                ->whereIn('status_id', [3, 6])
+                ->where('status_id', 6)
                 ->orderBy('created_at', 'desc');
         } elseif (auth()->user()->roles_id == 5) {
             $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-                $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
+                $query->withTrashed();
             }])
                 ->whereHas('kategori', function ($k) {
                 $k->whereIn('id', [1, 2, 3, 4, 5]);
                 })
                 ->whereHas('customer', function ($query) {
                     $query->whereIn('status_id', [3, 4])
-                        ->withTrashed(); // ✅ Juga untuk whereHas
+                    ->withTrashed();
                 })
-                ->whereIn('status_id', [3, 6])
+                ->where('status_id', 6)
                 ->orderBy('created_at', 'desc');
         }
 
-        if ($search) {
-            $query->whereHas('customer', function ($q) use ($search) {
-                $q->where('nama_customer', 'like', "%{$search}%")
-                    ->orWhere('alamat', 'like', "%{$search}%")
-                    ->orWhere('no_hp', 'like', "%{$search}%");
+        // CLONEQUERY untuk tiket yang sudah selesai (status_id 3 saja)
+        $cloneQuery = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+            $query->withTrashed();
+        }])
+            ->whereHas('customer', function ($query) {
+                $query->whereIn('status_id', [3, 4])
+                    ->withTrashed();
+            })
+            ->where('status_id', 3) // Hanya status_id 3 (selesai)
+            ->orderBy('created_at', 'desc');
+
+        // Filter search untuk QUERY UTAMA
+        if ($searchProses) {
+            $query->whereHas('customer', function ($q) use ($searchProses) {
+                $q->where('nama_customer', 'like', "%{$searchProses}%")
+                    ->orWhere('alamat', 'like', "%{$searchProses}%")
+                    ->orWhere('no_hp', 'like', "%{$searchProses}%");
             });
         }
 
-        // Filter by month if provided
-        if ($month && $month != 'all') {
-            $query->whereMonth('created_at', $month);
+        // Filter search untuk CLONEQUERY
+        if ($searchSelesai) {
+            $cloneQuery->whereHas('customer', function ($q) use ($searchSelesai) {
+                $q->where('nama_customer', 'like', "%{$searchSelesai}%")
+                    ->orWhere('alamat', 'like', "%{$searchSelesai}%")
+                    ->orWhere('no_hp', 'like', "%{$searchSelesai}%");
+            });
         }
 
-        // Filter by category if provided
-        if ($kategoriId && $kategoriId != 'all') {
-            $query->where('kategori_id', $kategoriId);
+        // Filter by month untuk QUERY UTAMA
+        if ($monthProses && $monthProses != 'all') {
+            $query->whereMonth('created_at', $monthProses);
         }
 
-        $customer = $query->paginate(10)->appends($request->query());
+        // Filter by month untuk CLONEQUERY
+        if ($monthSelesai && $monthSelesai != 'all') {
+            $cloneQuery->whereMonth('created_at', $monthSelesai);
+        }
+
+        // Filter by category untuk QUERY UTAMA
+        if ($kategoriProses && $kategoriProses != 'all') {
+            $query->where('kategori_id', $kategoriProses);
+        }
+
+        // Filter by category untuk CLONEQUERY
+        if ($kategoriSelesai && $kategoriSelesai != 'all') {
+            $cloneQuery->where('kategori_id', $kategoriSelesai);
+        }
+
+        $customer = $query->paginate(10, ['*'], 'proses_page')->appends($request->except('selesai_page'));
+        $completedTickets = $cloneQuery->paginate(10, ['*'], 'selesai_page')->appends($request->except('proses_page'));
 
         // Generate all months from January to December for the dropdown
         $months = [];
@@ -212,11 +250,15 @@ class TiketController extends Controller
             'users'    => auth()->user(),
             'roles'    => auth()->user()->roles,
             'customer' => $customer,
-            'search' => $search,
+            'completedTickets' => $completedTickets,
             'months' => $months,
             'kategoriTiket' => $kategoriTiket,
-            'selectedKategori' => $kategoriId,
-            'selectedMonth' => $month,
+            'searchProses' => $searchProses,
+            'selectedMonthProses' => $monthProses,
+            'selectedKategoriProses' => $kategoriProses,
+            'searchSelesai' => $searchSelesai,
+            'selectedMonthSelesai' => $monthSelesai,
+            'selectedKategoriSelesai' => $kategoriSelesai,
         ]);
     }
 

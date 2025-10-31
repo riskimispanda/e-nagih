@@ -305,12 +305,14 @@
 @section('content')
 <div class="row">
     <div class="col-12">
-        <div class="card">
+        {{-- Tiket Open --}}
+        <div class="card mb-5">
             <div class="card-header mb-5">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div
+                    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
                     <div class="d-flex flex-column">
-                        <h4 class="card-title mb-1">Tiket Closed</h4>
-                        <p class="card-subtitle mb-0 text-muted">Daftar tiket yang sedang dalam proses atau telah selesai</p>
+                        <h4 class="card-title mb-1">Tiket Dalam Proses</h4>
+                        <p class="card-subtitle mb-0 text-muted">Daftar tiket yang sedang menunggu penanganan.</p>
                     </div>
                 </div>
             </div>
@@ -320,10 +322,10 @@
                     <div class="filter-group">
                         <div class="filter-item">
                             <label class="form-label mb-0">Bulan:</label>
-                            <select id="monthFilter" class="form-select">
-                                <option value="all" {{ !$selectedMonth ? 'selected' : '' }}>Semua</option>
+                            <select name="month_proses" id="monthFilterProses" class="form-select filter-proses">
+                                <option value="all" {{ !$selectedMonthProses ? 'selected' : '' }}>Semua</option>
                                 @foreach($months as $num => $name)
-                                    <option value="{{ $num }}" {{ $selectedMonth == $num ? 'selected' : '' }}>
+                                    <option value="{{ $num }}" {{ $selectedMonthProses == $num ? 'selected' : '' }}>
                                         {{ $name }}
                                     </option>
                                 @endforeach
@@ -335,27 +337,26 @@
                     <div class="filter-group">
                         <div class="filter-item">
                             <label class="form-label mb-0">Kategori:</label>
-                            <select id="kategoriFilter" class="form-select">
-                                <option value="all" {{ !$selectedKategori ? 'selected' : '' }}>Semua</option>
+                            <select name="kategori_proses" id="kategoriFilterProses" class="form-select filter-proses">
+                                <option value="all" {{ !$selectedKategoriProses ? 'selected' : '' }}>Semua</option>
                                 @foreach($kategoriTiket as $kategori)
-                                    <option value="{{ $kategori->id }}" {{ $selectedKategori == $kategori->id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
+                                    <option value="{{ $kategori->id }}" {{ $selectedKategoriProses == $kategori->id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-                    
+
                     <!-- Search Form -->
                     <div class="filter-item">
                         <label class="form-label mb-0">Search:</label>
                         <div class="input-group input-group-merge">
                             <span class="input-group-text"><i class="bx bx-search"></i></span>
-                            <input type="text" class="form-control" name="search" id="searchInput" value="{{ $search ?? '' }}" placeholder="Cari nama atau alamat...">
+                            <input type="text" class="form-control filter-proses" name="search_proses" id="searchInputProses" value="{{ $searchProses ?? '' }}" placeholder="Cari nama atau alamat...">
                         </div>
-                        <input type="hidden" name="month" id="hiddenMonthInput" value="{{ $selectedMonth ?? '' }}">
-                    </div>                        
+                    </div>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body p-0 mb-5">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -367,10 +368,12 @@
                                 <th>Keterangan</th>
                                 <th class="text-center">Status</th>
                                 <th>Kategori</th>
+                                <th>Tanggal Di Buat</th>
+                                <th>Di Buat Oleh</th>
                                 <th class="text-center pe-4">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="ticketTableBody">
+                        <tbody id="prosesTableBody">
                             @forelse ($customer as $item)
                                 <tr class="position-relative">
                                     <td class="ps-4 fw-medium">{{ $customer->firstItem() + $loop->index }}</td>
@@ -420,6 +423,16 @@
                                             {{ $item->kategori->nama_kategori }}
                                         </span>
                                     </td>
+                                    <td>
+                                        <span class="badge bg-label-info">
+                                            {{ $item->created_at }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">
+                                            {{ $item->user->name }}
+                                        </span>
+                                    </td>
                                     <td class="text-center pe-4">
                                         <div class="d-flex justify-content-center gap-2">
                                             @if ($item->status_id == 3)
@@ -456,10 +469,183 @@
                 </div>
             </div>
             @if ($customer->hasPages())
-                <div class="card-footer mt-3">
+                <div class="card-footer mt-3" id="prosesPagination">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="footer">
-                            {{ $customer->links('pagination::bootstrap-5') }}
+                            {!! $customer->links('pagination::bootstrap-5') !!}
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        {{-- Tiket Closed Selesai --}}
+        <div class="card">
+            <div class="card-header mb-5">
+                <div
+                    class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                    <div class="d-flex flex-column">
+                        <h4 class="card-title mb-1">Tiket Selesai</h4>
+                        <p class="card-subtitle mb-0 text-muted">Daftar tiket yang telah selesai ditangani.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="filter-search-container">
+                    <!-- Filter Group (Bulan) -->
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <label class="form-label mb-0">Bulan:</label>
+                            <select name="month_selesai" id="monthFilterSelesai" class="form-select filter-selesai">
+                                <option value="all" {{ !$selectedMonthSelesai ? 'selected' : '' }}>Semua</option>
+                                @foreach($months as $num => $name)
+                                    <option value="{{ $num }}" {{ $selectedMonthSelesai == $num ? 'selected' : '' }}>
+                                        {{ $name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Filter Group (Kategori) -->
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <label class="form-label mb-0">Kategori:</label>
+                            <select name="kategori_selesai" id="kategoriFilterSelesai" class="form-select filter-selesai">
+                                <option value="all" {{ !$selectedKategoriSelesai ? 'selected' : '' }}>Semua</option>
+                                @foreach($kategoriTiket as $kategori)
+                                    <option value="{{ $kategori->id }}" {{ $selectedKategoriSelesai == $kategori->id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Search Form -->
+                    <div class="filter-item">
+                        <label class="form-label mb-0">Search:</label>
+                        <div class="input-group input-group-merge">
+                            <span class="input-group-text"><i class="bx bx-search"></i></span>
+                            <input type="text" class="form-control filter-selesai" name="search_selesai" id="searchInputSelesai" value="{{ $searchSelesai ?? '' }}" placeholder="Cari nama atau alamat...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0 mb-5">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col" class="ps-4">No</th>
+                                <th>Pelanggan</th>
+                                <th>No HP</th>
+                                <th class="text-center">Lokasi</th>
+                                <th>Keterangan</th>
+                                <th class="text-center">Status</th>
+                                <th>Kategori</th>
+                                <th>Tanggal Selesai</th>
+                                <th>Teknisi</th>
+                                <th class="text-center pe-4">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="selesaiTableBody">
+                            @forelse ($completedTickets as $item)
+                                <tr class="position-relative">
+                                    <td class="ps-4 fw-medium">{{ $completedTickets->firstItem() + $loop->index }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="flex-shrink-0 me-3">
+                                                <div class="customer-avatar">
+                                                    <i class="bx bx-user"></i>
+                                                </div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="customer-name mb-1">{{ $item->customer->nama_customer ?? '-' }}</h6>
+                                                <p class="customer-address mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-nowrap">{{ $item->customer->no_hp ?? '-' }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @php
+                                            $gps = $item->customer->gps ?? null;
+                                            $url = $gps ? (Str::startsWith($gps, ['http://', 'https://']) ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                                        @endphp
+                                        <a href="{{ $url }}" target="_blank"
+                                            class="btn btn-sm btn-action btn-maps {{ !$gps ? 'disabled' : '' }}"
+                                            data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
+                                            <i class="bx bx-map"></i>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="d-inline-block text-truncate" style="max-width: 200px;" 
+                                              data-bs-toggle="tooltip" title="{{ $item->keterangan }}">
+                                            {{ $item->keterangan }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($item->status_id == 6)
+                                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Menunggu</span>
+                                        @elseif($item->status_id == 3)
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Selesai</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                            {{ $item->kategori->nama_kategori }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-warning">
+                                            {{ $item->updated_at }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">
+                                            {{ $item->teknisi->name ?? '-' }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center pe-4">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            @if ($item->status_id == 3)
+                                                <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" title="Tiket sudah selesai">
+                                                    <i class="bx bx-check-double"></i>
+                                                </button>
+                                            @else
+                                                <a href="/tiket-open/{{ $item->id }}"
+                                                    class="btn btn-sm btn-action btn-outline-warning" data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" title="Proses & Tutup Tiket">
+                                                    <i class="bx bx-wrench"></i>
+                                                </a>
+                                                <a href="/cancel-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-action btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
+                                                    <i class="bx bx-x"></i>
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <div class="py-4">
+                                            <i class="bx bx-inbox fs-1 text-muted mb-3"></i>
+                                            <h5 class="text-muted">Tidak ada data tiket</h5>
+                                            <p class="text-muted mb-0">Tidak ada tiket yang cocok dengan pencarian Anda.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @if ($completedTickets->hasPages())
+                <div class="card-footer mt-3" id="selesaiPagination">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="footer">
+                            {!! $completedTickets->links('pagination::bootstrap-5') !!}
                         </div>
                     </div>
                 </div>
@@ -468,104 +654,100 @@
     </div>
 </div>
 @endsection
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const searchInput = document.getElementById('searchInput');
-    const monthFilter = document.getElementById('monthFilter');
-    const kategoriFilter = document.getElementById('kategoriFilter');
-    const hiddenMonthInput = document.getElementById('hiddenMonthInput');
-    let searchTimeout;
-
-    function fetchData(page = 1) {
-        const search = searchInput.value;
-        const month = monthFilter.value;
-        const kategori = kategoriFilter.value;
-        const url = new URL(window.location.href);
-        url.searchParams.set('search', search);
-        url.searchParams.set('month', month);
-        url.searchParams.set('kategori', kategori);
-        url.searchParams.set('page', page);
-        url.searchParams.set('ajax', 1);
-
-        // Update hidden input for form submission
-        hiddenMonthInput.value = month;
-
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            const newTableBody = doc.getElementById('ticketTableBody');
-            const newPagination = doc.querySelector('.card-footer');
-
-            if (newTableBody) {
-                document.getElementById('ticketTableBody').innerHTML = newTableBody.innerHTML;
-            }
-            
-            const paginationContainer = document.querySelector('.card-footer');
-            if (paginationContainer && newPagination) {
-                // Jika ada pagination baru, perbarui isinya
-                paginationContainer.innerHTML = newPagination.innerHTML;
-            } else if (paginationContainer && !newPagination) {
-                // Jika tidak ada pagination baru, kosongkan isinya, jangan hapus elemennya
-                paginationContainer.innerHTML = '';
-            }
-            
-            // Re-initialize tooltips
-            initializeTooltips();
-        })
-        .catch(error => console.error('Error fetching data:', error));
-    }
-
-    // Event listener untuk input pencarian
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                fetchData(1);
-            }, 500);
-        });
-    }
-
-    // Event listener untuk filter bulan
-    if (monthFilter) {
-        monthFilter.addEventListener('change', function () {
-            fetchData(1);
-        });
-    }
-
-    // Event listener untuk filter kategori
-    if (kategoriFilter) {
-        kategoriFilter.addEventListener('change', function () {
-            fetchData(1);
-        });
-    }
-
-    // Event listener untuk pagination (delegasi event)
-    document.addEventListener('click', function(e) {
-        if (e.target.matches('.pagination a, .pagination a *')) {
-            e.preventDefault();
-            const pageLink = e.target.closest('a');
-            const url = new URL(pageLink.href);
-            const page = url.searchParams.get('page');
-            fetchData(page);
-        }
-    });
-
+    // --- UTILITY FUNCTIONS ---
     function initializeTooltips() {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            // Dispose of any existing tooltips on the element before creating a new one
+            var existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (existingTooltip) {
+                existingTooltip.dispose();
+            }
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
 
-    // Inisialisasi tooltips saat halaman pertama kali dimuat
+    // --- MAIN LOGIC ---
+    function setupTableFilters(prefix) {
+        const searchInput = document.getElementById(`searchInput${prefix}`);
+        const monthFilter = document.getElementById(`monthFilter${prefix}`);
+        const kategoriFilter = document.getElementById(`kategoriFilter${prefix}`);
+        const tableBody = document.getElementById(`${prefix.toLowerCase()}TableBody`);
+        const paginationContainer = document.getElementById(`${prefix.toLowerCase()}Pagination`);
+
+        let searchTimeout;
+
+        function fetchData(page = 1, pushState = true) {
+            const search = searchInput.value;
+            const month = monthFilter.value;
+            const kategori = kategoriFilter.value;
+
+            const url = new URL(window.location.href);
+            
+            // Set parameters for the current table
+            url.searchParams.set(`search_${prefix.toLowerCase()}`, search);
+            url.searchParams.set(`month_${prefix.toLowerCase()}`, month);
+            url.searchParams.set(`kategori_${prefix.toLowerCase()}`, kategori);
+            url.searchParams.set(`${prefix.toLowerCase()}_page`, page);
+
+            // Set ajax flag
+            url.searchParams.set('ajax', 1);
+
+            if (pushState) {
+                window.history.pushState({ path: url.href }, '', url.href);
+            }
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.ok ? response.text() : Promise.reject('Network response was not ok.'))
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const newTableBody = doc.getElementById(`${prefix.toLowerCase()}TableBody`);
+                const newPagination = doc.getElementById(`${prefix.toLowerCase()}Pagination`);
+
+                if (newTableBody) tableBody.innerHTML = newTableBody.innerHTML;
+                if (paginationContainer) paginationContainer.innerHTML = newPagination ? newPagination.innerHTML : '';
+
+                initializeTooltips();
+            })
+            .catch(error => console.error('Error fetching data:', error));
+        }
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => fetchData(1), 500);
+        });
+
+        monthFilter.addEventListener('change', () => fetchData(1));
+        kategoriFilter.addEventListener('change', () => fetchData(1));
+
+        paginationContainer?.addEventListener('click', function(e) {
+            const pageLink = e.target.closest('.pagination a');
+            if (pageLink) {
+                e.preventDefault();
+                const url = new URL(pageLink.href);
+                const page = url.searchParams.get(`${prefix.toLowerCase()}_page`);
+                fetchData(page);
+            }
+        });
+    }
+
+    // --- INITIALIZATION ---
+    setupTableFilters('Proses');
+    setupTableFilters('Selesai');
     initializeTooltips();
+
+    window.onpopstate = function(event) {
+        if (event.state) {
+            window.location.reload();
+        }
+    };
 });
 </script>
