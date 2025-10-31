@@ -19,14 +19,14 @@ class SendWarning extends Command
         $today = Carbon::today();
 
         // Reset warning_sent pada tanggal 2 dan 11
-        if (in_array($today->day, [2, 11])) {
+        if (in_array($today->day, [4, 11])) {
             $count = Customer::whereNotNull('warning_sent')->update(['warning_sent' => null]);
             Log::info("Berhasil reset field warning_sent. Total customer direset: " . $count);
             return Command::SUCCESS;
         }
 
         // hanya jalan tanggal 1 dan 10
-        if (!in_array($today->day, [1, 10])) {
+        if (!in_array($today->day, [3, 10])) {
             return Command::SUCCESS;
         }
 
