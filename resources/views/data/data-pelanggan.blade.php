@@ -1311,6 +1311,8 @@
                                 <th>Nama Pelanggan</th>
                                 <th>Status</th>
                                 <th>Teknisi</th>
+                                <th>Tanggal Registrasi</th>
+                                <th>Tanggal Selesai</th>
                             </tr>
                         </thead>
                         <tbody class="text-center">
@@ -1333,6 +1335,16 @@
                                         @endif
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
+                                    <td>
+                                        <span class="badge bg-label-info">
+                                            {{ Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-success">
+                                            {{ Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                        </span>
+                                    </td>
                                 </tr>
                             @empty
                             <tr>
@@ -1384,12 +1396,12 @@
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                     <td>
                                         <span class="badge bg-label-info">
-                                            {{$item->created_at ?? '-'}}
+                                            {{ Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') ?? '-'}}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-label-success">
-                                            {{$item->tanggal_selesai ?? '-'}}
+                                            {{ Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') ?? '-'}}
                                         </span>
                                     </td>
                                 </tr>
