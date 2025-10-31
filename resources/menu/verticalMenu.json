@@ -84,6 +84,15 @@
       ]
     },
     {
+      "url": "/kinerja",
+      "name": "Kinerja",
+      "icon": "menu-icon tf-icons bx bx-clipboard",
+      "slug": "kinerja",
+      "roles": [
+        "Super Admin"
+      ]
+    },
+    {
       "menuHeader": "Data",
       "roles": [
         "Super Admin",

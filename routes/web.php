@@ -74,6 +74,7 @@ use Symfony\Component\HttpFoundation\Request;
 use RouterOS\Client;
 use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
+use App\Http\Controllers\KinerjaController;
 use App\Http\Controllers\WhatspieControllers;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
@@ -394,6 +395,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->middleware('auth', 'roles:Super Admin,Admin Keuangan')->name('data-karyawan');
     Route::get('/history-tiket/{id}', [TiketController::class, 'historyTiket']);
     Route::get('/cek/dataImport', [DataController::class, 'cekImport'])->name('cek-import');
+    Route::get('/kinerja', [KinerjaController::class, 'index'])->name('kinerja')->middleware('auth', 'roles:Super Admin');
 
     // Keuangan
     Route::get('/pengeluaran/ajax-filter', [PengeluaranController::class, 'ajaxFilter'])->name('pengeluaran.ajax-filter');
