@@ -487,10 +487,12 @@ class DataController extends Controller
             $router = Router::findOrFail($request->router);
             $paket  = Paket::findOrFail($request->paket);
 
-            $invoice->update([
-                'paket_id' => $paket->id,
-                'tagihan'  => $paket->harga,
-            ]);
+            if ($invoice) {
+                $invoice->update([
+                    'paket_id' => $paket->id,
+                    'tagihan'  => $paket->harga,
+                ]);
+            }
 
 
             // Update profile di MikroTik
