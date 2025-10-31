@@ -1364,6 +1364,8 @@
                                 <th>Nama Pelanggan</th>
                                 <th>Status</th>
                                 <th>Teknisi</th>
+                                <th>Tanggal Registrasi</th>
+                                <th>Tanggal Selesai</th>
                             </tr>
                         </thead>
                         <tbody class="text-center">
@@ -1380,10 +1382,20 @@
                                         <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
                                     </td>
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
+                                    <td>
+                                        <span class="badge bg-label-info">
+                                            {{$item->created_at ?? '-'}}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-success">
+                                            {{$item->tanggal_selesai ?? '-'}}
+                                        </span>
+                                    </td>
                                 </tr>
                             @empty
                             <tr>
-                                <td colspan="4">Tidak ada data</td>
+                                <td colspan="6">Tidak ada data</td>
                             </tr>
                             @endforelse
                         </tbody>
