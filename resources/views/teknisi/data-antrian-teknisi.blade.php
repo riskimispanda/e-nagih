@@ -792,7 +792,7 @@
                         Menampilkan {{ $data->firstItem() }} - {{ $data->lastItem() }} dari {{ $data->total() }} data
                     </div>
                     <div>
-                        {{ $data->withQueryString()->onEachSide(1)->links() }}
+                        {{ $data->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
                 @elseif($waitingPerPage == 0)
