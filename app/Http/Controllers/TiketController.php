@@ -127,7 +127,7 @@ class TiketController extends Controller
             }
         }
 
-        if ($tiket->kategori_id == 1 || $tiket->kategori_id == 2 || $tiket->kategori_id == 5) {
+        if ($tiket->kategori_id == 1 || $tiket->kategori_id == 2 || $tiket->kategori_id == 4 || $tiket->kategori_id == 5) {
             // Kirim Notif ke Teknisi
             $chat = new ChatServices();
             foreach ($karyawan as $kar) {
@@ -170,7 +170,7 @@ class TiketController extends Controller
                 $query->withTrashed(); // ✅ Hanya untuk customer yang soft delete
             }])
                 ->whereHas('kategori', function ($k) {
-                    $k->whereIn('id', [1, 2, 3, 5]);
+                $k->whereIn('id', [1, 2, 3, 4, 5]);
                 })
                 ->whereHas('customer', function ($query) {
                     $query->whereIn('status_id', [3, 4])
