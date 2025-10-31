@@ -951,7 +951,7 @@
                         Menampilkan {{ $progressData->firstItem() }} - {{ $progressData->lastItem() }} dari {{ $progressData->total() }} data
                     </div>
                     <div>
-                        {{ $progressData->withQueryString()->onEachSide(1)->links() }}
+                        {{ $progressData->withQueryString()->onEachSide(1)->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
                 @elseif($progressPerPage == 0)
