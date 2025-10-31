@@ -496,12 +496,17 @@
                         <label for="monthFilter" class="form-label mb-0 me-2 fw-semibold">Bulan:</label>
                         <select class="month-filter" id="monthFilter">
                             <option value="">Semua Bulan</option>
-                            @foreach ($months as $month)
-                                <option value="{{ $month['value'] }}" 
-                                    {{ $month['value'] == $currentMonth ? 'selected' : '' }}>
-                                    {{ $month['label'] }}
+                            @php
+                                $tahunIni = date('Y');
+                            @endphp
+                            @for ($i = 1; $i <= 12; $i++)
+                                @php
+                                    $namaBulan = \Carbon\Carbon::create()->month($i)->locale('id')->monthName;
+                                @endphp
+                                <option value="{{ $i }}" {{ $i == $currentMonth ? 'selected' : '' }}>
+                                    {{ ucfirst($namaBulan) }} {{ $tahunIni }}
                                 </option>
-                            @endforeach
+                            @endfor
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilter">

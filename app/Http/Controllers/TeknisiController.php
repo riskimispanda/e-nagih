@@ -55,31 +55,22 @@ class TeknisiController extends Controller
         $user = auth()->user();
         $customersWithTeknisi = Customer::whereNotNull('teknisi_id')->exists();
 
-        // Get current month or from request (default: current month)
-        $currentMonth = $request->get('month', Carbon::now()->format('Y-m'));
+        // Ambil bulan dari request, default ke bulan saat ini jika tidak ada
+        $currentMonth = $request->get('month', Carbon::now()->month);
+        $currentYear = Carbon::now()->year;
 
         // Get per page values from request with defaults
         $corpPerPage = $request->get('corp_per_page', 10);
         $waitingPerPage = $request->get('waiting_per_page', 10);
         $progressPerPage = $request->get('progress_per_page', 10);
 
-        // Generate months for dropdown (12 bulan terakhir, diurutkan dari terlama ke terbaru)
-        $months = [];
-        for ($i = 11; $i >= 0; $i--) {
-            $date = Carbon::now()->subMonths($i);
-            $months[] = [
-                'value' => $date->format('Y-m'),
-                'label' => $date->translatedFormat('F Y') // Bahasa Indonesia
-            ];
-        }
-
         // Query untuk data Customer dengan filter bulan dan pagination
         $customerQuery = Customer::where('status_id', 5)->latest();
 
-        // Hapus whereMonth yang fixed, gunakan filter bulan dari request
-        if ($currentMonth) {
-            $customerQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
-                ->whereMonth('created_at', Carbon::parse($currentMonth)->month);
+        // Filter berdasarkan bulan jika bulan dipilih (bukan 'all')
+        if ($currentMonth && $currentMonth !== 'all') {
+            $customerQuery->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $currentMonth);
         }
 
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
@@ -87,14 +78,14 @@ class TeknisiController extends Controller
         // Query untuk antrian (status_id = 2,3) dengan filter bulan dan pagination
         $antrianQuery = Customer::whereIn('status_id', [2, 3])->latest();
 
-        // Filter untuk teknisi hanya melihat data mereka sendiri
-        if (auth()->user()->roles_id == 5) { // Asumsi roles_id 4 adalah Teknisi
+        // Filter untuk teknisi hanya melihat data mereka sendiri (asumsi roles_id 5 adalah Teknisi)
+        if (auth()->user()->roles_id == 5) {
             $antrianQuery->where('teknisi_id', $teknisi)->latest();
         }
 
-        if ($currentMonth) {
-            $antrianQuery->whereYear('created_at', Carbon::parse($currentMonth)->year)
-                ->whereMonth('created_at', Carbon::parse($currentMonth)->month);
+        if ($currentMonth && $currentMonth !== 'all') {
+            $antrianQuery->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $currentMonth);
         }
 
         $antrian = $antrianQuery->paginate($progressPerPage, ['*'], 'progress_page')->withQueryString();
@@ -102,14 +93,14 @@ class TeknisiController extends Controller
         // Query untuk corporate dengan filter bulan dan pagination
         $corpQuery = Perusahaan::where('status_id', 1)->latest();
 
-        // Filter admin hanya melihat data mereka sendiri
+        // Filter admin (bukan teknisi) hanya melihat data yang mereka assign
         if ($user->roles_id != 5) { // Bukan teknisi
             $corpQuery->where('admin_id', $user->id);
         }
 
-        if ($currentMonth) {
-            $corpQuery->whereYear('tanggal', Carbon::parse($currentMonth)->year)
-                ->whereMonth('tanggal', Carbon::parse($currentMonth)->month);
+        if ($currentMonth && $currentMonth !== 'all') {
+            $corpQuery->whereYear('tanggal', $currentYear)
+                ->whereMonth('tanggal', $currentMonth);
         }
 
         $corp = $corpQuery->paginate($corpPerPage, ['*'], 'corp_page')->withQueryString();
@@ -121,7 +112,6 @@ class TeknisiController extends Controller
             'roles' => auth()->user()->roles,
             'customersWithTeknisi' => $customersWithTeknisi,
             'corp' => $corp,
-            'months' => $months,
             'currentMonth' => $currentMonth,
             'corpPerPage' => $corpPerPage,
             'waitingPerPage' => $waitingPerPage,
