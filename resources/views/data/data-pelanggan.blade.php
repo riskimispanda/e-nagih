@@ -1337,12 +1337,12 @@
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                     <td>
                                         <span class="badge bg-label-info">
-                                            {{ Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                            {{ $item->created_at ?? '-'}}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-label-success">
-                                            {{ Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                            {{ $item->tanggal_selesai ?? '-'}}
                                         </span>
                                     </td>
                                 </tr>
@@ -1396,12 +1396,12 @@
                                     <td>{{$item->teknisi->name ?? '-'}}</td>
                                     <td>
                                         <span class="badge bg-label-info">
-                                            {{ Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                            {{$item->created_at ?? '-'}}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-label-success">
-                                            {{ Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') ?? '-'}}
+                                            {{$item->tanggal_selesai ?? '-'}}
                                         </span>
                                     </td>
                                 </tr>
