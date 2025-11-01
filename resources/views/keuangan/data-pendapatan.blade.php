@@ -1270,8 +1270,12 @@
     // GENERATE METODE OPTIONS (gunakan data dari PHP yang sudah ada di page)
     function generateMetodeOptions() {
         // Anda bisa mengembalikan string kosong, atau jika perlu bisa ditambahkan logic
-        // untuk generate options dari data yang sudah ada
-        return '';
+        // untuk generate options dari data yang sudah ada.
+        let optionsHTML = '';
+        @foreach ($metode as $item)
+            optionsHTML += `<option value="{{ $item->nama_metode }}">{{ $item->nama_metode }}</option>`;
+        @endforeach
+        return optionsHTML;
     }
     
     // INITIALIZE MODAL EVENT LISTENERS
