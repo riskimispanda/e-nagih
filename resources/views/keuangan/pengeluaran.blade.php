@@ -605,6 +605,15 @@
 @section('page-script')
 <script>
     $(document).ready(function() {
+        // Initialize TomSelect
+        new TomSelect('#select-rab',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
         let searchTimeout;
 
         // Fungsi untuk memuat data pengeluaran
