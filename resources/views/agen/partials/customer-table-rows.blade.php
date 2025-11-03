@@ -159,7 +159,7 @@
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="payment-info-card">
-                                    <div class="d-flex align-items-center">
+                                    <div class="d-flex justify-start align-items-center">
                                         <i class="bx bx-user-circle me-2 text-primary fs-4"></i>
                                         <div>
                                             <strong class="text-dark">{{ $customer->nama_customer }}</strong><br>

@@ -566,6 +566,10 @@
                 // Update table content
                 tableBody.innerHTML = data.table_html;
 
+                // Place modals into the container
+                const modalContainer = document.getElementById('modal-container');
+                modalContainer.innerHTML = data.table_html;
+
                 // Update pagination
                 paginationContainer.innerHTML = data.pagination_html;
 
@@ -1082,46 +1086,40 @@
 </script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      function toRupiah(n) {
+    // --- Payment Modal Calculation Logic with Event Delegation ---
+    function toRupiah(n) {
         return "Rp " + (n || 0).toLocaleString("id-ID");
-      }
-  
-      function recalcTotal(invoiceId) {
+    }
+
+    function recalcTotal(invoiceId) {
         let total = 0;
-  
-        // 1) Jumlahkan komponen (tagihan, tambahan, tunggakan) yang dicentang
-        document
-          .querySelectorAll('.pilihan[data-id="' + invoiceId + '"]:checked:not([data-type="saldo"])')
-          .forEach(function (item) {
+
+        // 1) Sum checked components (tagihan, tambahan, tunggakan)
+        document.querySelectorAll(`#konfirmasiPembayaran${invoiceId} .pilihan:checked:not([data-type="saldo"])`).forEach(function (item) {
             const amount = parseInt(item.getAttribute("data-amount")) || 0;
             total += amount;
-          });
-  
-        // 2) Jika saldo dicentang, kurangi total dengan saldo (ambil dari data-amount atau value)
-        const saldoCb = document.querySelector('.pilihan[data-id="' + invoiceId + '"][data-type="saldo"]');
+        });
+
+        // 2) If 'saldo' is checked, subtract it from the total
+        const saldoCb = document.querySelector(`#konfirmasiPembayaran${invoiceId} .pilihan[data-type="saldo"]`);
         if (saldoCb && saldoCb.checked) {
-          const saldoAmount =
-            parseInt(saldoCb.getAttribute("data-amount")) ||
-            parseInt(saldoCb.value) || 0;
-          total = Math.max(total - saldoAmount, 0);
+            const saldoAmount = parseInt(saldoCb.getAttribute("data-amount")) || parseInt(saldoCb.value) || 0;
+            total = Math.max(total - saldoAmount, 0); // Ensure total doesn't go below zero
         }
-  
-        // Tampilkan
+
+        // Display the new total
         const totalInput = document.getElementById("total" + invoiceId);
         if (totalInput) totalInput.value = toRupiah(total);
-      }
-  
-      // Binding event ke semua checkbox
-      document.querySelectorAll(".pilihan").forEach(function (checkbox) {
-        checkbox.addEventListener("change", function () {
-          recalcTotal(this.getAttribute("data-id"));
-        });
-      });
-  
-      // Hitung awal (optional)
-      const ids = new Set([...document.querySelectorAll(".pilihan")].map(el => el.getAttribute("data-id")));
-      ids.forEach(id => recalcTotal(id));
+    }
+
+    // Use event delegation on the document to handle clicks on '.pilihan' checkboxes
+    document.addEventListener('change', function(event) {
+        if (event.target.matches('.pilihan')) {
+            const invoiceId = event.target.getAttribute('data-id');
+            if (invoiceId) {
+                recalcTotal(invoiceId);
+            }
+        }
     });
 </script>
 @endsection
