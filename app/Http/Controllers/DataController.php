@@ -130,7 +130,7 @@ class DataController extends Controller
 
         $maintenance = TiketOpen::where('status_id', 6)
             ->whereHas('customer', function ($query) {
-                $query->withTrashed();
+            $query->whereNull('deleted_at');
             })
             ->get();
 
@@ -157,8 +157,8 @@ class DataController extends Controller
             ->whereYear('tanggal_selesai', now()->year)
             ->count();
 
-        $nonAktif = Customer::where('status_id', 9)->get();
-        $countPelangganAktif = Customer::where('status_id', 3)->count();
+        $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->get();
+        $countPelangganAktif = Customer::where('status_id', 3)->whereNull('deleted_at')->count();
 
         // Handle AJAX requests
         if ($request->ajax()) {
