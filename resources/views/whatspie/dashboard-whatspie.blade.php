@@ -5,6 +5,9 @@
 <!-- Tailwind CSS CDN -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Font Awesome CDN -->
+<!-- Tom Select CSS -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+<!-- Tom Select JS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
@@ -108,7 +111,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Left Column - Connection Status -->
             <div class="lg:col-span-1">
                 <!-- Connection Status Card -->
@@ -170,6 +173,65 @@
                             Test Connection
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Message Card -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 h-full flex flex-col">
+                    <div class="flex items-center mb-6">
+                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
+                            <i class="fas fa-triangle-exclamation text-orange-600 text-lg"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900">Maintenance Message</h3>
+                    </div>
+
+                    <form id="maintenanceForm" class="flex-grow flex flex-col">
+                        <div class="space-y-4 flex-grow">
+                            <div>
+                                <label for="serverSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih BTS Server</label>
+                                <select id="serverSelect" name="server_id" placeholder="-- Pilih Server --">
+                                    <option value="">-- Pilih Server --</option>
+                                    @foreach($servers as $server)
+                                        <option value="{{ $server->id }}">{{ $server->lokasi_server }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label for="oltSelect" class="block text-sm font-medium text-gray-700">Pilih OLT</label>
+                                    <span id="customerCount" class="text-sm font-medium text-gray-500 hidden">
+                                        <i class="fas fa-users mr-1"></i> <span id="countValue">0</span> Customers
+                                    </span>
+                                </div>
+                                <select id="oltSelect" name="olt_id" placeholder="-- Pilih OLT --" disabled>
+                                    <option value="">-- Pilih Server Dulu --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="odcSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih ODC</label>
+                                <select id="odcSelect" name="odc_id" placeholder="-- Pilih ODC --" disabled>
+                                    <option value="">-- Pilih OLT Dulu --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="odpSelect" class="block text-sm font-medium text-gray-700 mb-1">Pilih ODP</label>
+                                <select id="odpSelect" name="odp_id" placeholder="-- Pilih ODP --" disabled>
+                                    <option value="">-- Pilih ODC Dulu --</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="maintenanceMessage" class="block text-sm font-medium text-gray-700 mb-1">Pesan Custom</label>
+                                <textarea id="maintenanceMessage" name="message" rows="5" class="form-control w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" placeholder="Kami akan melakukan pemeliharaan jaringan pada [Tanggal] pukul [Waktu]. Anda mungkin akan mengalami gangguan koneksi untuk sementara waktu."></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <button type="submit" class="w-full flex items-center justify-center px-4 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md">
+                                <i class="fas fa-paper-plane mr-3"></i>
+                                Kirim Pesan Maintenance
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -374,6 +436,69 @@
         if (!checkApiConfiguration()) {
             showToast('WhatsPie API is not configured. Please check environment variables.', 'warning');
         }
+
+        // Maintenance form handler
+        const maintenanceForm = document.getElementById('maintenanceForm');
+        if(maintenanceForm) {
+            maintenanceForm.addEventListener('submit', handleMaintenanceSubmit);
+        }
+
+        // OLT select handler
+        const oltSelect = document.getElementById('oltSelect');
+        if(oltSelect) {
+            oltSelect.addEventListener('change', handleOltChange);
+        }
+
+        // ODC select handler
+        const odcSelect = document.getElementById('odcSelect');
+        if(odcSelect) {
+            odcSelect.addEventListener('change', handleOdcChange);
+        }
+
+        // ODP select handler
+        const odpSelect = document.getElementById('odpSelect');
+        if(odpSelect) {
+            odpSelect.addEventListener('change', handleOdpChange);
+        }
+
+        // OLT select handler
+        const serverSelect = document.getElementById('serverSelect');
+        if(serverSelect) {
+            serverSelect.addEventListener('change', handleServerChange);
+        }
+
+        // Initialize Tom Select
+        const tomOlt = new TomSelect('#oltSelect',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+        const tomOdc = new TomSelect('#odcSelect',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+        const tomOdp = new TomSelect('#odpSelect',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
+
+        new TomSelect('#serverSelect',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
     });
 
     // Check API configuration
@@ -643,6 +768,251 @@
         }
     }
 
+    // Handle Server selection change
+    async function handleServerChange(event) {
+        const serverId = event.target.value;
+        const tomOlt = document.getElementById('oltSelect').tomselect;
+        const tomOdc = document.getElementById('odcSelect').tomselect;
+        const tomOdp = document.getElementById('odpSelect').tomselect;
+        const customerCountSpan = document.getElementById('customerCount');
+
+        // Reset and disable downstream dropdowns
+        tomOlt.clear(); tomOlt.clearOptions(); tomOlt.disable();
+        tomOdc.clear(); tomOdc.clearOptions(); tomOdc.disable();
+        tomOdp.clear(); tomOdp.clearOptions(); tomOdp.disable();
+        customerCountSpan.classList.add('hidden');
+
+        tomOlt.addOption({ value: '', text: '-- Pilih Server Dulu --' });
+        tomOdc.addOption({ value: '', text: '-- Pilih OLT Dulu --' });
+        tomOdp.addOption({ value: '', text: '-- Pilih ODC Dulu --' });
+
+        if (!serverId) {
+            return;
+        }
+
+        tomOlt.addOption({ value: '', text: 'Memuat OLT...' });
+
+        try {
+            const baseRoute = '{{ route("api.whatspie.server.olts", ["serverId" => ":serverId"]) }}';
+            const url = baseRoute.replace(':serverId', serverId);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            });
+
+            const data = await response.json();
+            tomOlt.clearOptions(); // Clear "Memuat..."
+
+            if (response.ok && data.success) {
+                tomOlt.addOption({ value: '', text: '-- Pilih OLT --' });
+                data.data.forEach(olt => {
+                    tomOlt.addOption({ value: olt.id, text: olt.nama_lokasi });
+                });
+                tomOlt.enable();
+            } else {
+                tomOlt.addOption({ value: '', text: 'Gagal memuat OLT' });
+                showToast(data.error || 'Failed to get OLT list.', 'error');
+            }
+        } catch (error) {
+            tomOlt.clearOptions();
+            tomOlt.addOption({ value: '', text: 'Error' });
+            showToast('Error fetching OLT list.', 'error');
+        }
+    }
+
+    // Handle OLT selection change
+    async function handleOltChange(event) {
+        const oltId = event.target.value;
+        const tomOdc = document.getElementById('odcSelect').tomselect;
+        const tomOdp = document.getElementById('odpSelect').tomselect;
+        const customerCountSpan = document.getElementById('customerCount');
+
+        tomOdc.clear(); tomOdc.clearOptions(); tomOdc.disable();
+        tomOdp.clear(); tomOdp.clearOptions(); tomOdp.disable();
+        customerCountSpan.classList.add('hidden');
+
+        tomOdc.addOption({ value: '', text: '-- Pilih OLT Dulu --' });
+        tomOdp.addOption({ value: '', text: '-- Pilih ODC Dulu --' });
+
+        if (!oltId) {
+            return;
+        }
+
+        tomOdc.addOption({ value: '', text: 'Memuat ODC...' });
+
+        try {
+            const baseRoute = '{{ route("api.whatspie.olt.odcs", ["oltId" => ":oltId"]) }}';
+            const url = baseRoute.replace(':oltId', oltId);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            });
+
+            const data = await response.json();
+            tomOdc.clearOptions();
+
+            if (response.ok && data.success) {
+                tomOdc.addOption({ value: '', text: '-- Pilih ODC --' });
+                data.data.forEach(odc => {
+                    tomOdc.addOption({ value: odc.id, text: odc.nama_odc });
+                });
+                tomOdc.enable();
+            } else {
+                tomOdc.addOption({ value: '', text: 'Gagal memuat ODC' });
+                showToast(data.error || 'Failed to get ODC list.', 'error');
+            }
+        } catch (error) {
+            tomOdc.clearOptions();
+            tomOdc.addOption({ value: '', text: 'Error' });
+            showToast('Error fetching ODC list.', 'error');
+        }
+    }
+
+    // Handle ODC selection change
+    async function handleOdcChange(event) {
+        const odcId = event.target.value;
+        const tomOdp = document.getElementById('odpSelect').tomselect;
+        const customerCountSpan = document.getElementById('customerCount');
+
+        tomOdp.clear(); tomOdp.clearOptions(); tomOdp.disable();
+        customerCountSpan.classList.add('hidden');
+        tomOdp.addOption({ value: '', text: '-- Pilih ODC Dulu --' });
+
+        if (!odcId) {
+            return;
+        }
+
+        tomOdp.addOption({ value: '', text: 'Memuat ODP...' });
+
+        try {
+            const baseRoute = '{{ route("api.whatspie.odc.odps", ["odcId" => ":odcId"]) }}';
+            const url = baseRoute.replace(':odcId', odcId);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+            });
+
+            const data = await response.json();
+            tomOdp.clearOptions();
+
+            if (response.ok && data.success) {
+                tomOdp.addOption({ value: '', text: '-- Pilih ODP --' });
+                data.data.forEach(odp => {
+                    tomOdp.addOption({ value: odp.id, text: odp.nama_odp });
+                });
+                tomOdp.enable();
+            } else {
+                tomOdp.addOption({ value: '', text: 'Gagal memuat ODP' });
+                showToast(data.error || 'Failed to get ODP list.', 'error');
+            }
+        } catch (error) {
+            tomOdp.clearOptions();
+            tomOdp.addOption({ value: '', text: 'Error' });
+            showToast('Error fetching ODP list.', 'error');
+        }
+    }
+
+    // Handle ODP selection change to get customer count
+    async function handleOdpChange(event) {
+        const oltId = event.target.value;
+        const customerCountSpan = document.getElementById('customerCount');
+        const countValueSpan = document.getElementById('countValue');
+
+        if (!oltId) {
+            customerCountSpan.classList.add('hidden');
+            return;
+        }
+
+        // Show loading state
+        countValueSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        customerCountSpan.classList.remove('hidden');
+
+        try {
+            const baseRoute = '{{ route("api.whatspie.odp.customer-count", ["odpId" => ":oltId"]) }}';
+            const url = baseRoute.replace(':oltId', oltId);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                countValueSpan.textContent = data.count;
+            } else {
+                countValueSpan.textContent = 'N/A';
+                showToast(data.error || 'Failed to get customer count.', 'error');
+            }
+        } catch (error) {
+            countValueSpan.textContent = 'N/A';
+            showToast('Error fetching customer count.', 'error');
+        }
+    }
+
+    // Handle maintenance message submission
+    async function handleMaintenanceSubmit(event) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const odpId = form.elements.odp_id.value;
+        const message = form.elements.message.value;
+
+        if (!odpId) {
+            showToast('Silakan pilih ODP terlebih dahulu.', 'warning');
+            return;
+        }
+        if (!message.trim()) {
+            showToast('Message cannot be empty.', 'warning');
+            return;
+        }
+
+        if (!confirm(`Anda yakin ingin mengirim pesan ini ke semua pelanggan di bawah ODP yang dipilih?`)) {
+            return;
+        }
+
+        showLoadingResults();
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> Sending...';
+
+        try {
+            const response = await fetch('{{ route("api.whatspie.send.maintenance") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ odp_id: odpId, message: message })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast(data.message || 'Maintenance messages sent!', 'success');
+            } else {
+                showToast(data.error || 'Failed to send messages.', 'error');
+            }
+            displayResults('maintenance', data);
+
+        } catch (error) {
+            console.error('Maintenance message error:', error);
+            displayError(error);
+            showToast('A network error occurred.', 'error');
+        } finally {
+            hideLoadingResults();
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-paper-plane mr-3"></i> Kirim Pesan Maintenance';
+        }
+    }
+
     // Show device details (placeholder function)
     function showDeviceDetails(deviceId) {
         showToast(`Device details for ID: ${deviceId}`, 'info');
@@ -746,6 +1116,22 @@
                     ${data.error ? `<p class="text-sm ${data.success ? 'text-green-700' : 'text-red-700'} mt-2">${data.error}</p>` : ''}
                 </div>
             `;
+        } else if (type === 'maintenance') {
+            resultsDiv.innerHTML = `
+                <div class="border-l-4 ${data.success ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50'} p-4 rounded-r-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <i class="fas ${data.success ? 'fa-check-circle text-blue-500' : 'fa-exclamation-triangle text-red-500'} mr-2"></i>
+                            <h4 class="text-md font-semibold ${data.success ? 'text-blue-800' : 'text-red-800'}">
+                                Maintenance Message Status
+                            </h4>
+                        </div>
+                    </div>
+                    <p class="text-sm ${data.success ? 'text-blue-700' : 'text-red-700'}">
+                        ${data.message || data.error || 'Process completed.'}
+                    </p>
+                </div>
+            `;
         }
     }
 
@@ -836,5 +1222,9 @@
             }
         }, 5000);
     }
+
+    // Tom Select JS
+    
 </script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 @endsection

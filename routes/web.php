@@ -280,6 +280,11 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('api/whatspie')->name('api.whatspie.')->group(function () {
         Route::get('/devices', [WhatsPieControllers::class, 'apiGetDevices'])->name('devices');
         Route::post('/send-message', [WhatsPieControllers::class, 'apiSendMessage'])->name('send.message');
+        Route::get('/server/{serverId}/olts', [WhatsPieControllers::class, 'getOltsByServer'])->name('server.olts');
+        Route::get('/olt/{oltId}/odcs', [WhatsPieControllers::class, 'getOdcsByOlt'])->name('olt.odcs');
+        Route::get('/odc/{odcId}/odps', [WhatsPieControllers::class, 'getOdpsByOdc'])->name('odc.odps');
+        Route::get('/odp/{odpId}/customer-count', [WhatsPieControllers::class, 'getCustomerCountByOdp'])->name('odp.customer-count');
+        Route::post('/send-maintenance', [WhatsPieControllers::class, 'sendMaintenanceMessage'])->name('send.maintenance');
 
         // === TAMBAHAN BARU ===
         Route::post('/devices/add', [WhatsPieControllers::class, 'apiAddDevice'])->name('devices.add');

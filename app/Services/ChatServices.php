@@ -333,7 +333,7 @@ class ChatServices
     /**
      * Helper method untuk mendapatkan device ID default
      */
-    private function getDefaultDevice()
+    public function getDefaultDevice()
     {
         try {
             // Coba ambil devices dari WhatsPie

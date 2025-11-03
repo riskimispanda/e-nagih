@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Customer;
+
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -577,4 +579,59 @@ class WhatspieServices
         }
     }
 
+    /**
+     * Kirim pesan maintenance ke semua customer di bawah satu OLT
+     */
+    public function sendBulkMaintenanceMessage($odpId, $message)
+    {
+        try {
+            // Dapatkan semua customer yang terhubung ke OLT yang dipilih
+            $customers = Customer::where('lokasi_id', $odpId) // PERBAIKAN: Menggunakan kolom odp_id yang benar
+                ->whereNotNull('no_hp')
+                ->whereIn('status_id', [3, 4, 9]) // Hanya customer aktif atau terblokir
+                ->get();
+
+            if ($customers->isEmpty()) {
+                return [
+                    'success' => true, // Success true, tapi message info
+                    'message' => 'Tidak ada pelanggan aktif yang ditemukan untuk ODP yang dipilih.',
+                    'sent_count' => 0,
+                    'failed_count' => 0,
+                ];
+            }
+
+            $sentCount = 0;
+            $failedCount = 0;
+            $failedDetails = [];
+
+            // Ambil device default sekali saja
+            $chatService = new ChatServices();
+            $defaultDevice = $chatService->getDefaultDevice();
+
+            if (!$defaultDevice) {
+                throw new Exception('No default WhatsApp device is available or connected.');
+            }
+
+            foreach ($customers as $customer) {
+                $response = $this->sendMessage($customer->no_hp, $message, $defaultDevice);
+                if ($response['success']) {
+                    $sentCount++;
+                } else {
+                    $failedCount++;
+                    $failedDetails[] = ['customer' => $customer->nama_customer, 'reason' => $response['error'] ?? 'Unknown'];
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => "Process finished. Sent: {$sentCount}, Failed: {$failedCount}.",
+                'sent_count' => $sentCount,
+                'failed_count' => $failedCount,
+                'failed_details' => $failedDetails,
+            ];
+        } catch (Exception $e) {
+            Log::error('WhatsPieService sendBulkMaintenanceMessage Error: ' . $e->getMessage());
+            throw $e; // Re-throw exception to be caught by the controller
+        }
+    }
 }

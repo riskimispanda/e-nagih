@@ -2,6 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
+use App\Models\ODC;
+use App\Models\ODP;
+use App\Models\Server;
+
+use App\Models\Lokasi;
+
 use App\Services\WhatspieServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -35,11 +42,13 @@ class WhatsPieControllers extends Controller
             // Default: tampilkan view dashboard dengan devices
             $devicesResponse = $this->whatspie->getDevices();
             $devices = $devicesResponse['success'] ? $devicesResponse['data'] : [];
+            $servers = Server::all(); // Ambil semua data Server (BTS)
 
             return view('whatspie.dashboard-whatspie',[
                 'users' => auth()->user(),
                 'roles' => auth()->user()->roles,
-                'devices' => $devices
+                'devices' => $devices,
+                'servers' => $servers, // Kirim data Server ke view
             ]);
             
         } catch (\Exception $e) {
@@ -312,5 +321,145 @@ class WhatsPieControllers extends Controller
     {
         $response = $this->whatspie->getDevices();
         return response()->json($response);
+    }
+
+    /**
+     * API - Kirim pesan maintenance ke customer berdasarkan OLT
+     */
+    public function sendMaintenanceMessage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'odp_id' => 'required|exists:odp,id',
+            'message' => 'required|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'error' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $odpId = $request->odp_id;
+            $message = $request->message . "\n\n💻 Pesan ini dikirim secara otomatis oleh sistem NBilling.";
+
+            // Panggil service untuk mengirim pesan
+            $result = $this->whatspie->sendBulkMaintenanceMessage($odpId, $message);
+
+            if ($result['success']) {
+                Log::info('Pesan maintenance berhasil dikirim untuk ODP ID: ' . $odpId, [
+                    'sent' => $result['sent_count'],
+                    'failed' => $result['failed_count']
+                ]);
+            }
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('Error sending maintenance message: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'status' => 500,
+                'error' => 'Failed to send maintenance messages: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * API - Dapatkan jumlah customer berdasarkan ODP
+     */
+    public function getCustomerCountByOdp($odpId)
+    {
+        try {
+            // Validasi sederhana, pastikan odpId adalah numerik
+            if (!is_numeric($odpId)) {
+                return response()->json(['success' => false, 'error' => 'Invalid ODP ID'], 400);
+            }
+
+            $customerCount = Customer::where('lokasi_id', $odpId) // Menggunakan kolom odp_id yang benar
+                ->whereNotNull('no_hp')
+                ->whereIn('status_id', [3, 4, 9]) // Hanya customer aktif atau terblokir
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'count' => $customerCount
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting customer count by OLT: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get customer count.'
+            ], 500);
+        }
+    }
+
+    /**
+     * API - Dapatkan OLT berdasarkan Server (BTS)
+     */
+    public function getOltsByServer($serverId)
+    {
+        try {
+            if (!is_numeric($serverId)) {
+                return response()->json(['success' => false, 'error' => 'Invalid Server ID'], 400);
+            }
+
+            $olts = Lokasi::where('id_server', $serverId)->get(['id', 'nama_lokasi']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $olts
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting OLTs by server: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get OLTs.'
+            ], 500);
+        }
+    }
+
+    /**
+     * API - Dapatkan ODC berdasarkan OLT
+     */
+    public function getOdcsByOlt($oltId)
+    {
+        try {
+            if (!is_numeric($oltId)) {
+                return response()->json(['success' => false, 'error' => 'Invalid OLT ID'], 400);
+            }
+
+            $odcs = ODC::where('lokasi_id', $oltId)->get(['id', 'nama_odc']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $odcs
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting ODCs by OLT: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Failed to get ODCs.'], 500);
+        }
+    }
+
+    /**
+     * API - Dapatkan ODP berdasarkan ODC
+     */
+    public function getOdpsByOdc($odcId)
+    {
+        try {
+            if (!is_numeric($odcId)) {
+                return response()->json(['success' => false, 'error' => 'Invalid ODC ID'], 400);
+            }
+
+            $odps = ODP::where('odc_id', $odcId)->get(['id', 'nama_odp']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $odps
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting ODPs by ODC: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get ODPs.'
+            ], 500);
+        }
     }
 }
