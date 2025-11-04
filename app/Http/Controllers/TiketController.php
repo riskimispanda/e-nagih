@@ -333,6 +333,9 @@ class TiketController extends Controller
                     'status_id'   => 3,
                     'usersecret'  => $request->usersecret ?: $customer->usersecret,
                     'pass_secret' => $request->pass_secret ?: $customer->pass_secret,
+                    'local_address' => $request->local_address,
+                    'remote_address' => $request->remote_address,
+                    'remote' => $request->remote_address
                 ]);
                 $customer->refresh();
 
@@ -355,6 +358,9 @@ class TiketController extends Controller
                     'status_id'   => 3,
                     'usersecret'  => $request->usersecret ?: $customer->usersecret,
                     'pass_secret' => $request->pass_secret ?: $customer->pass_secret,
+                    'local_address' => $request->local_address,
+                    'remote_address' => $request->remote_address,
+                    'remote' => $request->remote_address
                 ]);
                 $customer->refresh();
 
