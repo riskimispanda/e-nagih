@@ -534,7 +534,7 @@
 </div>
 
 {{-- Container for modals loaded via AJAX --}}
-<div id="modal-container"></div>
+<div id="modal-container">@include('agen.partials.payment-modal', ['invoices' => $invoices])</div>
 @endsection
 
 @section('page-script')
@@ -565,10 +565,8 @@
             .then(data => {
                 // Update table content
                 tableBody.innerHTML = data.table_html;
-
-                // Place modals into the container
-                const modalContainer = document.getElementById('modal-container');
-                modalContainer.innerHTML = data.table_html;
+                // Update modals
+                document.getElementById('modal-container').innerHTML = data.modals_html;
 
                 // Update pagination
                 paginationContainer.innerHTML = data.pagination_html;

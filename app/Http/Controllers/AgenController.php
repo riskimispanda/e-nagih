@@ -89,7 +89,8 @@ class AgenController extends Controller
         // AJAX response
         if ($request->ajax()) {
             return response()->json([
-                'table_html' => view('agen.partials.customer-table-rows', compact('invoices'))->render(),
+                'table_html' => view('agen.partials.customer-table-rows', ['invoices' => $invoices, 'is_ajax' => true])->render(),
+                'modals_html' => view('agen.partials.payment-modal', ['invoices' => $invoices])->render(),
                 'pagination_html' => $invoices->links()->toHtml(),
                 'statistics' => $statistics,
                 'visible_count' => $invoices->count(),
