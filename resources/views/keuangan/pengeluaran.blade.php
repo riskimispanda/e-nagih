@@ -454,6 +454,9 @@
                             <select name="rab_id" id="select-rab" class="form-select">
                                 <option value="">Pilih RAB</option>
                                 @foreach ($rab as $item)
+                                @php
+                                    $bulan = \Carbon\Carbon::create()->month((int) $item->bulan)->locale('id')->translatedFormat('F');
+                                @endphp
                                 <option value="{{ $item->id }}" data-anggaran="{{ $item->jumlah_anggaran }}">
                                     {{ $item->kegiatan }}
                                     {{ $item->item ? "({$item->item} item" : '' }}
@@ -461,6 +464,7 @@
                                     {{ $item->keterangan ? "Ket: {$item->keterangan}" : '' }}
                                     {{ $item->item ? ')' : '' }}
                                     {{ $item->tahun_anggaran ? " | Tahun: {$item->tahun_anggaran}" : '' }}
+                                    {{ $item->bulan ? ' | Bulan: ' . $bulan : '' }}
                                 </option>
                                 @endforeach
                             </select>

@@ -45,7 +45,7 @@
                                 <select class="form-select" name="jenis_kas">
                                     @foreach ($kas as $k)
                                         <option value="{{ $k->id }}" 
-                                            {{ $pengeluaran->kas->jenis_kas == $k->id ? 'selected' : '' }}>
+                                            {{ $pengeluaran->kas?->jenis_kas == $k->id ? 'selected' : '' }}>
                                             {{ $k->jenis_kas }}
                                         </option>
                                     @endforeach
@@ -56,11 +56,16 @@
                             <label class="form-label">RAB</label>
                             <div class="input-group input-group-merge">
                                 <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-                                <select class="form-select" name="rab_id">
+                                <select class="form-select" name="rab_id" id="rab_id">
                                     <option value="">-</option>
-                                    @foreach ($data as $k)
+                                    @foreach ($data as $k) {{-- Pastikan $data berisi RAB yang sesuai dengan $pengeluaran->rab_id --}}
+                                        @php
+                                            $bulan = $k->bulan ? \Carbon\Carbon::create()->month((int) $k->bulan)->locale('id')->translatedFormat('F') : '';
+                                        @endphp
                                         <option value="{{ $k->id }}" {{ $pengeluaran->rab_id == $k->id ? 'selected' : '' }}>
-                                            {{ $k->kegiatan }}
+                                            {{ $k->kegiatan }} 
+                                            {{ $k->tahun_anggaran ? "| Tahun: {$k->tahun_anggaran}" : '' }}
+                                            {{ $bulan ? '| Bulan: ' . $bulan : '' }}
                                         </option>
                                     @endforeach
                                 </select>                                                                                       
@@ -128,5 +133,12 @@
             }
         });
     });
+    new TomSelect('#rab_id',{
+            create: false,
+            sortField: {
+                field: "text",
+                direction: "asc"
+            }
+        });
 </script>
 @endsection
