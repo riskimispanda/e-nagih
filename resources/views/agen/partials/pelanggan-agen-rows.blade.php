@@ -36,6 +36,9 @@
             <a href="http://{{ $item->remote }}" target="_blank" class="btn btn-outline-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Remote Router">
                 <i class="bx bx-cloud"></i>
             </a>
+            <a href="/traffic-pelanggan/{{ $item->id }}" class="btn btn-outline-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Traffic Pelanggan">
+                <i class="bx bx-chart"></i>
+            </a>
         </div>
     </td>
 </tr>
