@@ -23,7 +23,8 @@ class Pembayaran extends Model
         'admin_id',
         'jumlah_bayar_baru',
         'ket_edit',
-        'tipe_pembayaran'
+        'tipe_pembayaran',
+        'metode_bayar_new'
     ];
 
     protected $attributes = [

@@ -306,23 +306,33 @@
             <!-- Search Input -->
             <div class="col-12 col-lg-5">
                 <label class="form-label fw-medium text-dark">Pencarian</label>
-                <div class="position-relative">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bx bx-search"></i></span>
                     <input type="text" id="searchInput" name="search" value="{{ $search ?? '' }}"
                     placeholder="Cari nama customer atau paket..." class="form-control">
                 </div>
             </div>
             
-            
-            <!-- Date Range -->
-            <div class="col-12 col-md-6 col-lg-4">
-                <label class="form-label fw-medium text-dark">Periode Tanggal</label>
-                <div class="row g-2">
-                    <div class="col-12">
-                        <input type="date" id="startDate" name="start_date" value="{{ $startDate ?? '' }}"
-                        class="form-control" title="Tanggal Mulai">
-                    </div>
+            <div class="col-12 col-lg-5">
+                <label class="form-label fw-medium text-dark">Bulan</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bx bx-calendar"></i></span>
+                    <select name="month" id="monthFilter" class="form-select">
+                        <option value="">Semua Bulan</option>
+                        @php
+                            \Carbon\Carbon::setLocale('id');
+                            $currentMonth = date('n'); // Bulan sekarang (1-12)
+                            $selectedMonth = request()->get('month', $currentMonth);
+                        @endphp
+                        @for ($i = 1; $i <= 12; $i++)
+                            <option value="{{ $i }}" {{ (isset($month) && $month == $i) ? 'selected' : (($month === null || $month === '') && $i == $currentMonth ? 'selected' : '') }}>
+                                {{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }}
+                            </option>
+                        @endfor
+                    </select>
                 </div>
             </div>
+
         </div>
         
         <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
@@ -502,19 +512,19 @@
 <script>
     // Format input as Rupiah currency
     function formatRupiah(input) {
-        let value = input.value.replace(/\D/g, '');
-        if (value) {
-            value = parseInt(value).toLocaleString('id-ID', {
+        let rawValue = input.value.replace(/\D/g, '');
+        if (rawValue) {
+            input.value = parseInt(rawValue).toLocaleString('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
                 minimumFractionDigits: 0
             });
         } else {
-            value = '';
+            input.value = '';
         }
-        input.value = value;
-        // document.getElementById('revenueAmountRaw').value = value;
-        document.getElementById('revenueAmountRaw').value = value.replace(/[^0-9]/g, '');
+        
+        // Update the hidden raw value input
+        document.getElementById('revenueAmountRaw').value = rawValue;
         
     }
     
@@ -522,12 +532,12 @@
     function applyFilters() {
         showLoading();
         const search = document.getElementById('searchInput').value;
-        const startDate = document.getElementById('startDate').value;
+        const month = document.getElementById('monthFilter').value;
 
         // Create URL with parameters
         const params = new URLSearchParams({
             search: search,
-            start_date: startDate
+            month: month
         });
 
         fetch(`/pendapatan/non-langganan/search?${params.toString()}`)
@@ -560,8 +570,8 @@
     }
 
     function clearFilters() {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('startDate').value = '';
+        document.getElementById('searchInput').value = ''; // Clear search input
+        document.getElementById('monthFilter').value = ''; // Reset month filter to "Semua Bulan"
         applyFilters();
     }
 
@@ -583,7 +593,7 @@
         applyFilters();
     }, 500));
 
-    document.getElementById('startDate').addEventListener('change', () => {
+    document.getElementById('monthFilter').addEventListener('change', () => {
         applyFilters();
     });
 

@@ -764,15 +764,26 @@
                                                     <i class="bx bx-pencil"></i>
                                                 </a>
                                                 <a href="/kirim-ulang/{{ $payment->id }}"
-                                                    class="btn btn-outline-danger btn-sm text-danger" data-bs-toggle="tooltip"
+                                                    class="btn btn-outline-info btn-sm text-info" data-bs-toggle="tooltip"
                                                     data-bs-placement="bottom" title="Kirim Notifikasi Pembayaran Berhasil">
                                                     <i class="bx bx-message"></i>
                                                 </a>
                                             </div>
+                                            <div class="d-flex justify-content-center gap-2 mt-3">
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" data-url="/hapus/transaksi/{{ $payment->id }}">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </div>
                                         @else
-                                            <button class="btn btn-outline-warning btn-sm text-warning" disabled>
-                                                <i class="bx bx-pencil"></i>
-                                            </button>
+                                            {{-- If status is not 8, only show disabled edit button and delete button --}}
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <button class="btn btn-outline-warning btn-sm text-warning" disabled>
+                                                    <i class="bx bx-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" data-url="/hapus/transaksi/{{ $payment->id }}">
+                                                    <i class="bx bx-trash"></i>
+                                                </button>
+                                            </div>
                                         @endif
                                     @endif
                                 </td>
@@ -932,6 +943,20 @@
                                             <option value="diskon"
                                                 {{ $pembayaran->tipe_pembayaran == 'diskon' ? 'selected' : '' }}>Pembayaran
                                                 Diskon</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {{-- Metode Pembayaran --}}
+                                <div class="col-sm-12 mb-2">
+                                    <label class="form-label">Metode Pembayaran</label>
+                                    <div class="input-group input-group-merge">
+                                        <span class="input-group-text"><i class="bx bx-credit-card"></i></span>
+                                        <select name="metode_bayar" class="form-select" required>
+                                            <option value="Cash"
+                                                {{ $pembayaran->metode_bayar == 'Cash' ? 'selected' : '' }}>Cash</option>
+                                            <option value="Transfer"
+                                                {{ $pembayaran->metode_bayar == 'Transfer' ? 'selected' : '' }}>Transfer</option>
                                         </select>
                                     </div>
                                 </div>
@@ -1648,6 +1673,32 @@
                     topLayer: true
                 });
             @endif
+        });
+
+         // SweetAlert for delete confirmation
+         document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.btn-delete-payment').forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const deleteUrl = this.getAttribute('data-url');
+
+                    Swal.fire({
+                        title: 'Apakah Anda yakin?',
+                        text: "Anda tidak akan dapat mengembalikan transaksi ini!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, hapus!',
+                        cancelButtonText: 'Batal',
+                        topLayer: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = deleteUrl;
+                        }
+                    });
+                });
+            });
         });
     </script>
 

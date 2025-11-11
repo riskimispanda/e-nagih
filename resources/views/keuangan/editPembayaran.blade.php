@@ -24,6 +24,8 @@
                                 <th>Total Tagihan</th>
                                 <th>Jumlah Bayar Lama</th>
                                 <th>Jumlah Bayar Baru</th>
+                                <th>Metode Bayar Lama</th>
+                                <th>Metode Bayar Baru</th>
                                 <th>Keterangan</th>
                                 <th>Aksi</th>
                                 <th>Admin</th>
@@ -51,6 +53,12 @@
                                         <span class="badge bg-warning bg-opacity-10 text-warning">
                                             Rp {{ number_format($item->jumlah_bayar_baru ?? 0, 0, ',', '.') }}
                                         </span>
+                                    </td>
+                                    <td>
+                                        {{ $item->metode_bayar }}
+                                    </td>
+                                    <td>
+                                        {{ $item->metode_bayar_new ?? '-' }}
                                     </td>
                                     <td>
                                         {{ $item->ket_edit }}
@@ -84,7 +92,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="fw-bold">Tidak Ada Request</td>
+                                    <td colspan="10" class="fw-bold">Tidak Ada Request</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -74,6 +74,12 @@ class Customer extends Controller
         ]);
     }
 
+    public function hapusInvoice($id)
+    {
+        $pembayaran = Pembayaran::where('invoice_id', $id)->get();
+        dd($pembayaran);
+    }
+
     public function addPengaduan(Request $request)
     {
         // dd($request->all());
@@ -251,7 +257,8 @@ class Customer extends Controller
                 'status_id' => 1,
                 'ket_edit' => $request->keterangan,
                 'admin_id' => auth()->user()->id,
-                'tipe_pembayaran' => $request->tipe_pembayaran
+                'tipe_pembayaran' => $request->tipe_pembayaran,
+                'metode_bayar_new' => $request->metode_bayar
             ]);
 
             $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);
@@ -277,5 +284,14 @@ class Customer extends Controller
         }
     }
 
-
+    public function hapusTransaksi($id)
+    {
+        $pembayaran = Pembayaran::findOrFail($id);
+        $pembayaran->delete();
+        activity('Hapus')
+            ->causedBy(auth()->user())
+            ->performedOn($pembayaran)
+            ->log(auth()->user()->name . ' Menghapus Transaksi Pembayaran');
+        return redirect('/data/pembayaran')->with('toast_success', 'Berhasil Menghapus Pembayaran');
+    }
 }

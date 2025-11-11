@@ -313,7 +313,8 @@ class SuperAdmin extends Controller
         $pembayaran = Pembayaran::findOrFail($id);
         $pembayaran->update([
             'status_id' => 8,
-            'jumlah_bayar' => $pembayaran->jumlah_bayar_baru
+            'jumlah_bayar' => $pembayaran->jumlah_bayar_baru,
+            'metode_bayar' => $pembayaran->metode_bayar_new
         ]);
 
         $kas = Kas::where('customer_id', $pembayaran->invoice->customer_id);
@@ -337,7 +338,8 @@ class SuperAdmin extends Controller
         $pembayaran = Pembayaran::findOrFail($id);
         $pembayaran->update([
             'status_id' => 8,
-            'jumlah_bayar' => $pembayaran->jumlah_bayar
+            'jumlah_bayar' => $pembayaran->jumlah_bayar,
+            'metode_bayar' => $pembayaran->metode_bayar
         ]);
         // Catat Log Aktivitas
         activity('Super Admin')

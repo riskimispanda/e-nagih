@@ -1392,50 +1392,72 @@ class KeuanganController extends Controller
     {
         // Get filter parameters
         $search = $request->get('search');
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
+        $month = $request->get('month');
+        $year = $request->get('year', Carbon::now()->year); // Default to current year
 
-        // Build query for payments with relationships
-        $query = Pendapatan::with(['user'])
+        // Default to current month if no month filter is set (first time load)
+        if ($month === null || $month === '') {
+            $month = Carbon::now()->month;
+        }
+
+        // Build query for Pendapatan with relationships
+        $baseQuery = Pendapatan::with(['user'])
             ->orderBy('created_at', 'desc');
+
+        // Clone the base query for filtered statistics
+        $filteredQuery = clone $baseQuery;
+
+        // Apply month and year filter to the filtered query
+        $filteredQuery->whereMonth('tanggal', $month)
+            ->whereYear('tanggal', $year);
 
         // Apply search filter
         if ($search) {
-            $query->where('jenis_pendapatan', 'like', '%' . $search . '%')
-                ->orWhere('deskripsi', 'like', '%' . $search . '%');
+            $filteredQuery->where(function ($q) use ($search) {
+                $q->where('jenis_pendapatan', 'like', '%' . $search . '%')
+                    ->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
         }
 
-        // Apply date range filter
-        if ($startDate) {
-            $query->whereDate('tanggal', '>=', $startDate);
+        // Paginate the results from the filtered query
+        $pendapatan = $filteredQuery->paginate(10);
+
+        // Calculate statistics
+        $jumlah = Pendapatan::sum('jumlah_pendapatan'); // Total pendapatan (tidak difilter, sesuai permintaan)
+
+        // Query untuk pendapatan harian, terpengaruh oleh filter pencarian
+        $todayRevenueQuery = Pendapatan::whereDate('tanggal', Carbon::today());
+        if ($search) {
+            $todayRevenueQuery->where(function ($q) use ($search) {
+                $q->where('jenis_pendapatan', 'like', '%' . $search . '%')
+                    ->orWhere('deskripsi', 'like', '%' . $search . '%');
+            });
         }
-        if ($endDate) {
-            $query->whereDate('tanggal', '<=', $endDate);
-        }
+        $todayRevenue = $todayRevenueQuery->sum('jumlah_pendapatan');
 
-        $pendapatan = $query->paginate(10);
+        // Clone the filtered query again to calculate filtered stats without pagination limits
+        $statsQuery = clone $filteredQuery;
+        $monthly = $statsQuery->sum('jumlah_pendapatan'); // Total pendapatan bulanan (difilter)
 
-        $jumlah = Pendapatan::sum('jumlah_pendapatan');
-        $todayRevenue = Pendapatan::whereDate('tanggal', Carbon::today())->sum('jumlah_pendapatan');
-        $monthly = Pendapatan::whereMonth('tanggal', Carbon::now()->month)
-            ->whereYear('tanggal', Carbon::now()->year)
-            ->sum('jumlah_pendapatan');
-
-        // Get all payment methods for filter dropdown
-        $cashCount = Pendapatan::where('metode_bayar', 'like', '%cash%')
+        // Payment method counts based on the filtered query
+        $cashCount = (clone $statsQuery)->where(function ($q) {
+            $q->where('metode_bayar', 'like', '%cash%')
             ->orWhere('metode_bayar', 'like', '%tunai%')
-            ->count();
-        $transferCount = Pendapatan::where('metode_bayar', 'like', '%transfer%')
+                ->orWhere('metode_bayar', 'like', '%Cash%');
+        })->count();
+        $transferCount = (clone $statsQuery)->where(function ($q) {
+            $q->where('metode_bayar', 'like', '%transfer%')
             ->orWhere('metode_bayar', 'like', '%bank%')
-            ->orWhere('metode_bayar', 'like', '%transfer bank%')
-            ->count();
-        $ewalletCount = Pendapatan::where('metode_bayar', 'like', '%ewallet%')
+                ->orWhere('metode_bayar', 'like', '%transfer bank%');
+        })->count();
+        $ewalletCount = (clone $statsQuery)->where(function ($q) {
+            $q->where('metode_bayar', 'like', '%ewallet%')
             ->orWhere('metode_bayar', 'like', '%e-wallet%')
             ->orWhere('metode_bayar', 'like', '%gopay%')
             ->orWhere('metode_bayar', 'like', '%ovo%')
             ->orWhere('metode_bayar', 'like', '%dana%')
-            ->orWhere('metode_bayar', 'like', '%qris%')
-            ->count();
+                ->orWhere('metode_bayar', 'like', '%qris%');
+        })->count();
 
         $metode = Metode::all();
 
@@ -1444,8 +1466,6 @@ class KeuanganController extends Controller
             'roles' => auth()->user()->roles,
             'pendapatan' => $pendapatan,
             'search' => $search,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
             'metode' => $metode,
             'jumlah' => $jumlah,
             'jumlahDaily' => $todayRevenue,
@@ -1453,16 +1473,20 @@ class KeuanganController extends Controller
             'cashCount' => $cashCount,
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
+            'month' => $month
         ]);
     }
 
     public function searchNonLangganan(Request $request)
     {
         try {
-            $search = $request->get('search');
-            $startDate = $request->get('start_date');
+            $search = $request->get('search'); // Keep search
+            $month = $request->get('month'); // New month filter
+            $year = $request->get('year', Carbon::now()->year); // Default to current year
 
             $query = Pendapatan::with(['user'])
+                ->whereMonth('tanggal', $month) // Apply month filter
+                ->whereYear('tanggal', $year) // Apply year filter
                 ->orderBy('created_at', 'desc');
 
             if ($search) {
@@ -1473,10 +1497,6 @@ class KeuanganController extends Controller
                           $q->where('name', 'like', '%' . $search . '%');
                       });
                 });
-            }
-
-            if ($startDate) {
-                $query->whereDate('tanggal', '=', $startDate);
             }
 
             $pendapatan = $query->paginate(10);

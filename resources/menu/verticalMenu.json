@@ -259,7 +259,7 @@
           ]
         },
         {
-          "url": "/corp/pendapatan",
+          "url": "/data/pendapatan",
           "name": "Langganan",
           "slug": "pendapatan",
           "roles": [

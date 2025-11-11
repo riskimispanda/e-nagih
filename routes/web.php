@@ -540,6 +540,9 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/konfirmasi/pembayaran/{customerId}', [KeuanganController::class, 'approvePayment'])->name(
     'approve-payment'
   );
+
+  Route::post('/hapus/invoice/{id}', [Customer::class, 'hapusInvoice']);
+
   Route::get('/pembayaran/daily', [keuanganController::class, 'dailyPembayaran'])->name('daily-pembayaran');
   Route::post('/tambah/pendapatan', [KeuanganController::class, 'tambahPendapatan'])->name('tambah-pendapatan');
   Route::get('/pendapatan/non-langganan', [KeuanganController::class, 'nonLangganan'])
@@ -562,6 +565,7 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/rab/store', [RabController::class, 'store'])->name('store-rab');
   Route::get('/rab/search', [RabController::class, 'search'])->name('rab-filter');
   Route::get('/rab/kegiatan', [RabController::class, 'getKegiatan'])->name('rab-kegiatan');
+  Route::get('/hapus/transaksi/{id}', [Customer::class, 'hapusTransaksi']);
   Route::get('/transaksi/kas-kecil', [KasController::class, 'kecil'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('kas-kecil');
