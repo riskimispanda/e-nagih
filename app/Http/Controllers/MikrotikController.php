@@ -24,14 +24,16 @@ class MikrotikController extends Controller
         $user = MikrotikServices::getPPPSecret($client);
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
         $firewall = MikrotikServices::getFirewallRules($router);
+        // 1. Ganti semua profile dari ISOLIR ke profile paket
+        $result = MikrotikServices::changeAllProfilesFromIsolirToPackage($client);
 
         // Aktifkan dengan opsi advanced
-        $result = MikrotikServices::activateAllCustomersAdvanced($client, [
-            'only_disabled' => true,
-            'profile_filter' => 'profile-UpTo-5', // Hanya profile tertentu
-            'limit' => 50, // Maksimal 50 pelanggan
-            'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
-        ]);
+        // $result = MikrotikServices::activateAllCustomersAdvanced($client, [
+        //     'only_disabled' => true,
+        //     'profile_filter' => 'profile-UpTo-5', // Hanya profile tertentu
+        //     'limit' => 50, // Maksimal 50 pelanggan
+        //     'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
+        // ]);
 
         dd($result);
     }

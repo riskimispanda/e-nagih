@@ -521,6 +521,257 @@ class MikrotikServices
         ];
     }
 
+    /**
+     * Mengganti profile semua customer dari ISOLIR ke profile paket sesuai database
+     */
+    public static function changeAllProfilesFromIsolirToPackage(Client $client)
+    {
+        try {
+            // Dapatkan semua customer yang mungkin memiliki profile ISOLIR
+            $customers = \App\Models\Customer::with(['paket', 'router'])
+                ->whereNotNull('usersecret')
+                ->where('usersecret', '!=', '')
+                ->whereHas('paket') // Pastikan memiliki relasi paket
+                ->get();
+
+            if ($customers->isEmpty()) {
+                Log::warning("Tidak ada customer yang ditemukan di database");
+                return [
+                    'success' => false,
+                    'message' => 'Tidak ada customer yang ditemukan',
+                    'updated' => 0,
+                    'total' => 0
+                ];
+            }
+
+            $updatedCount = 0;
+            $failedCount = 0;
+            $results = [];
+
+            foreach ($customers as $customer) {
+                $usersecret = $customer->usersecret;
+
+                // Ambil profile name dari database relasi paket
+                $profileName = self::getProfileNameFromPackage($customer->paket);
+
+                // Ganti profile dari ISOLIR ke profile paket
+                $updateResult = self::changeProfileFromIsolirToPackage($client, $usersecret, $profileName, $customer);
+
+                if ($updateResult['success']) {
+                    $updatedCount++;
+                } else {
+                    $failedCount++;
+                }
+
+                $results[] = $updateResult;
+            }
+
+            Log::info("✅ Berhasil mengupdate {$updatedCount} profile, {$failedCount} gagal dari total " . $customers->count() . " pelanggan");
+
+            return [
+                'success' => true,
+                'message' => "Berhasil mengupdate {$updatedCount} profile, {$failedCount} gagal dari total " . $customers->count() . " pelanggan",
+                'updated' => $updatedCount,
+                'failed' => $failedCount,
+                'total' => $customers->count(),
+                'details' => $results
+            ];
+        } catch (\Exception $e) {
+            Log::error("❌ Gagal mengupdate profile pelanggan: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'updated' => 0,
+                'total' => 0
+            ];
+        }
+    }
+
+    /**
+     * Mengganti profile single customer dari ISOLIR ke profile paket
+     */
+    public static function changeProfileFromIsolirToPackage(Client $client, $usersecret, $profileName, $customer = null)
+    {
+        try {
+            // Cek apakah PPP secret exists di Mikrotik
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) {
+                Log::warning("PPP Secret tidak ditemukan untuk usersecret: {$usersecret}");
+                return [
+                    'success' => false,
+                    'usersecret' => $usersecret,
+                    'message' => 'PPP Secret tidak ditemukan di Mikrotik',
+                    'profile' => $profileName
+                ];
+            }
+
+            $customerName = $customer ? $customer->nama_customer : 'Unknown';
+
+            // Update profile PPP secret dari ISOLIR ke profile paket
+            foreach ($users as $user) {
+                $currentProfile = $user['profile'] ?? 'unknown';
+
+                // Only update if current profile is ISOLIR/ISOLIREBILLING
+                if ($currentProfile === 'ISOLIR' || $currentProfile === 'ISOLIREBILLING') {
+                    $setQuery = new Query('/ppp/secret/set');
+                    $setQuery->equal('.id', $user['.id']);
+                    $setQuery->equal('profile', $profileName);
+                    $client->query($setQuery)->read();
+
+                    Log::info("✅ Berhasil ganti profile {$usersecret} dari {$currentProfile} ke {$profileName} - {$customerName}");
+                } else {
+                    Log::info("⏭️ Profile sudah bukan ISOLIR: {$usersecret} - Current: {$currentProfile} - {$customerName}");
+                    return [
+                        'success' => true,
+                        'usersecret' => $usersecret,
+                        'customer_name' => $customerName,
+                        'message' => 'Profile sudah bukan ISOLIR, tidak perlu update',
+                        'current_profile' => $currentProfile,
+                        'target_profile' => $profileName,
+                        'skipped' => true
+                    ];
+                }
+            }
+
+            return [
+                'success' => true,
+                'usersecret' => $usersecret,
+                'customer_name' => $customerName,
+                'message' => 'Successfully updated profile from ISOLIR to package profile',
+                'previous_profile' => 'ISOLIR',
+                'new_profile' => $profileName,
+                'skipped' => false
+            ];
+        } catch (\Exception $e) {
+            $customerName = $customer ? $customer->nama_customer : 'Unknown';
+            Log::error("❌ Gagal update profile {$usersecret}: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'usersecret' => $usersecret,
+                'customer_name' => $customerName,
+                'message' => 'Error: ' . $e->getMessage(),
+                'profile' => $profileName
+            ];
+        }
+    }
+
+    /**
+     * Mendapatkan nama profile berdasarkan paket customer dari database
+     */
+    private static function getProfileNameFromPackage($paket)
+    {
+        if (!$paket) {
+            Log::warning("Paket tidak ditemukan, menggunakan profile default");
+            return 'default';
+        }
+
+        // Ambil langsung dari field paket_name di database
+        // Asumsi: nama profile di Mikrotik sama dengan nama paket di database
+        $profileName = $paket->paket_name;
+
+        if (!$profileName) {
+            Log::warning("Paket name kosong untuk paket ID: {$paket->id}, menggunakan default");
+            return 'default';
+        }
+
+        return $profileName;
+    }
+
+    /**
+     * Method untuk mengganti profile dengan filter tertentu
+     */
+    public static function changeProfilesFromIsolirToPackageWithFilter(Client $client, $options = [])
+    {
+        try {
+            $defaultOptions = [
+                'router_id' => null, // Filter by router tertentu
+                'paket_id' => null, // Filter by paket tertentu
+                'limit' => null, // Batasi jumlah
+            ];
+
+            $options = array_merge($defaultOptions, $options);
+
+            // Query customers dengan filter
+            $query = \App\Models\Customer::with(['paket', 'router'])
+                ->whereNotNull('usersecret')
+                ->where('usersecret', '!=', '')
+                ->whereHas('paket');
+
+            if ($options['router_id']) {
+                $query->where('router_id', $options['router_id']);
+            }
+
+            if ($options['paket_id']) {
+                $query->where('paket_id', $options['paket_id']);
+            }
+
+            if ($options['limit']) {
+                $customers = $query->limit($options['limit'])->get();
+            } else {
+                $customers = $query->get();
+            }
+
+            if ($customers->isEmpty()) {
+                Log::warning("Tidak ada customer yang ditemukan dengan filter yang diberikan");
+                return [
+                    'success' => false,
+                    'message' => 'Tidak ada customer yang ditemukan',
+                    'updated' => 0,
+                    'total' => 0
+                ];
+            }
+
+            $updatedCount = 0;
+            $failedCount = 0;
+            $skippedCount = 0;
+            $results = [];
+
+            foreach ($customers as $customer) {
+                $usersecret = $customer->usersecret;
+                $profileName = self::getProfileNameFromPackage($customer->paket);
+
+                $updateResult = self::changeProfileFromIsolirToPackage($client, $usersecret, $profileName, $customer);
+
+                if ($updateResult['success']) {
+                    if (isset($updateResult['skipped']) && $updateResult['skipped']) {
+                        $skippedCount++;
+                    } else {
+                        $updatedCount++;
+                    }
+                } else {
+                    $failedCount++;
+                }
+
+                $results[] = $updateResult;
+            }
+
+            $logMessage = "✅ Update profile selesai: {$updatedCount} diupdate, {$skippedCount} dilewati, {$failedCount} gagal dari total " . $customers->count() . " pelanggan";
+            Log::info($logMessage);
+
+            return [
+                'success' => true,
+                'message' => $logMessage,
+                'updated' => $updatedCount,
+                'skipped' => $skippedCount,
+                'failed' => $failedCount,
+                'total' => $customers->count(),
+                'details' => $results
+            ];
+        } catch (\Exception $e) {
+            Log::error("❌ Gagal mengupdate profile pelanggan: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'updated' => 0,
+                'total' => 0
+            ];
+        }
+    }
+
+
     public static function changeUserProfile(Client $client, $usersecret)
     {
         try {
