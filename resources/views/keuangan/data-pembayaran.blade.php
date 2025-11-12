@@ -318,6 +318,186 @@
                 font-size: 1.5rem;
             }
         }
+
+        /* Custom SweetAlert Styles */
+        :root {
+            --swal-delete-bg: #fff5f5;
+            --swal-delete-border: #fed7d7;
+            --swal-delete-icon-color: #f56565;
+        }
+
+        .swal2-container {
+            z-index: 99999;
+        }
+
+        .swal2-popup {
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .swal2-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 1rem;
+        }
+
+        .swal2-html-container {
+            font-size: 0.95rem;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        /* Delete Confirmation Styles */
+        .swal-delete-confirmation .swal2-popup {
+            background: linear-gradient(135deg, #fff5f5 0%, #fffaf0 100%);
+            border-left: 6px solid #f56565;
+        }
+
+        .swal-delete-confirmation .swal2-icon {
+            border-color: #fc8181;
+            background-color: #fed7d7;
+        }
+
+        .swal-delete-confirmation .swal2-icon.swal2-warning [class*='swal2-icon-content'] {
+            color: #f56565;
+            font-size: 3.5rem;
+        }
+
+        .swal-delete-confirmation .swal2-title {
+            color: #c53030;
+            font-size: 1.5rem;
+        }
+
+        /* Detail Box Styles */
+        .delete-detail-box {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .delete-detail-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .delete-detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .delete-detail-label {
+            font-weight: 600;
+            color: #2d3748;
+            min-width: 100px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .delete-detail-label i {
+            font-size: 1.1rem;
+            color: #4299e1;
+        }
+
+        .delete-detail-value {
+            color: #4a5568;
+            word-break: break-word;
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .delete-detail-value.amount {
+            color: #d69e2e;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .delete-detail-value.method {
+            background: #edf2f7;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            display: inline-block;
+            font-size: 0.85rem;
+            color: #2c5282;
+        }
+
+        /* Button Styles */
+        .swal2-actions {
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+        }
+
+        .swal2-confirm {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .swal2-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 101, 101, 0.4);
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        .swal2-confirm:active {
+            transform: translateY(0);
+        }
+
+        .swal2-cancel {
+            background: #cbd5e0;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #2d3748;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .swal2-cancel:hover {
+            background: #a0aec0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .swal2-cancel:active {
+            transform: translateY(0);
+        }
+
+        /* Warning Message */
+        .delete-warning-message {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            color: #7d6608;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .delete-warning-message i {
+            font-size: 1.3rem;
+            color: #f39c12;
+            flex-shrink: 0;
+        }
     </style>
 @endsection
 
@@ -770,7 +950,12 @@
                                                 </a>
                                             </div>
                                             <div class="d-flex justify-content-center gap-2 mt-3">
-                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" data-url="/hapus/transaksi/{{ $payment->id }}">
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" 
+                                                    data-url="/hapus/transaksi/{{ $payment->id }}"
+                                                    data-customer="{{ $payment->invoice->customer->nama_customer ?? 'N/A' }}"
+                                                    data-amount="{{ number_format($payment->jumlah_bayar, 0, ',', '.') }}"
+                                                    data-metode="{{ $payment->metode_bayar }}"
+                                                    data-tanggal="{{ \Carbon\Carbon::parse($payment->tanggal_bayar . ' ' . \Carbon\Carbon::parse($payment->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
                                             </div>
@@ -780,7 +965,12 @@
                                                 <button class="btn btn-outline-warning btn-sm text-warning" disabled>
                                                     <i class="bx bx-pencil"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" data-url="/hapus/transaksi/{{ $payment->id }}">
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" 
+                                                    data-url="/hapus/transaksi/{{ $payment->id }}"
+                                                    data-customer="{{ $payment->invoice->customer->nama_customer ?? 'N/A' }}"
+                                                    data-amount="{{ number_format($payment->jumlah_bayar, 0, ',', '.') }}"
+                                                    data-metode="{{ $payment->metode_bayar }}"
+                                                    data-tanggal="{{ \Carbon\Carbon::parse($payment->tanggal_bayar . ' ' . \Carbon\Carbon::parse($payment->created_at)->format('H:i:s'))->format('d-m-Y H:i:s') }}">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
                                             </div>
@@ -1681,20 +1871,90 @@
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     const deleteUrl = this.getAttribute('data-url');
+                    const customerName = this.getAttribute('data-customer');
+                    const amount = this.getAttribute('data-amount');
+                    const metode = this.getAttribute('data-metode');
+                    const tanggal = this.getAttribute('data-tanggal');
 
                     Swal.fire({
-                        title: 'Apakah Anda yakin?',
-                        text: "Anda tidak akan dapat mengembalikan transaksi ini!",
+                        title: 'Hapus Pembayaran?',
+                        html: `
+                            <div class="delete-warning-message">
+                                <i class="bx bx-exclamation-circle"></i>
+                                <span>Tindakan ini tidak dapat dibatalkan. Pastikan data sudah benar sebelum menghapus.</span>
+                            </div>
+                            <div class="delete-detail-box">
+                                <div class="delete-detail-item">
+                                    <div class="delete-detail-label">
+                                        <i class="bx bx-user"></i>
+                                        <span>Customer</span>
+                                    </div>
+                                    <div class="delete-detail-value">${customerName}</div>
+                                </div>
+                                <div class="delete-detail-item">
+                                    <div class="delete-detail-label">
+                                        <i class="bx bx-money"></i>
+                                        <span>Jumlah</span>
+                                    </div>
+                                    <div class="delete-detail-value amount">Rp ${amount}</div>
+                                </div>
+                                <div class="delete-detail-item">
+                                    <div class="delete-detail-label">
+                                        <i class="bx bx-credit-card"></i>
+                                        <span>Metode</span>
+                                    </div>
+                                    <div class="delete-detail-value">
+                                        <span class="delete-detail-value method">${metode}</span>
+                                    </div>
+                                </div>
+                                <div class="delete-detail-item">
+                                    <div class="delete-detail-label">
+                                        <i class="bx bx-calendar"></i>
+                                        <span>Tanggal</span>
+                                    </div>
+                                    <div class="delete-detail-value">${tanggal}</div>
+                                </div>
+                            </div>
+                        `,
                         icon: 'warning',
+                        customClass: {
+                            container: 'swal-delete-confirmation',
+                            popup: 'swal-delete-confirmation',
+                            title: 'swal-delete-title',
+                            htmlContainer: 'swal-delete-html'
+                        },
                         showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#6c757d',
-                        confirmButtonText: 'Ya, hapus!',
-                        cancelButtonText: 'Batal',
-                        topLayer: true
+                        confirmButtonColor: '#f56565',
+                        cancelButtonColor: '#cbd5e0',
+                        confirmButtonText: '<i class="bx bx-trash me-2"></i>Ya, Hapus Sekarang',
+                        cancelButtonText: '<i class="bx bx-x me-2"></i>Batal',
+                        buttonsStyling: false,
+                        didOpen: (modal) => {
+                            // Add custom button classes after modal opens
+                            const confirmBtn = modal.querySelector('.swal2-confirm');
+                            const cancelBtn = modal.querySelector('.swal2-cancel');
+                            if (confirmBtn) {
+                                confirmBtn.innerHTML = '<i class="bx bx-trash me-2"></i>Ya, Hapus Sekarang';
+                            }
+                            if (cancelBtn) {
+                                cancelBtn.innerHTML = '<i class="bx bx-x me-2"></i>Batal';
+                            }
+                        }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = deleteUrl;
+                            // Show success animation
+                            Swal.fire({
+                                title: 'Sedang Menghapus...',
+                                html: '<div class="spinner"></div>',
+                                icon: 'info',
+                                allowOutsideClick: false,
+                                didOpen: (modal) => {
+                                    // Redirect after 1 second
+                                    setTimeout(() => {
+                                        window.location.href = deleteUrl;
+                                    }, 800);
+                                }
+                            });
                         }
                     });
                 });
