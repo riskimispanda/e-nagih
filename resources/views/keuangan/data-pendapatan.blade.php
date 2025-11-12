@@ -343,8 +343,12 @@
                 </div>
             </div>
 
+            {{-- Set Carbon locale untuk translasi bulan ke bahasa Indonesia --}}
             @php
-            \Carbon\Carbon::setLocale('id');
+            // Pastikan locale sudah diset dengan benar
+            if (function_exists('setlocale')) {
+                setlocale(LC_TIME, 'id_ID.UTF-8', 'id_ID', 'id');
+            }
             @endphp
 
             <div class="col-12 col-lg-4">
