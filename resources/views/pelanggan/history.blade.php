@@ -28,6 +28,10 @@
                                 <th>No</th>
                                 <th>Nama Pelanggan</th>
                                 <th>Paket</th>
+                                <th>Tagihan</th>
+                                <th>Tambahan</th>
+                                <th>Tunggakan</th>
+                                <th>Sisa Saldo</th>
                                 <th>Tanggal Bayar</th>
                                 <th>Periode</th>
                                 <th>Status</th>
@@ -44,6 +48,10 @@
                                     <td>{{ $no++ }}</td>
                                     <td>{{ $item->customer->nama_customer }}</td>
                                     <td><span class="badge bg-info bg-opacity-10 text-info">{{ $item->customer->paket->nama_paket }}</span></td>
+                                    <td>{{ $item->tagihan ? 'Rp. '.number_format($item->tagihan,0,',','.') : '-' }}</td>
+                                    <td>{{ $item->tambahan ? 'Rp. '.number_format($item->tambahan,0,',','.') : '-' }}</td>
+                                    <td>{{ $item->tunggakan ? 'Rp. '.number_format($item->tunggakan,0,',','.') : '-' }}</td>
+                                    <td>{{ $item->saldo ? 'Rp. '.number_format($item->saldo,0,',','.') : '-' }}</td>
                                     <td>
                                         <span class="badge bg-warning bg-opacity-10 text-warning">
                                             {{ $lastPayment ? \Carbon\Carbon::parse($lastPayment->tanggal_bayar)->locale('id')->isoFormat('dddd, D MMMM Y') : '-' }}
