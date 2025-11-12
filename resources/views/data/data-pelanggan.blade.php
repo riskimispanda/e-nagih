@@ -1228,7 +1228,7 @@
                                 <td class="text-center">
                                     <div class="row">
                                         <div class="d-flex justify-content-center">
-                                            @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2)
+                                            @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 4)
                                             <a href="/blokir/{{ $item->id }}"
                                                 class="btn btn-danger action-btn blokir-customer-btn mb-2"
                                                 data-bs-toggle="tooltip" data-bs-placement="top"
