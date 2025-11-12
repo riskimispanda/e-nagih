@@ -123,6 +123,181 @@ class MikrotikServices
         }
     }
 
+    /**
+     * Mengaktifkan semua pelanggan dengan opsi tambahan
+     */
+    public static function activateAllCustomersAdvanced(Client $client, $options = [])
+    {
+        try {
+            $defaultOptions = [
+                'only_disabled' => true, // Hanya yang disabled = false
+                'profile_filter' => null, // Filter by profile tertentu
+                'limit' => null, // Batasi jumlah yang diaktifkan
+                'delay_between_activation' => 0, // Delay antara aktivasi (detik)
+            ];
+
+            $options = array_merge($defaultOptions, $options);
+
+            // Build query dasar
+            $query = new Query('/ppp/secret/print');
+
+            if ($options['only_disabled']) {
+                $query->where('disabled', 'false');
+            }
+
+            if ($options['profile_filter']) {
+                $query->where('profile', $options['profile_filter']);
+            }
+
+            $secrets = $client->query($query)->read();
+
+            if (empty($secrets)) {
+                Log::warning("Tidak ada PPP Secret yang ditemukan dengan filter yang diberikan");
+                return [
+                    'success' => false,
+                    'message' => 'Tidak ada PPP Secret yang ditemukan',
+                    'activated' => 0,
+                    'total' => 0
+                ];
+            }
+
+            // Apply limit jika ada
+            if ($options['limit'] && $options['limit'] > 0) {
+                $secrets = array_slice($secrets, 0, $options['limit']);
+            }
+
+            $activatedCount = 0;
+            $alreadyActiveCount = 0;
+            $failedCount = 0;
+            $results = [];
+
+            foreach ($secrets as $index => $secret) {
+                $username = $secret['name'];
+                $profile = $secret['profile'] ?? 'default';
+
+                // Delay antara aktivasi jika di-set
+                if ($options['delay_between_activation'] > 0 && $index > 0) {
+                    sleep($options['delay_between_activation']);
+                }
+
+                // Cek apakah user sudah aktif
+                if (self::isUserActive($client, $username)) {
+                    $alreadyActiveCount++;
+                    $results[] = [
+                        'success' => true,
+                        'username' => $username,
+                        'message' => 'Already active',
+                        'profile' => $profile
+                    ];
+                    continue;
+                }
+
+                // Aktifkan user
+                $activationResult = self::activateSingleCustomer($client, $username, $profile);
+
+                if ($activationResult['success']) {
+                    $activatedCount++;
+                } else {
+                    $failedCount++;
+                }
+
+                $results[] = $activationResult;
+            }
+
+            $logMessage = "✅ Aktivasi selesai: {$activatedCount} berhasil, {$alreadyActiveCount} sudah aktif, {$failedCount} gagal dari total " . count($secrets) . " pelanggan";
+            Log::info($logMessage);
+
+            return [
+                'success' => true,
+                'message' => $logMessage,
+                'activated' => $activatedCount,
+                'already_active' => $alreadyActiveCount,
+                'failed' => $failedCount,
+                'total' => count($secrets),
+                'details' => $results
+            ];
+        } catch (\Exception $e) {
+            Log::error("❌ Gagal mengaktifkan semua pelanggan: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+                'activated' => 0,
+                'total' => 0
+            ];
+        }
+    }
+
+    public static function isUserActive(Client $client, $username)
+    {
+        try {
+            $query = (new Query('/ppp/active/print'))
+                ->where('name', $username);
+            $activeUsers = $client->query($query)->read();
+
+            return !empty($activeUsers);
+        } catch (\Exception $e) {
+            Log::error("❌ Gagal cek status aktif user {$username}: {$e->getMessage()}");
+            return false;
+        }
+    }
+
+    public static function activateSingleCustomer(Client $client, $username, $profile = 'default')
+    {
+        try {
+            // Cek apakah PPP secret exists
+            $query = (new Query('/ppp/secret/print'))
+                ->where('name', $username)
+                ->where('disabled', 'false');
+            $secrets = $client->query($query)->read();
+
+            if (empty($secrets)) {
+                Log::warning("PPP Secret tidak ditemukan atau disabled untuk username: {$username}");
+                return [
+                    'success' => false,
+                    'username' => $username,
+                    'message' => 'PPP Secret tidak ditemukan atau disabled',
+                    'profile' => $profile
+                ];
+            }
+
+            // Cek apakah sudah aktif
+            if (self::isUserActive($client, $username)) {
+                return [
+                    'success' => true,
+                    'username' => $username,
+                    'message' => 'Already active',
+                    'profile' => $profile
+                ];
+            }
+
+            // Aktifkan user dengan profile yang sesuai
+            $activateQuery = (new Query('/ppp/active/add'))
+                ->equal('name', $username)
+                ->equal('profile', $profile)
+                ->equal('service', 'pppoe');
+
+            $response = $client->query($activateQuery)->read();
+
+            Log::info("✅ Berhasil mengaktifkan pelanggan: {$username} dengan profile: {$profile}");
+
+            return [
+                'success' => true,
+                'username' => $username,
+                'message' => 'Successfully activated',
+                'profile' => $profile,
+                'response' => $response
+            ];
+        } catch (\Exception $e) {
+            Log::error("❌ Gagal mengaktifkan pelanggan {$username}: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'username' => $username,
+                'message' => 'Error: ' . $e->getMessage(),
+                'profile' => $profile
+            ];
+        }
+    }
+
     public static function getFirewallRules(Router $router)
     {
         $client = new Client([
