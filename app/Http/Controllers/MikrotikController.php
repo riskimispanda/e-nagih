@@ -28,7 +28,7 @@ class MikrotikController extends Controller
         // Aktifkan dengan opsi advanced
         $result = MikrotikServices::activateAllCustomersAdvanced($client, [
             'only_disabled' => true,
-            'profile_filter' => 'profile-UpTo-10', // Hanya profile tertentu
+            'profile_filter' => 'profile-UpTo-30', // Hanya profile tertentu
             'limit' => 50, // Maksimal 50 pelanggan
             'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
         ]);
