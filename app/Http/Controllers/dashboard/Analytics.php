@@ -26,6 +26,7 @@ use App\Models\Pengeluaran;
 use Carbon\Carbon;
 use App\Models\Schedules;
 use App\Models\TiketOpen;
+use Illuminate\Support\Facades\Log;
 
 class Analytics extends Controller
 {
