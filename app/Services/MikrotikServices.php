@@ -807,7 +807,13 @@ class MikrotikServices
                 return false;
             }
 
-            // Ambil user pertama saja, abaikan yang lain
+            // Jika ada multiple users, return false untuk mencegah perubahan yang tidak diinginkan
+            if (count($users) > 1) {
+                Log::error('Multiple users found for: ' . $usersecret . '. Operation aborted.');
+                return false;
+            }
+
+            // Hanya ada 1 user, lanjutkan proses
             $user = $users[0];
 
             $setQuery = new Query('/ppp/secret/set');
