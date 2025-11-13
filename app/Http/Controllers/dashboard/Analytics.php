@@ -309,23 +309,45 @@ class Analytics extends Controller
       // Ganti profile jadi ISOLIREBILLING
       $profileResult = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret, 'ISOLIREBILLING');
 
+      // Cek jika ditemukan multiple users
+      if ($profileResult === 'multiple_users') {
+        Log::warning("❌ Multiple users ditemukan - blokir dihentikan", [
+          "customer_id" => $id,
+          "usersecret" => $customer->usersecret,
+        ]);
+
+        return redirect()->back()->with("toast_error", "Gagal memblokir: ditemukan multiple users dengan username '" . $customer->usersecret . "'. Harap bersihkan data duplikat di Mikrotik terlebih dahulu.");
+      }
+
+      // Jika profile change gagal (bukan karena multiple users)
+      if ($profileResult === false) {
+        Log::error("❌ Gagal mengubah profile", [
+          "customer_id" => $id,
+          "usersecret" => $customer->usersecret,
+        ]);
+
+        return redirect()->back()->with("toast_error", "Gagal mengubah profile di Mikrotik.");
+      }
+
       // Disconnect koneksi aktif
       $disconnectResult = MikrotikServices::removeActiveConnections($client, $customer->usersecret);
 
       // Logging
-      \Log::info("✅ Pelanggan diblokir melalui profile", [
+      Log::info("✅ Pelanggan diblokir melalui profile", [
         "customer_id" => $id,
         "usersecret" => $customer->usersecret,
         "new_profile" => "ISOLIREBILLING",
         "profile_result" => $profileResult,
         "disconnect_result" => $disconnectResult,
       ]);
+
       activity('Blokir')
         ->causedBy(auth()->user()->id)
         ->log(auth()->user()->name . ' Melakukan Blokir Kepada Pelanggan ' . $customer->nama_customer);
+
       return redirect()->back()->with("success", "Pelanggan berhasil diblokir");
     } catch (\Exception $e) {
-      \Log::error("❌ Gagal blokir pelanggan: " . $e->getMessage(), [
+      Log::error("❌ Gagal blokir pelanggan: " . $e->getMessage(), [
         "customer_id" => $id,
         "trace" => $e->getTraceAsString(),
       ]);

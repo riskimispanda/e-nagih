@@ -795,7 +795,7 @@ class MikrotikServices
         }
     }
 
-    public static function changeUserProfileSingle(Client $client, $usersecret)
+    public static function changeUserProfileSingle(Client $client, $usersecret, $profileName = 'ISOLIREBILLING')
     {
         try {
             $query = new Query('/ppp/secret/print');
@@ -807,10 +807,10 @@ class MikrotikServices
                 return false;
             }
 
-            // Jika ada multiple users, return false untuk mencegah perubahan yang tidak diinginkan
+            // Jika ada multiple users, return string khusus
             if (count($users) > 1) {
                 Log::error('Multiple users found for: ' . $usersecret . '. Operation aborted.');
-                return false;
+                return 'multiple_users';
             }
 
             // Hanya ada 1 user, lanjutkan proses
@@ -818,13 +818,13 @@ class MikrotikServices
 
             $setQuery = new Query('/ppp/secret/set');
             $setQuery->equal('.id', $user['.id']);
-            $setQuery->equal('profile', 'ISOLIREBILLING');
+            $setQuery->equal('profile', $profileName);
             $client->query($setQuery)->read();
 
-            Log::info('MikrotikServices::changeUserProfile Success - User: ' . $usersecret . ', ID: ' . $user['.id']);
+            Log::info('MikrotikServices::changeUserProfileSingle Success - User: ' . $usersecret . ', ID: ' . $user['.id'] . ', Profile: ' . $profileName);
             return true;
         } catch (Exception $e) {
-            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            Log::error('MikrotikServices::changeUserProfileSingle error: ' . $e->getMessage());
             return false;
         }
     }
