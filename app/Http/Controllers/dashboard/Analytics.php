@@ -307,7 +307,7 @@ class Analytics extends Controller
       $client = MikrotikServices::connect($router);
 
       // Ganti profile jadi ISOLIREBILLING
-      $profileResult = MikrotikServices::changeUserProfile($client, $customer->usersecret, 'ISOLIREBILLING');
+      $profileResult = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret, 'ISOLIREBILLING');
 
       // Disconnect koneksi aktif
       $disconnectResult = MikrotikServices::removeActiveConnections($client, $customer->usersecret);

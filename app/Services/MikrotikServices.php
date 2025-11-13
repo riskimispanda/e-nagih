@@ -795,6 +795,34 @@ class MikrotikServices
         }
     }
 
+    public static function changeUserProfileSingle(Client $client, $usersecret)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) {
+                Log::warning('User not found: ' . $usersecret);
+                return false;
+            }
+
+            // Ambil user pertama saja, abaikan yang lain
+            $user = $users[0];
+
+            $setQuery = new Query('/ppp/secret/set');
+            $setQuery->equal('.id', $user['.id']);
+            $setQuery->equal('profile', 'ISOLIREBILLING');
+            $client->query($setQuery)->read();
+
+            Log::info('MikrotikServices::changeUserProfile Success - User: ' . $usersecret . ', ID: ' . $user['.id']);
+            return true;
+        } catch (Exception $e) {
+            Log::error('MikrotikServices::changeUserProfile error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile): bool
     {
         try {
