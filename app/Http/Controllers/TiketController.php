@@ -367,7 +367,9 @@ class TiketController extends Controller
                 MikrotikServices::UpgradeDowngrade(
                     MikrotikServices::connect(Router::findOrFail($customer->router_id)),
                     $customer->usersecret,
-                    $customer->paket->paket_name
+                    $customer->paket->paket_name,
+                    $customer->local_address,
+                    $customer->remote_address,
                 );
             }
 
