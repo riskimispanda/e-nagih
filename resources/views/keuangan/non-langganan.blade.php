@@ -420,9 +420,13 @@
                         </td>
                         <td>
                             <div class="d-flex gap-2">
-                                <button onclick="viewPendapatan({{ $revenue->id }})"
-                                    class="action-btn bg-info bg-opacity-10 text-primary btn-sm">
-                                    <i class="bx bx-show"></i>
+                                <button type="button" onclick="editPendapatan({{ $revenue->id }})"
+                                    class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" title="Edit">
+                                    <i class="bx bx-edit"></i>
+                                </button>
+                                <button type="button" onclick="confirmDeletePendapatan({{ $revenue->id }}, '{{ $revenue->jenis_pendapatan }}')"
+                                    class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" title="Hapus">
+                                    <i class="bx bx-trash"></i>
                                 </button>
                             </div>
                         </td>
@@ -501,6 +505,85 @@
     </div>
 </div>
 
+<!-- Edit Revenue Modal -->
+<div class="modal fade" id="editRevenueModal" tabindex="-1" aria-labelledby="editRevenueModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRevenueModalLabel">Edit Pendapatan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editRevenueForm" method="POST" enctype="multipart/form-data" onsubmit="prepareEditFormData(event)">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="editRevenueAmount" class="form-label">Jumlah Pendapatan</label>
+                        <input type="text" class="form-control" id="editRevenueAmount" name="jumlah_pendapatan"
+                        placeholder="Masukkan jumlah pendapatan" oninput="formatRupiah(this)" required>
+                        <input type="hidden" name="jumlah_pendapatan_raw" id="editRevenueAmountRaw">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRevenueType" class="form-label">Jenis Pendapatan</label>
+                        <input type="text" class="form-control" id="editRevenueType" name="jenis_pendapatan" placeholder="Masukkan jenis pendapatan">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPaymentMethod" class="form-label">Metode Pembayaran</label>
+                        <select class="form-select" id="editPaymentMethod" name="metode_bayar" required>
+                            <option value="" disabled selected>Pilih metode pembayaran</option>
+                            @foreach ($metode as $method)
+                            <option value="{{ $method->nama_metode }}">{{ $method->nama_metode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Bukti Pembayaran</label>
+                        <input type="file" class="form-control" name="bukti_pembayaran" accept="image/*">
+                        <small class="text-muted">Biarkan kosong jika tidak ingin mengubah bukti pembayaran</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRevenueDescription" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="editRevenueDescription" name="deskripsi"
+                        placeholder="Masukkan deskripsi pendapatan" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRevenueDate" class="form-label">Tanggal Pendapatan</label>
+                        <input type="date" class="form-control" id="editRevenueDate" name="tanggal" required>
+                    </div>
+                </div>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger bg-opacity-10 border-danger">
+                <h5 class="modal-title text-danger" id="deleteConfirmModalLabel">
+                    <i class="bx bx-error-circle me-2"></i>Konfirmasi Hapus
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Apakah Anda yakin ingin menghapus pendapatan <strong id="deleteItemName"></strong>?</p>
+                <p class="text-muted small mt-2">Tindakan ini tidak dapat dibatalkan.</p>
+            </div>
+            <div class="modal-footer gap-2">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="deletePendapatan()">
+                    <i class="bx bx-trash me-2"></i>Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="loadingOverlay" class="loading-overlay d-none">
     <div class="loading-content">
         <div class="spinner"></div>
@@ -510,6 +593,8 @@
 @endsection
 @section('page-script')
 <script>
+    let currentDeleteId = null;
+
     // Format input as Rupiah currency
     function formatRupiah(input) {
         let rawValue = input.value.replace(/\D/g, '');
@@ -524,8 +609,157 @@
         }
         
         // Update the hidden raw value input
-        document.getElementById('revenueAmountRaw').value = rawValue;
+        const hiddenFieldId = input.id === 'revenueAmount' ? 'revenueAmountRaw' : 'editRevenueAmountRaw';
+        document.getElementById(hiddenFieldId).value = rawValue;
+    }
+    
+    // Edit Pendapatan Function
+    function editPendapatan(id) {
+        showLoading();
         
+        fetch(`/api/pendapatan/${id}`, {
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Gagal memuat data');
+                }
+                
+                // Fill form with data
+                document.getElementById('editRevenueAmount').value = new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(data.data.jumlah_pendapatan);
+                
+                document.getElementById('editRevenueAmountRaw').value = data.data.jumlah_pendapatan;
+                document.getElementById('editRevenueType').value = data.data.jenis_pendapatan;
+                document.getElementById('editPaymentMethod').value = data.data.metode_bayar;
+                document.getElementById('editRevenueDescription').value = data.data.deskripsi || '';
+                document.getElementById('editRevenueDate').value = data.data.tanggal;
+                
+                // Update form action
+                document.getElementById('editRevenueForm').action = `/api/pendapatan/${id}`;
+                
+                hideLoading();
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editRevenueModal'));
+                modal.show();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideLoading();
+                showErrorNotification('Terjadi kesalahan saat memuat data pendapatan: ' + error.message);
+            });
+    }
+    
+    // Confirm Delete Function
+    function confirmDeletePendapatan(id, jenisName) {
+        currentDeleteId = id;
+        document.getElementById('deleteItemName').textContent = jenisName;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        modal.show();
+    }
+    
+    // Delete Pendapatan Function
+    function deletePendapatan() {
+        if (!currentDeleteId) return;
+        
+        const deleteBtn = document.getElementById('confirmDeleteBtn');
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menghapus...';
+        
+        fetch(`/api/pendapatan/${currentDeleteId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menghapus data');
+            }
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+            modal.hide();
+            
+            // Show success message
+            showSuccessNotification(data.message || 'Data pendapatan berhasil dihapus');
+            
+            // Reset delete id
+            currentDeleteId = null;
+            
+            // Reload table after 1.5 seconds
+            setTimeout(() => {
+                applyFilters();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
+            showErrorNotification('Terjadi kesalahan saat menghapus data: ' + error.message);
+        });
+    }
+    
+    // Success Notification Function
+    function showSuccessNotification(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-success alert-dismissible fade show';
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `
+            <i class="bx bx-check-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        const container = document.querySelector('main');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto dismiss after 4 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 4000);
+    }
+
+    // Error Notification Function
+    function showErrorNotification(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.setAttribute('role', 'alert');
+        alertDiv.innerHTML = `
+            <i class="bx bx-error-circle me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        const container = document.querySelector('main');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
     }
     
     // Add new functions for search
@@ -602,5 +836,71 @@
         e.preventDefault();
         applyFilters();
     });
+
+    // Prepare Edit Form Data Before Submit
+    function prepareEditFormData(event) {
+        event.preventDefault();
+        
+        // Get the raw value from hidden field
+        const rawValue = document.getElementById('editRevenueAmountRaw').value;
+        
+        // Make sure hidden field has value
+        if (!rawValue) {
+            showErrorNotification('Jumlah pendapatan tidak valid');
+            return;
+        }
+        
+        // Use FormData to handle file uploads properly
+        const form = document.getElementById('editRevenueForm');
+        const formData = new FormData(form);
+        
+        // Replace the formatted field with raw value
+        formData.set('jumlah_pendapatan', rawValue);
+        
+        // Get the action URL
+        const action = form.action;
+        
+        // Show loading
+        showLoading();
+        
+        // Submit using fetch
+        fetch(action, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            },
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal memperbarui data');
+            }
+            
+            hideLoading();
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editRevenueModal'));
+            modal.hide();
+            
+            // Show success message
+            showSuccessNotification(data.message || 'Data pendapatan berhasil diperbarui');
+            
+            // Reload table after 1.5 seconds
+            setTimeout(() => {
+                applyFilters();
+            }, 1500);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            hideLoading();
+            showErrorNotification('Terjadi kesalahan saat memperbarui data: ' + error.message);
+        });
+    }
 </script>
 @endsection

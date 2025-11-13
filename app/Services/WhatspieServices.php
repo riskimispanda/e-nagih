@@ -240,7 +240,7 @@ class WhatspieServices
     /**
      * POST /messages - Format yang benar dengan device sebagai nomor
      */
-    public function sendMessage($receiver, $message, $devicePhone, $simulate = false)
+    public function sendMessage($receiver, $message, $devicePhone, $simulate = true)
     {
         try {
             $url = $this->baseUrl . '/messages';

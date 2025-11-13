@@ -2889,4 +2889,152 @@ class KeuanganController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Get single pendapatan data for editing
+     */
+    public function showPendapatan($id)
+    {
+        try {
+            $pendapatan = Pendapatan::findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $pendapatan->id,
+                    'jumlah_pendapatan' => $pendapatan->jumlah_pendapatan,
+                    'jenis_pendapatan' => $pendapatan->jenis_pendapatan,
+                    'deskripsi' => $pendapatan->deskripsi,
+                    'tanggal' => $pendapatan->tanggal,
+                    'metode_bayar' => $pendapatan->metode_bayar,
+                    'bukti_pendapatan' => $pendapatan->bukti_pendapatan
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in showPendapatan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pendapatan tidak ditemukan'
+            ], 404);
+        }
+    }
+
+    /**
+     * Update pendapatan data
+     */
+    public function updatePendapatan(Request $request, $id)
+    {
+        try {
+            $pendapatan = Pendapatan::findOrFail($id);
+            $jumlahKas = Kas::latest()->value('jumlah_kas') ?? 0;
+
+            // Get jumlah_pendapatan - gunakan nilai baru jika ada, jika tidak gunakan nilai lama
+            $jumlahBaru = $request->jumlah_pendapatan_raw ?? $request->jumlah_pendapatan;
+
+            // Jika masih string format rupiah, ekstrak angkanya
+            if (is_string($jumlahBaru) && strpos($jumlahBaru, 'Rp') !== false) {
+                $jumlahBaru = (int) preg_replace('/[^0-9]/', '', $jumlahBaru);
+            } else {
+                $jumlahBaru = (int) $jumlahBaru;
+            }
+
+            // Jika masih kosong/0, gunakan nilai lama
+            if (!$jumlahBaru || $jumlahBaru === 0) {
+                $jumlahBaru = $pendapatan->jumlah_pendapatan;
+            }
+
+            // Calculate difference in amount for Kas adjustment
+            $selisihJumlah = $jumlahBaru - $pendapatan->jumlah_pendapatan;
+
+            // Handle file upload for receipt
+            $buktiPath = $pendapatan->bukti_pendapatan;
+            if ($request->hasFile('bukti_pembayaran')) {
+                // Delete old file if exists
+                if ($pendapatan->bukti_pendapatan) {
+                    Storage::disk('public')->delete($pendapatan->bukti_pendapatan);
+                }
+
+                $file = $request->file('bukti_pembayaran');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $buktiPath = $file->storeAs('bukti_pendapatan', $fileName, 'public');
+            }
+
+            // Update pendapatan record
+            $pendapatan->update([
+                'jumlah_pendapatan' => $jumlahBaru,
+                'jenis_pendapatan' => $request->jenis_pendapatan ?? $pendapatan->jenis_pendapatan,
+                'deskripsi' => $request->deskripsi ?? $pendapatan->deskripsi,
+                'tanggal' => $request->tanggal ?? $pendapatan->tanggal,
+                'bukti_pendapatan' => $buktiPath,
+                'metode_bayar' => $pendapatan->metode_bayar ?? $request->metode_bayar,
+                'user_id' => auth()->id()
+            ]);
+
+            // Update Kas record if amount changed
+            if ($selisihJumlah != 0) {
+                $kas = new Kas();
+                $kas->jumlah_kas = $jumlahKas + $selisihJumlah;
+                $kas->debit = $selisihJumlah > 0 ? $selisihJumlah : 0;
+                $kas->kredit = $selisihJumlah < 0 ? abs($selisihJumlah) : 0;
+                $kas->kas_id = 1;
+                $kas->keterangan = 'Pembaruan Pendapatan: ' . $request->jenis_pendapatan . ' - ' . $request->deskripsi;
+                $kas->tanggal_kas = $request->tanggal;
+                $kas->user_id = auth()->user()->id;
+                $kas->status_id = 3;
+                $kas->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pendapatan berhasil diperbarui'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in updatePendapatan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbarui pendapatan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete pendapatan data
+     */
+    public function destroyPendapatan($id)
+    {
+        try {
+            $pendapatan = Pendapatan::findOrFail($id);
+            $jumlahKas = Kas::latest()->value('jumlah_kas') ?? 0;
+
+            // Delete bukti file if exists
+            if ($pendapatan->bukti_pendapatan) {
+                Storage::disk('public')->delete($pendapatan->bukti_pendapatan);
+            }
+
+            // Buat Kas entry untuk penghapusan (kredit/pengurangan)
+            $kas = new Kas();
+            $kas->jumlah_kas = $jumlahKas - $pendapatan->jumlah_pendapatan;
+            $kas->kredit = $pendapatan->jumlah_pendapatan;
+            $kas->kas_id = 1;
+            $kas->keterangan = 'Penghapusan Pendapatan: ' . $pendapatan->jenis_pendapatan . ' - ' . $pendapatan->deskripsi;
+            $kas->tanggal_kas = now();
+            $kas->user_id = auth()->user()->id;
+            $kas->status_id = 3;
+            $kas->save();
+
+            // Delete pendapatan record
+            $pendapatan->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pendapatan berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in destroyPendapatan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus pendapatan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

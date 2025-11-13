@@ -551,6 +551,15 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/pendapatan/non-langganan/search', [KeuanganController::class, 'searchNonLangganan'])->name(
     'non-langganan.search'
   );
+  Route::get('/api/pendapatan/{id}', [KeuanganController::class, 'showPendapatan'])
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
+    ->name('api.pendapatan.show');
+  Route::put('/api/pendapatan/{id}', [KeuanganController::class, 'updatePendapatan'])
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
+    ->name('api.pendapatan.update');
+  Route::delete('/api/pendapatan/{id}', [KeuanganController::class, 'destroyPendapatan'])
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
+    ->name('api.pendapatan.destroy');
   Route::get('/pendapatan/global', [KeuanganController::class, 'globalPendapatan'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('global-pendapatan');
