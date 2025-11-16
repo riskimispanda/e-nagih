@@ -1381,6 +1381,10 @@ class KeuanganController extends Controller
             $kas->status_id = 3;
             $kas->save();
 
+            activity('Tambah Pendapatan')
+                ->causedBy(auth()->user()->id)
+                ->log(auth()->user()->name . ' Menambah Pendapatan Non Langganan');
+
             return redirect()->back()->with('success', 'Pendapatan berhasil ditambahkan');
         } catch (\Exception $e) {
             \Log::error('Error in tambahPendapatan: ' . $e->getMessage());
@@ -1480,14 +1484,18 @@ class KeuanganController extends Controller
     public function searchNonLangganan(Request $request)
     {
         try {
-            $search = $request->get('search'); // Keep search
-            $month = $request->get('month'); // New month filter
+            $search = $request->get('search');
+            $month = $request->get('month');
             $year = $request->get('year', Carbon::now()->year); // Default to current year
 
             $query = Pendapatan::with(['user'])
-                ->whereMonth('tanggal', $month) // Apply month filter
-                ->whereYear('tanggal', $year) // Apply year filter
                 ->orderBy('created_at', 'desc');
+
+            // Apply month and year filter if 'month' is provided and not 'all'
+            if ($month && $month !== 'all') {
+                $query->whereMonth('tanggal', $month)
+                    ->whereYear('tanggal', $year);
+            }
 
             if ($search) {
                 $query->where(function($q) use ($search) {
@@ -1499,13 +1507,11 @@ class KeuanganController extends Controller
                 });
             }
 
-            $pendapatan = $query->paginate(10);
-
-            $html = view('keuangan.partials.pendapatan-table', compact('pendapatan'))->render();
+            $pendapatan = $query->get();
 
             return response()->json([
-                'html' => $html,
-                'success' => true
+                'success' => true,
+                'data' => $pendapatan // Return data for DataTables
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -2929,7 +2935,7 @@ class KeuanganController extends Controller
             $jumlahKas = Kas::latest()->value('jumlah_kas') ?? 0;
 
             // Get jumlah_pendapatan - gunakan nilai baru jika ada, jika tidak gunakan nilai lama
-            $jumlahBaru = $request->jumlah_pendapatan_raw ?? $request->jumlah_pendapatan;
+            $jumlahBaru = $request->input('jumlah_pendapatan_raw') ?? $request->input('jumlah_pendapatan');
 
             // Jika masih string format rupiah, ekstrak angkanya
             if (is_string($jumlahBaru) && strpos($jumlahBaru, 'Rp') !== false) {
@@ -2938,8 +2944,8 @@ class KeuanganController extends Controller
                 $jumlahBaru = (int) $jumlahBaru;
             }
 
-            // Jika masih kosong/0, gunakan nilai lama
-            if (!$jumlahBaru || $jumlahBaru === 0) {
+            // Jika jumlah baru tidak valid atau 0, gunakan nilai lama
+            if (empty($jumlahBaru) || $jumlahBaru === 0) {
                 $jumlahBaru = $pendapatan->jumlah_pendapatan;
             }
 
@@ -2962,11 +2968,11 @@ class KeuanganController extends Controller
             // Update pendapatan record
             $pendapatan->update([
                 'jumlah_pendapatan' => $jumlahBaru,
-                'jenis_pendapatan' => $request->jenis_pendapatan ?? $pendapatan->jenis_pendapatan,
-                'deskripsi' => $request->deskripsi ?? $pendapatan->deskripsi,
-                'tanggal' => $request->tanggal ?? $pendapatan->tanggal,
+                'jenis_pendapatan' => $request->input('jenis_pendapatan') ?? $pendapatan->jenis_pendapatan,
+                'deskripsi' => $request->input('deskripsi') ?? $pendapatan->deskripsi,
+                'tanggal' => $request->input('tanggal') ?? $pendapatan->tanggal,
                 'bukti_pendapatan' => $buktiPath,
-                'metode_bayar' => $pendapatan->metode_bayar ?? $request->metode_bayar,
+                'metode_bayar' => $request->input('metode_bayar') ?? $pendapatan->metode_bayar,
                 'user_id' => auth()->id()
             ]);
 
@@ -2977,12 +2983,16 @@ class KeuanganController extends Controller
                 $kas->debit = $selisihJumlah > 0 ? $selisihJumlah : 0;
                 $kas->kredit = $selisihJumlah < 0 ? abs($selisihJumlah) : 0;
                 $kas->kas_id = 1;
-                $kas->keterangan = 'Pembaruan Pendapatan: ' . $request->jenis_pendapatan . ' - ' . $request->deskripsi;
-                $kas->tanggal_kas = $request->tanggal;
+                $kas->keterangan = 'Pembaruan Pendapatan: ' . $request->input('jenis_pendapatan') . ' - ' . $request->input('deskripsi');
+                $kas->tanggal_kas = $request->input('tanggal');
                 $kas->user_id = auth()->user()->id;
                 $kas->status_id = 3;
                 $kas->save();
             }
+
+            activity('Edit Pendapatan')
+                ->causedBy(auth()->user()->id)
+                ->log(auth()->user()->name . ' Mengubah data Pendapatan Non Langganan');
 
             return response()->json([
                 'success' => true,
@@ -3024,6 +3034,10 @@ class KeuanganController extends Controller
 
             // Delete pendapatan record
             $pendapatan->delete();
+
+            activity('Hapus Pendapatan')
+                ->causedBy(auth()->user()->id)
+                ->log(auth()->user()->name . ' Menghapus Pendapatan Non Langganan');
 
             return response()->json([
                 'success' => true,

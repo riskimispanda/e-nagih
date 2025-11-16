@@ -24,6 +24,8 @@ class AgenController extends Controller
         $currentYear = Carbon::now()->format('Y');
         $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
+        $perPage = $request->get('per_page', 10); // Default 10
+        $statusFilter = $request->get('status');
 
         // Query dari Invoice sebagai basis
         $query = Invoice::with([
@@ -73,7 +75,27 @@ class AgenController extends Controller
             });
         }
 
-        $invoices = $query->paginate(10)->withQueryString(); // withQueryString() untuk memperbaiki bug pagination
+        // Apply status filter
+        if ($statusFilter) {
+            if ($statusFilter === 'Sudah Bayar') {
+                $query->whereHas('status', function ($q) {
+                    $q->where('nama_status', 'Sudah Bayar');
+                });
+            } elseif ($statusFilter === 'Belum Bayar') {
+                $query->where(function ($q) {
+                    $q->whereHas('status', fn($sq) => $sq->where('nama_status', '!=', 'Sudah Bayar'))->orWhereNull('status_id');
+                })->whereHas('customer', fn($cq) => $cq->whereNull('deleted_at')); // Hanya tampilkan yg belum bayar dari customer aktif
+            }
+        }
+
+        // Handle pagination
+        if ($perPage === 'all') {
+            $invoices = $query->get();
+            // Buat instance Paginator manual jika diperlukan, atau handle di view
+            $invoices = new \Illuminate\Pagination\LengthAwarePaginator($invoices, $invoices->count(), -1);
+        } else {
+            $invoices = $query->paginate($perPage)->withQueryString();
+        }
 
         // Calculate statistics
         $searchTerm = $request->get('search', '');

@@ -1,6 +1,9 @@
 @extends('layouts.contentNavbarLayout')
 
 @section('title', 'Non Langganan')
+@section('vendor-style')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+@endsection
 
 <style>
     .revenue-card {
@@ -360,9 +363,13 @@
         </button>
     </div>
     
-    <div class="table-responsive p-2">
-        <div id="tableContainer">
-            <table class="table table-hover" style="font-size: 14px">
+    <div id="tableContainer" class="p-2">
+        <!-- Elemen kontrol DataTables akan ditempatkan di sini oleh 'dom' -->
+        <div id="datatables-controls" class="mt-3"></div>
+
+        <!-- Tabel akan berada di dalam div responsif ini -->
+        <div class="table-responsive">
+            <table id="pendapatanTable" class="table table-hover" style="font-size: 14px; width:100%">
                 <thead class="table-dark text-center">
                     <tr>
                         <th>No</th>
@@ -375,76 +382,13 @@
                         <th>Aksi</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
-                    @php
-                    $no = 1;
-                    @endphp
-                    @forelse($pendapatan ?? [] as $index => $revenue)
-                    <tr>
-                        <td>{{ $no++ }}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bx bx-money text-dark me-2"></i>
-                                <span class="fw-semibold text-dark">
-                                    Rp {{ number_format($revenue->jumlah_pendapatan, 0, ',', '.') }}
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-info bg-opacity-10 text-info">
-                                {{ $revenue->jenis_pendapatan }}
-                            </span>
-                        </td>
-                        <td>
-                            <div class="text-muted">
-                                {{ Str::limit($revenue->deskripsi, 50) }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bx bx-calendar text-primary me-2"></i>
-                                {{ \Carbon\Carbon::parse($revenue->tanggal)->format('d/m/Y') }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bx bx-credit-card text-secondary me-2"></i>
-                                {{ $revenue->metode_bayar }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <i class="bx bx-user text-primary me-2"></i>
-                                {{ $revenue->user->name ?? 'N/A' }}
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <button type="button" onclick="editPendapatan({{ $revenue->id }})"
-                                    class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" title="Edit">
-                                    <i class="bx bx-edit"></i>
-                                </button>
-                                <button type="button" onclick="confirmDeletePendapatan({{ $revenue->id }}, '{{ $revenue->jenis_pendapatan }}')"
-                                    class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" title="Hapus">
-                                    <i class="bx bx-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="text-center py-5">
-                            <div class="d-flex flex-column align-items-center">
-                                <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                                <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                                <p class="text-muted mb-0">Belum ada data pendapatan lain-lain yang tersedia</p>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforelse
+                <tbody>
+                    <!-- DataTables akan mengisi bagian ini secara otomatis -->
                 </tbody>
             </table>
-            {{ $pendapatan->links() }}
+        </div>
+        <div class="row mt-3">
+            <div id="datatables-pagination"></div>
         </div>
     </div>
 </div>
@@ -513,9 +457,8 @@
                 <h5 class="modal-title" id="editRevenueModalLabel">Edit Pendapatan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="editRevenueForm" method="POST" enctype="multipart/form-data" onsubmit="prepareEditFormData(event)">
+            <form id="editRevenueForm" enctype="multipart/form-data" onsubmit="prepareEditFormData(event)">
                 @csrf
-                @method('PUT')
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="editRevenueAmount" class="form-label">Jumlah Pendapatan</label>
@@ -590,8 +533,34 @@
         <span class="text-dark">Memuat data...</span>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
+    <!-- Success Toast -->
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bx bx-check-circle me-2"></i>
+            <strong class="me-auto">Sukses</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="successToastBody"></div>
+    </div>
+    <!-- Error Toast -->
+    <div id="errorToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-danger text-white">
+            <i class="bx bx-error-circle me-2"></i>
+            <strong class="me-auto">Error</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="errorToastBody"></div>
+    </div>
+</div>
 @endsection
+
 @section('page-script')
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
     let currentDeleteId = null;
 
@@ -614,10 +583,13 @@
     }
     
     // Edit Pendapatan Function
+    let currentEditId = null; // Variabel global untuk menyimpan ID yang sedang diedit
+
     function editPendapatan(id) {
+        currentEditId = id; // Simpan ID saat tombol edit diklik
         showLoading();
         
-        fetch(`/api/pendapatan/${id}`, {
+        fetch(`/api/pendapatan/${id}`, { // Gunakan ID yang disimpan
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Content-Type': 'application/json',
@@ -646,9 +618,6 @@
                 document.getElementById('editPaymentMethod').value = data.data.metode_bayar;
                 document.getElementById('editRevenueDescription').value = data.data.deskripsi || '';
                 document.getElementById('editRevenueDate').value = data.data.tanggal;
-                
-                // Update form action
-                document.getElementById('editRevenueForm').action = `/api/pendapatan/${id}`;
                 
                 hideLoading();
                 
@@ -709,90 +678,145 @@
             // Reset delete id
             currentDeleteId = null;
             
-            // Reload table after 1.5 seconds
-            setTimeout(() => {
-                applyFilters();
-            }, 1500);
+            // Reload table data
+            applyFilters();
         })
         .catch(error => {
             console.error('Error:', error);
+            showErrorNotification('Terjadi kesalahan saat menghapus data: ' + error.message);
+        })
+        .finally(() => {
+            // Re-enable button and restore text
             deleteBtn.disabled = false;
             deleteBtn.innerHTML = originalText;
-            showErrorNotification('Terjadi kesalahan saat menghapus data: ' + error.message);
         });
     }
     
     // Success Notification Function
     function showSuccessNotification(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show';
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `
-            <i class="bx bx-check-circle me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        const container = document.querySelector('main');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        // Auto dismiss after 4 seconds
-        setTimeout(() => {
-            alertDiv.remove();
-        }, 4000);
+        const toastEl = document.getElementById('successToast');
+        const toastBody = document.getElementById('successToastBody');
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
     }
 
     // Error Notification Function
     function showErrorNotification(message) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `
-            <i class="bx bx-error-circle me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        const container = document.querySelector('main');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        // Auto dismiss after 5 seconds
-        setTimeout(() => {
-            alertDiv.remove();
-        }, 5000);
+        const toastEl = document.getElementById('errorToast');
+        const toastBody = document.getElementById('errorToastBody');
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(toastEl, {
+            autohide: false // Error messages should be closed manually
+        });
+        toast.show();
     }
     
-    // Add new functions for search
-    function applyFilters() {
-        showLoading();
-        const search = document.getElementById('searchInput').value;
-        const month = document.getElementById('monthFilter').value;
+    let dataTable;
 
-        // Create URL with parameters
-        const params = new URLSearchParams({
-            search: search,
-            month: month
-        });
-
-        fetch(`/pendapatan/non-langganan/search?${params.toString()}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+    jQuery(document).ready(function($) { // Use jQuery(document).ready and pass $ as argument
+        // Initialize DataTable using $ alias, which is now guaranteed to be jQuery
+        dataTable = $('#pendapatanTable').DataTable({
+            "processing": true,
+            "serverSide": false, // We will use client-side processing with AJAX loading
+            "ajax": {
+                "url": "{{ url('/pendapatan/non-langganan/search') }}",
+                "type": "GET",
+                "data": function(d) {
+                    // Add filter data to the request
+                    d.search = $('#searchInput').val();
+                    d.month = $('#monthFilter').val();
+                },
+                "dataSrc": "data" // The data is in the 'data' property of the JSON response
+            },
+            "columns": [
+                { "data": null, "render": function (data, type, row, meta) { return meta.row + 1; }, "className": "text-center" },
+                { 
+                    "data": "jumlah_pendapatan",
+                    "render": function(data, type, row) {
+                        const formatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(data);
+                        return `<div class="d-flex align-items-center">
+                                    <i class="bx bx-money text-dark me-2"></i>
+                                    <span class="fw-semibold text-dark">${formatted}</span>
+                                </div>`;
+                    }
+                },
+                { 
+                    "data": "jenis_pendapatan",
+                    "render": function(data, type, row) {
+                        return `<span class="badge bg-info bg-opacity-10 text-info">${data}</span>`;
+                    },
+                    "className": "text-center"
+                },
+                { 
+                    "data": "deskripsi",
+                    "render": function(data, type, row) {
+                        return `<div class="text-muted">${data ? data.substring(0, 50) : ''}</div>`;
+                    }
+                },
+                { 
+                    "data": "tanggal",
+                    "render": function(data, type, row) {
+                        const date = new Date(data);
+                        const formattedDate = `${('0' + date.getDate()).slice(-2)}/${('0' + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`;
+                        return `<div class="d-flex align-items-center">
+                                    <i class="bx bx-calendar text-primary me-2"></i>
+                                    ${formattedDate}
+                                </div>`;
+                    },
+                    "className": "text-center"
+                },
+                { 
+                    "data": "metode_bayar",
+                    "render": function(data, type, row) {
+                        return `<div class="d-flex align-items-center">
+                                    <i class="bx bx-credit-card text-secondary me-2"></i>
+                                    ${data}
+                                </div>`;
+                    },
+                    "className": "text-center"
+                },
+                { 
+                    "data": "user.name",
+                    "render": function(data, type, row) {
+                        return `<div class="d-flex align-items-center">
+                                    <i class="bx bx-user text-primary me-2"></i>
+                                    ${data || 'N/A'}
+                                </div>`;
+                    },
+                    "className": "text-center"
+                },
+                { 
+                    "data": null,
+                    "render": function(data, type, row) {
+                        return `<div class="d-flex gap-2 justify-content-center">
+                                    <button type="button" onclick="editPendapatan(${row.id})" class="action-btn bg-warning bg-opacity-10 text-warning btn-sm" title="Edit"><i class="bx bx-edit"></i></button>
+                                    <button type="button" onclick="confirmDeletePendapatan(${row.id}, '${row.jenis_pendapatan}')" class="action-btn bg-danger bg-opacity-10 text-danger btn-sm" title="Hapus"><i class="bx bx-trash"></i></button>
+                                </div>`;
+                    },
+                    "orderable": false,
+                    "className": "text-center"
                 }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('tableBody').innerHTML = data.html;
-                hideLoading();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                hideLoading();
-                alert('Terjadi kesalahan saat memuat data');
-            })
-            .finally(() => {
-                hideLoading();
-            });
+            ],
+            "language": {
+                "url": "https://cdn.datatables.net/plug-ins/1.13.7/i18n/id.json"
+            },
+            "dom": '<"row"<"col-sm-12 col-md-6 mb-3"l>>' +
+                   't' +
+                   '<"row"<"col-sm-12 col-md-7"p >>',
+            "initComplete": function(settings, json) {
+                // Pindahkan elemen kontrol ke div yang benar setelah DataTables selesai diinisialisasi
+                $('.dataTables_length').appendTo('#datatables-controls');
+                $('.dataTables_filter').appendTo('#datatables-controls');
+                $('.dataTables_info').appendTo('#datatables-info');
+                $('.dataTables_paginate').appendTo('#datatables-pagination');
+            }
+        });
+    });
+
+    function applyFilters() {
+        // Reload DataTable with new filter parameters
+        dataTable.ajax.reload();
     }
 
     function showLoading() {
@@ -805,7 +829,7 @@
 
     function clearFilters() {
         document.getElementById('searchInput').value = ''; // Clear search input
-        document.getElementById('monthFilter').value = ''; // Reset month filter to "Semua Bulan"
+        document.getElementById('monthFilter').value = "{{ date('n') }}"; // Reset to current month
         applyFilters();
     }
 
@@ -823,11 +847,11 @@
     }
 
     // Event listeners
-    document.getElementById('searchInput').addEventListener('input', debounce(() => {
+    document.getElementById('searchInput').addEventListener('keyup', debounce(() => {
         applyFilters();
     }, 500));
 
-    document.getElementById('monthFilter').addEventListener('change', () => {
+    document.getElementById('monthFilter').addEventListener('change', (e) => {
         applyFilters();
     });
 
@@ -854,20 +878,22 @@
         const form = document.getElementById('editRevenueForm');
         const formData = new FormData(form);
         
-        // Replace the formatted field with raw value
-        formData.set('jumlah_pendapatan', rawValue);
+        // Tambahkan _method 'PUT' untuk Laravel
+        formData.append('_method', 'PUT');
+        formData.set('jumlah_pendapatan_raw', rawValue);
         
         // Get the action URL
-        const action = form.action;
+        const action = `/api/pendapatan/${currentEditId}`; // Gunakan ID yang disimpan saat modal dibuka
         
         // Show loading
         showLoading();
         
         // Submit using fetch
         fetch(action, {
-            method: 'PUT',
+            method: 'POST', // Gunakan POST untuk mengirim FormData dengan _method
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
             },
             body: formData
         })
@@ -891,10 +917,8 @@
             // Show success message
             showSuccessNotification(data.message || 'Data pendapatan berhasil diperbarui');
             
-            // Reload table after 1.5 seconds
-            setTimeout(() => {
-                applyFilters();
-            }, 1500);
+            // Reload table data immediately
+            applyFilters();
         })
         .catch(error => {
             console.error('Error:', error);

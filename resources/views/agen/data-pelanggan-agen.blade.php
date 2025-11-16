@@ -479,25 +479,37 @@
         </div>
     </div>
     <hr class="my-2 mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            @php
-            $totalRows = $invoices->count();
-            @endphp
-            <span class="text-muted" id="searchResults">
-                Menampilkan 
-                <span class="fw-bold text-primary" id="visibleCount">{{ $totalRows }}</span>
-                dari 
-                <span class="fw-bold" id="totalCount">{{ $totalRows }}</span> data
-            </span>
-            <span class="badge bg-info ms-2" id="filterIndicator" style="display: none;">
-                <i class="bx bx-filter-alt me-1"></i>Filter Aktif
-            </span>
-            @if(config('app.debug'))
-            <small class="text-muted ms-2">
-                ({{ $invoices->count() }} invoices)
-            </small>
-            @endif
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center">
+                <label for="perPage" class="form-label mb-0 me-2">Tampilkan:</label>
+                <select name="per_page" id="perPage" class="form-select form-select-sm">
+                    <option value="10" @if($invoices->perPage() == 10) selected @endif>10</option>
+                    <option value="25" @if($invoices->perPage() == 25) selected @endif>25</option>
+                    <option value="50" @if($invoices->perPage() == 50) selected @endif>50</option>
+                    <option value="100" @if($invoices->perPage() == 100) selected @endif>100</option>
+                    <option value="all" @if($invoices->perPage() == -1) selected @endif>Semua</option>
+                </select>
+            </div>
+            <div>
+                @php
+                $totalRows = $invoices->total();
+                @endphp
+                <span class="text-muted" id="searchResults">
+                    Menampilkan 
+                    <span class="fw-bold text-primary" id="visibleCount">{{ $invoices->count() }}</span>
+                    dari 
+                    <span class="fw-bold" id="totalCount">{{ $totalRows }}</span> data
+                </span>
+                <span class="badge bg-info ms-2" id="filterIndicator" style="display: none;">
+                    <i class="bx bx-filter-alt me-1"></i>Filter Aktif
+                </span>
+                @if(config('app.debug'))
+                <small class="text-muted ms-2">
+                    ({{ $invoices->count() }} invoices)
+                </small>
+                @endif
+            </div>
         </div>
         <div>
             <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilters">
@@ -529,7 +541,9 @@
         </table> <!-- Tag penutup table yang sebelumnya hilang -->
     </div>
     <div class="d-flex justify-content-center" id="pagination-container">
+        @if($invoices->perPage() != -1)
         {{ $invoices->links('pagination::bootstrap-5') }}
+        @endif
     </div>
 </div>
 
@@ -547,11 +561,13 @@
         const visibleCountEl = document.getElementById('visibleCount');
         const totalCountEl = document.getElementById('totalCount');
 
-        function fetchData(page = 1, search = '', month = '') {
+        function fetchData(page = 1, search = '', month = '', perPage = '10', status = '') {
             const url = new URL("{{ route('data-pelanggan-agen-search') }}");
             url.searchParams.append('page', page);
             if (search) url.searchParams.append('search', search);
             if (month) url.searchParams.append('month', month);
+            if (perPage) url.searchParams.append('per_page', perPage);
+            if (status) url.searchParams.append('status', status);
 
             // Add loading indicator
             tableBody.innerHTML = `<tr><td colspan="12" class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>`;
@@ -569,7 +585,11 @@
                 document.getElementById('modal-container').innerHTML = data.modals_html;
 
                 // Update pagination
-                paginationContainer.innerHTML = data.pagination_html;
+                if (perPage === 'all') {
+                    paginationContainer.innerHTML = ''; // Sembunyikan pagination jika 'Semua'
+                } else {
+                    paginationContainer.innerHTML = data.pagination_html;
+                }
 
                 // Update statistics
                 updateStatisticsCards(data.statistics);
@@ -596,7 +616,9 @@
             searchTimeout = setTimeout(() => {
                 const searchTerm = searchInput.value;
                 const month = document.getElementById('bulan').value;
-                fetchData(1, searchTerm, month);
+                const perPage = document.getElementById('perPage').value;
+                const status = document.getElementById('statusTagihan').value;
+                fetchData(1, searchTerm, month, perPage, status);
             }, 500); // Debounce
         });
 
@@ -604,17 +626,40 @@
         document.getElementById('bulan').addEventListener('change', function() {
             const searchTerm = searchInput.value;
             const month = this.value;
-            fetchData(1, searchTerm, month);
+            const perPage = document.getElementById('perPage').value;
+            const status = document.getElementById('statusTagihan').value;
+            fetchData(1, searchTerm, month, perPage, status);
+        });
+
+        // Status filter handler
+        document.getElementById('statusTagihan').addEventListener('change', function() {
+            const searchTerm = searchInput.value;
+            const month = document.getElementById('bulan').value;
+            const perPage = document.getElementById('perPage').value;
+            const status = this.value;
+            fetchData(1, searchTerm, month, perPage, status);
+        });
+
+        // Per page filter handler
+        document.getElementById('perPage').addEventListener('change', function() {
+            const searchTerm = searchInput.value;
+            const month = document.getElementById('bulan').value;
+            const perPage = this.value;
+            const status = document.getElementById('statusTagihan').value;
+            fetchData(1, searchTerm, month, perPage, status);
         });
 
         // Pagination handler
         document.addEventListener('click', function(e) {
-            if (e.target.matches('.pagination a')) {
+            const paginationLink = e.target.closest('.pagination a');
+            if (paginationLink) {
                 e.preventDefault();
-                const page = new URL(e.target.href).searchParams.get('page');
+                const page = new URL(paginationLink.href).searchParams.get('page');
                 const searchTerm = searchInput.value;
                 const month = document.getElementById('bulan').value;
-                fetchData(page, searchTerm, month);
+                const perPage = document.getElementById('perPage').value;
+                const status = document.getElementById('statusTagihan').value;
+                fetchData(page, searchTerm, month, perPage, status);
             }
         });
 
@@ -622,10 +667,11 @@
         document.getElementById('resetFilters').addEventListener('click', function() {
             searchInput.value = '';
             document.getElementById('statusTagihan').value = '';
+            document.getElementById('perPage').value = '10';
             // Set month to current month
             const currentMonth = new Date().getMonth() + 1;
             document.getElementById('bulan').value = String(currentMonth).padStart(2, '0');
-            fetchData(1, '', String(currentMonth).padStart(2, '0'));
+            fetchData(1, '', String(currentMonth).padStart(2, '0'), '10', '');
         });
 
         function updateStatisticsCards(statistics) {
@@ -659,363 +705,6 @@
     });
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('searchCustomer');
-        const statusSelect = document.getElementById('statusTagihan');
-        const bulanSelect = document.getElementById('bulan');
-        const customerTable = document.getElementById('customerTable');
-        const customerRows = customerTable.querySelectorAll('.customer-row');
-        
-        // Function to filter table rows
-        function filterTable() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const selectedStatus = statusSelect.value;
-            const selectedBulan = bulanSelect.value;
-            
-            customerRows.forEach(function(row, index) {
-                const customerName = row.querySelector('.customer-name').textContent.toLowerCase();
-                const customerAddress = row.querySelector('.customer-address').textContent.toLowerCase();
-                const customerPhone = row.querySelector('.nomor-hp').textContent.toLowerCase();
-                const isDeleted = row.getAttribute('data-customer-deleted') === 'true';
-                
-                // Get data attributes for filtering
-                const statusTagihan = row.getAttribute('data-status-tagihan') || 'N/A';
-                const bulanTempo = row.getAttribute('data-bulan-tempo') || '';
-                
-                // Check search term match (name, address, or phone)
-                const matchesSearch = searchTerm === '' ||
-                customerName.includes(searchTerm) ||
-                customerAddress.includes(searchTerm) ||
-                customerPhone.includes(searchTerm);
-                
-                // Check status filter
-                let matchesStatus = true;
-                if (selectedStatus && selectedStatus !== '') {
-                    if (selectedStatus === 'Belum Bayar') {
-                        // Show rows that are not "Sudah Bayar" AND customer is not deleted
-                        matchesStatus = statusTagihan !== 'Sudah Bayar' && !isDeleted;
-                    } else if (selectedStatus === 'Sudah Bayar') {
-                        // Show only rows that are "Sudah Bayar" (both active and deleted customers)
-                        matchesStatus = statusTagihan === 'Sudah Bayar';
-                    }
-                }
-                
-                // Bulan filter is now handled server-side, so always match
-                let matchesBulan = true;
-                
-                // Show/hide row based on all filters
-                if (matchesSearch && matchesStatus && matchesBulan) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            // Update row numbers for visible rows
-            updateRowNumbers();
-            
-            // Update search results counter
-            updateSearchCounter();
-            
-            // Show/hide empty state
-            toggleEmptyState();
-        }
-        
-        // Function to update row numbers for visible rows
-        function updateRowNumbers() {
-            const visibleRows = Array.from(customerRows).filter(row => row.style.display !== 'none');
-            visibleRows.forEach(function(row, index) {
-                const numberCell = row.querySelector('td:first-child');
-                if (numberCell) {
-                    numberCell.textContent = index + 1;
-                }
-            });
-        }
-        
-        // Function to update search results counter
-        function updateSearchCounter() {
-            const visibleRows = Array.from(customerRows).filter(row => row.style.display !== 'none');
-            const totalRows = customerRows.length;
-            
-            document.getElementById('visibleCount').textContent = visibleRows.length;
-            document.getElementById('totalCount').textContent = totalRows;
-            
-            // Show/hide filter indicator and add visual feedback
-            const hasActiveFilters = searchInput.value.trim() !== '' ||
-            statusSelect.value !== '' ||
-            (bulanSelect.value !== '' && bulanSelect.value !== 'all');
-            const filterIndicator = document.getElementById('filterIndicator');
-            
-            if (hasActiveFilters) {
-                filterIndicator.style.display = 'inline-block';
-                // Add visual feedback to active filters
-                if (searchInput.value.trim() !== '') {
-                    searchInput.classList.add('filter-active');
-                } else {
-                    searchInput.classList.remove('filter-active');
-                }
-                if (statusSelect.value !== '') {
-                    statusSelect.classList.add('filter-active');
-                } else {
-                    statusSelect.classList.remove('filter-active');
-                }
-                if (bulanSelect.value !== '' && bulanSelect.value !== 'all') {
-                    bulanSelect.classList.add('filter-active');
-                } else {
-                    bulanSelect.classList.remove('filter-active');
-                }
-            } else {
-                filterIndicator.style.display = 'none';
-                searchInput.classList.remove('filter-active');
-                statusSelect.classList.remove('filter-active');
-                bulanSelect.classList.remove('filter-active');
-            }
-        }
-        
-        // Function to show/hide empty state
-        function toggleEmptyState() {
-            const visibleRows = Array.from(customerRows).filter(row => row.style.display !== 'none');
-            const tbody = customerTable.querySelector('tbody');
-            let emptyRow = tbody.querySelector('.empty-state-row');
-            
-            if (visibleRows.length === 0) {
-                // Hide all customer rows
-                customerRows.forEach(row => row.style.display = 'none');
-                
-                // Show empty state if not exists
-                if (!emptyRow) {
-                    emptyRow = document.createElement('tr');
-                    emptyRow.className = 'empty-state-row';
-                    emptyRow.innerHTML = `
-                    <td colspan="12" class="text-center py-5">
-                        <div class="d-flex flex-column align-items-center">
-                            <i class="bx bx-search text-muted" style="font-size: 3rem;"></i>
-                            <h5 class="text-dark mt-3 mb-2">Tidak ada hasil</h5>
-                            <p class="text-muted mb-0">Tidak ditemukan data yang sesuai dengan pencarian</p>
-                        </div>
-                    </td>
-                `;
-                    tbody.appendChild(emptyRow);
-                }
-                emptyRow.style.display = '';
-            } else {
-                // Hide empty state
-                if (emptyRow) {
-                    emptyRow.style.display = 'none';
-                }
-            }
-        }
-        
-        // Function to reset all filters
-        function resetAllFilters() {
-            // Reset to current month (default behavior)
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.delete('search');
-            currentUrl.searchParams.delete('month'); // This will default to current month
-            window.location.href = currentUrl.toString();
-        }
-        
-        // Add event listeners
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                // Update URL with search parameter while keeping month filter
-                const currentUrl = new URL(window.location.href);
-                const searchValue = this.value.trim();
-                
-                if (searchValue) {
-                    currentUrl.searchParams.set('search', searchValue);
-                } else {
-                    currentUrl.searchParams.delete('search');
-                }
-                
-                // Use history.replaceState for search to avoid too many history entries
-                window.history.replaceState({}, '', currentUrl.toString());
-                
-                // Also filter table for immediate feedback
-                filterTable();
-                
-                // Update statistics
-                updateStatistics();
-            }, 500); // Debounce for 500ms
-        });
-        
-        statusSelect.addEventListener('change', function() {
-            filterTable();
-            // Update statistics when status filter changes
-            updateStatistics();
-        });
-        
-        bulanSelect.addEventListener('change', function() {
-            // Show loading state
-            showLoadingState();
-            
-            // Update statistics immediately for better UX
-            updateStatistics();
-            
-            // Reload page with new month filter
-            const selectedMonth = this.value;
-            const currentUrl = new URL(window.location.href);
-            
-            if (selectedMonth === 'all') {
-                currentUrl.searchParams.delete('month');
-            } else {
-                currentUrl.searchParams.set('month', selectedMonth);
-            }
-            
-            // Keep search parameter if exists
-            const searchValue = searchInput.value.trim();
-            if (searchValue) {
-                currentUrl.searchParams.set('search', searchValue);
-            } else {
-                currentUrl.searchParams.delete('search');
-            }
-            
-            // Delay page reload to show statistics update first
-            setTimeout(() => {
-                window.location.href = currentUrl.toString();
-            }, 300);
-        });
-        
-        // Function to show loading state on statistics cards
-        function showLoadingState() {
-            const statisticsCards = document.querySelectorAll('.statistics-card h4');
-            statisticsCards.forEach(card => {
-                if (card.textContent.includes('Rp')) {
-                    card.innerHTML = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>';
-                }
-            });
-        }
-        
-        // Function to update statistics via AJAX
-        function updateStatistics() {
-            const searchValue = searchInput.value.trim();
-            const statusValue = statusSelect.value;
-            const monthValue = bulanSelect.value;
-            
-            // Show loading state
-            showLoadingState();
-            
-            // Prepare parameters
-            const params = new URLSearchParams();
-            if (searchValue) params.append('search', searchValue);
-            if (statusValue) params.append('status', statusValue);
-            if (monthValue && monthValue !== 'all') params.append('month', monthValue);
-            
-            // Make AJAX request
-            fetch(`/agen/data-pelanggan/statistics?${params.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateStatisticsCards(data.statistics);
-                }
-            })
-            .catch(error => {
-                console.error('Error updating statistics:', error);
-                // Restore original values on error
-                location.reload();
-            });
-        }
-        
-        // Function to update statistics cards with new data
-        function updateStatisticsCards(statistics) {
-            // Update Sudah Bayar card
-            const paidCard = document.querySelector('.border-success .card-body');
-            if (paidCard) {
-                const paidAmount = paidCard.querySelector('h4');
-                const paidCount = paidCard.querySelector('small');
-                const paidProgress = paidCard.querySelector('.progress-bar');
-                const paidPercentage = paidCard.querySelector('.text-muted:last-child');
-                
-                if (paidAmount) paidAmount.textContent = `Rp ${formatNumber(statistics.total_paid || 0)}`;
-                if (paidCount) paidCount.textContent = `${statistics.count_paid || 0} Invoice`;
-                if (paidProgress) paidProgress.style.width = `${statistics.percentage_paid || 0}%`;
-                if (paidPercentage) paidPercentage.textContent = `${statistics.percentage_paid || 0}% dari total`;
-            }
-            
-            // Update Belum Bayar card
-            const unpaidCard = document.querySelector('.border-danger .card-body');
-            if (unpaidCard) {
-                const unpaidAmount = unpaidCard.querySelector('h4');
-                const unpaidCount = unpaidCard.querySelector('small');
-                const unpaidProgress = unpaidCard.querySelector('.progress-bar');
-                const unpaidPercentage = unpaidCard.querySelector('.text-muted:last-child');
-                
-                if (unpaidAmount) unpaidAmount.textContent = `Rp ${formatNumber(statistics.total_unpaid || 0)}`;
-                if (unpaidCount) unpaidCount.textContent = `${statistics.count_unpaid || 0} Invoice`;
-                if (unpaidProgress) unpaidProgress.style.width = `${statistics.percentage_unpaid || 0}%`;
-                if (unpaidPercentage) unpaidPercentage.textContent = `${statistics.percentage_unpaid || 0}% dari total`;
-            }
-            
-            // Update Total card
-            const totalCard = document.querySelector('.border-primary .card-body');
-            if (totalCard) {
-                const totalAmount = totalCard.querySelector('h4');
-                const totalCount = totalCard.querySelector('small');
-                
-                if (totalAmount) totalAmount.textContent = `Rp ${formatNumber(statistics.total_amount || 0)}`;
-                if (totalCount) totalCount.textContent = `${statistics.count_total || 0} Invoice`;
-            }
-        }
-        
-        // Helper function to format numbers
-        function formatNumber(num) {
-            return new Intl.NumberFormat('id-ID').format(num);
-        }
-        
-        // Reset filters button
-        document.getElementById('resetFilters').addEventListener('click', function() {
-            resetAllFilters();
-        });
-        
-        // Add clear search functionality
-        searchInput.addEventListener('keyup', function(e) {
-            if (e.key === 'Escape') {
-                this.value = '';
-                filterTable();
-            }
-        });
-        
-        // Add search icon and clear button to search input
-        const searchContainer = searchInput.parentElement;
-        if (searchContainer.classList.contains('input-group')) {
-            // Add search icon
-            const searchIcon = document.createElement('span');
-            searchIcon.className = 'input-group-text';
-            searchIcon.innerHTML = '<i class="bx bx-search"></i>';
-            searchContainer.insertBefore(searchIcon, searchInput);
-            
-            // Add clear button
-            const clearButton = document.createElement('button');
-            clearButton.className = 'btn btn-outline-secondary';
-            clearButton.type = 'button';
-            clearButton.innerHTML = '<i class="bx bx-x"></i>';
-            clearButton.addEventListener('click', function() {
-                searchInput.value = '';
-                filterTable();
-                searchInput.focus();
-            });
-            searchContainer.appendChild(clearButton);
-        }
-        
-        // Initialize search input from URL parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const searchParam = urlParams.get('search');
-        if (searchParam) {
-            searchInput.value = searchParam;
-        }
-        
-        // Initialize counter on page load
-        updateSearchCounter();
-        
-        // Initialize statistics update if there are active filters
-        const hasActiveFilters = searchInput.value.trim() !== '' || statusSelect.value !== '';
-        if (hasActiveFilters) {
-            updateStatistics();
-        }
-    });
-    
     // Format input as Rupiah currency
     function formatRupiah(el, id) {
         // Ambil hanya angka dari input
