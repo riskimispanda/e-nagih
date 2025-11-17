@@ -659,7 +659,7 @@ class MikrotikServices
         try {
             // Dapatkan hanya customer dengan paket_id 9 (isolir) yang memiliki usersecret
             $customers = \App\Models\Customer::with(['paket', 'router'])
-                ->where('paket_id', 9) // Hanya paket isolir
+                ->where('status_id', 9) // Hanya paket isolir
                 ->whereNotNull('usersecret')
                 ->where('usersecret', '!=', '')
                 ->whereHas('paket') // Pastikan memiliki relasi paket
