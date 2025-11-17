@@ -524,10 +524,10 @@ class MikrotikServices
     /**
      * Mengganti profile semua customer dari ISOLIR ke profile paket sesuai database
      */
-    public static function changeAllProfilesFromIsolirToPackage(Client $client)
+    public static function changeAllProfilesToPackageProfile(Client $client)
     {
         try {
-            // Dapatkan semua customer yang mungkin memiliki profile ISOLIR
+            // Dapatkan semua customer yang memiliki usersecret dan paket
             $customers = \App\Models\Customer::with(['paket', 'router'])
                 ->whereNotNull('usersecret')
                 ->where('usersecret', '!=', '')
@@ -546,33 +546,100 @@ class MikrotikServices
 
             $updatedCount = 0;
             $failedCount = 0;
+            $disconnectedCount = 0;
+            $skippedCount = 0;
             $results = [];
 
             foreach ($customers as $customer) {
                 $usersecret = $customer->usersecret;
 
                 // Ambil profile name dari database relasi paket
-                $profileName = self::getProfileNameFromPackage($customer->paket);
+                $targetProfileName = self::getProfileNameFromPackage($customer->paket);
 
-                // Ganti profile dari ISOLIR ke profile paket
-                $updateResult = self::changeProfileFromIsolirToPackage($client, $usersecret, $profileName, $customer);
+                if (!$targetProfileName) {
+                    Log::warning("⚠️ Skip - Tidak ada profile name untuk paket customer: {$usersecret}");
+                    $skippedCount++;
+                    $results[] = [
+                        'success' => false,
+                        'message' => 'Tidak ada profile name untuk paket',
+                        'username' => $usersecret,
+                        'current_profile' => null,
+                        'target_profile' => null,
+                        'disconnected' => 0
+                    ];
+                    continue;
+                }
+
+                // Cek profile saat ini di Mikrotik
+                $currentProfile = self::getUserCurrentProfile($client, $usersecret);
+
+                if (!$currentProfile) {
+                    Log::warning("⚠️ Skip - Tidak bisa mendapatkan profile saat ini untuk user: {$usersecret}");
+                    $skippedCount++;
+                    $results[] = [
+                        'success' => false,
+                        'message' => 'Tidak bisa mendapatkan profile saat ini',
+                        'username' => $usersecret,
+                        'current_profile' => null,
+                        'target_profile' => $targetProfileName,
+                        'disconnected' => 0
+                    ];
+                    continue;
+                }
+
+                // Skip jika profile sudah sesuai
+                if ($currentProfile === $targetProfileName) {
+                    Log::info("✅ Skip - Profile sudah sesuai untuk user: {$usersecret} ({$currentProfile})");
+                    $skippedCount++;
+                    $results[] = [
+                        'success' => true,
+                        'message' => 'Profile sudah sesuai',
+                        'username' => $usersecret,
+                        'current_profile' => $currentProfile,
+                        'target_profile' => $targetProfileName,
+                        'disconnected' => 0
+                    ];
+                    continue;
+                }
+
+                // Remove active connections sebelum ganti profile
+                $disconnectResult = self::removeAktifKoneksi($client, $usersecret);
+
+                if ($disconnectResult['success'] && $disconnectResult['disconnected'] > 0) {
+                    $disconnectedCount++;
+                    Log::info("✅ Memutuskan {$disconnectResult['disconnected']} koneksi aktif untuk user: {$usersecret}");
+
+                    // Tunggu sebentar setelah memutus koneksi
+                    sleep(2);
+                }
+
+                // Ganti profile ke profile paket (dari profile apapun saat ini)
+                $updateResult = self::changeUserProfileToPackage($client, $usersecret, $targetProfileName, $customer, $currentProfile);
 
                 if ($updateResult['success']) {
                     $updatedCount++;
+                    Log::info("✅ Berhasil mengubah profile {$usersecret} dari {$currentProfile} ke {$targetProfileName}");
                 } else {
                     $failedCount++;
+                    Log::error("❌ Gagal mengubah profile {$usersecret} dari {$currentProfile} ke {$targetProfileName}");
                 }
 
+                // Tambahkan info disconnect ke results
+                $updateResult['current_profile'] = $currentProfile;
+                $updateResult['target_profile'] = $targetProfileName;
+                $updateResult['disconnected'] = $disconnectResult['disconnected'];
                 $results[] = $updateResult;
             }
 
-            Log::info("✅ Berhasil mengupdate {$updatedCount} profile, {$failedCount} gagal dari total " . $customers->count() . " pelanggan");
+            Log::info("✅ Berhasil mengupdate {$updatedCount} profile, memutus {$disconnectedCount} koneksi, {$failedCount} gagal, {$skippedCount} skip dari total " . $customers->count() . " pelanggan");
 
             return [
                 'success' => true,
-                'message' => "Berhasil mengupdate {$updatedCount} profile, {$failedCount} gagal dari total " . $customers->count() . " pelanggan",
+                'message' => "Berhasil mengupdate {$updatedCount} profile, memutus {$disconnectedCount} koneksi, {$failedCount} gagal, {$skippedCount} skip dari total " . $customers->count() . " pelanggan",
                 'updated' => $updatedCount,
                 'failed' => $failedCount,
+                'disconnected' => $disconnectedCount,
+                'skipped' => $skippedCount,
                 'total' => $customers->count(),
                 'details' => $results
             ];
@@ -583,6 +650,162 @@ class MikrotikServices
                 'message' => 'Error: ' . $e->getMessage(),
                 'updated' => 0,
                 'total' => 0
+            ];
+        }
+    }
+
+    // Fungsi untuk mendapatkan profile saat ini user di Mikrotik
+    public static function getUserCurrentProfile(Client $client, $usersecret)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) {
+                Log::warning("User tidak ditemukan di Mikrotik: {$usersecret}");
+                return null;
+            }
+
+            if (count($users) > 1) {
+                Log::warning("Multiple user ditemukan untuk: {$usersecret}");
+                return null;
+            }
+
+            return $users[0]['profile'] ?? null;
+        } catch (\Exception $e) {
+            Log::error("Error mendapatkan profile saat ini untuk {$usersecret}: {$e->getMessage()}");
+            return null;
+        }
+    }
+
+    public static function changeUserProfileToPackage(Client $client, $usersecret, $targetProfileName, $customer = null, $currentProfile = null)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $users = $client->query($query)->read();
+
+            if (empty($users)) {
+                Log::warning('User not found: ' . $usersecret);
+                return [
+                    'success' => false,
+                    'message' => 'User not found',
+                    'username' => $usersecret
+                ];
+            }
+
+            // Jika ada multiple users, return string khusus
+            if (count($users) > 1) {
+                Log::error('Multiple users found for: ' . $usersecret . '. Operation aborted.');
+                return [
+                    'success' => false,
+                    'message' => 'Multiple users found',
+                    'username' => $usersecret
+                ];
+            }
+
+            // Hanya ada 1 user, lanjutkan proses
+            $user = $users[0];
+
+            $setQuery = new Query('/ppp/secret/set');
+            $setQuery->equal('.id', $user['.id']);
+            $setQuery->equal('profile', $targetProfileName);
+            $client->query($setQuery)->read();
+
+            $customerInfo = $customer ? "Customer: {$customer->name} ({$customer->id})" : "";
+
+            Log::info("✅ MikrotikServices::changeUserProfileToPackage Success - User: {$usersecret}, Profile: {$currentProfile} → {$targetProfileName}, {$customerInfo}");
+
+            return [
+                'success' => true,
+                'message' => 'Profile berhasil diubah',
+                'username' => $usersecret,
+                'previous_profile' => $currentProfile,
+                'new_profile' => $targetProfileName
+            ];
+        } catch (Exception $e) {
+            Log::error('MikrotikServices::changeUserProfileToPackage error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'username' => $usersecret
+            ];
+        }
+    }
+
+    public static function removeAktifKoneksi(Client $client, $usersecret)
+    {
+        try {
+            // Cari semua active connection berdasarkan username
+            $activeQuery = new Query('/ppp/active/print');
+            $activeQuery->where('name', $usersecret);
+            $activeConnections = $client->query($activeQuery)->read();
+
+            $disconnectedCount = 0;
+            $failedDisconnections = 0;
+
+            if (!empty($activeConnections)) {
+                foreach ($activeConnections as $connection) {
+                    try {
+                        // Remove active connection
+                        $removeQuery = new Query('/ppp/active/remove');
+                        $removeQuery->equal('.id', $connection['.id']);
+                        $client->query($removeQuery)->read();
+
+                        $disconnectedCount++;
+                        Log::info("✅ Berhasil memutus koneksi aktif - User: {$usersecret}, Connection ID: {$connection['.id']}, Interface: {$connection['interface']}");
+                    } catch (\Exception $e) {
+                        $failedDisconnections++;
+                        Log::error("❌ Gagal memutus koneksi - User: {$usersecret}, Connection ID: {$connection['.id']}, Error: {$e->getMessage()}");
+                    }
+                }
+
+                // Juga coba remove dari PPP secret active (jika ada)
+                try {
+                    $secretActiveQuery = new Query('/ppp/secret/print');
+                    $secretActiveQuery->where('name', $usersecret);
+                    $secretActiveQuery->where('disabled', 'no');
+                    $userSecrets = $client->query($secretActiveQuery)->read();
+
+                    foreach ($userSecrets as $userSecret) {
+                        // Jika user masih aktif, coba disable sementara lalu enable
+                        if ($userSecret['profile'] == 'ISOLIREBILLING' || $userSecret['profile'] == 'ISOLIR') {
+                            $disableQuery = new Query('/ppp/secret/disable');
+                            $disableQuery->equal('.id', $userSecret['.id']);
+                            $client->query($disableQuery)->read();
+
+                            sleep(1);
+
+                            $enableQuery = new Query('/ppp/secret/enable');
+                            $enableQuery->equal('.id', $userSecret['.id']);
+                            $client->query($enableQuery)->read();
+
+                            Log::info("✅ Reset PPP secret status - User: {$usersecret}");
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("⚠️ Tidak bisa reset PPP secret untuk user: {$usersecret}, Error: {$e->getMessage()}");
+                }
+            }
+
+            return [
+                'success' => $disconnectedCount > 0 || empty($activeConnections),
+                'disconnected' => $disconnectedCount,
+                'failed' => $failedDisconnections,
+                'total_found' => count($activeConnections),
+                'message' => $disconnectedCount > 0 ?
+                    "Berhasil memutus {$disconnectedCount} koneksi aktif" :
+                    "Tidak ada koneksi aktif yang ditemukan"
+            ];
+        } catch (\Exception $e) {
+            Log::error("❌ Error dalam removeActiveConnections untuk user {$usersecret}: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'disconnected' => 0,
+                'failed' => 0,
+                'total_found' => 0,
+                'message' => 'Error: ' . $e->getMessage()
             ];
         }
     }

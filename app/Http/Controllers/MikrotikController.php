@@ -25,7 +25,7 @@ class MikrotikController extends Controller
         $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
         $firewall = MikrotikServices::getFirewallRules($router);
         // 1. Ganti semua profile dari ISOLIR ke profile paket
-        $result = MikrotikServices::changeAllProfilesFromIsolirToPackage($client);
+        $result = MikrotikServices::changeAllProfilesToPackageProfile($client);
 
         // Aktifkan dengan opsi advanced
         // $result = MikrotikServices::activateAllCustomersAdvanced($client, [
