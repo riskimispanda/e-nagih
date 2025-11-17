@@ -26,6 +26,8 @@ class MikrotikController extends Controller
         $firewall = MikrotikServices::getFirewallRules($router);
         // 1. Ganti semua profile dari ISOLIR ke profile paket
         $result = MikrotikServices::changeAllProfilesToPackageProfile($client);
+        $blokir = MikrotikServices::changeProfileToIsolirebillingForPaket9($client);
+
 
         // Aktifkan dengan opsi advanced
         // $result = MikrotikServices::activateAllCustomersAdvanced($client, [
@@ -35,7 +37,7 @@ class MikrotikController extends Controller
         //     'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
         // ]);
 
-        dd($result);
+        dd($blokir);
     }
 
     public function testKoneksi($id)
