@@ -508,8 +508,6 @@ class DataController extends Controller
                 MikrotikServices::addPPPSecret($client, [
                     'name' => $pelanggan->usersecret,
                     'password' => $pelanggan->password,
-                    'remoteAddress' => $pelanggan->remote_address,
-                    'localAddress' => $pelanggan->local_address,
                     'profile' => $pelanggan->paket->paket_name,
                     'service' => $konek,
                 ]);
