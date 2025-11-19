@@ -316,7 +316,7 @@
                 </div>
             </div>
             
-            <div class="col-12 col-lg-5">
+            <div class="col-12 col-md-6 col-lg-3">
                 <label class="form-label fw-medium text-dark">Bulan</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="bx bx-calendar"></i></span>
@@ -347,6 +347,24 @@
                 <i class="bx bx-x me-2"></i>
                 Reset Filter
             </button>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-success btn-modern btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class='bx bxs-file-export me-2'></i>
+                    Export Excel
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#" onclick="exportData('all')">Semua Data</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    @php
+                        $currentYear = date('Y');
+                    @endphp
+                    @for ($i = 1; $i <= 12; $i++)
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="exportData('{{ $i }}')">{{ \Carbon\Carbon::create()->month($i)->translatedFormat('F') }} {{ $currentYear }}</a>
+                        </li>
+                    @endfor
+                </ul>
+            </div>
         </div>
     </form>
 </div>
@@ -854,6 +872,15 @@
     document.getElementById('monthFilter').addEventListener('change', (e) => {
         applyFilters();
     });
+
+    function exportData(month) {
+        const year = new Date().getFullYear(); // Menggunakan tahun saat ini untuk ekspor
+        let url = `/export/non-langganan?year=${year}`;
+        if (month !== 'all') {
+            url += `&month=${month}`;
+        }
+        window.location.href = url;
+    }
 
     // Prevent form submission on enter
     document.getElementById('filterForm').addEventListener('submit', (e) => {

@@ -179,6 +179,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
             return [
                 'no' => $index + 1,
                 'nama_pelanggan' => $pembayaran->invoice->customer->nama_customer ?? 'Pelanggan Tidak Diketahui',
+                'alamat' => $pembayaran->invoice->customer->alamat ?? '-',
                 'no_hp' => $pembayaran->invoice->customer->no_hp ?? '-',
                 'paket' => $pembayaran->invoice->paket->nama_paket ?? 'Paket Tidak Diketahui',
                 'jumlah_bayar' => $pembayaran->jumlah_bayar, // Simpan sebagai number murni (tanpa format)
@@ -200,6 +201,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         return [
             'No',
             'Nama Pelanggan',
+            'Alamat',
             'Nomor HP',
             'Paket Internet',
             'Jumlah Bayar (Rupiah)',
@@ -425,18 +427,18 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         // Hitung total jumlah bayar
         $total = 0;
         for ($row = 2; $row <= $lastRow; $row++) {
-            $value = $sheet->getCell("E{$row}")->getValue();
+            $value = $sheet->getCell("F{$row}")->getValue();
             if (is_numeric($value)) {
                 $total += $value;
             }
         }
 
         // Tambahkan row total
-        $sheet->setCellValue("D{$summaryRow}", "TOTAL:");
-        $sheet->setCellValue("E{$summaryRow}", $total);
+        $sheet->setCellValue("E{$summaryRow}", "TOTAL:");
+        $sheet->setCellValue("F{$summaryRow}", $total);
 
         // Style untuk total
-        $sheet->getStyle("D{$summaryRow}:E{$summaryRow}")->applyFromArray([
+        $sheet->getStyle("E{$summaryRow}:F{$summaryRow}")->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 11,
@@ -457,7 +459,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         ]);
 
         // Format number untuk total
-        $sheet->getStyle("E{$summaryRow}")->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle("F{$summaryRow}")->getNumberFormat()->setFormatCode('#,##0');
     }
 
     /**

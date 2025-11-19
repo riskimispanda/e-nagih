@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\CustomerNonLangganan;
 use App\Exports\CustomerAgen;
 use App\Exports\CustomerBelumBayar;
 use Illuminate\Http\Request;
@@ -133,5 +134,27 @@ class ExportControllers extends Controller
         ];
 
         return $months[str_pad($month, 2, '0', STR_PAD_LEFT)] ?? 'unknown';
+    }
+
+    public function exportNonLangganan(Request $request)
+    {
+        $month = $request->input('month'); // Bisa jadi null, 'all', atau angka bulan
+        $year = $request->input('year', date('Y'));
+
+        if ($month && $month !== 'all') {
+            $monthName = Carbon::createFromDate(null, $month, 1)->translatedFormat('F');
+            $filename = "pendapatan-non-langganan-{$monthName}-{$year}.xlsx";
+            $logMessage = auth()->user()->name . ' Melakukan Export data pendapatan non-langganan untuk ' . $monthName . ' ' . $year;
+        } else {
+            $filename = "pendapatan-non-langganan-semua-data-{$year}.xlsx";
+            $logMessage = auth()->user()->name . ' Melakukan Export semua data pendapatan non-langganan untuk tahun ' . $year;
+            $month = 'all'; // Set ke 'all' untuk konsistensi di class Export
+        }
+
+        activity('Export')
+            ->causedBy(auth()->user()->id)
+            ->log($logMessage);
+
+        return Excel::download(new CustomerNonLangganan($month, $year), $filename);
     }
 }

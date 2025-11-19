@@ -2023,6 +2023,178 @@ class KeuanganController extends Controller
         ]);
     }
 
+    public function pelangganAgenAjax(Request $request, $id)
+    {
+        try {
+            // Get agen info
+            $agen = User::findOrFail($id);
+
+            // Get parameters
+            $filterMonth = $request->get('month', '');
+            $filterStatus = $request->get('status', '');
+            $draw = $request->get('draw', 1);
+            $start = $request->get('start', 0);
+            $length = $request->get('length', 10);
+            $search = $request->get('search', ['value' => ''])['value'] ?? '';
+
+            // Build base query
+            if ($filterMonth && $filterMonth !== '') {
+                $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
+                    ->whereMonth('jatuh_tempo', intval($filterMonth))
+                    ->whereYear('jatuh_tempo', date('Y'))
+                    ->whereHas('customer', function ($q) use ($id) {
+                        $q->where('agen_id', $id);
+                    })
+                    ->groupBy('customer_id');
+            } else {
+                $latestInvoiceSubquery = Invoice::select('customer_id', DB::raw('MAX(id) as latest_invoice_id'))
+                    ->whereYear('jatuh_tempo', date('Y'))
+                    ->whereHas('customer', function ($q) use ($id) {
+                        $q->where('agen_id', $id);
+                    })
+                    ->groupBy('customer_id');
+            }
+
+            $query = Invoice::with([
+                'customer' => function ($q) use ($id) {
+                    $q->withTrashed()->where('agen_id', $id)->with('paket');
+                },
+                'status',
+                'pembayaran' => function ($q) {
+                    $q->orderBy('id', 'desc')->take(1);
+                },
+                'pembayaran.user'
+            ])
+                ->whereIn('id', function ($query) use ($latestInvoiceSubquery) {
+                    $query->select('latest_invoice_id')
+                        ->fromSub($latestInvoiceSubquery, 'latest_invoices');
+                })
+                ->whereHas('customer', function ($query) use ($id) {
+                    $query->where('agen_id', $id);
+                })
+                ->where(function ($query) {
+                    $query->whereHas('customer', function ($q) {
+                        $q->whereNull('deleted_at');
+                    })->orWhere(function ($q) {
+                        $q->whereHas('customer', function ($q) {
+                            $q->whereNotNull('deleted_at');
+                        })->whereHas('status', function ($q) {
+                            $q->where('nama_status', 'Sudah Bayar');
+                        });
+                    });
+                });
+
+            // Apply search filter
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('customer', function ($customerQuery) use ($search) {
+                        $customerQuery->withTrashed()
+                            ->where('nama_customer', 'like', '%' . $search . '%')
+                            ->orWhere('alamat', 'like', '%' . $search . '%');
+                    })->orWhereHas('paket', function ($paketQuery) use ($search) {
+                        $paketQuery->where('nama_paket', 'like', '%' . $search . '%');
+                    });
+                });
+            }
+
+            // Apply status filter
+            if (!empty($filterStatus)) {
+                if ($filterStatus == 'Sudah Bayar') {
+                    $query->whereHas('status', fn($q) => $q->where('nama_status', 'Sudah Bayar'));
+                } elseif ($filterStatus == 'Belum Bayar') {
+                    $query->whereHas('status', fn($q) => $q->where('nama_status', 'Belum Bayar'));
+                }
+            }
+
+            // Get total records (before pagination)
+            $totalRecords = $query->count();
+
+            // Apply pagination
+            $invoices = $query->orderBy('id', 'desc')
+                ->skip($start)
+                ->take($length)
+                ->get();
+
+            // Format data untuk DataTables
+            $data = [];
+            $rowNumber = $start + 1;
+
+            foreach ($invoices as $invoice) {
+                if (!$invoice->customer) continue;
+
+                $latestPembayaran = $invoice->pembayaran->first();
+                $jatuhTempo = '';
+
+                if ($invoice->jatuh_tempo) {
+                    try {
+                        $jatuhTempoDate = Carbon::parse($invoice->jatuh_tempo);
+                        $jatuhTempo = $jatuhTempoDate->format('d M Y');
+                    } catch (\Exception $e) {
+                        $jatuhTempo = 'Invalid Date';
+                    }
+                }
+
+                $statusBadge = '';
+                if ($invoice->status) {
+                    $statusClass = match($invoice->status->id) {
+                        1 => 'bg-info bg-opacity-10 text-info',
+                        8 => 'bg-success bg-opacity-10 text-success',
+                        7 => 'bg-danger bg-opacity-10 text-danger',
+                        default => 'bg-secondary bg-opacity-10 text-secondary'
+                    };
+                    $statusBadge = '<span class="badge ' . $statusClass . '">' . $invoice->status->nama_status . '</span>';
+                }
+
+                $customerStatus = $invoice->customer && $invoice->customer->trashed() 
+                    ? '<span class="badge bg-label-danger fw-bold">Deaktivasi</span>'
+                    : '<span class="badge bg-label-success fw-bold">Aktif</span>';
+
+                $adminInfo = '-';
+                if ($latestPembayaran && $latestPembayaran->user) {
+                    $adminInfo = '<span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">' 
+                        . $latestPembayaran->user->name . ' / ' . $latestPembayaran->user->roles->name . '</span>';
+                } elseif ($latestPembayaran) {
+                    $adminInfo = '<span class="badge bg-secondary">By Tripay</span>';
+                }
+
+                $buktiLink = '-';
+                if ($latestPembayaran && $latestPembayaran->bukti_bayar) {
+                    $buktiLink = '<a href="' . asset('storage/' . $latestPembayaran->bukti_bayar) . '" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti"><i class="bx bx-info-circle text-info"></i></a>';
+                }
+
+                $data[] = [
+                    $rowNumber++,
+                    $invoice->customer->nama_customer,
+                    $invoice->customer->alamat,
+                    $statusBadge,
+                    'Rp ' . number_format($invoice->tagihan ?? 0, 0, ',', '.'),
+                    $jatuhTempo,
+                    $latestPembayaran ? '<span class="badge bg-info">' . $latestPembayaran->metode_bayar . '</span>' : '-',
+                    $latestPembayaran ? '<span class="badge bg-info">' . Carbon::parse($latestPembayaran->tanggal_bayar)->format('d-m-Y H:i:s') . '</span>' : '-',
+                    $buktiLink,
+                    $customerStatus,
+                    $adminInfo
+                ];
+            }
+
+            return response()->json([
+                'draw' => intval($draw),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecords,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in pelangganAgenAjax: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'draw' => intval($request->get('draw', 1)),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function pelangganAgen(Request $request, $id)
     {
         // Get agen info

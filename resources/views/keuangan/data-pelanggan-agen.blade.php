@@ -2,6 +2,10 @@
 
 @section('title', 'Data Pelanggan Agen')
 
+@section('vendor-style')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+@endsection
+
 <style>
     .search-container {
         background: #f8f9fa;
@@ -125,6 +129,31 @@
         margin-bottom: 0.5rem;
     }
     
+    .table-responsive {
+        border-radius: 0;
+    }
+    
+    .table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        padding: 1rem 1.5rem;
+    }
+    
+    .table td {
+        padding: 1rem 1.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
     @media (max-width: 768px) {
         .modern-table {
             font-size: 0.875rem;
@@ -164,54 +193,18 @@
 <div class="row">
     <div class="col-12">
         @php
-        // Mapping bulan dalam bahasa Indonesia
         $monthNames = [
             '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
             '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
             '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
         ];
-
-        $currentMonthNum = now()->format('m');
-        $currentMonthName = $monthNames[$currentMonthNum];
-
-        // Handle display period
-        $displayPeriod = 'Bulan Ini (' . $currentMonthName . ' ' . now()->year . ')';
-        $selectedMonth = request()->get('month');
-
-        if($selectedMonth) {
-            if($selectedMonth == 'all') {
-                $displayPeriod = 'Semua Periode';
-            } elseif(isset($monthNames[$selectedMonth])) {
-                $displayPeriod = $monthNames[$selectedMonth] . ' ' . now()->year;
-            }
-        }
-
-        // Tambahkan informasi status filter
-        $selectedStatus = request()->get('status', '');
-        $displayStatus = '';
-        if($selectedStatus) {
-            $displayStatus = ' - ' . $selectedStatus;
-        }
-
-        // Set selected values untuk dropdown
-        $selectedMonthDropdown = request()->get('month', $currentMonthNum);
-        if (!request()->has('month')) {
-            $selectedMonthDropdown = $currentMonthNum;
-        }
-
-        $selectedStatusDropdown = request()->get('status', '');
-        $selectedPerPage = request()->get('per_page', 10);
         @endphp
 
         <!-- Info Alert -->
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <i class="bx bx-calendar me-2"></i>
-            <strong>Periode Aktif:</strong> Menampilkan data invoice untuk <strong>{{ $displayPeriod }}</strong>.
-            @if(!request()->has('month') || (request()->has('month') && request()->get('month') == now()->format('Y-m')))
-            Secara default sistem menampilkan invoice bulan sekarang. Gunakan filter bulan untuk melihat periode lain.
-            @else
-            Gunakan filter bulan untuk mengubah periode tampilan data.
-            @endif
+            <strong>Periode Aktif:</strong> Data ditampilkan menggunakan DataTables dengan AJAX loading.
+            Gunakan filter untuk menyaring data sesuai kebutuhan Anda.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         
@@ -220,12 +213,12 @@
             <div class="card-header modern-card-header">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }} - {{ $displayPeriod }}{{ $displayStatus }}</h4>
-                        <small class="card-subtitle text-muted">Daftar invoice pelanggan periode {{ $displayPeriod }}{{ $displayStatus }} yang terdaftar di bawah agen {{ $agen->name }}</small>
+                        <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }}</h4>
+                        <small class="card-subtitle text-muted">Daftar invoice pelanggan yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
                     <div class="text-end d-flex align-items-center gap-2">
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
-                            <i class="bx bx-user me-1"></i>{{ $totalPelanggan }} Pelanggan
+                            <i class="bx bx-user me-1"></i><span id="totalCustomerBadge">{{ $totalPelanggan }}</span> Pelanggan
                         </span>
                     </div>
                 </div>
@@ -234,17 +227,11 @@
         
         <!-- Statistics Cards -->
         <div class="row mb-4">
-            <!-- Filter Status Indicator -->
             <div class="col-12 mb-2">
                 <div class="d-flex justify-content-between align-items-center">
                     <small class="text-muted">
                         <i class="bx bx-info-circle me-1"></i>
-                        <span id="statsIndicator">Menampilkan total dari semua data ({{ $invoices->total() }} invoice)</span>
-                    </small>
-                    <small class="text-muted" id="filterInfo" style="display: none;">
-                        <span class="badge bg-info bg-opacity-10 text-info">
-                            <i class="bx bx-filter me-1"></i>Data Terfilter
-                        </span>
+                        <span id="statsIndicator">Memuat data...</span>
                     </small>
                 </div>
             </div>
@@ -257,7 +244,7 @@
                                 <i class="bx bx-check-circle"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-success" id="totalPaid">{{ 'Rp ' . number_format($totalPaid, 0, ',', '.') }}</div>
+                                <div class="stats-number text-success" id="totalPaid">Rp 0</div>
                                 <div class="stats-label">Total Sudah Bayar</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-trending-up text-success"></i>
@@ -276,7 +263,7 @@
                                 <i class="bx bx-x-circle"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-danger" id="totalUnpaid">{{ 'Rp ' . number_format($totalUnpaid, 0, ',', '.') }}</div>
+                                <div class="stats-number text-danger" id="totalUnpaid">Rp 0</div>
                                 <div class="stats-label">Total Belum Bayar</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-trending-down text-danger"></i>
@@ -296,7 +283,7 @@
                                 <i class="bx bx-calculator"></i>
                             </div>
                             <div class="ms-3 flex-grow-1">
-                                <div class="stats-number text-primary" id="totalAmount">{{ 'Rp ' . number_format($totalAmount, 0, ',', '.') }}</div>
+                                <div class="stats-number text-primary" id="totalAmount">Rp 0</div>
                                 <div class="stats-label">Total Keseluruhan</div>
                                 <div class="stats-trend">
                                     <i class="bx bx-bar-chart-alt-2 text-primary"></i>
@@ -317,67 +304,37 @@
                         <i class="bx bx-search me-2"></i>Filter & Pencarian Data
                     </h6>
                     <div class="row">
-                        <div class="col-md-4 mb-2">
-                            <label class="form-label">Nama Pelanggan</label>
+                        <div class="col-md-5 mb-2">
+                            <label class="form-label">Pencarian</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bx bx-user"></i></span>
-                                <input type="text" class="form-control" id="searchName" placeholder="Cari nama pelanggan...">
+                                <span class="input-group-text"><i class="bx bx-search"></i></span>
+                                <input type="text" id="searchInput" class="form-control" placeholder="Cari nama pelanggan, alamat...">
                             </div>
                         </div>
                         <div class="col-md-4 mb-2">
-                            <label class="form-label">Filter Periode Bulan
-                                <small class="text-primary">(Default: {{ $currentMonthName }})</small>
-                            </label>
+                            <label class="form-label">Filter Periode Bulan</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-calendar"></i></span>
-                                <select class="form-select" id="filterMonth" onchange="filterByMonth()">
-                                    <option value="all" {{ $selectedMonthDropdown == 'all' ? 'selected' : '' }}>Semua Bulan</option>
+                                <select class="form-select" id="filterMonth">
+                                    <option value="">Semua Bulan</option>
                                     @foreach($monthNames as $monthNum => $monthName)
-                                    <option value="{{ $monthNum }}" {{ $selectedMonthDropdown == $monthNum ? 'selected' : '' }}>
+                                    <option value="{{ $monthNum }}">
                                         {{ $monthName }} {{ now()->year }}
-                                        @if($monthNum == $currentMonthNum) (Bulan Ini) @endif
                                     </option>
                                     @endforeach
                                 </select>
                             </div>
-                            <small class="text-muted">
-                                <i class="bx bx-info-circle me-1"></i>
-                                Pilih "Semua Bulan" untuk menampilkan data dari semua periode
-                            </small>
                         </div>
                         <div class="col-md-3 mb-2">
                             <label class="form-label">Status Tagihan</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-filter"></i></span>
-                                <select class="form-select" id="filterStatus" onchange="filterByStatus()">
-                                    @php
-                                        $selectedStatus = request()->get('status', '');
-                                    @endphp
-                                    <option value="" {{ $selectedStatus == '' ? 'selected' : '' }}>Semua Status</option>
-                                    <option value="Belum Bayar" {{ $selectedStatus == 'Belum Bayar' ? 'selected' : '' }}>Belum Bayar</option>
-                                    <option value="Sudah Bayar" {{ $selectedStatus == 'Sudah Bayar' ? 'selected' : '' }}>Sudah Bayar</option>
+                                <select class="form-select" id="filterStatus">
+                                    <option value="">Semua Status</option>
+                                    <option value="Belum Bayar">Belum Bayar</option>
+                                    <option value="Sudah Bayar">Sudah Bayar</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <label class="form-label">Tampilkan Data</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bx bx-list-ul"></i></span>
-                                <select class="form-select" id="entriesPerPage" onchange="changeEntriesPerPage()">
-                                    @php
-                                        $selectedPerPage = request()->get('per_page', 10);
-                                    @endphp
-                                    <option value="10" {{ $selectedPerPage == 10 ? 'selected' : '' }}>10</option>
-                                    <option value="25" {{ $selectedPerPage == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ $selectedPerPage == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ $selectedPerPage == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="all" {{ $selectedPerPage == 'all' ? 'selected' : '' }}>Semua</option>
-                                </select>
-                            </div>
-                            <small class="text-muted">
-                                <i class="bx bx-info-circle me-1"></i>
-                                Jumlah data per halaman
-                            </small>
                         </div>
                     </div>
                 </div>
@@ -387,9 +344,13 @@
         <!-- Data Table Card -->
         <div class="card">
             <div class="card-body">
+                <!-- Table Controls (Length & Filter) -->
+                <div id="tableControls" class="mb-3"></div>
+
+                <!-- Table Responsive -->
                 <div class="table-responsive">
-                    <table class="table modern-table" id="customerTable">
-                        <thead class="table-dark text-center fw-bold">
+                    <table id="customerTable" class="table table-hover" style="font-size: 14px; width:100%">
+                        <thead class="table-dark text-center">
                             <tr>
                                 <th>No</th>
                                 <th>Nama Pelanggan</th>
@@ -404,386 +365,170 @@
                                 <th>Admin / Agen</th>                                
                             </tr>
                         </thead>
-                        <tbody class="text-center">
-                            @php 
-                                $rowNumber = ($invoices->currentPage() - 1) * $invoices->perPage() + 1;
-                                $displayedCustomers = [];
-                            @endphp
-                            
-                            @forelse ($invoices as $invoice)
-                                {{-- Skip jika customer null atau sudah ditampilkan (safety check) --}}
-                                @if(!$invoice->customer || in_array($invoice->customer_id, $displayedCustomers))
-                                    @continue
-                                @endif
-                                
-                                @php
-                                    $displayedCustomers[] = $invoice->customer_id;
-                                    $latestPembayaran = $invoice->pembayaran->first();
-                                @endphp
-                        
-                                <tr class="customer-row" data-id="{{ $invoice->customer->id }}"
-                                    data-nama="{{ strtolower($invoice->customer->nama_customer) }}"
-                                    data-alamat="{{ strtolower($invoice->customer->alamat) }}"
-                                    data-jatuh-tempo="{{ $invoice->jatuh_tempo ? $invoice->jatuh_tempo : '' }}"
-                                    data-tagihan="{{ $invoice->tagihan ?? 0 }}"
-                                    data-status="{{ $invoice->status ? $invoice->status->nama_status : '' }}">
-                                    <td class="text-center">{{ $rowNumber++ }}</td>
-                                    <td class="customer-name fw-bold">{{ $invoice->customer->nama_customer }}</td>
-                                    <td class="customer-address">{{ $invoice->customer->alamat }}</td>
-                                    <td>
-                                        @if($invoice->status)
-                                        <span class="badge
-                                                @if($invoice->status->id == 1) bg-info bg-opacity-10 text-info
-                                                @elseif($invoice->status->id == 8) bg-success bg-opacity-10 text-success
-                                                @elseif($invoice->status->id == 7) bg-danger bg-opacity-10 text-danger
-                                                @else bg-secondary bg-opacity-10 text-secondary
-                                                @endif">
-                                        {{ $invoice->status->nama_status }}
-                                    </span>
-                                    @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Tidak Ada Status</span>
-                                    @endif
-                                </td>
-                                <td>Rp {{ number_format($invoice->tagihan ?? 0, 0, ',', '.') }}</td>
-                                <td>
-                                    @if($invoice->jatuh_tempo)
-                                    @php
-                                    try {
-                                        $jatuhTempo = \Carbon\Carbon::parse($invoice->jatuh_tempo);
-                                        $isOverdue = $jatuhTempo->isPast() && $invoice->status && $invoice->status->nama_status != 'Sudah Bayar';
-                                    } catch (\Exception $e) {
-                                        $jatuhTempo = null;
-                                        $isOverdue = false;
-                                    }
-                                    @endphp
-                                    @if($jatuhTempo)
-                                    <span class="badge {{ $isOverdue ? 'bg-danger bg-opacity-10 text-danger' : ($invoice->status && $invoice->status->nama_status == 'Sudah Bayar' ? 'bg-success bg-opacity-10 text-success' : 'bg-info bg-opacity-10 text-info') }}">
-                                        {{ $jatuhTempo->format('d M Y') }}
-                                        @if($isOverdue)
-                                        @elseif($invoice->status && $invoice->status->nama_status == 'Sudah Bayar')
-                                        @endif
-                                    </span>
-                                    @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">Invalid Date</span>
-                                    @endif
-                                    @else
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($latestPembayaran)
-                                        <span class="badge bg-info">{{ $latestPembayaran->metode_bayar }}</span>
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($latestPembayaran)
-                                        <span class="badge bg-info">
-                                            {{ \Carbon\Carbon::parse($latestPembayaran->tanggal_bayar)->format('d-m-Y H:i:s') }}
-                                        </span>
-                                    @else
-                                        <span>-</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($latestPembayaran && $latestPembayaran->bukti_bayar)
-                                        <a href="{{ asset('storage/' . $latestPembayaran->bukti_bayar) }}" target="_blank"
-                                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti">
-                                            <i class="bx bx-info-circle text-info"></i>
-                                        </a>                                     
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td>
-                                    @if($invoice->customer && $invoice->customer->trashed())
-                                    <span class="badge bg-label-danger fw-bold">Deaktivasi</span>
-                                    @else
-                                    <span class="badge bg-label-success fw-bold">Aktif</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    @if ($latestPembayaran && $latestPembayaran->user)
-                                        <span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">
-                                            {{ $latestPembayaran->user->name }} / {{ $latestPembayaran->user->roles->name }}
-                                        </span>
-                                    @elseif($latestPembayaran)
-                                        <span class="badge bg-secondary">By Tripay</span>
-                                    @else
-                                        <span class="fw-bold">-</span>
-                                    @endif
-                                </td>                            
-                            </tr>
-                        @empty
-                        <tr class="empty-state-row">
-                            <td colspan="11" class="text-center py-5">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                                    <h5 class="text-dark mt-3 mb-2">Tidak ada data invoice</h5>
-                                    <p class="text-muted mb-0">Belum ada invoice untuk pelanggan di bawah agen {{ $agen->name }}</p>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination (Outside table-responsive) -->
+                <div id="tablePagination" class="mt-3"></div>
             </div>
-            
-            <!-- Pagination -->
-            @if($invoices->hasPages())
-            <div class="d-flex justify-content-center mt-4">
-                {{ $invoices->appends(request()->all())->links() }}
-            </div>
-            @endif
         </div>
     </div>
 </div>
 </div>
 
+@endsection
+
+@section('page-script')
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const searchName = document.getElementById('searchName');
-        const customerRows = document.querySelectorAll('.customer-row');
-        const emptyStateRow = document.querySelector('.empty-state-row');
-        const statsIndicator = document.getElementById('statsIndicator');
-        const filterInfo = document.getElementById('filterInfo');
-        
-        // Store original totals from server
-        const originalTotals = {
-            paid: {{ $totalPaid }},
-            unpaid: {{ $totalUnpaid }},
-            total: {{ $totalAmount }}
-        };
-        
-        function filterTable() {
-            const nameQuery = searchName.value.toLowerCase();
-            let visibleRows = 0;
-            let totalPaid = 0;
-            let totalUnpaid = 0;
-            let totalAmount = 0;
+    const agenId = {{ $agen->id }};
+    let dataTable;
 
-            const hasClientFilters = nameQuery;
-
-            customerRows.forEach(row => {
-                const name = row.dataset.nama || '';
-                const alamat = row.dataset.alamat || '';
-                const tagihan = parseFloat(row.dataset.tagihan || 0);
-                const status = row.dataset.status || '';
-
-                // Check name match (client-side filter)
-                const matchesName = name.includes(nameQuery) || alamat.includes(nameQuery);
-
-                if (matchesName) {
-                    row.style.display = '';
-                    visibleRows++;
-
-                    // Only calculate filtered statistics if client-side filters are applied
-                    if (hasClientFilters) {
-                        totalAmount += tagihan;
-
-                        if (status === 'Sudah Bayar') {
-                            totalPaid += tagihan;
-                        } else {
-                            totalUnpaid += tagihan;
-                        }
-                    }
-                } else {
-                    row.style.display = 'none';
+    jQuery(document).ready(function($) {
+        // Initialize DataTable
+        dataTable = $('#customerTable').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": `/agen/pelanggan/${agenId}/ajax`,
+                "type": "GET",
+                "data": function(d) {
+                    d.month = $('#filterMonth').val();
+                    d.status = $('#filterStatus').val();
                 }
-            });
-
-            // Update statistics cards and indicators
-            if (hasClientFilters) {
-                // Show filtered totals for client-side filtering
-                updateStatistics(totalPaid, totalUnpaid, totalAmount);
-                statsIndicator.textContent = `Menampilkan total dari data terfilter (${visibleRows} invoice)`;
-                filterInfo.style.display = 'inline-block';
-            } else {
-                // Show original totals from all data (server-side filtered)
-                updateStatistics(originalTotals.paid, originalTotals.unpaid, originalTotals.total);
-                statsIndicator.textContent = `Menampilkan total dari semua data ({{ $invoices->total() }} invoice)`;
-                filterInfo.style.display = 'none';
-            }
-            
-            // Show/hide empty state
-            if (emptyStateRow) {
-                if (visibleRows === 0 && customerRows.length > 0) {
-                    emptyStateRow.style.display = '';
-                    emptyStateRow.querySelector('h5').textContent = 'Tidak ada data yang cocok';
-                    emptyStateRow.querySelector('p').textContent = 'Coba ubah kriteria pencarian Anda';
-                } else {
-                    emptyStateRow.style.display = 'none';
+            },
+            "columns": [
+                { 
+                    "data": null, 
+                    "render": function (data, type, row, meta) { 
+                        return meta.row + 1; 
+                    }, 
+                    "className": "text-center" 
+                },
+                { 
+                    "data": 1,
+                    "className": "text-start"
+                },
+                { 
+                    "data": 2,
+                    "className": "text-start"
+                },
+                { 
+                    "data": 3,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 4,
+                    "className": "text-end"
+                },
+                { 
+                    "data": 5,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 6,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 7,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 8,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 9,
+                    "className": "text-center"
+                },
+                { 
+                    "data": 10,
+                    "className": "text-center"
                 }
-            }
-        }
-        
-        function updateStatistics(paid, unpaid, total) {
-            document.getElementById('totalPaid').textContent = formatCurrency(paid);
-            document.getElementById('totalUnpaid').textContent = formatCurrency(unpaid);
-            document.getElementById('totalAmount').textContent = formatCurrency(total);
-        }
-        
-        function formatCurrency(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0
-            }).format(amount);
-        }
-        
-        // Add event listeners
-        searchName.addEventListener('input', filterTable);
-
-        // ESC key to reset filters
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                searchName.value = '';
-                filterTable();
+            ],
+            "language": {
+                "url": "https://cdn.datatables.net/plug-ins/1.13.7/i18n/id.json"
+            },
+            "dom": '<"row"<"col-sm-12 col-md-6 mb-3"l>>' +
+                   't' +
+                   '<"row"<"col-sm-12 col-md-7"p>>',
+            "pageLength": 10,
+            "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+            "drawCallback": function() {
+                updateStatistics();
+                initializeTooltips();
             }
         });
-        
-        // Initialize tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+
+        // Event listeners untuk filter
+        $('#filterMonth').on('change', function() {
+            dataTable.ajax.reload();
         });
-        
-        // Initial display with original totals
-        filterTable();
+
+        $('#filterStatus').on('change', function() {
+            dataTable.ajax.reload();
+        });
+
+        // Event listener untuk search dengan debounce
+        let searchTimeout;
+        $('#searchInput').on('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                dataTable.search($('#searchInput').val()).draw();
+            }, 500);
+        });
     });
-    
-    // Function untuk filter berdasarkan bulan (server-side)
-    function filterByMonth() {
-        const monthSelect = document.getElementById('filterMonth');
-        const statusSelect = document.getElementById('filterStatus');
-        const selectedMonth = monthSelect.value;
-        const selectedStatus = statusSelect.value;
 
-        // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengambil data invoice untuk periode yang dipilih</p>
-                    </div>
-                </td>
-            </tr>
-        `;
+    function updateStatistics() {
+        if (!dataTable) return;
+        
+        let totalPaid = 0;
+        let totalUnpaid = 0;
+        let totalAmount = 0;
 
-        // Buat URL dengan parameter bulan dan pertahankan parameter status
-        const currentUrl = new URL(window.location.href);
+        const rows = dataTable.rows({ search: 'applied' }).data();
+        
+        rows.each(function(row) {
+            // row[4] is tagihan (Rp X)
+            const tagihanText = row[4];
+            const tagihan = parseInt(tagihanText.replace(/[^0-9]/g, '')) || 0;
+            
+            // row[3] is status (HTML with badge)
+            const statusHtml = row[3];
+            
+            totalAmount += tagihan;
+            
+            if (statusHtml.includes('bg-success')) {
+                totalPaid += tagihan;
+            } else if (statusHtml.includes('bg-danger')) {
+                totalUnpaid += tagihan;
+            }
+        });
 
-        if (selectedMonth === 'all') {
-            currentUrl.searchParams.set('month', 'all');
-        } else {
-            currentUrl.searchParams.set('month', selectedMonth);
-        }
-
-        if (selectedStatus && selectedStatus !== '') {
-            currentUrl.searchParams.set('status', selectedStatus);
-        } else {
-            currentUrl.searchParams.delete('status');
-        }
-
-        currentUrl.searchParams.delete('page');
-
-        window.location.href = currentUrl.toString();
+        document.getElementById('totalPaid').textContent = formatCurrency(totalPaid);
+        document.getElementById('totalUnpaid').textContent = formatCurrency(totalUnpaid);
+        document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
+        document.getElementById('statsIndicator').textContent = `Menampilkan ${rows.length} invoice`;
     }
 
-    // Function untuk filter berdasarkan status tagihan (server-side)
-    function filterByStatus() {
-        const statusSelect = document.getElementById('filterStatus');
-        const monthSelect = document.getElementById('filterMonth');
-        const selectedStatus = statusSelect.value;
-        const selectedMonth = monthSelect.value;
-
-        // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengambil data invoice untuk status yang dipilih</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        const currentUrl = new URL(window.location.href);
-
-        if (selectedStatus && selectedStatus !== '') {
-            currentUrl.searchParams.set('status', selectedStatus);
-        } else {
-            currentUrl.searchParams.delete('status');
-        }
-
-        if (selectedMonth && selectedMonth !== 'all') {
-            currentUrl.searchParams.set('month', selectedMonth);
-        } else {
-            currentUrl.searchParams.set('month', 'all');
-        }
-
-        currentUrl.searchParams.delete('page');
-
-        window.location.href = currentUrl.toString();
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
     }
 
-    // Function untuk mengubah jumlah data per halaman (server-side)
-    function changeEntriesPerPage() {
-        const entriesSelect = document.getElementById('entriesPerPage');
-        const monthSelect = document.getElementById('filterMonth');
-        const statusSelect = document.getElementById('filterStatus');
-        const selectedPerPage = entriesSelect.value;
-        const selectedMonth = monthSelect.value;
-        const selectedStatus = statusSelect.value;
-
-        // Tampilkan loading indicator
-        const tableBody = document.querySelector('#customerTable tbody');
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="11" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <h5 class="text-dark mt-3 mb-2">Memuat data...</h5>
-                        <p class="text-muted mb-0">Sedang mengubah jumlah data per halaman</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-        const currentUrl = new URL(window.location.href);
-
-        currentUrl.searchParams.set('per_page', selectedPerPage);
-
-        if (selectedMonth && selectedMonth !== 'all') {
-            currentUrl.searchParams.set('month', selectedMonth);
-        } else {
-            currentUrl.searchParams.set('month', 'all');
-        }
-
-        if (selectedStatus && selectedStatus !== '') {
-            currentUrl.searchParams.set('status', selectedStatus);
-        } else {
-            currentUrl.searchParams.delete('status');
-        }
-
-        currentUrl.searchParams.delete('page');
-
-        window.location.href = currentUrl.toString();
+    function initializeTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     }
 </script>
-
 @endsection

@@ -143,6 +143,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
         return [
             $customer->id,
             $customer->nama_customer,
+            $customer->alamat,
             $customer->no_hp,
             $customer->email,
             $status,
@@ -199,6 +200,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
         return [
             'ID',
             'Nama Pelanggan',
+            'Alamat',
             'No HP',
             'Email',
             'Status Koneksi',
@@ -259,10 +261,11 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
                     $headings = ['Nama Paket', 'Jumlah Pelanggan'];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
                 } else {
-                    $totalColumns = 29; // 29 kolom (A sampai AC) - DITAMBAH 1 KOLOM
+                    $totalColumns = 30; // 29 kolom (A sampai AC) - DITAMBAH 1 KOLOM
                     $headings = [
                         'ID',
                         'Nama Pelanggan',
+                        'Alamat',
                         'No HP',
                         'Email',
                         'Status Koneksi',
