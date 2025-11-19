@@ -216,11 +216,11 @@
                         <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }}</h4>
                         <small class="card-subtitle text-muted">Daftar invoice pelanggan yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
-                    <div class="text-end d-flex align-items-center gap-2">
+                    {{-- <div class="text-end d-flex align-items-center gap-2">
                         <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
                             <i class="bx bx-user me-1"></i><span id="totalCustomerBadge">{{ $totalPelanggan }}</span> Pelanggan
                         </span>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </div>
