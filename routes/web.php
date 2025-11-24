@@ -589,9 +589,6 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/data-agen/search', [KeuanganController::class, 'searchAgen'])->name('data-agen-search');
   Route::get('/agen/pelanggan/{id}', [KeuanganController::class, 'pelangganAgen'])->name('agen-pelanggan');
   Route::get('/agen/pelanggan/{id}/ajax', [KeuanganController::class, 'pelangganAgenAjax'])->name('agen-pelanggan-ajax');
-  Route::get('/keuangan/export-pelanggan-agen/{id}', [KeuanganController::class, 'exportPelangganAgen'])
-    ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
-    ->name('export-pelanggan-agen');
   Route::post('/pengeluaran/hapus/{id}', [PengeluaranController::class, 'hapusPengeluaran'])->name('pengeluaran.hapus');
   Route::get('/request/hapus/pengeluaran', [PengeluaranController::class, 'requestHapus'])->name(
     'request-hapus-pengeluaran'
@@ -682,6 +679,10 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/agen/data-pelanggan/statistics', [AgenController::class, 'getStatistics'])
     ->middleware('auth', 'roles:Super Admin,Agen')
     ->name('data-pelanggan-agen-statistics');
+
+  Route::get('/agen/{id}/export', [ExportControllers::class, 'exportCustomerAgen'])
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan,Agen')
+    ->name('keuangan.export-pelanggan-agen');
   Route::post('/request/pembayaran/agen/{id}', [AgenController::class, 'requestPembayaran'])->name(
     'request-pembayaran-agen'
   );

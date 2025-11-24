@@ -2106,6 +2106,34 @@ class KeuanganController extends Controller
                 }
             }
 
+            // Gandakan query SEBELUM paginasi untuk menghitung statistik
+            $statsQuery = clone $query;
+
+            // Ambil semua data yang terfilter untuk dihitung
+            $allFilteredInvoices = $statsQuery->get();
+
+            // Hitung TOTAL SUDAH BAYAR: Termasuk pelanggan aktif dan non-aktif yang sudah lunas
+            $totalPaid = $allFilteredInvoices
+                ->where('status.nama_status', 'Sudah Bayar')
+                ->sum(function ($invoice) {
+                    return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+                });
+
+            // Hitung TOTAL BELUM BAYAR: HANYA dari pelanggan yang masih aktif
+            $totalUnpaid = $allFilteredInvoices
+                ->where('status.nama_status', 'Belum Bayar')
+                ->filter(function ($invoice) {
+                    // Pastikan customer ada dan tidak di-soft-delete
+                    return $invoice->customer && !$invoice->customer->trashed();
+                })
+                ->sum(function ($invoice) {
+                    return floatval($invoice->tagihan ?? 0) + floatval($invoice->tambahan ?? 0);
+                });
+
+            // Hitung TOTAL KESELURUHAN: Dari semua invoice yang ditampilkan (sudah bayar + belum bayar dari user aktif)
+            $totalAmount = $totalPaid + $totalUnpaid;
+
+
             // Get total records (before pagination)
             $totalRecords = $query->count();
 
@@ -2181,7 +2209,12 @@ class KeuanganController extends Controller
                 'draw' => intval($draw),
                 'recordsTotal' => $totalRecords,
                 'recordsFiltered' => $totalRecords,
-                'data' => $data
+                'data' => $data,
+                'statistics' => [
+                    'totalPaid' => $totalPaid,
+                    'totalUnpaid' => $totalUnpaid,
+                    'totalAmount' => $totalAmount,
+                ]
             ]);
         } catch (\Exception $e) {
             Log::error('Error in pelangganAgenAjax: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -2202,7 +2235,12 @@ class KeuanganController extends Controller
 
         // Bulan saat ini
         $currentMonth = now()->format('m');
-        $filterMonth = $request->get('month', $currentMonth);
+
+        // SOLUSI: Ambil nilai bulan dan pastikan bukan array.
+        // Jika array, ambil elemen pertama.
+        $monthValue = $request->get('month', $currentMonth);
+        $filterMonth = is_array($monthValue) ? reset($monthValue) : $monthValue;
+
 
         // Get per_page parameter, default to 10
         $perPage = $request->get('per_page', 10);
@@ -2868,126 +2906,6 @@ class KeuanganController extends Controller
                 'sisa' => $rab->jumlah_anggaran - $expenses,
             ];
         })->toArray();
-    }
-
-    public function exportPelangganAgen(Request $request, $id)
-    {
-        try {
-            // Get agen info
-            $agen = User::findOrFail($id);
-
-            // Get export parameters
-            $exportType = $request->get('export_type');
-            $format = $request->get('format', 'xlsx');
-
-            // Prepare parameters untuk class CustomerAgen
-            // Tentukan include_deleted
-            $includeDeleted = $request->get('include_deleted', true);
-            $exportParams = [
-                'agen_id' => $id,
-                'export_type' => $exportType,
-                'format' => $format,
-                'include_deleted' => $includeDeleted
-            ];
-
-            // Apply filters based on export type
-            switch ($exportType) {
-                case 'today':
-                    $date = $request->get('date', now()->format('Y-m-d'));
-                    $exportParams['type'] = 'range';
-                    $exportParams['startDate'] = $date;
-                    $exportParams['endDate'] = $date;
-                    $filename = "Data_Pelanggan_Agen_{$agen->name}_Hari_Ini_" . now()->format('Y-m-d');
-                    break;
-
-                case 'month':
-                    $month = $request->get('month', now()->month);
-                    $year = $request->get('year', now()->year);
-                    $exportParams['type'] = 'bulan';
-                    $exportParams['bulan'] = ['month' => $month, 'year' => $year];
-                    $monthName = [
-                        1 => 'Januari',
-                        2 => 'Februari',
-                        3 => 'Maret',
-                        4 => 'April',
-                        5 => 'Mei',
-                        6 => 'Juni',
-                        7 => 'Juli',
-                        8 => 'Agustus',
-                        9 => 'September',
-                        10 => 'Oktober',
-                        11 => 'November',
-                        12 => 'Desember'
-                    ][$month];
-                    $filename = "Data_Pelanggan_Agen_{$agen->name}_{$monthName}_{$year}";
-                    break;
-
-                case 'current_filter':
-                    $filterMonth = $request->get('month');
-                    $filterStatus = $request->get('status');
-
-                    $exportParams['type'] = 'bulan';
-
-                    // PERBAIKAN: Handle 'all' value untuk bulan
-                    if ($filterMonth && $filterMonth !== 'all') {
-                        $exportParams['bulan'] = ['month' => $filterMonth, 'year' => now()->year];
-                    } else {
-                        $exportParams['bulan'] = 'all'; // Kirim 'all' bukan array
-                    }
-
-                    $exportParams['filterStatus'] = $filterStatus;
-                    $filename = "Data_Pelanggan_Agen_{$agen->name}_Filter_" . now()->format('Y-m-d');
-                    break;
-
-                case 'custom_range':
-                    $startDate = $request->get('start_date');
-                    $endDate = $request->get('end_date');
-
-                    $exportParams['type'] = 'range';
-                    $exportParams['startDate'] = $startDate;
-                    $exportParams['endDate'] = $endDate;
-
-                    $filename = "Data_Pelanggan_Agen_{$agen->name}_" .
-                        Carbon::parse($startDate)->format('Y-m-d') . "_sampai_" .
-                        Carbon::parse($endDate)->format('Y-m-d');
-                    break;
-
-                default:
-                    // Default to current month
-                    $exportParams['type'] = 'bulan';
-                    $exportParams['bulan'] = ['month' => now()->month, 'year' => now()->year];
-                    $filename = "Data_Pelanggan_Agen_{$agen->name}_" . now()->format('Y-m');
-                    break;
-            }
-
-            // Create export instance dengan semua parameter
-            $exportInstance = new CustomerAgen(
-                $exportParams['type'] ?? 'bulan',
-                $exportParams['bulan'] ?? null,
-                $exportParams['startDate'] ?? null,
-                $exportParams['endDate'] ?? null,
-                $exportParams['agen_id'] ?? null,
-                $exportParams['filterStatus'] ?? null,
-                $exportParams['include_deleted'] ?? true // Default true
-            );
-
-            // Return export based on format
-            switch ($format) {
-                case 'xls':
-                    return Excel::download($exportInstance, $filename . '.xls', \Maatwebsite\Excel\Excel::XLS);
-                case 'csv':
-                    return Excel::download($exportInstance, $filename . '.csv', \Maatwebsite\Excel\Excel::CSV);
-                case 'xlsx':
-                default:
-                    return Excel::download($exportInstance, $filename . '.xlsx', \Maatwebsite\Excel\Excel::XLSX);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in exportPelangganAgen: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat export: ' . $e->getMessage()
-            ], 500);
-        }
     }
 
     private function exportToXLSX($data, $filename, $agen)

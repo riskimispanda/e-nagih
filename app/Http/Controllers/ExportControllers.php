@@ -8,8 +8,10 @@ use App\Exports\CustomerBelumBayar;
 use Illuminate\Http\Request;
 use App\Exports\ExportPelanggan;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\User;
 use App\Models\Paket;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 class ExportControllers extends Controller
 {
@@ -156,5 +158,91 @@ class ExportControllers extends Controller
             ->log($logMessage);
 
         return Excel::download(new CustomerNonLangganan($month, $year), $filename);
+    }
+
+    public function exportCustomerAgen(Request $request, $agenId)
+    {
+        try {
+            $exportType = $request->input('export_type'); // e.g., 'filtered', 'unpaid', 'paid', 'monthly'
+            $month = $request->input('month'); // for 'filtered' and 'monthly'
+            $status = $request->input('status'); // for 'filtered'
+
+            $filterMonth = null;
+            $filterStatus = null;
+
+            // Cek apakah agen exists
+            $agen = User::find($agenId);
+            if (!$agen) {
+                return back()->with('error', 'Agen tidak ditemukan.');
+            }
+
+            $agenName = $agen->name ?? 'UnknownAgen';
+            $filename = "data-pelanggan-agen-{$agenName}";
+            $logMessage = auth()->user()->name . ' Melakukan Export data pelanggan agen ' . $agenName;
+            $currentYear = now()->year;
+
+            switch ($exportType) {
+                case 'filtered':
+                    $filterStatus = $status;
+                    if ($month && $month !== 'all') {
+                        $filterMonth = ['month' => (int)$month, 'year' => $currentYear];
+                        $monthName = Carbon::createFromDate(null, $month, 1)->translatedFormat('F');
+                        $filename .= "-{$monthName}-{$currentYear}";
+                        $logMessage .= " (filter bulan: {$monthName} {$currentYear}";
+                    } elseif ($month === 'all') {
+                        $filterMonth = 'all';
+                        $filename .= "-semua-bulan-{$currentYear}";
+                        $logMessage .= " (filter semua bulan {$currentYear}";
+                    } else {
+                        // Default to current month if no month specified for 'filtered'
+                        $filterMonth = ['month' => now()->month, 'year' => $currentYear];
+                        $monthName = Carbon::now()->translatedFormat('F');
+                        $filename .= "-{$monthName}-{$currentYear}";
+                        $logMessage .= " (filter bulan: {$monthName} {$currentYear}";
+                    }
+                    $filename .= ($filterStatus ? "-{$filterStatus}" : "") . ".xlsx";
+                    $logMessage .= ($filterStatus ? ", status: {$filterStatus})" : ")");
+                    break;
+
+                case 'unpaid':
+                    $filterStatus = 'Belum Bayar';
+                    $filterMonth = 'all'; // Export all unpaid, regardless of month filter in UI
+                    $filename .= "-belum-bayar-semua-periode.xlsx";
+                    $logMessage .= " (semua belum bayar)";
+                    break;
+
+                case 'paid':
+                    $filterStatus = 'Sudah Bayar';
+                    $filterMonth = 'all'; // Export all paid, regardless of month filter in UI
+                    $filename .= "-sudah-bayar-semua-periode.xlsx";
+                    $logMessage .= " (semua sudah bayar)";
+                    break;
+
+                case 'monthly':
+                    if (!is_numeric($month) || $month < 1 || $month > 12) {
+                        return back()->with('error', 'Bulan tidak valid untuk export bulanan.');
+                    }
+                    $filterMonth = ['month' => (int)$month, 'year' => $currentYear];
+                    $monthName = Carbon::createFromDate(null, $month, 1)->translatedFormat('F');
+                    $filename .= "-{$monthName}-{$currentYear}.xlsx";
+                    $logMessage .= " (bulanan: {$monthName} {$currentYear})";
+                    break;
+
+                default:
+                    return back()->with('error', 'Jenis export tidak valid.');
+            }
+
+            activity('Export')
+                ->causedBy(auth()->user()->id)
+                ->log($logMessage);
+
+            return Excel::download(new CustomerAgen($agenId, $filterMonth, $filterStatus), Str::slug($filename) . '.xlsx');
+        } catch (\Exception $e) {
+            Log::error('Export Customer Agen Error: ' . $e->getMessage());
+            Log::error('File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            Log::error('Trace: ' . $e->getTraceAsString());
+
+            return back()->with('error', 'Terjadi kesalahan saat export data: ' . $e->getMessage());
+        }
     }
 }

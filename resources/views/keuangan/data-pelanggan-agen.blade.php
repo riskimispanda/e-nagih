@@ -216,11 +216,27 @@
                         <h4 class="card-title fw-bold mb-1">Data Invoice Pelanggan Agen {{ $agen->name }}</h4>
                         <small class="card-subtitle text-muted">Daftar invoice pelanggan yang terdaftar di bawah agen {{ $agen->name }}</small>
                     </div>
-                    {{-- <div class="text-end d-flex align-items-center gap-2">
-                        <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
+                    <div class="text-end d-flex align-items-center gap-2">
+                        {{-- Export Dropdown --}}
+                        <div class="dropdown">
+                            <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bx bx-download me-1"></i> Export Data
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                                <li><a class="dropdown-item" href="#" onclick="exportData('filtered')">Export Sesuai Filter</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportData('unpaid')">Export Belum Bayar (Semua Periode)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="exportData('paid')">Export Sudah Bayar (Semua Periode)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li class="dropdown-header">Export Bulanan (Tahun {{ now()->year }})</li>
+                                @foreach($monthNames as $monthNum => $monthName)
+                                    <li><a class="dropdown-item" href="#" onclick="exportData('monthly', '{{ $monthNum }}')">{{ $monthName }}</a></li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        {{-- <span class="badge bg-danger bg-opacity-10 text-danger fs-6 px-3 py-2">
                             <i class="bx bx-user me-1"></i><span id="totalCustomerBadge">{{ $totalPelanggan }}</span> Pelanggan
-                        </span>
-                    </div> --}}
+                        </span> --}}
+                    </div>
                 </div>
             </div>
         </div>
@@ -311,14 +327,14 @@
                                 <input type="text" id="searchInput" class="form-control" placeholder="Cari nama pelanggan, alamat...">
                             </div>
                         </div>
-                        <div class="col-md-4 mb-2">
+                        <div class="col-md-3 mb-2">
                             <label class="form-label">Filter Periode Bulan</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bx bx-calendar"></i></span>
                                 <select class="form-select" id="filterMonth">
                                     <option value="">Semua Bulan</option>
                                     @foreach($monthNames as $monthNum => $monthName)
-                                    <option value="{{ $monthNum }}">
+                                    <option value="{{ $monthNum }}" {{ $monthNum == $currentMonthNum ? 'selected' : '' }}>
                                         {{ $monthName }} {{ now()->year }}
                                     </option>
                                     @endforeach
@@ -369,7 +385,6 @@
                         </tbody>
                     </table>
                 </div>
-
                 <!-- Pagination (Outside table-responsive) -->
                 <div id="tablePagination" class="mt-3"></div>
             </div>
@@ -449,19 +464,27 @@
                     "data": 10,
                     "className": "text-center"
                 }
-            ],
+            ],            
             "language": {
                 "url": "https://cdn.datatables.net/plug-ins/1.13.7/i18n/id.json"
             },
-            "dom": '<"row"<"col-sm-12 col-md-6 mb-3"l>>' +
+            "dom": 't' +
+                   '<"d-flex justify-content-between align-items-center table-controls mb-3"' +
+                   '<"table-length"l>' +
                    't' +
                    '<"row"<"col-sm-12 col-md-7"p>>',
             "pageLength": 10,
-            "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
+            "lengthMenu": [[10, 25, 50, 100, 500], [10, 25, 50, 100, 500]],
             "drawCallback": function() {
-                updateStatistics();
                 initializeTooltips();
+                updateStatistics(this.api().ajax.json());
+            },
+            "initComplete": function(settings, json) {
+                // Move the length control outside the table
+                $('#tableControls').append($('.dataTables_length'));
+                $('#tablePagination').append($('.dataTables_paginate'));
             }
+
         });
 
         // Event listeners untuk filter
@@ -483,36 +506,19 @@
         });
     });
 
-    function updateStatistics() {
-        if (!dataTable) return;
-        
-        let totalPaid = 0;
-        let totalUnpaid = 0;
-        let totalAmount = 0;
+    function updateStatistics(json) {
+        // Update kartu statistik dari data yang dikirim server
+        if (json && json.statistics) {
+            const stats = json.statistics;
+            document.getElementById('totalPaid').textContent = formatCurrency(stats.totalPaid);
+            document.getElementById('totalUnpaid').textContent = formatCurrency(stats.totalUnpaid);
+            document.getElementById('totalAmount').textContent = formatCurrency(stats.totalAmount);
+        }
 
-        const rows = dataTable.rows({ search: 'applied' }).data();
-        
-        rows.each(function(row) {
-            // row[4] is tagihan (Rp X)
-            const tagihanText = row[4];
-            const tagihan = parseInt(tagihanText.replace(/[^0-9]/g, '')) || 0;
-            
-            // row[3] is status (HTML with badge)
-            const statusHtml = row[3];
-            
-            totalAmount += tagihan;
-            
-            if (statusHtml.includes('bg-success')) {
-                totalPaid += tagihan;
-            } else if (statusHtml.includes('bg-danger')) {
-                totalUnpaid += tagihan;
-            }
-        });
-
-        document.getElementById('totalPaid').textContent = formatCurrency(totalPaid);
-        document.getElementById('totalUnpaid').textContent = formatCurrency(totalUnpaid);
-        document.getElementById('totalAmount').textContent = formatCurrency(totalAmount);
-        document.getElementById('statsIndicator').textContent = `Menampilkan ${rows.length} invoice`;
+        // Update indikator jumlah data
+        const info = dataTable.page.info();
+        const totalEntries = info.recordsTotal;
+        document.getElementById('statsIndicator').textContent = `Menampilkan ${info.recordsDisplay} dari ${totalEntries} total invoice.`;
     }
 
     function formatCurrency(amount) {
@@ -529,6 +535,37 @@
         tooltipTriggerList.forEach(function (tooltipTriggerEl) {
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
+    }
+
+    function exportData(exportType, month = null) {
+        event.preventDefault();
+
+        let url = new URL(`{{ route('keuangan.export-pelanggan-agen', ['id' => $agen->id]) }}`);
+        url.searchParams.append('export_type', exportType);
+
+        if (exportType === 'filtered') {
+            const selectedMonth = $('#filterMonth').val();
+            const selectedStatus = $('#filterStatus').val();
+            
+            if (selectedMonth) url.searchParams.append('month', selectedMonth);
+            if (selectedStatus) url.searchParams.append('status', selectedStatus);
+
+        } else if (exportType === 'monthly') {
+            if (month) {
+                url.searchParams.append('month', month);
+            } else {
+                console.error("Month not provided for monthly export type.");
+                return;
+            }
+        } else if (exportType === 'unpaid') {
+            url.searchParams.append('status', 'Belum Bayar');
+            url.searchParams.append('month', 'all'); // Pastikan semua periode
+        } else if (exportType === 'paid') {
+            url.searchParams.append('status', 'Sudah Bayar');
+            url.searchParams.append('month', 'all'); // Pastikan semua periode
+        }
+        
+        window.location.href = url.toString();
     }
 </script>
 @endsection
