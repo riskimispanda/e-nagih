@@ -53,6 +53,8 @@ class DataController extends Controller
             ->orderBy('tanggal_selesai', 'desc');
 
         $import = Customer::where('cek', 'Imported')->count();
+        $dismantle = Customer::whereNotNull('deleted_at')->withTrashed()->count();
+        $dismantleGet = Customer::whereNotNull('deleted_at')->withTrashed()->get();
         $countAgen = User::where('roles_id', 6)->count();
         // Apply search filter
         if ($search) {
@@ -281,7 +283,9 @@ class DataController extends Controller
             'totalPendapatan' => $totalPendapatan,
             'sudahBayar' => $sudahBayar,
             'belumBayar' => $belumBayar,
-            'pelangganAktif' => $countPelangganAktif
+            'pelangganAktif' => $countPelangganAktif,
+            'dismantle' => $dismantle,
+            'dismantleGet' => $dismantleGet
         ]);
     }
 

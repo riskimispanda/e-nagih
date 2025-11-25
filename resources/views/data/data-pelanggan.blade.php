@@ -863,6 +863,21 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-6 col-lg-3 mb-3">
+                        <div class="data-card bg-white danger-card" data-bs-toggle="modal" data-bs-target="#dismantle">
+                            <div class="data-card-icon danger">
+                                <i class="bx bx-check-circle"></i>
+                            </div>
+                            <div class="data-card-content">
+                                <div class="data-label">Pelanggan Dismantle</div>
+                                <div class="data-value">
+                                    <span class="badge bg-danger rounded-pill">
+                                        {{ $dismantle }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#maintenance">
                         <div class="data-card bg-white danger-card">
                             <div class="data-card-icon danger">
@@ -1564,6 +1579,59 @@
                                     <td>
                                         <span class="badge bg-label-warning">
                                             {{ $item->kategori->nama_kategori }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5">Tidak ada data</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Pelanggan Dismantle --}}
+<div class="modal fade" id="dismantle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="exampleModalLabel4">Pelanggan Dismantle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Pelanggan</th>
+                                <th>No HP</th>
+                                <th>Paket</th>
+                                <th>Tanggal Dismantle</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-center">
+                            @forelse ($dismantleGet as $item)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>
+                                        <div>
+                                            <div>{{$item->nama_customer}}</div>
+                                            <small class="text-muted">{{ $item->alamat }}</small>
+                                        </div>
+                                    </td>
+                                    <td>{{$item->no_hp}}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-label-warning">
+                                            {{ $item->deleted_at ? $item->deleted_at->translatedFormat('d F Y') : 'N/A' }}
                                         </span>
                                     </td>
                                 </tr>
