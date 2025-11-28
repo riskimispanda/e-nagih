@@ -261,7 +261,14 @@ class PengeluaranController extends Controller
     {
         $pengeluaran = Pengeluaran::findOrFail($id);
         // dd($pengeluaran);
-        $pengeluaran->update($request->all());
+        $pengeluaran->update([
+            'tanggal_pengeluaran' => $request->tanggal,
+            'jenis_pengeluaran' => $request->jenis_pengeluaran,
+            'jumlah_pengeluaran' => $request->jumlah_pengeluaran,
+            'kas_id' => $request->jenis_kas,
+            'rab_id' => $request->rab_id,
+            'keterangan' => $request->keterangan
+        ]);
 
         // Log
         activity('Request Hapus Pengeluaran')
