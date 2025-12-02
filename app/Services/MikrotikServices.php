@@ -1229,7 +1229,7 @@ class MikrotikServices
         }
     }
 
-    public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile): bool
+    public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile, string $localAddress, string $remoteAddress): bool
     {
         try {
             if (empty($usersecret) || empty($newProfile)) {
@@ -1284,7 +1284,9 @@ class MikrotikServices
             if ($currentProfile === $newProfile) {
                 Log::info("UpgradeDowngrade: profile sama, skip update", [
                     'usersecret' => $usersecret,
-                    'profile' => $newProfile
+                    'profile' => $newProfile,
+                    'localAddress' => $localAddress,
+                    'remoteAddress' => $remoteAddress
                 ]);
                 return true;
             }
@@ -1293,6 +1295,8 @@ class MikrotikServices
             $setQuery = new Query('/ppp/secret/set');
             $setQuery->equal('.id', $userId);
             $setQuery->equal('profile', $newProfile);
+            $setQuery->equal('local-address', $localAddress);
+            $setQuery->equal('remote-address', $remoteAddress);
 
             $result = $client->query($setQuery)->read();
 
