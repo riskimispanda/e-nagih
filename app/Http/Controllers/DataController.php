@@ -53,8 +53,14 @@ class DataController extends Controller
             ->orderBy('tanggal_selesai', 'desc');
 
         $import = Customer::where('cek', 'Imported')->count();
-        $dismantle = Customer::whereNotNull('deleted_at')->withTrashed()->count();
-        $dismantleGet = Customer::whereNotNull('deleted_at')->withTrashed()->get();
+        $dismantle = Customer::withTrashed()
+            ->whereNotNull('deleted_at')
+            ->whereMonth('deleted_at', now()->month)
+            ->whereYear('deleted_at', now()->year)
+            ->count();
+
+        $dismantleGet = Customer::withTrashed()->whereNotNull('deleted_at')->whereMonth('deleted_at', now()->month)
+            ->whereYear('deleted_at', now()->year)->get();
         $countAgen = User::where('roles_id', 6)->count();
         // Apply search filter
         if ($search) {
