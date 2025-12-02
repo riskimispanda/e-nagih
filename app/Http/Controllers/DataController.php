@@ -506,7 +506,7 @@ class DataController extends Controller
             $client = MikrotikServices::connect($router);
             $existingSecret = MikrotikServices::checkPPPSecret($client, $pelanggan->usersecret);
             if ($existingSecret) {
-                MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket->paket_name);
+                MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $paket->paket_name, $pelanggan->local_address, $pelanggan->remote_address);
                 MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
             } else {
                 MikrotikServices::addPPPSecret($client, [
