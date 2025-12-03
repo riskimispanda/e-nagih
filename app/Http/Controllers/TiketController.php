@@ -374,7 +374,7 @@ class TiketController extends Controller
             }
 
             // Update invoice sekali saja
-            $invoice = Invoice::where('customer_id', $customer->id)->first();
+            $invoice = Invoice::where('customer_id', $customer->id)->latest()->first();
             if ($invoice) {
                 $invoice->update([
                     'paket_id' => $customer->paket_id,
