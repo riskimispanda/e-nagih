@@ -123,7 +123,7 @@ class DataController extends Controller
         $totalCustomers = Customer::whereIn('status_id', [3, 4, 9])->count();
         $totalActive = Customer::where('status_id', 3)->count();
         $totalInactive = Customer::where('status_id', 9)->count();
-        
+
         $metode = Metode::all();
         $pembayaran = Pembayaran::where('status_id', 6)->get();
         $hariIni = Customer::whereDate('tanggal_selesai', today())
@@ -146,12 +146,12 @@ class DataController extends Controller
             ->whereDate('created_at', today())
             ->with('teknisi')
             ->get();
-        
+
         $selesai = Customer::where('status_id', 3)
             ->whereDate('tanggal_selesai', today())
             ->with('teknisi')
             ->get();
-        
+
 
         $instalasiBulanan = Customer::where('status_id', 3)
             ->whereMonth('tanggal_selesai', now()->month)
@@ -166,7 +166,8 @@ class DataController extends Controller
             ->count();
 
         $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->get();
-        $countPelangganAktif = Customer::where('status_id', 3)->whereNull('deleted_at')->count();
+        $countPelangganAktif = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
+        $allData = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
 
         // Handle AJAX requests
         if ($request->ajax()) {
@@ -188,7 +189,7 @@ class DataController extends Controller
         // Format data for WebSocket (only for non-AJAX requests)
         $customerData = $customers->map(function ($customer) {
             $latestInvoice = $customer->invoice->sortByDesc('created_at')->first();
-            
+
             return [
                 'id' => $customer->id,
                 'nama_customer' => $customer->nama_customer ?? 'Unknown',
@@ -220,11 +221,11 @@ class DataController extends Controller
                 'updated_at' => $customer->updated_at ? $customer->updated_at->format('Y-m-d H:i:s') : null,
             ];
         });
-        
+
         // Check for data changes (only for non-AJAX requests)
         $currentUpdate = md5($customerData->toJson());
         $lastUpdate = cache('last_customer_update');
-        
+
         if (!$lastUpdate || $lastUpdate !== $currentUpdate) {
             $message = 'Data pelanggan berhasil diperbarui';
             event(new UpdateBaru(
@@ -291,7 +292,8 @@ class DataController extends Controller
             'belumBayar' => $belumBayar,
             'pelangganAktif' => $countPelangganAktif,
             'dismantle' => $dismantle,
-            'dismantleGet' => $dismantleGet
+            'dismantleGet' => $dismantleGet,
+            'allData' => $allData
         ]);
     }
 
@@ -344,16 +346,16 @@ class DataController extends Controller
             if ($bulan) {
                 $perki->whereMonth('jatuh_tempo', $bulan);
             }
-            
+
             // Ambil semua data untuk kalkulasi
             $allInvoices = $perki->with('paket')->get();
-            
+
             // Hitung estimasi
             $perkiraanPendapatan = $allInvoices->sum(fn($inv) => $inv->tagihan ?? 0);
             $tambahan           = $allInvoices->sum(fn($inv) => $inv->tambahan ?? 0);
             $tunggakan          = $allInvoices->sum(fn($inv) => $inv->tunggakan ?? 0);
             $saldo              = $allInvoices->sum(fn($inv) => $inv->saldo ?? 0);
-            
+
             $estimasi = $perkiraanPendapatan + $tambahan + $tunggakan - $saldo;
 
             // === Statistik ===
