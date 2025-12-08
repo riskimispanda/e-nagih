@@ -128,7 +128,7 @@ class DataControllerApi extends Controller
       return response()->json([
           'success' => true,
           'data' => [
-              'pendapatan' => $pembayaran->sum('jumlah_bayar') + $pendapatan->sum('jumlah_pendapatan'),
+                'pendapatan' => $pembayaran->sum('jumlah_bayar'),
               'pengeluaran' => $pengeluaran->sum('jumlah_pengeluaran')
           ]
       ]);
