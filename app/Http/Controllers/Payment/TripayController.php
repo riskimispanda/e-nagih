@@ -60,7 +60,7 @@ class TripayController extends Controller
             'DANA',
             'SHOPEEPAY'
         ];
-        
+
         $filteredChannels = array_filter($channels, function($channel) use ($allowedChannels) {
             return in_array($channel['code'], $allowedChannels);
         });
@@ -382,7 +382,7 @@ class TripayController extends Controller
                     Invoice::create([
                         'customer_id'    => $invoice->customer_id,
                         'paket_id'       => $invoice->paket_id,
-                        'tagihan'        => $invoice->paket->harga,
+                        'tagihan'        => $invoice->customer->paket->harga,
                         'tambahan'       => 0,
                         'saldo'          => 0,
                         'status_id'      => 7, // Belum bayar
