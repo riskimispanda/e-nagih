@@ -78,6 +78,9 @@ use App\Http\Controllers\KinerjaController;
 use App\Http\Controllers\WhatspieControllers;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 // Main Page Route
 Route::get('/', [LoginBasic::class, 'index'])
@@ -450,6 +453,190 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/confirm/corp/{id}', [PerusahaanController::class, 'confirm']);
   Route::get('/teknisi/detail-antrian/{id}', [DataController::class, 'detailAntrianPelanggan']);
 
+
+  // Route untuk generate dengan method GET (jika ingin bisa diakses via browser)
+  Route::get('/generate-users', function () {
+      set_time_limit(300); // Set timeout menjadi 5 menit
+
+      try {
+          // Coba berbagai kemungkinan nama model
+          $customerModel = null;
+
+          if (class_exists('App\Models\Customer')) {
+              $customerModel = 'App\Models\Customer';
+          } elseif (class_exists('App\Models\Customers')) {
+              $customerModel = 'App\Models\Customers';
+          } elseif (class_exists('App\Customer')) {
+              $customerModel = 'App\Customer';
+          } else {
+              return "❌ Model Customer tidak ditemukan! Cek nama model di folder app/Models/";
+          }
+
+          // Cek struktur tabel untuk debugging
+          $columns = \Schema::getColumnListing((new $customerModel)->getTable());
+          \Log::info('Customer table columns: ' . implode(', ', $columns));
+
+          DB::beginTransaction();
+
+          $totalCustomers = $customerModel::count();
+
+          if ($totalCustomers === 0) {
+              return "❌ Tidak ada data customer!";
+          }
+
+          $successCount = 0;
+          $failedCount = 0;
+          $alreadyHasUser = 0;
+          $processedCount = 0;
+          $batchSize = 5;
+
+          // Tentukan kolom yang ada di tabel
+          $customer = new $customerModel;
+          $tableName = $customer->getTable();
+
+          // Ambil semua kolom yang tersedia
+          $availableColumns = \Schema::getColumnListing($tableName);
+
+          // Pilih kolom yang akan di-select
+          $selectColumns = ['id', 'user_id'];
+
+          // Cek kolom nama yang tersedia
+          if (in_array('nama_customer', $availableColumns)) {
+              $selectColumns[] = 'nama_customer';
+          } elseif (in_array('name', $availableColumns)) {
+              $selectColumns[] = 'name';
+          } elseif (in_array('nama', $availableColumns)) {
+              $selectColumns[] = 'nama';
+          } elseif (in_array('customer_name', $availableColumns)) {
+              $selectColumns[] = 'customer_name';
+          }
+
+          // Tambahkan kolom email jika ada
+          if (in_array('email', $availableColumns)) {
+              $selectColumns[] = 'email';
+          }
+
+          \Log::info('Selected columns: ' . implode(', ', $selectColumns));
+
+          $customerModel::select($selectColumns)
+              ->chunk($batchSize, function ($customers) use (&$successCount, &$failedCount, &$alreadyHasUser, &$processedCount, $availableColumns) {
+
+                  $usersToCreate = [];
+                  $customerUpdates = [];
+
+                  foreach ($customers as $customer) {
+                      $processedCount++;
+
+                      try {
+                          // Skip jika sudah punya user
+                          if (!empty($customer->user_id) && \App\Models\User::where('id', $customer->user_id)->exists()) {
+                              $alreadyHasUser++;
+                              continue;
+                          }
+
+                          // Tentukan nama customer berdasarkan kolom yang tersedia
+                          $name = null;
+
+                          if (isset($customer->nama_customer)) {
+                              $name = $customer->nama_customer;
+                          } elseif (isset($customer->name)) {
+                              $name = $customer->name;
+                          } elseif (isset($customer->nama)) {
+                              $name = $customer->nama;
+                          } elseif (isset($customer->customer_name)) {
+                              $name = $customer->customer_name;
+                          } else {
+                              $name = 'Customer ' . $customer->id;
+                          }
+
+                          // Bersihkan nama dari karakter khusus dan spasi berlebih
+                          $name = trim(preg_replace('/[^\w\s]/', '', $name));
+
+                          // Gunakan email dari data customer jika ada, atau buat dari nama
+                          $email = isset($customer->email) && filter_var($customer->email, FILTER_VALIDATE_EMAIL)
+                              ? $customer->email
+                              : strtolower(str_replace(' ', '.', $name)) . '@niscala.net';
+
+                          // Pastikan email unik
+                          $originalEmail = $email;
+                          $counter = 1;
+                          while (\App\Models\User::where('email', $email)->exists()) {
+                              $email = strtolower(str_replace(' ', '.', $name)) . $counter . '@niscala.net';
+                              $counter++;
+                          }
+
+                          // Kumpulkan data untuk bulk insert
+                          $usersToCreate[] = [
+                              'name' => $name,
+                              'email' => $email,
+                              'password' => bcrypt('password123'),
+                              'roles_id' => 8,
+                              'email_verified_at' => now(),
+                              'created_at' => now(),
+                              'updated_at' => now(),
+                          ];
+
+                          // Simpan untuk update customer nanti
+                          $customerUpdates[$originalEmail] = [
+                              'customer_id' => $customer->id,
+                              'name' => $name
+                          ];
+
+                      } catch (\Exception $e) {
+                          \Log::error('Error processing customer ID ' . ($customer->id ?? 'unknown') . ': ' . $e->getMessage());
+                          $failedCount++;
+                      }
+                  }
+
+                  // Bulk insert users
+                  if (!empty($usersToCreate)) {
+                      try {
+                          \App\Models\User::insert($usersToCreate);
+
+                          // Ambil users yang baru dibuat untuk update customer.user_id
+                          $emails = array_column($usersToCreate, 'email');
+                          $users = \App\Models\User::whereIn('email', $emails)->get(['id', 'email', 'name']);
+
+                          foreach ($users as $user) {
+                              if (isset($customerUpdates[$user->email])) {
+                                  $customerId = $customerUpdates[$user->email]['customer_id'];
+                                  \App\Models\Customer::where('id', $customerId)
+                                      ->update(['user_id' => $user->id]);
+                                  $successCount++;
+                                  \Log::info("Updated customer {$customerId} with user_id {$user->id}");
+                              }
+                          }
+
+                      } catch (\Exception $e) {
+                          \Log::error('Bulk insert error: ' . $e->getMessage());
+                          $failedCount += count($usersToCreate);
+                      }
+                  }
+
+                  \Log::info("Processed {$processedCount} customers, Success: {$successCount}");
+              });
+
+          DB::commit();
+
+          return "
+              <h1>✅ Generate Users Berhasil!</h1>
+              <p><strong>Total Customer:</strong> {$totalCustomers}</p>
+              <p><strong>Diproses:</strong> {$processedCount}</p>
+              <p><strong>Berhasil dibuat:</strong> {$successCount}</p>
+              <p><strong>Sudah punya user:</strong> {$alreadyHasUser}</p>
+              <p><strong>Gagal:</strong> {$failedCount}</p>
+              <p><strong>Password default:</strong> password123</p>
+              <p><strong>Format email:</strong> nama.customer@niscala.net</p>
+              <p><strong>Role ID:</strong> 8</p>
+              <p><em>Note: Cek log untuk detail lebih lanjut</em></p>
+              ";
+
+      } catch (\Exception $e) {
+          DB::rollBack();
+          \Log::error('Generate Users Error: ' . $e->getMessage());
+          return "❌ Error: " . $e->getMessage() . " at line " . $e->getLine();
+      }
+  });
   // Perusahaan
   Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
 

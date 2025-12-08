@@ -90,7 +90,7 @@ class KeuanganController extends Controller
             $date = Carbon::now()->subMonths($i);
             $month = $date->format('M');
             $year = $date->format('Y');
-            
+
             // Get subscription revenue
             $subscriptionRevenue = Pembayaran::whereMonth('tanggal_bayar', $date->month)
                 ->whereYear('tanggal_bayar', $date->year)
@@ -1235,7 +1235,7 @@ class KeuanganController extends Controller
     public function approvePayment(Request $request, $customerId)
     {
         // dd($request->all());
-        
+
 
         try {
             // Validate the request
@@ -1323,7 +1323,7 @@ class KeuanganController extends Controller
             ->whereDate('tanggal_bayar', $today)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-        $daily = Pembayaran::selectRaw('DATE(tanggal_bayar) as date, 
+        $daily = Pembayaran::selectRaw('DATE(tanggal_bayar) as date,
             SUM(jumlah_bayar) as total,
             SUM(CASE WHEN metode_bayar LIKE "%cash%" OR metode_bayar LIKE "%tunai%" THEN jumlah_bayar ELSE 0 END) as cash_total,
             SUM(CASE WHEN metode_bayar LIKE "%transfer%" OR metode_bayar LIKE "%bniva%" OR metode_bayar LIKE "%briva%" or metode_bayar LIKE "%bcava%" THEN jumlah_bayar ELSE 0 END) as transfer_total,
@@ -2173,13 +2173,13 @@ class KeuanganController extends Controller
                     $statusBadge = '<span class="badge ' . $statusClass . '">' . $invoice->status->nama_status . '</span>';
                 }
 
-                $customerStatus = $invoice->customer && $invoice->customer->trashed() 
+                $customerStatus = $invoice->customer && $invoice->customer->trashed()
                     ? '<span class="badge bg-label-danger fw-bold">Deaktivasi</span>'
                     : '<span class="badge bg-label-success fw-bold">Aktif</span>';
 
                 $adminInfo = '-';
                 if ($latestPembayaran && $latestPembayaran->user) {
-                    $adminInfo = '<span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">' 
+                    $adminInfo = '<span class="fw-bold badge bg-warning bg-opacity-10 text-warning" style="text-transform: uppercase;">'
                         . $latestPembayaran->user->name . ' / ' . $latestPembayaran->user->roles->name . '</span>';
                 } elseif ($latestPembayaran) {
                     $adminInfo = '<span class="badge bg-secondary">By Tripay</span>';
