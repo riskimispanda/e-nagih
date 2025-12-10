@@ -855,12 +855,14 @@
                             </div>
                             <div class="data-card-content">
                                 <div class="data-label">Pelanggan Non-Aktif</div>
-                                <div class="data-value mb-2">
+                                <div class="data-value mb-3">
                                     <span class="badge bg-danger rounded-pill">
                                         {{ $nonAktif->count() }}
                                     </span>
                                 </div>
-                                <small class="text-muted">Isolir Setiap Tanggal : {{ $dateBlokir->tanggal_blokir . " 00:01 WIB"}}</small>
+                                <small class="text-muted">Tanggal Isolir : {{ $dateBlokir->tanggal_blokir }}</small>
+                                <br>
+                                <small class="text-muted">Jam Isolir : 00:01:00 WIB</small>
                             </div>
                         </div>
                     </div>
@@ -1218,7 +1220,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-label-info">
-                                        {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s')) }}
+                                        {{ $item->tanggal_selesai === null ? '-' : (is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s'))) }}
                                     </span>
                                 </td>
                                 <td>
