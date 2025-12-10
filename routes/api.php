@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DataControllerApi;
 use App\Http\Controllers\Api\CustomerControllerApi;
 use App\Http\Controllers\Api\TeknisiControllerApi;
+use App\Http\Controllers\Api\MikrotikControllerApi;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -21,6 +22,9 @@ Route::middleware('auth:sanctum')->group(function () {
   // Roles Teknisi
   Route::get('/queueCustomer', [TeknisiControllerApi::class, 'getCustomerQueue']);
 
+  // Roles NOC
+  Route::get('/getNetwork', [MikrotikControllerApi::class, 'getNetwork']);
+  Route::post('/postAssignment/{id}', [MikrotikControllerApi::class, 'postAssign']);
 
   //Ambil data invoice
   Route::get('/invoicePaid', [DataControllerApi::class, 'getInvoicePaid']);
