@@ -1219,9 +1219,15 @@
                                     @endif
                                 </td>
                                 <td>
+                                    @if($item->tanggal_selesai == null)
+                                    <span class="badge bg-label-warning">
+                                        Import data
+                                    </span>
+                                    @else
                                     <span class="badge bg-label-info">
                                         {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s')) }}
                                     </span>
+                                    @endif
                                 </td>
                                 <td>
                                     <a href="/riwayatPembayaran/{{ $item->id }}" class="btn btn-outline-info action-btn" data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}" data-bs-placement="top">
