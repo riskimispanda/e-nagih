@@ -855,11 +855,12 @@
                             </div>
                             <div class="data-card-content">
                                 <div class="data-label">Pelanggan Non-Aktif</div>
-                                <div class="data-value">
+                                <div class="data-value mb-2">
                                     <span class="badge bg-danger rounded-pill">
                                         {{ $nonAktif->count() }}
                                     </span>
                                 </div>
+                                <small class="text-muted">Isolir Setiap Tanggal : {{ $dateBlokir->tanggal_blokir . " 00:01 WIB"}}</small>
                             </div>
                         </div>
                     </div>

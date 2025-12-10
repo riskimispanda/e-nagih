@@ -168,7 +168,7 @@ class DataController extends Controller
         $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->get();
         $countPelangganAktif = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
         $allData = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
-
+        $dateBlokir = Invoice::with('customer')->first();
         // Handle AJAX requests
         if ($request->ajax()) {
             return response()->json([
@@ -293,7 +293,8 @@ class DataController extends Controller
             'pelangganAktif' => $countPelangganAktif,
             'dismantle' => $dismantle,
             'dismantleGet' => $dismantleGet,
-            'allData' => $allData
+            'allData' => $allData,
+            'dateBlokir' => $dateBlokir
         ]);
     }
 
