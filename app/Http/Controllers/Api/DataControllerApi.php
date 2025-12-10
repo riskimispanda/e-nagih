@@ -9,6 +9,7 @@ use App\Models\Pembayaran;
 use Carbon\Carbon;
 use App\Models\Pengeluaran;
 use App\Models\Pendapatan;
+use App\Models\Customer;
 class DataControllerApi extends Controller
 {
   public function getInvoicePaid(Request $request)
@@ -85,53 +86,80 @@ class DataControllerApi extends Controller
       ]);
   }
 
-    public function historyPayment()
-    {
-      //Ambil history pembayaran yang sudah lunas
-      $history = Pembayaran::with([
-              'invoice.customer:id,nama_customer',
-              'invoice.paket:id,nama_paket',
-              'invoice:id,customer_id,paket_id,merchant_ref,tagihan'
-          ])
-          ->select('id', 'invoice_id', 'tanggal_bayar', 'jumlah_bayar', 'metode_bayar', 'created_at')
-          ->where('status_id', 8)
-          ->whereHas('invoice.customer')
-          ->whereHas('invoice.paket')
-          ->latest('id')
-          ->get();
+  public function historyPayment()
+  {
+    //Ambil history pembayaran yang sudah lunas
+    $history = Pembayaran::with([
+            'invoice.customer:id,nama_customer',
+            'invoice.paket:id,nama_paket',
+            'invoice:id,customer_id,paket_id,merchant_ref,tagihan'
+        ])
+        ->select('id', 'invoice_id', 'tanggal_bayar', 'jumlah_bayar', 'metode_bayar', 'created_at')
+        ->where('status_id', 8)
+        ->whereHas('invoice.customer')
+        ->whereHas('invoice.paket')
+        ->latest('id')
+        ->get();
 
-      $formattedHistory = $history->map(function($payment){
-          return [
-              'id' => $payment->id,
-              'customer_name' => $payment->invoice->customer->nama_customer,
-              'paket' => $payment->invoice->paket->nama_paket,
-              'reference' => $payment->invoice->merchant_ref,
-              'tagihan' => $payment->invoice->tagihan,
-              'jumlah_bayar' => $payment->jumlah_bayar,
-              'metode_pembayaran' => $payment->metode_bayar,
-              'tanggal_bayar' => $payment->tanggal_bayar
-          ];
-      });
+    $formattedHistory = $history->map(function($payment){
+        return [
+            'id' => $payment->id,
+            'customer_name' => $payment->invoice->customer->nama_customer,
+            'paket' => $payment->invoice->paket->nama_paket,
+            'reference' => $payment->invoice->merchant_ref,
+            'tagihan' => $payment->invoice->tagihan,
+            'jumlah_bayar' => $payment->jumlah_bayar,
+            'metode_pembayaran' => $payment->metode_bayar,
+            'tanggal_bayar' => $payment->tanggal_bayar
+        ];
+    });
 
-      return response()->json([
-          'success' => true,
-          'data' => $formattedHistory,
-          'count' => $history->count()
-      ]);
-    }
+    return response()->json([
+        'success' => true,
+        'data' => $formattedHistory,
+        'count' => $history->count()
+    ]);
+  }
 
-    public function getMonthlyPayment()
-    {
-      $pembayaran = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)->whereYear('tanggal_bayar', Carbon::now()->year)->get();
-      $pendapatan = Pendapatan::whereMonth('tanggal', Carbon::now()->month)->whereYear('tanggal', Carbon::now()->year)->get();
-      $pengeluaran = Pengeluaran::whereMonth('tanggal_pengeluaran', Carbon::now()->month)->whereYear('tanggal_pengeluaran', Carbon::now()->year)->get();
-      return response()->json([
-          'success' => true,
-          'data' => [
-                'pendapatan' => $pembayaran->sum('jumlah_bayar'),
-              'pengeluaran' => $pengeluaran->sum('jumlah_pengeluaran')
-          ]
-      ]);
-    }
+  public function getMonthlyPayment()
+  {
+    $pembayaran = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)->whereYear('tanggal_bayar', Carbon::now()->year)->get();
+    $pendapatan = Pendapatan::whereMonth('tanggal', Carbon::now()->month)->whereYear('tanggal', Carbon::now()->year)->get();
+    $pengeluaran = Pengeluaran::whereMonth('tanggal_pengeluaran', Carbon::now()->month)->whereYear('tanggal_pengeluaran', Carbon::now()->year)->get();
+    return response()->json([
+        'success' => true,
+        'data' => [
+              'pendapatan' => $pembayaran->sum('jumlah_bayar'),
+            'pengeluaran' => $pengeluaran->sum('jumlah_pengeluaran')
+        ]
+    ]);
+  }
+
+  public function getCustomerAll()
+  {
+    $customer = Customer::with('status','paket','agen','teknisi','getServer','odp.odc.olt')->orderBy('tanggal_selesai', 'desc')->get();
+    $customerAll = $customer->map(function($pelanggan){
+        return [
+            'name' => $pelanggan->nama_customer,
+            'paket' => $pelanggan->paket->nama_paket,
+            'status' => $pelanggan->status->nama_status,
+            'agen' => $pelanggan->agen->name ?? 'Tidak Ada Agen',
+            'alamat' => $pelanggan->alamat,
+            'bts' => $pelanggan->odp?->odc?->olt?->server?->lokasi_server,
+            'olt' => $pelanggan->odp?->odc?->olt?->nama_lokasi,
+            'odc' => $pelanggan->odp?->odc?->nama_odc,
+            'odp' => $pelanggan->odp?->nama_odp,
+            'teknisi' => $pelanggan->teknisi->name ?? 'Teknisi Kosong',
+            'tanggal_installasi' => Carbon::parse($pelanggan->tanggal_selesai)->locale('id')->translatedFormat('d-M-Y H:i:s') ?? 'Belum Di Close'
+        ];
+    });
+
+    return response()->json([
+      'success' => true,
+      'data' => $customerAll,
+      'count' => $customerAll->count()
+    ]);
+
+  }
 
 }

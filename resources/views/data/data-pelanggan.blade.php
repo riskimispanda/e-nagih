@@ -1220,7 +1220,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-label-info">
-                                        {{ $item->tanggal_selesai === null ? '-' : (is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s'))) }}
+                                        {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s')) }}
                                     </span>
                                 </td>
                                 <td>
