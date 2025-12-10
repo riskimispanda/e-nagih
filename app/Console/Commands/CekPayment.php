@@ -441,8 +441,8 @@ class CekPayment extends Command
                         ->log($customer->nama_customer . ' Di blokir oleh sistem karena belum melakukan pembayaran bulanan');
                 });
 
-                // Send blocking notification
-                $this->sendBlockingNotification($customer, $invoice, $chatService, $beritaAcara);
+                // Send blocking notification - DIKOMENTARKAN
+                // $this->sendBlockingNotification($customer, $invoice, $chatService, $beritaAcara);
 
                 // Remove active connections
                 $this->removeActiveConnections($customer, $client, $beritaAcara);
@@ -470,10 +470,11 @@ class CekPayment extends Command
     }
 
     /**
-     * Send blocking notification
+     * Send blocking notification - DIKOMENTARKAN
      */
     private function sendBlockingNotification($customer, $invoice, $chatService, $beritaAcara = null)
     {
+        /*
         try {
             if ($beritaAcara && method_exists($chatService, 'kirimNotifikasiBlokirSetelahBA')) {
                 $chatService->kirimNotifikasiBlokirSetelahBA($customer->no_hp, $invoice, $beritaAcara);
@@ -486,6 +487,7 @@ class CekPayment extends Command
                 'error' => $e->getMessage()
             ]);
         }
+        */
     }
 
     /**
@@ -511,7 +513,7 @@ class CekPayment extends Command
     }
 
     /**
-     * Handle WA reminder
+     * Handle WA reminder - DIKOMENTARKAN
      */
     private function handleWAReminder($invoice, $customer, $chatService, bool $isDryRun, $beritaAcara = null)
     {
@@ -522,6 +524,7 @@ class CekPayment extends Command
             return;
         }
 
+        /*
         try {
             // Send different message if customer has active BA
             if ($beritaAcara && method_exists($chatService, 'kirimInvoiceDenganBA')) {
@@ -563,6 +566,17 @@ class CekPayment extends Command
             ]);
             $this->stats['wa_failed']++;
         }
+        */
+
+        // Hanya log info tanpa kirim notifikasi
+        $baInfo = $beritaAcara ? " (memiliki BA aktif)" : "";
+        $this->info("📋 [Notifikasi dinonaktifkan] Invoice jatuh tempo: {$customer->nama_customer}{$baInfo}");
+        Log::info("📋 [Notifikasi dinonaktifkan] Invoice jatuh tempo", [
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->nama_customer,
+            'invoice_id' => $invoice->id,
+            'has_berita_acara' => $beritaAcara ? true : false
+        ]);
     }
 
     /**

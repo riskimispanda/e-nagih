@@ -16,9 +16,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // Jalankan pengecekan pembayaran setiap hari pada pukul 00:05 WIB (GMT+7)
-        // $schedule->command('app:cek-payment')
-        //     ->monthlyOn(10, '00:01')
-        //     ->timezone('Asia/Jakarta');
+        $schedule->command('app:cek-payment')
+            ->monthlyOn(10, '00:01')
+            ->timezone('Asia/Jakarta');
 
         $schedule->command('app:test-command')->everyMinute();
         $schedule->command('app:generate-invoice')
