@@ -28,5 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
   //Ambil payment history by customer id
   Route::get('/paymentHistory/{id}', [CustomerControllerApi::class, 'paymentHistory']);
+  // Fix Issues
+  Route::get('/invoice/{id}/proses-otomatis', [CustomerControllerApi::class, 'prosesOtomatisPembayaran']);
 
 });

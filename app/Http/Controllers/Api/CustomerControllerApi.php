@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
+use DB;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class CustomerControllerApi extends Controller
 {
@@ -101,5 +104,184 @@ class CustomerControllerApi extends Controller
           'count' => $payments->count()
       ]);
     }
+
+    public function prosesOtomatisPembayaran($id)
+    {
+        $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
+
+        DB::beginTransaction();
+        try {
+            // Ambil nilai awal
+            $saldoAwal = $invoice->saldo;
+            $tagihanAwal = $invoice->tagihan;
+            $tambahanAwal = $invoice->tambahan;
+            $tunggakanAwal = $invoice->tunggakan;
+
+            // Gunakan saldo untuk membayar (prioritas: tambahan -> tunggakan -> tagihan)
+            $saldoTersisa = $saldoAwal;
+            $newTambahan = $tambahanAwal;
+            $newTunggakan = $tunggakanAwal;
+            $newTagihan = $tagihanAwal;
+
+            // Bayar tambahan dulu
+            if ($saldoTersisa > 0 && $newTambahan > 0) {
+                if ($saldoTersisa >= $newTambahan) {
+                    $saldoTersisa -= $newTambahan;
+                    $newTambahan = 0;
+                } else {
+                    $newTambahan -= $saldoTersisa;
+                    $saldoTersisa = 0;
+                }
+            }
+
+            // Bayar tunggakan
+            if ($saldoTersisa > 0 && $newTunggakan > 0) {
+                if ($saldoTersisa >= $newTunggakan) {
+                    $saldoTersisa -= $newTunggakan;
+                    $newTunggakan = 0;
+                } else {
+                    $newTunggakan -= $saldoTersisa;
+                    $saldoTersisa = 0;
+                }
+            }
+
+            // Bayar tagihan
+            if ($saldoTersisa > 0 && $newTagihan > 0) {
+                if ($saldoTersisa >= $newTagihan) {
+                    $saldoTersisa -= $newTagihan;
+                    $newTagihan = 0;
+                } else {
+                    $newTagihan -= $saldoTersisa;
+                    $saldoTersisa = 0;
+                }
+            }
+
+            // Hitung berapa saldo yang terpakai
+            $saldoTerpakai = $saldoAwal - $saldoTersisa;
+            $saldoBaru = $saldoTersisa;
+
+            // Tentukan status invoice
+            $totalSisa = $newTagihan + $newTambahan + $newTunggakan;
+            $statusInvoice = ($totalSisa == 0) ? 8 : 7; // 8 = lunas, 7 = belum lunas
+
+            // Update Invoice - SELALU update
+            $invoice->update([
+                'tagihan'   => $newTagihan,
+                'tambahan'  => $newTambahan,
+                'tunggakan' => $newTunggakan,
+                'saldo'     => $saldoBaru,
+                'status_id' => 8,
+            ]);
+
+            Log::info('Invoice berhasil diupdate', [
+                'invoice_id' => $invoice->id,
+                'tagihan' => $newTagihan,
+                'tambahan' => $newTambahan,
+                'tunggakan' => $newTunggakan,
+                'saldo' => $saldoBaru,
+                'status' => $statusInvoice
+            ]);
+
+            // Buat Invoice Bulan Depan (hanya jika tagihan sudah lunas/0)
+            $invoiceBaru = null;
+            if ($invoice->status_id == 8) {
+                $customer = $invoice->customer;
+                $tanggalJatuhTempoLama = Carbon::parse($invoice->jatuh_tempo);
+                $tanggalAwal = $tanggalJatuhTempoLama->copy()->addMonthsNoOverflow()->startOfMonth();
+                $tanggalJatuhTempo = $tanggalAwal->copy()->endOfMonth();
+
+                // Cek apakah sudah ada invoice bulan depan
+                $sudahAda = Invoice::where('customer_id', $invoice->customer_id)
+                    ->whereMonth('jatuh_tempo', $tanggalJatuhTempo->month)
+                    ->whereYear('jatuh_tempo', $tanggalJatuhTempo->year)
+                    ->exists();
+
+                if (!$sudahAda) {
+                    // Generate Merchant Reference
+                    $merchant = 'INV-' . $customer->id . '-' . time();
+
+                    $invoiceBaru = Invoice::create([
+                        'customer_id'     => $invoice->customer_id,
+                        'paket_id'        => $customer->paket_id,
+                        'tagihan'         => $customer->paket->harga,
+                        'tambahan'        => 0,
+                        'tunggakan'       => $newTunggakan, // Sisa tunggakan pindah ke bulan depan
+                        'saldo'           => $saldoBaru,
+                        'status_id'       => 7,
+                        'merchant_ref'    => $merchant,
+                        'created_at'      => $tanggalAwal,
+                        'updated_at'      => $tanggalAwal,
+                        'jatuh_tempo'     => $tanggalJatuhTempo,
+                        'tanggal_blokir'  => $invoice->tanggal_blokir,
+                    ]);
+
+                    Log::info('Invoice bulan depan berhasil dibuat', [
+                        'invoice_id' => $invoiceBaru->id,
+                        'customer_id' => $customer->id,
+                        'jatuh_tempo' => $tanggalJatuhTempo,
+                        'tagihan' => $customer->paket->harga,
+                        'tunggakan' => $newTunggakan
+                    ]);
+                }
+            }
+
+            // Update Status Customer jika diblokir dan sudah lunas
+            if ($invoice->customer->status_id == 9 && $totalSisa == 0) {
+                try {
+                    $mikrotik = new MikrotikServices();
+                    $client = MikrotikServices::connect($invoice->customer->router);
+                    $mikrotik->unblokUser($client, $invoice->customer->usersecret, $invoice->customer->paket->paket_name);
+                    $mikrotik->removeActiveConnections($client, $invoice->customer->usersecret);
+
+                    $invoice->customer->update(['status_id' => 3]);
+
+                    Log::info('Customer berhasil di unblock', ['customer_id' => $invoice->customer->id]);
+                } catch (Exception $e) {
+                    Log::error('Failed to unblock customer', [
+                        'customer_id' => $invoice->customer->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice berhasil diproses',
+                'data' => [
+                    'invoice_id' => $invoice->id,
+                    'saldo_terpakai' => $saldoTerpakai,
+                    'saldo_sisa' => $saldoBaru,
+                    'tagihan_sisa' => $newTagihan,
+                    'tambahan_sisa' => $newTambahan,
+                    'tunggakan_sisa' => $newTunggakan,
+                    'total_sisa' => $totalSisa,
+                    'status' => $statusInvoice == 8 ? 'Lunas' : 'Belum Lunas',
+                    'invoice_baru' => $invoiceBaru ? [
+                        'id' => $invoiceBaru->id,
+                        'jatuh_tempo' => $invoiceBaru->jatuh_tempo,
+                        'tagihan' => $invoiceBaru->tagihan,
+                        'tunggakan' => $invoiceBaru->tunggakan
+                    ] : null
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal memproses invoice otomatis: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses invoice: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
 
 }
