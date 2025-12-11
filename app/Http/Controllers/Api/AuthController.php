@@ -48,7 +48,7 @@ class AuthController extends Controller
 
         activity('NbillingApps')
             ->causedBy(auth()->user())
-            ->log($user->name . ' Login ke aplikasi');
+            ->log(auth()->user()->name . ' Login ke aplikasi');
 
         return response()->json([
             'access_token' => $token,
