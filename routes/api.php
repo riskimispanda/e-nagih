@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/invoice', [AuthController::class, 'invoiceCustomer']);
   Route::get('/customer', [AuthController::class, 'allCustomer'])->middleware('auth:sanctum', 'roles:Super Admin');
   Route::get('/getCustomerAll', [DataControllerApi::class, 'getCustomerAll']);
+  Route::get('/getProfileUser', [AuthController::class, 'getProfileUser']);
 
   // Roles Teknisi
   Route::get('/queueCustomer', [TeknisiControllerApi::class, 'getCustomerQueue']);

@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
+use Auth;
 
 class AuthController extends Controller
 {
@@ -61,6 +62,11 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
+
+        // Catat Log
+        activity('NbillingApps')
+          ->causedBy(auth()->user())
+          ->log(auth()->user()->name . ' Logout dari aplikasi');
 
         return response()->json([
             'success' => true,
@@ -129,5 +135,28 @@ class AuthController extends Controller
             'count' => $customers->count()
         ]);
     }
+
+
+    public function getProfileUser()
+    {
+        $customer = Customer::with(['paket:id,nama_paket', 'agen:id,name'])
+            ->where('user_id', auth()->user()->id)
+            ->first();
+        $user = User::where('name', $customer->nama_customer)->first();
+
+        if (!$customer) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Customer data not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $customer,
+            'user' => $user
+        ]);
+    }
+
 
 }
