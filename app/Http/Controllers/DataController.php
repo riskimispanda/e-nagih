@@ -155,9 +155,11 @@ class DataController extends Controller
             ->get();
 
 
+        $startDate = now()->startOfMonth();
+        $endDate = now()->endOfMonth();
+
         $instalasiBulanan = Customer::whereIn('status_id', [3, 4, 9])
-            ->whereMonth('tanggal_selesai', now()->month)
-            ->whereYear('tanggal_selesai', now()->year)
+            ->whereBetween('tanggal_selesai', [$startDate, $endDate])
             ->with('teknisi')
             ->orderBy('tanggal_selesai', 'desc')
             ->get();
