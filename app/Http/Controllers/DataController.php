@@ -148,8 +148,9 @@ class DataController extends Controller
             ->with('teknisi')
             ->get();
 
-        $selesai = Customer::where('status_id', 3)
+        $selesai = Customer::whereIn('status_id', [3, 4, 9])
             ->whereDate('tanggal_selesai', today())
+            ->orderBy('tanggal_selesai', 'desc')
             ->with('teknisi')
             ->get();
 
