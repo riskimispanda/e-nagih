@@ -150,14 +150,14 @@ class TeknisiController extends Controller
             ->where('jumlah_stok', '>', 0)
             ->get();
 
-        $client = MikrotikServices::connect($customer->router);
+        // $client = MikrotikServices::connect($customer->router);
 
         return view('/teknisi/detail-antrian', [
             'customer' => $customer,
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'mikrotik' => MikrotikServices::getProfile($client), // ✅ benar
-            'paket' => MikrotikServices::getProfiles($client),   // ✅ benar
+            'mikrotik' => $customer->router->nama_router,
+            'paket' => $customer->paket->paket_name,
             'koneksi' => Koneksi::all(),
             'modem' => $modem,
             'server' => ServerModels::all(),
@@ -246,7 +246,7 @@ class TeknisiController extends Controller
                 $fotoPerangkatPath = null;
             }
 
-            $tanggalSelesai = now();
+            $tanggalSelesai = Carbon::parse($request->tanggal_selesai);
 
             $customer->update([
                 'panjang_kabel'   => $request->panjang_kabel,

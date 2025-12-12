@@ -287,6 +287,10 @@ class Customer extends Controller
     public function hapusTransaksi($id)
     {
         $pembayaran = Pembayaran::findOrFail($id);
+        $invoice = Invoice::where('id', $pembayaran->invoice_id)->first();
+        $invoice->update([
+            'status_id' => 7,
+        ]);
         $pembayaran->delete();
         activity('Hapus')
             ->causedBy(auth()->user())

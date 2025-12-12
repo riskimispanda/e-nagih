@@ -1,4 +1,4 @@
-@extends('layouts/contentNavbarLayout')
+@extends('layouts.contentNavbarLayout')
 
 @section('title', 'Konfirmasi Instalasi')
 
@@ -634,6 +634,12 @@
                                         <div class="mb-4">
                                             <label class="form-label"><i class="bx bx-radio me-2"></i>Nilai Redam</label>
                                             <input type="text" name="redaman" class="form-control" placeholder="Contoh: 50db">
+                                        </div>
+                                        <div class="col-sm-12 mb-4">
+                                            <div class="input-groups">
+                                                <label class="form-label"><i class="bx bx-calendar me-2"></i>Tanggal Closed</label>
+                                                <input name="tanggal_selesai" type="date" class="form-control" value="{{ now()->format('Y-m-d') }}" readonly>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
