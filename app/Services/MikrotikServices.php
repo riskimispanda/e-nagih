@@ -1628,9 +1628,10 @@ class MikrotikServices
 
 
 
-    public static function unblokUser(Client $client, $usersecret, $originalProfile , $id = null)
+    public static function unblokUser(Client $client, $usersecret, $originalProfile, $id = null)
     {
         try {
+            // Priority 1: Jika ada ID langsung, gunakan ID
             if ($id) {
                 $query = new Query("/ppp/secret/set");
                 $query->equal(".id", $id);
@@ -1642,24 +1643,37 @@ class MikrotikServices
                 return true;
             }
 
+            // Priority 2: Cari berdasarkan username
             $findQuery = new Query('/ppp/secret/print');
             $findQuery->where('name', $usersecret);
             $users = $client->query($findQuery)->read();
-            if (empty($users)) return false;
 
-            foreach ($users as $user) {
-                $query = new Query("/ppp/secret/set");
-                $query->equal(".id", $user['.id']);
-                $query->equal("disabled", "no");
-                if ($originalProfile) {
-                    $query->equal("profile", $originalProfile);
-                }
-                $client->query($query)->read();
+            if (empty($users)) {
+                Log::warning("User $usersecret tidak ditemukan di Mikrotik");
+                return false;
             }
 
+            // AMBIL HANYA USER PERTAMA - Tidak perlu looping
+            // Karena username harusnya unik
+            $user = $users[0];
+
+            $query = new Query("/ppp/secret/set");
+            $query->equal(".id", $user['.id']);
+            $query->equal("disabled", "no");
+
+            if ($originalProfile) {
+                $query->equal("profile", $originalProfile);
+            }
+
+            $client->query($query)->read();
+            Log::info('Berhasil Unblock Customer ' . $usersecret . ' dengan paket : ' . $originalProfile);
             return true;
         } catch (Exception $e) {
-            Log::error('MikrotikServices::unblokUser error: ' . $e->getMessage());
+            Log::error('MikrotikServices::unblokUser error: ' . $e->getMessage(), [
+                'usersecret' => $usersecret,
+                'originalProfile' => $originalProfile,
+                'id' => $id
+            ]);
             return false;
         }
     }

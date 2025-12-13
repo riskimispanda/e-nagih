@@ -395,6 +395,7 @@ class Analytics extends Controller
 
       // Unblok user dan kembalikan profil
       $unblockResult = MikrotikServices::unblokUser($client, $customer->usersecret, $originalProfile);
+      $removeKoneksi = MikrotikServices::removeActiveConnections($client, $customer->usersecret);
 
       // Log hasil
       \Log::info("✅ Pelanggan diaktifkan kembali", [
@@ -402,6 +403,7 @@ class Analytics extends Controller
         "usersecret" => $customer->usersecret,
         "restored_profile" => $originalProfile,
         "unblock_result" => $unblockResult,
+        "remove_koneksi" => $removeKoneksi,
       ]);
       activity('Unblokir')
         ->causedBy(auth()->user()->id)
