@@ -171,8 +171,6 @@ class TiketController extends Controller
             ->where('status_id', 6)
             ->orderBy('created_at', 'desc');
 
-        dd($query->count());
-
         // CLONEQUERY untuk tiket yang sudah selesai (status_id 3 saja)
         $cloneQuery = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
             $query->withTrashed();
