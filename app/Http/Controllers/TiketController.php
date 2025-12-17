@@ -161,30 +161,15 @@ class TiketController extends Controller
         $kategoriSelesai = $request->get('kategori_selesai');
 
         // QUERY UTAMA untuk tiket yang sedang diproses (status_id 6)
-        if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 3 || auth()->user()->roles_id == 4) {
-            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-                $query->withTrashed();
-            }])
-                ->whereHas('customer', function ($query) {
-                    $query->whereIn('status_id', [3, 4])
+        $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
+            $query->withTrashed();
+        }])
+            ->whereHas('customer', function ($query) {
+                $query->whereIn('status_id', [3, 4])
                     ->withTrashed();
-                })
-                ->where('status_id', 6)
-                ->orderBy('created_at', 'desc');
-        } elseif (auth()->user()->roles_id == 5) {
-            $query = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
-                $query->withTrashed();
-            }])
-                ->whereHas('kategori', function ($k) {
-                $k->whereIn('id', [1, 2, 3, 4, 5]);
-                })
-                ->whereHas('customer', function ($query) {
-                    $query->whereIn('status_id', [3, 4])
-                    ->withTrashed();
-                })
-                ->where('status_id', 6)
-                ->orderBy('created_at', 'desc');
-        }
+            })
+            ->where('status_id', 6)
+            ->orderBy('created_at', 'desc');
 
         // CLONEQUERY untuk tiket yang sudah selesai (status_id 3 saja)
         $cloneQuery = TiketOpen::with(['kategori', 'user', 'customer' => function ($query) {
