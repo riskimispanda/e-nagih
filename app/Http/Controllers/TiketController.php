@@ -165,7 +165,7 @@ class TiketController extends Controller
             $query->withTrashed();
         }])
             ->whereHas('customer', function ($query) {
-                $query->whereIn('status_id', [3, 4])
+            $query->whereIn('status_id', [3, 4, 9])
                     ->withTrashed();
             })
             ->where('status_id', 6)
