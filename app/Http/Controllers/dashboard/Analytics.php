@@ -112,8 +112,12 @@ class Analytics extends Controller
     // Total Pengeluaran - tetap include semua
     $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
 
-    $open = TiketOpen::where('status_id', 6)->count();
-    $closed = TiketOpen::where('status_id', 3)->count();
+    $open = TiketOpen::with('customer')->whereHas('customer', function ($q) {
+      $q->whereNull('deleted_at');
+    })->where('status_id', 6)->count();
+    $closed = TiketOpen::with('customer')->whereHas('customer', function ($q) {
+      $q->whereNull('deleted_at');
+    })->where('status_id', 3)->count();
 
     return view("dashboard.dashboard", [
       "users" => auth()->user(),
