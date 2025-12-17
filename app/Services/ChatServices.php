@@ -46,6 +46,7 @@ class ChatServices
 
         $tunggakan = max($sisaTagihan, 0);
         $tanggalBayar = Carbon::parse($pembayaran->tanggal_bayar)->locale('id')->isoFormat('dddd, D MMMM Y');
+        $url = url('/print-kwitansi/' . $pembayaran->invoice->id);
 
         $pesan = "Pembayaran langganan internet Anda telah *berhasil* ✅\n\n" .
             "📅 Tanggal Pembayaran: " . $tanggalBayar . "\n" .
@@ -54,6 +55,7 @@ class ChatServices
             "💳 Tipe Pembayaran: " . $pembayaran->tipe_pembayaran . "\n" .
             "👤 Nama Pelanggan: " . $namaCustomer . "\n" .
             "👩‍💻 Admin Keuangan: " . $adminKeuangan . "\n\n" .
+            "🖨️ Link Cetak Kwitansi: " . $url . "\n\n" .
             "Terima kasih telah menggunakan layanan kami 🙏\n" .
             "Pesan ini dikirim otomatis oleh sistem *NBilling* ⚙️";
 

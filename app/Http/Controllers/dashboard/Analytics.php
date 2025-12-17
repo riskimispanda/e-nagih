@@ -66,18 +66,38 @@ class Analytics extends Controller
       })
       ->sum('jumlah_bayar');
 
-    $countPelangganLunas = Invoice::distinct('customer_id')
-      ->where('status_id', 8)
-      ->whereHas('customer', function ($query) {
-        $query->withTrashed();
-      })
-      ->whereHas('pembayaran', function ($q) {
-        $q->whereMonth('tanggal_bayar', Carbon::now()->month);
-        $q->whereYear('tanggal_bayar', Carbon::now()->year);
-      })
-      ->count('customer_id');
+      $countInvoiceAllPaid = Invoice::with('customer')
+          ->where('status_id', 8)
+          ->whereHas('customer', function ($q) {
+              $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
+          })
+          ->whereMonth('jatuh_tempo', Carbon::now()->month)
+          ->whereYear('jatuh_tempo', Carbon::now()->year)
+          ->where('paket_id', '!=', 11)
+          ->distinct('customer_id')
+          ->count();
+
+    $countPelangganLunas = Invoice::with('customer')
+        ->where('status_id', 8)
+        ->whereHas('customer', function ($q) {
+            $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
+        })
+        ->whereYear('jatuh_tempo', Carbon::now()->year)
+        ->where('paket_id', '!=', 11)
+        ->distinct('customer_id')
+        ->count();
 
     // Lebih efisien dengan sum di database
+    $countInvoiceAllUnPaid = Invoice::with('customer')
+        ->where('status_id', 7)
+        ->whereHas('customer', function ($q) {
+            $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+        })
+        ->whereYear('jatuh_tempo', Carbon::now()->year)
+        ->where('paket_id', '!=', 11)
+        ->distinct('customer_id')
+        ->count();
+
     $pelangganBelumLunas = Invoice::where('status_id', 7)
       ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
       ->whereMonth('jatuh_tempo', Carbon::now()->month)
@@ -90,11 +110,16 @@ class Analytics extends Controller
           ($invoice->saldo ?? 0);
       });
 
-    $countPelangganBelumLunas = Invoice::distinct('customer_id')->where('status_id', 7)
-      ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
-      ->whereMonth('jatuh_tempo', Carbon::now()->month)
-      ->whereYear('jatuh_tempo', Carbon::now()->year)
-      ->count('customer_id');
+    $countPelangganBelumLunas = Invoice::with('customer')
+        ->where('status_id', 7)
+        ->whereHas('customer', function ($q) {
+            $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+        })
+        ->whereMonth('jatuh_tempo', Carbon::now()->month)
+        ->whereYear('jatuh_tempo', Carbon::now()->year)
+        ->where('paket_id', '!=', 11)
+        ->distinct('customer_id')
+        ->count();
 
     $todaySchedules = Schedules::active()
       ->where('user_id', auth()->id())
@@ -130,12 +155,14 @@ class Analytics extends Controller
       'totalPengeluaran' => $totalPengeluaran,
       'todaySchedules' => $todaySchedules,
       'pelangganLunas' => $pelangganLunas,
-      'countLunas' => $countPelangganLunas,
+      'countLunas' => $countInvoiceAllPaid,
       'pelangganBelumLunas' => $pelangganBelumLunas,
-      'countBelumLunas' => $countPelangganBelumLunas,
+      'countBelumLunas' => $countInvoiceAllUnPaid,
       'open' => $open,
       'closed' => $closed,
-      'laba' => $labaRugi
+      'laba' => $labaRugi,
+      'countInvoiceAllPaid' => $countPelangganLunas,
+      'countInvoiceAllUnPaid' => $countPelangganBelumLunas
     ]);
   }
 

@@ -22,14 +22,14 @@
             --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             --transition: all 0.3s ease;
         }
-        
+
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #333;
             line-height: 1.6;
         }
-        
+
         /* Invoice Card Styling */
         .invoice-card {
             border-radius: var(--border-radius);
@@ -39,80 +39,80 @@
             background: white;
             transition: var(--transition);
         }
-        
+
         .invoice-card:hover {
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
-        
+
         .card-header {
             background: white;
             color: #333;
             padding: 1.5rem;
             border-bottom: 2px solid var(--primary-light);
         }
-        
+
         .card-header h4 {
             font-weight: 700;
             margin-bottom: 0.25rem;
             color: var(--primary-color);
         }
-        
+
         .card-header p {
             margin-bottom: 0.25rem;
             color: var(--secondary-color);
         }
-        
+
         .badge {
             font-size: 0.85rem;
             padding: 0.5em 1em;
             border-radius: 50px;
             font-weight: 600;
         }
-        
+
         .badge.bg-success {
             background: linear-gradient(90deg, var(--accent-color) 0%, #20c997 100%) !important;
         }
-        
+
         .badge.bg-warning {
             background: linear-gradient(90deg, var(--warning-color) 0%, #ffca2c 100%) !important;
         }
-        
+
         /* Icon Colors */
         .icon-primary {
             color: var(--primary-color);
         }
-        
+
         .icon-secondary {
             color: var(--secondary-color);
         }
-        
+
         .icon-accent {
             color: var(--accent-color);
         }
-        
+
         .icon-warning {
             color: var(--warning-color);
         }
-        
+
         .icon-info {
             color: var(--info-color);
         }
-        
+
         .icon-white {
             color: white;
         }
-        
+
         /* Table Styling */
         .invoice-table {
             border-radius: var(--border-radius);
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
-        
+
         .invoice-table thead {
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         }
-        
+
         .invoice-table thead th {
             color: white;
             font-weight: 600;
@@ -122,17 +122,17 @@
             padding: 1rem;
             border: none;
         }
-        
+
         .invoice-table tbody td {
             vertical-align: middle;
             padding: 1rem;
             border-color: #f1f5f9;
         }
-        
+
         .invoice-table tbody tr:hover {
             background-color: rgba(13, 110, 253, 0.03);
         }
-        
+
         /* Summary Section */
         .summary-card {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
@@ -140,14 +140,14 @@
             border-left: 4px solid var(--primary-color);
             padding: 1.5rem;
         }
-        
+
         .summary-item {
             display: flex;
             justify-content: space-between;
             padding: 0.5rem 0;
             border-bottom: 1px dashed #dee2e6;
         }
-        
+
         .summary-total {
             font-weight: 700;
             font-size: 1.2rem;
@@ -157,7 +157,7 @@
             margin-top: 0.5rem;
             border-top: 2px solid #dee2e6;
         }
-        
+
         /* Payment Methods */
         .payment-card {
             border-radius: var(--border-radius);
@@ -166,17 +166,17 @@
             overflow: hidden;
             background: white;
         }
-        
+
         .payment-card .card-header {
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
             color: white;
             border-bottom: none;
         }
-        
+
         .payment-card .card-header h5 {
             color: white;
         }
-        
+
         .payment-method {
             transition: var(--transition);
             cursor: pointer;
@@ -186,18 +186,18 @@
             margin-bottom: 0.75rem;
             background: white;
         }
-        
+
         .payment-method:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
             border-color: var(--primary-color);
         }
-        
+
         .payment-method.active {
             background: var(--primary-light);
             border-color: var(--primary-color);
         }
-        
+
         .payment-method-icon {
             width: 50px;
             height: 50px;
@@ -207,7 +207,7 @@
             padding: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
         }
-        
+
         /* Buttons */
         .btn-pay {
             background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
@@ -219,30 +219,30 @@
             transition: var(--transition);
             box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
         }
-        
+
         .btn-pay:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
         }
-        
+
         .btn-pay:disabled {
             background: #6c757d;
             box-shadow: none;
             transform: none;
             cursor: not-allowed;
         }
-        
+
         .btn-outline-primary {
             border-color: var(--primary-color);
             color: var(--primary-color);
         }
-        
+
         .btn-outline-primary:hover {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
             color: white;
         }
-        
+
         /* Footer */
         .invoice-footer {
             background: #f8f9fa;
@@ -250,32 +250,32 @@
             padding: 1.5rem;
             border-radius: 0 0 var(--border-radius) var(--border-radius);
         }
-        
+
         /* Company Header */
         .company-header {
             display: flex;
             align-items: center;
         }
-        
+
         .company-logo {
             max-width: 180px;
             height: auto;
             margin-right: 1rem;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
         }
-        
+
         .company-info h5 {
             font-weight: 700;
             margin-bottom: 0.25rem;
             color: var(--primary-color);
         }
-        
+
         .company-info p {
             margin-bottom: 0;
             color: var(--secondary-color);
             font-size: 0.9rem;
         }
-        
+
         /* Print Styles */
         @media print {
             body * {
@@ -294,43 +294,43 @@
                 display: none !important;
             }
         }
-        
+
         /* Animations */
         @keyframes btn-pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.03); }
             100% { transform: scale(1); }
         }
-        
+
         .btn-pulse {
             animation: btn-pulse 0.5s ease;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         .fade-in {
             animation: fadeIn 0.5s ease forwards;
         }
-        
+
         /* Responsive Adjustments */
         @media (max-width: 768px) {
             .company-header {
                 flex-direction: column;
                 text-align: center;
             }
-            
+
             .company-logo {
                 margin-right: 0;
                 margin-bottom: 1rem;
             }
-            
+
             .payment-method {
                 padding: 0.75rem;
             }
-            
+
             .payment-method-icon {
                 width: 40px;
                 height: 40px;
@@ -366,7 +366,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="card-body p-4">
                         <!-- Customer Details -->
                         <div class="row mb-4 pb-3 border-bottom">
@@ -387,7 +387,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Table -->
                         <div class="table-responsive mb-4">
                             <table class="table invoice-table table-hover">
@@ -414,7 +414,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- Summary -->
                         <div class="row">
                             <div class="col-md-8 col-12 mb-md-0 mb-3">
@@ -456,7 +456,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Invoice Footer -->
                         <div class="invoice-footer">
                             <div class="d-flex align-items-start">
@@ -470,12 +470,12 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Payment Methods Column -->
             <div class="col-lg-4 no-print">
                 @if ($invoice->status->id != 8)
                 <div class="sticky-top" style="top: 20px;">
-                    
+
                     <!-- Payment Methods -->
                     <div class="payment-card fade-in">
                         <div class="card-header">
@@ -496,7 +496,7 @@
                                 </div>
                                 @endforeach
                             </div>
-                            
+
                             <form action="{{ route('tripay.payment', $invoice->id) }}" method="POST" id="payment-form">
                                 @csrf
                                 <input type="hidden" name="payment_method" id="payment_method">
@@ -506,7 +506,7 @@
                                     </button>
                                 </div>
                             </form>
-                            
+
                             <div class="alert alert-warning mt-3 mb-0">
                                 <div class="d-flex align-items-start">
                                     <i class="fas fa-exclamation-triangle icon-warning me-2 mt-1"></i>
@@ -517,27 +517,28 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Print Button -->
-                    <div class="d-grid mt-3">
-                        <button class="btn btn-outline-primary" id="print-invoice">
-                            <i class="fas fa-print icon-primary me-2"></i> Cetak Invoice
-                        </button>
-                    </div>
                 </div>
                 @else
                 <div class="payment-card fade-in">
-                    <div class="card-body text-center py-5">
+                    <div class="card-body text-center py-4">
                         <i class="fas fa-check-circle icon-primary mb-3" style="font-size: 3rem;"></i>
                         <h5 class="mb-2">Pembayaran Berhasil</h5>
                         <p class="text-muted">Invoice ini telah dibayar lunas.</p>
+                        <!-- Print Button -->
+                        <div class="mt-2">
+                          <a href="/print-kwitansi/{{ $invoice->id }}">
+                            <button class="btn btn-outline-primary">
+                                <i class="fas fa-print me-2"></i> Cetak PDF
+                            </button>
+                          </a>
+                        </div>
                     </div>
                 </div>
                 @endif
             </div>
         </div>
     </div>
-    
+
     <footer class="bg-dark text-white py-4 mt-5 no-print">
         <div class="container text-center">
             ©
@@ -562,25 +563,25 @@
             m.classList.remove('active');
             m.querySelector('.fa-check-circle').classList.add('d-none');
         });
-        
+
         // Add active class and visual feedback
         element.classList.add('active');
         element.querySelector('.fa-check-circle').classList.remove('d-none');
-        
+
         // Update hidden input
         document.getElementById('payment_method').value = code;
-        
+
         // Enable pay button and add visual feedback
         const payButton = document.getElementById('pay-button');
         payButton.disabled = false;
         payButton.classList.add('btn-pulse');
-        
+
         // Remove pulse effect after animation
         setTimeout(() => {
             payButton.classList.remove('btn-pulse');
         }, 1000);
     }
-    
+
     document.addEventListener('DOMContentLoaded', function() {
         // Print invoice button
         const printButton = document.getElementById('print-invoice');
@@ -589,7 +590,7 @@
                 window.print();
             });
         }
-        
+
         // Payment form validation
         const paymentForm = document.getElementById('payment-form');
         if (paymentForm) {
@@ -605,18 +606,18 @@
                         setTimeout(() => {
                             paymentMethodsList.classList.remove('shake');
                         }, 500);
-                        
+
                         // Show a notification
                         const notification = document.createElement('div');
                         notification.className = 'alert alert-warning mt-3 fade-in';
                         notification.innerHTML =
                         '<i class="fas fa-info-circle me-2"></i> Silakan pilih metode pembayaran terlebih dahulu';
-                        
+
                         // Insert the notification before the submit button
                         const submitButton = paymentForm.querySelector('button[type="submit"]');
                         if (submitButton) {
                             submitButton.parentNode.insertBefore(notification, submitButton);
-                            
+
                             // Remove the notification after 3 seconds
                             setTimeout(() => {
                                 notification.remove();
@@ -627,7 +628,7 @@
                 }
             });
         }
-        
+
         // Add a CSS class for the shake animation
         const style = document.createElement('style');
         style.textContent = `

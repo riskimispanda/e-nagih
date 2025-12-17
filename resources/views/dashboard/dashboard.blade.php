@@ -181,8 +181,11 @@
                         <i class="bx bx-show text-xl"></i>
                     </button>
                 </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-2">
+                    <i class="bx bxs-user mr-1"></i>{{ $countLunas }} Pelanggan Lunas (MONTHLY)
+                </span>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <i class="bx bxs-user mr-1"></i>{{ $countLunas }} Pelanggan
+                    <i class="bx bxs-user mr-1"></i>{{ $countInvoiceAllPaid }} Pelanggan Lunas (YEARLY)
                 </span>
             </div>
 
@@ -203,8 +206,11 @@
                         <i class="bx bx-show text-xl"></i>
                     </button>
                 </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mb-2">
+                    <i class="bx bxs-user mr-1"></i>{{ $countInvoiceAllUnPaid }} Pelanggan Belum Lunas (MONTHLY)
+                </span>
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    <i class="bx bxs-user mr-1"></i>{{ $countBelumLunas }} Pelanggan
+                    <i class="bx bxs-user mr-1"></i>{{ $countBelumLunas }} Pelanggan Belum Lunas (YEARLY)
                 </span>
             </div>
 
@@ -285,7 +291,7 @@
                         </div>
                         @endforeach
                     </div>
-                    
+
                     {{-- Tombol View All --}}
                     <div class="text-center mt-6 pt-4 border-t border-gray-200">
                         <a href="/data/pembayaran" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200" data-bs-toggle="tooltip" title="Lihat Transaksi" data-bs-placement="top">
@@ -294,7 +300,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Additional content can go here in the remaining 2/3 space -->
             <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 <h5 class="text-lg fw-semibold text-gray-900 mb-4">Ringkasan Performa</h5>
@@ -315,7 +321,7 @@
             maxZoom: 20,
             attribution: '© Panda'
         }).addTo(map);
-        
+
 
         const colors = {
             server: 'red',
@@ -456,20 +462,20 @@
     // Toggle visibility untuk card amount
     document.addEventListener('DOMContentLoaded', function() {
         initializeCardStates();
-        
+
         document.querySelectorAll('.toggle-icon').forEach(icon => {
             icon.addEventListener('click', function() {
                 const target = this.getAttribute('data-target');
                 toggleCardVisibility(target, this);
             });
         });
-        
+
         function toggleCardVisibility(target, icon) {
             const cardElement = document.querySelector(`[data-target="${target}"]`).closest('.bg-white');
             const nominalText = cardElement.querySelector('.nominal-text');
             const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
             const iconElement = icon.querySelector('i');
-            
+
             if (nominalText.classList.contains('hidden')) {
                 // Show - tampilkan teks asli
                 nominalText.classList.remove('hidden');
@@ -478,7 +484,7 @@
                 iconElement.classList.add('bx-hide');
                 icon.classList.remove('text-gray-400');
                 icon.classList.add('text-green-600');
-                
+
                 localStorage.setItem(`card-${target}-hidden`, 'false');
             } else {
                 // Hide - tampilkan dots
@@ -488,27 +494,27 @@
                 iconElement.classList.add('bx-show');
                 icon.classList.remove('text-green-600');
                 icon.classList.add('text-gray-400');
-                
+
                 localStorage.setItem(`card-${target}-hidden`, 'true');
             }
         }
-        
+
         function initializeCardStates() {
             const cards = [
                 { target: 'lunas-card' },
                 { target: 'belum-lunas-card' }
             ];
-            
+
             cards.forEach(card => {
                 const isHidden = localStorage.getItem(`card-${card.target}-hidden`) === 'true';
                 const icon = document.querySelector(`[data-target="${card.target}"]`);
-                
+
                 if (icon) {
                     const cardElement = icon.closest('.bg-white');
                     const nominalText = cardElement.querySelector('.nominal-text');
                     const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
                     const iconElement = icon.querySelector('i');
-                    
+
                     if (isHidden) {
                         nominalText.classList.add('hidden');
                         dotsPlaceholder.classList.remove('hidden');

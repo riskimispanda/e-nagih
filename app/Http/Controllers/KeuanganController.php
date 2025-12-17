@@ -134,6 +134,7 @@ class KeuanganController extends Controller
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
         $bulan = $request->get('bulan');
+        $tahun = $request->get('tahun');
 
         $sumData = Invoice::whereIn('status_id', [7, 8])
             ->whereMonth('jatuh_tempo', now()->month)
@@ -160,8 +161,21 @@ class KeuanganController extends Controller
         $query = Invoice::with(['customer' => function ($query) {
             $query->withTrashed(); // Include soft deleted customers
         }, 'paket', 'status'])
+            ->where('paket_id', '!=', 11)
             ->orderBy('created_at', 'desc')
-            ->whereIn('status_id', [1, 7]);
+            ->where('status_id', 7);
+
+
+        $countInvoiceAll = Invoice::with('customer')
+            ->where('status_id', 7)
+            ->whereHas('customer', function ($q) {
+                $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+            })
+            ->whereYear('jatuh_tempo', Carbon::now()->year)
+            ->where('paket_id', '!=', 11)
+            ->distinct('customer_id')
+            ->count();
+        // dd($countInvoiceAll);
 
         // Apply search filter - INCLUDE SOFT DELETED CUSTOMERS IN SEARCH
         if ($search) {
@@ -183,6 +197,11 @@ class KeuanganController extends Controller
             $query->whereMonth('jatuh_tempo', $bulan);
         }
 
+        // Apply year filter - only filter by year if tahun is not empty (when "Semua Tahun" is selected, tahun will be empty)
+        if ($tahun && $tahun !== '' && $tahun !== null) {
+            $query->whereYear('jatuh_tempo', $tahun);
+        }
+
         // Apply date range filter
         if ($startDate && $endDate) {
             $query->whereBetween('jatuh_tempo', [
@@ -199,6 +218,10 @@ class KeuanganController extends Controller
 
         if ($bulan) {
             $perki->whereMonth('jatuh_tempo', $bulan);
+        }
+
+        if ($tahun && $tahun !== '' && $tahun !== null) {
+            $perki->whereYear('jatuh_tempo', $tahun);
         }
 
         // Ambil semua data untuk kalkulasi - INCLUDE SOFT DELETED CUSTOMERS
@@ -303,6 +326,13 @@ class KeuanganController extends Controller
             ->distinct('customer_id')
             ->count('customer_id');
 
+        $totalHarga = Invoice::whereIn('status_id', [7, 8])
+            ->where('paket_id', '!=', 11)
+            ->whereMonth('jatuh_tempo', Carbon::now()->month)
+            ->whereYear('jatuh_tempo', Carbon::now()->year)
+            ->join('paket', 'invoice.paket_id', '=', 'paket.id')
+            ->sum('paket.harga');
+
         return view('keuangan.data-pendapatan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -317,6 +347,7 @@ class KeuanganController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
             'bulan' => $bulan,
+            'tahun' => $tahun,
             'metode' => $metode,
             'pendapatan' => $pendapatan,
             'agen' => $agen,
@@ -324,7 +355,9 @@ class KeuanganController extends Controller
             'pembayaran' => $pembayaran,
             'perkiraanPendapatan' => $estimasi,
             'tes' => $tes,
-            'jumlah_customer' => $jumlahCustomer
+            'jumlah_customer' => $jumlahCustomer,
+            'countInvoiceAll' => $countInvoiceAll,
+            'totalEstimasi' => $totalHarga
         ]);
     }
 
@@ -337,6 +370,7 @@ class KeuanganController extends Controller
             $startDate = $request->get('start_date', '');
             $endDate = $request->get('end_date', '');
             $bulan = $request->get('bulan', '');
+            $tahun = $request->get('tahun', '');
             $perPage = $request->get('per_page', 25);
             $page = $request->get('page', 1);
 
@@ -344,6 +378,7 @@ class KeuanganController extends Controller
                 'search' => $search,
                 'status' => $status,
                 'bulan' => $bulan,
+                'tahun' => $tahun,
                 'perPage' => $perPage,
                 'page' => $page
             ]);
@@ -357,6 +392,7 @@ class KeuanganController extends Controller
                 'status'
             ])
                 ->orderBy('created_at', 'desc')
+                ->where('paket_id', '!=', 11)
                 ->whereIn('status_id', [1, 7]);
 
             // Apply search filter - PERBAIKI: Include withTrashed() di search juga
@@ -381,6 +417,11 @@ class KeuanganController extends Controller
             // Apply month filter
             if (!empty($bulan) && $bulan !== '') {
                 $query->whereMonth('jatuh_tempo', $bulan);
+            }
+
+            // Apply year filter
+            if (!empty($tahun) && $tahun !== '') {
+                $query->whereYear('jatuh_tempo', $tahun);
             }
 
             // Apply date range filter
@@ -1811,7 +1852,7 @@ class KeuanganController extends Controller
                 'tanggal_bayar'   => now(),
                 'metode_bayar'    => $request->metode_id,
                 'tipe_pembayaran' => $request->tipe_pembayaran, // TAMBAHKAN INI
-                'keterangan'      => $keteranganPembayaran,
+                'keterangan'      => $request->keterangan ?? $keteranganPembayaran,
                 'status_id'       => 8,
                 'user_id'         => auth()->id(),
                 'bukti_bayar'     => $buktiPath,

@@ -57,10 +57,11 @@ class DataController extends Controller
             ->whereNotNull('deleted_at')
             ->whereMonth('deleted_at', now()->month)
             ->whereYear('deleted_at', now()->year)
+            ->orderBy('deleted_at', 'desc')
             ->count();
 
         $dismantleGet = Customer::withTrashed()->whereNotNull('deleted_at')->whereMonth('deleted_at', now()->month)
-            ->whereYear('deleted_at', now()->year)->get();
+            ->whereYear('deleted_at', now()->year)->orderBy('deleted_at', 'desc')->get();
         $countAgen = User::where('roles_id', 6)->count();
         // Apply search filter
         if ($search) {
@@ -119,6 +120,7 @@ class DataController extends Controller
 
             return $customer;
         });
+
         // Get statistics data (independent of pagination)
         $totalCustomers = Customer::whereIn('status_id', [3, 4, 9])->count();
         $totalActive = Customer::where('status_id', 3)->count();
@@ -169,7 +171,7 @@ class DataController extends Controller
             ->whereYear('tanggal_selesai', now()->year)
             ->count();
 
-        $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->get();
+        $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->orderBy('updated_at', 'desc')->get();
         $countPelangganAktif = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
         $allData = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
         $dateBlokir = Invoice::with('customer')->first();
@@ -253,10 +255,11 @@ class DataController extends Controller
     ')
             ->first();
 
-        $totalPendapatan = ($sumData->total_tagihan ?? 0)
-            + ($sumData->total_tambahan ?? 0)
-            + ($sumData->total_tunggakan ?? 0)
-            - ($sumData->total_saldo ?? 0);
+        $totalPendapatan = Invoice::whereIn('status_id', [7, 8])
+            ->where('paket_id', '!=', 11)
+            ->whereMonth('jatuh_tempo', Carbon::now()->month)
+            ->join('paket', 'invoice.paket_id', '=', 'paket.id')
+            ->sum('paket.harga');
 
         $sudahBayar = Invoice::distinct('customer_id')
             ->where('status_id', 8)
@@ -273,6 +276,8 @@ class DataController extends Controller
                 $q->whereYear('tanggal_bayar', Carbon::now()->year);
             })
             ->count();
+
+        $fasum = Customer::where('paket_id', 11)->count();
 
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
@@ -298,7 +303,8 @@ class DataController extends Controller
             'dismantle' => $dismantle,
             'dismantleGet' => $dismantleGet,
             'allData' => $allData,
-            'dateBlokir' => $dateBlokir
+            'dateBlokir' => $dateBlokir,
+            'fasum' => $fasum,
         ]);
     }
 

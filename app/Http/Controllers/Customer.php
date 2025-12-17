@@ -14,6 +14,7 @@ use App\Events\UpdateBaru;
 use App\Models\Kas;
 use App\Models\Pembayaran;
 use Spatie\Activitylog\Models\Activity;
+use Carbon\Carbon;
 
 class Customer extends Controller
 {
@@ -125,6 +126,20 @@ class Customer extends Controller
     public function create()
     {
         //
+    }
+
+    public function printKwitansi($id)
+    {
+      $invoice = Invoice::findOrFail($id);
+      $customer = CustomerModel::where('id', $invoice->customer_id)->first();
+      $pembayaran = Pembayaran::where('invoice_id', $id)->first();
+      $tanggalBayar = Carbon::parse($pembayaran->tanggal_bayar)->locale('id')->translatedFormat('d-M-Y');
+      return view('pelanggan/payment/print-kwitansi',[
+        'invoice' => $invoice,
+        'customer' => $customer,
+        'pembayaran' => $pembayaran,
+        'tanggal' => $tanggalBayar,
+      ]);
     }
 
     /**

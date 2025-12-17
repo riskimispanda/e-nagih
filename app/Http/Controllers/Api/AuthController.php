@@ -142,9 +142,11 @@ class AuthController extends Controller
         $customer = Customer::with(['paket:id,nama_paket', 'agen:id,name'])
             ->where('user_id', auth()->user()->id)
             ->first();
-        $user = User::where('name', $customer->nama_customer)->first();
 
-        if (!$customer) {
+        $user = User::where('name', auth()->user()->name)->get();
+
+        if (!$user) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Customer data not found',

@@ -319,7 +319,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <p class="text-muted small mb-1 fw-medium">Jumlah Pelanggan</p>
-                    <h5 id="totalInvoicesValue" class="fw-bold text-dark mb-0">{{ number_format($totalInvoices ?? 0, 0, ',', '.') }}</h5>
+                    <h5 id="" class="fw-bold text-dark mb-0">{{$countInvoiceAll}}</h5>
                 </div>
                 <div class="stat-icon bg-danger bg-opacity-10 text-danger">
                     <i class="bx bxs-user"></i>
@@ -366,6 +366,22 @@
                 </select>
             </div>
 
+            <div class="col-12 col-lg-4">
+                <label class="form-label">Tahun</label>
+                <select name="tahun" id="tahun" class="form-select">
+                    <option value="">Semua Tahun</option>
+                    @php
+                    $currentYear = date('Y'); // Tahun sekarang
+                    $startYear = $currentYear - 5; // Mulai 5 tahun ke belakang
+                    $endYear = $currentYear + 1; // Sampai 1 tahun ke depan
+                    @endphp
+                    @for ($i = $endYear; $i >= $startYear; $i--)
+                    <option value="{{ $i }}" {{ (isset($tahun) && $tahun == $i) ? 'selected' : (($tahun === null || $tahun === '') && $i == $currentYear ? 'selected' : '') }}>
+                        {{ $i }}
+                    </option>
+                    @endfor
+                </select>
+            </div>
 
             <!-- Status filter removed as requested -->
 
@@ -389,7 +405,7 @@
                 }
             @endphp
         </h5>
-        <small class="fw-semibold badge bg-danger bg-opacity-10 text-danger mt-3 mb-3">Estimasi Pendapatan Bulan {{ date('M') }} : Rp {{ number_format($tes ?? 0, 0, ',', '.') }}</small>
+        <small class="fw-semibold badge bg-danger bg-opacity-10 text-danger mt-3 mb-3">Estimasi Pendapatan Bulan {{ date('M') }} : Rp {{ number_format($totalEstimasi ?? 0, 0, ',', '.') }}</small>
     </div>
 
     <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 p-4 border-bottom">
@@ -809,6 +825,25 @@
                             <input type="file" class="form-control" name="bukti_pembayaran">
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col mb-4 col-lg-12">
+                            <label for="keteranganPembayaran" class="form-label">
+                                Keterangan Pembayaran
+                                <span class="text-muted">(Opsional)</span>
+                            </label>
+                            <textarea
+                                class="form-control"
+                                id="keteranganPembayaran"
+                                name="keterangan"
+                                rows="4"
+                                placeholder="Masukkan keterangan pembayaran jika diperlukan"
+                                aria-describedby="keteranganHelp"
+                            ></textarea>
+                            <div id="keteranganHelp" class="form-text">
+                                Maksimal 500 karakter. Isi dengan informasi tambahan terkait pembayaran.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer gap-2">
@@ -991,9 +1026,17 @@ function initializeSearch() {
 // Initialize filter functionality
 function initializeFilters() {
     const bulanSelect = document.getElementById('bulan');
+    const tahunSelect = document.getElementById('tahun');
 
     if (bulanSelect) {
         bulanSelect.addEventListener('change', function() {
+            // Reset ke page 1 saat filter berubah
+            loadDataWithAjax(getCurrentPerPage(), 1);
+        });
+    }
+
+    if (tahunSelect) {
+        tahunSelect.addEventListener('change', function() {
             // Reset ke page 1 saat filter berubah
             loadDataWithAjax(getCurrentPerPage(), 1);
         });
@@ -1099,19 +1142,34 @@ function loadDataWithAjax(perPage = 25, page = 1) {
             updateStatistics(data.data.statistics);
             updatePaginationWithAjax(data.data.pagination, perPage);
 
-            // Update title with selected month
+            // Update title with selected month and year
             const bulanSelect = document.getElementById('bulan');
+            const tahunSelect = document.getElementById('tahun');
             const invoiceTitle = document.getElementById('invoice-title');
-            if (bulanSelect && invoiceTitle) {
-                const selectedOption = bulanSelect.options[bulanSelect.selectedIndex];
-                const monthName = selectedOption.text;
-                const monthValue = selectedOption.value;
+            if (bulanSelect && tahunSelect && invoiceTitle) {
+                const selectedMonthOption = bulanSelect.options[bulanSelect.selectedIndex];
+                const selectedYearOption = tahunSelect.options[tahunSelect.selectedIndex];
+                const monthName = selectedMonthOption.text;
+                const monthValue = selectedMonthOption.value;
+                const yearName = selectedYearOption.text;
+                const yearValue = selectedYearOption.value;
+
+                let titleText = 'Daftar Invoice Customer';
+                let titleParts = [];
 
                 if (monthValue && monthValue !== '') {
-                    invoiceTitle.innerHTML = `Daftar Invoice Customer - ${monthName}`;
-                } else {
-                    invoiceTitle.innerHTML = 'Daftar Invoice Customer';
+                    titleParts.push(monthName);
                 }
+
+                if (yearValue && yearValue !== '') {
+                    titleParts.push(yearName);
+                }
+
+                if (titleParts.length > 0) {
+                    titleText += ' - ' + titleParts.join(' ');
+                }
+
+                invoiceTitle.innerHTML = titleText;
             }
 
             // GENERATE MODAL DARI DATA AJAX
@@ -1276,6 +1334,25 @@ function createModalHTML(invoice) {
                             <div class="col mb-4 col-lg-12">
                                 <label class="form-label">Bukti Pembayaran</label>
                                 <input type="file" class="form-control" name="bukti_pembayaran">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col mb-4 col-lg-12">
+                                <label for="keteranganPembayaran" class="form-label">
+                                    Keterangan Pembayaran
+                                    <span class="text-muted">(Opsional)</span>
+                                </label>
+                                <textarea
+                                    class="form-control"
+                                    id="keteranganPembayaran"
+                                    name="keterangan"
+                                    rows="4"
+                                    placeholder="Masukkan keterangan pembayaran jika diperlukan"
+                                    aria-describedby="keteranganHelp"
+                                ></textarea>
+                                <div id="keteranganHelp" class="form-text">
+                                    Maksimal 500 karakter. Isi dengan informasi tambahan terkait pembayaran.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1777,7 +1854,7 @@ function formatRupiah(el, id) {
 // Event delegation untuk handle tombol konfirmasi
 document.addEventListener('click', function(e) {
     // Cek apakah yang diklik adalah tombol submit dalam modal konfirmasi
-    if (e.target && (e.target.matches('button[type="submit"]') || 
+    if (e.target && (e.target.matches('button[type="submit"]') ||
                      e.target.closest('button[type="submit"]'))) {
 
         const button = e.target.matches('button[type="submit"]') ? e.target : e.target.closest('button[type="submit"]');
@@ -1786,17 +1863,17 @@ document.addEventListener('click', function(e) {
         // Pastikan ini adalah form konfirmasi pembayaran
         if (form && form.action.includes('/request/pembayaran/')) {
             e.preventDefault();
-            
+
             const modal = form.closest('.modal');
             const invoiceId = modal.id.replace('konfirmasiPembayaran', '');
-            
+
             // Ambil data dari form
             const customerNameElement = modal.querySelector('.modal-title .fw-bold');
             const customerName = customerNameElement ? customerNameElement.textContent : 'Customer';
-            
+
             const paymentPeriodEl = form.querySelector('input[type="date"]');
-            const paymentPeriod = paymentPeriodEl ? 
-                new Date(paymentPeriodEl.value).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) : 
+            const paymentPeriod = paymentPeriodEl ?
+                new Date(paymentPeriodEl.value).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) :
                 'N/A';
 
             const paymentAmountInput = form.querySelector(`#raw${invoiceId}`);

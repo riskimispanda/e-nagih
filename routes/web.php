@@ -98,6 +98,7 @@ Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
 // Tripay Payment
 Route::get('/payment/invoice/{id}', [TripayController::class, 'showPaymentPage'])->name('payment.show');
+Route::get('/print-kwitansi/{id}', [Customer::class, 'printKwitansi']);
 Route::post('/tripay/sync-payment/{invoice}', [TripayController::class, 'syncPayment'])->middleware(
   'auth',
   'roles:Super Admin,Admin Keuangan'

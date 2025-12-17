@@ -942,6 +942,21 @@
                         </div>
                     </div>
                     <div class="col-sm-6 col-lg-3 mb-3">
+                      <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
+                          <div class="data-card-icon secondary">
+                              <i class="bx bx-package"></i>
+                          </div>
+                          <div class="data-card-content">
+                              <div class="data-label">Pelanggan Fasum</div>
+                              <div class="data-value">
+                                  <span class="badge bg-secondary rounded-pill">
+                                      {{ $fasum }}
+                                  </span>
+                              </div>
+                          </div>
+                      </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3 mb-3">
                         <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Data Agen">
                             <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
                                 <div class="data-card-icon secondary">
@@ -1225,7 +1240,7 @@
                                     </span>
                                     @else
                                     <span class="badge bg-label-info">
-                                        {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y H:i:s')) }}
+                                        {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y')) }}
                                     </span>
                                     @endif
                                 </td>
