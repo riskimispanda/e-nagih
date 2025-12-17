@@ -166,7 +166,7 @@ class TiketController extends Controller
         }])
             ->whereHas('customer', function ($query) {
             $query->whereIn('status_id', [3, 4, 9])
-                    ->withTrashed();
+                ->whereNull('deleted_at');
             })
             ->where('status_id', 6)
             ->orderBy('created_at', 'desc');
