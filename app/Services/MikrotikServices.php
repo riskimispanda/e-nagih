@@ -1405,7 +1405,7 @@ class MikrotikServices
         try {
             $query = new Query('/ppp/secret/print');
             // $query->where('comment', 'Created by NBilling');
-            $query->where('name', '011010520245.Siti-Cotimah-Pacar@megaroute.net.id');
+            $query->where('name', '0110171120235.Yunus-Jetis@megaroute.net.id');
             return $client->query($query)->read();
         } catch (\Exception $e) {
             Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
