@@ -292,8 +292,6 @@
             .footer {
                 position: fixed;
                 bottom: 20px;
-                left: 20px;
-                right: 20px;
             }
             /* Ensure background colors print */
             .invoice-table th {
@@ -431,7 +429,7 @@
 
         <div class="footer">
             <p>Terima kasih atas kepercayaan Anda.</p>
-            <p style="margin-top: 5px;">Dokumen ini adalah bukti pembayaran yang sah dan diterbitkan oleh sistem komputer.</p>
+            <p style="margin-top: 5px;">Dokumen ini adalah bukti pembayaran yang sah dan diterbitkan oleh sistem.</p>
             <p>Dicetak pada: {{ date('d/m/Y H:i:s') }}</p>
         </div>
     </div>
@@ -440,7 +438,7 @@
         window.addEventListener('load', function() {
             setTimeout(function() {
                 window.print();
-            }, 500);
+            }, 1000);
         });
     </script>
 </body>
