@@ -533,6 +533,8 @@ class DataController extends Controller
                     'password' => $pelanggan->password,
                     'profile' => $pelanggan->paket->paket_name,
                     'service' => $konek,
+                    'remoteAddress' => $pelanggan->remote_address,
+                    'localAddress' => $pelanggan->local_address,
                 ]);
             }
 
@@ -549,9 +551,9 @@ class DataController extends Controller
                     'status_id'     => 13
                 ]
             );
-            activity('Edit Pelanggan')
-                ->causedBy(auth()->user())
-                ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan ' . $pelanggan->nama_customer);
+            // activity('Edit Pelanggan')
+            //     ->causedBy(auth()->user())
+            //     ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan ' . $pelanggan->nama_customer);
             DB::commit();
 
             return redirect('/data/pelanggan')->with('success', 'Data pelanggan berhasil diperbarui.');

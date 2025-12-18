@@ -6,6 +6,7 @@ use RouterOS\Query;
 use RouterOS\Exception;
 use App\Models\Router;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Models\Customer;
 
@@ -447,21 +448,21 @@ class MikrotikServices
     {
         $query = new Query('/interface/print');
         $interfaces = $client->query($query)->read();
-    
+
         $filtered = collect($interfaces)->filter(function ($intf) {
             return isset($intf['running']) && $intf['running'] === 'true'
                 && isset($intf['rx-byte']) && isset($intf['tx-byte'])
                 && (!isset($intf['type']) || !str_contains($intf['type'], 'pppoe'))
                 && (!isset($intf['name']) || !str_contains($intf['name'], '<'));
         });
-    
+
         $sorted = $filtered->sortByDesc(function ($intf) {
             return ($intf['rx-byte'] ?? 0) + ($intf['tx-byte'] ?? 0);
         });
-    
+
         return $sorted->first()['name'] ?? null;
     }
-    
+
     public static function testKoneksi($ip, $port, $username, $password)
     {
         try {

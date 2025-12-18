@@ -37,7 +37,7 @@ class MikrotikController extends Controller
         //     'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
         // ]);
 
-        dd($blokir);
+        dd($user);
     }
 
     public function testKoneksi($id)
