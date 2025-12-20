@@ -651,7 +651,7 @@ class KeuanganController extends Controller
                 ->sum('jumlah_bayar');
         }
 
-        $totalTransactions = Pembayaran::whereMonth('created_at', $month)->whereYear('created_at', Carbon::now()->year)->count();
+        $totalTransactions = Pembayaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->count();
 
         // Get payment methods for filter dropdown
         $paymentMethods = Pembayaran::select('metode_bayar')
