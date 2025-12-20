@@ -277,7 +277,7 @@ class DataController extends Controller
             })
             ->count();
 
-        $fasum = Customer::where('paket_id', 11)->whereNull('deleted_at')->count();
+        $fasum = Customer::where('paket_id', 11)->where('status_id', 3)->whereNull('deleted_at')->count();
 
         return view('data.data-pelanggan', [
             'users' => auth()->user(),
