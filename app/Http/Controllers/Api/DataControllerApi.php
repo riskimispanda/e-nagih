@@ -260,12 +260,28 @@ class DataControllerApi extends Controller
           ->distinct('customer_id')
           ->count('customer_id');
 
+      // Opsi 1: Semua invoice belum bayar (termasuk tunggakan)
+      $invoiceUnpaidAll = Invoice::with('customer')->where('status_id', 7)
+                      ->whereHas('customer', function ($query) {
+                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+                      })
+                      ->distinct('customer_id')->count('customer_id');
+
+      // Opsi 2: Invoice belum bayar bulan ini saja
       $invoiceUnpaid = Invoice::with('customer')->where('status_id', 7)
                       ->whereHas('customer', function ($query) {
                           $query->withTrashed()->whereIn('status_id',[3,4,9]);
                       })
                       ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
 
+      // Opsi 1: Semua invoice sudah bayar (termasuk pembayaran tunggakan)
+      $invoicePaidAll = Invoice::with('customer')->where('status_id', 8)
+                      ->whereHas('customer', function ($query) {
+                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+                      })
+                      ->distinct('customer_id')->count('customer_id');
+
+      // Opsi 2: Invoice sudah bayar bulan ini saja
       $invoicePaid = Invoice::with('customer')->where('status_id', 8)
                       ->whereHas('customer', function ($query) {
                           $query->withTrashed()->whereIn('status_id',[3,4,9]);
@@ -278,7 +294,9 @@ class DataControllerApi extends Controller
           'totalAktif' => $totalAktif,
           'totalNonAktif' => $totalNonAktif,
           'invoiceUnpaid' => $invoiceUnpaid,
+          'invoiceUnpaidAll' => $invoiceUnpaidAll,
           'invoicePaid' => $invoicePaid,
+          'invoicePaidAll' => $invoicePaidAll,
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'totalInvoicePaid' => $totalInvoicePaid,
