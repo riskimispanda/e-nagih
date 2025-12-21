@@ -274,6 +274,22 @@ class DataControllerApi extends Controller
           'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
           'totalTransaksi' => $totalTransactions,
           'totalInvoiceUnpaidThisMonth' => $totalInvoiceUnpaidThisMonth,
+          'invoice_consistency_analysis' => [
+              'using_jatuh_tempo' => [
+                  'paid' => $invoicePaid,
+                  'unpaid' => $invoiceUnpaid,
+                  'total' => $invoicePaid + $invoiceUnpaid,
+                  'missing' => $totalCustomer - ($invoicePaid + $invoiceUnpaid),
+                  'is_consistent' => $totalCustomer === ($invoicePaid + $invoiceUnpaid)
+              ],
+              'using_created_at' => [
+                  'paid' => $totalInvoicePaid,
+                  'unpaid' => $totalInvoiceUnpaidThisMonth,
+                  'total' => $totalInvoicePaid + $totalInvoiceUnpaidThisMonth,
+                  'missing' => $totalCustomer - ($totalInvoicePaid + $totalInvoiceUnpaidThisMonth),
+                  'is_consistent' => $totalCustomer === ($totalInvoicePaid + $totalInvoiceUnpaidThisMonth)
+              ]
+          ],
           'customer_based_calculation' => [
               'customers_paid_this_month' => $customersPaidThisMonth,
               'customers_unpaid_this_month' => $customersUnpaidThisMonth,
