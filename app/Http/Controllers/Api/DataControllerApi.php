@@ -367,10 +367,9 @@ class DataControllerApi extends Controller
       try {
           DB::beginTransaction();
 
-          // Get customers without ANY invoice (sama sekali)
+          // Get customers without ANY invoice (sama sekali) termasuk paket khusus
           $customersWithoutInvoice = Customer::whereNull('deleted_at')
               ->whereIn('status_id', [3, 4, 9])
-              ->whereNot('paket_id', 11)
               ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
               ->with(['paket', 'status'])
               ->get();
@@ -381,8 +380,8 @@ class DataControllerApi extends Controller
 
           foreach ($customersWithoutInvoice as $customer) {
               try {
-                  // Validate customer has valid package
-                  if (!$customer->paket_id || !$customer->paket || $customer->paket_id == 11) {
+// Validate customer has valid package (include paket_id = 11)
+                  if (!$customer->paket_id || !$customer->paket) {
                       $errors[] = "Customer {$customer->nama_customer} tidak memiliki paket yang valid (paket_id: {$customer->paket_id})";
                       continue;
                   }
