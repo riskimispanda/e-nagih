@@ -486,7 +486,7 @@ class DataControllerApi extends Controller
                   'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
                   'merchant_ref' => uniqid('inv_', true),
                   'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket,
+                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket,
                   'has_ever_invoice' => false // Tidak pernah punya invoice
               ];
           });
