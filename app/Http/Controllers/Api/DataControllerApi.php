@@ -260,33 +260,39 @@ class DataControllerApi extends Controller
           ->distinct('customer_id')
           ->count('customer_id');
 
-      // Opsi 1: Semua invoice belum bayar (termasuk tunggakan)
-      $invoiceUnpaidAll = Invoice::with('customer')->where('status_id', 7)
-                      ->whereHas('customer', function ($query) {
-                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+      // DARI CUSTOMER - Semua customer yang punya invoice belum bayar (status_id=7)
+      $invoiceUnpaidAll = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereHas('invoice', function ($query) {
+                          $query->where('status_id', 7);
                       })
-                      ->distinct('customer_id')->count('customer_id');
+                      ->count();
 
-      // Opsi 2: Invoice belum bayar bulan ini saja
-      $invoiceUnpaid = Invoice::with('customer')->where('status_id', 7)
-                      ->whereHas('customer', function ($query) {
-                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+      // DARI CUSTOMER - Customer yang punya invoice belum bayar bulan ini
+      $invoiceUnpaid = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereHas('invoice', function ($query) {
+                          $query->where('status_id', 7)
+                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
                       })
-                      ->distinct('customer_id')->count('customer_id');
+                      ->count();
 
-      // Opsi 1: Semua invoice sudah bayar (termasuk pembayaran tunggakan)
-      $invoicePaidAll = Invoice::with('customer')->where('status_id', 8)
-                      ->whereHas('customer', function ($query) {
-                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+      // DARI CUSTOMER - Semua customer yang punya invoice sudah bayar (status_id=8)
+      $invoicePaidAll = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereHas('invoice', function ($query) {
+                          $query->where('status_id', 8);
                       })
-                      ->distinct('customer_id')->count('customer_id');
+                      ->count();
 
-      // Opsi 2: Invoice sudah bayar bulan ini saja
-      $invoicePaid = Invoice::with('customer')->where('status_id', 8)
-                      ->whereHas('customer', function ($query) {
-                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
+      // DARI CUSTOMER - Customer yang punya invoice sudah bayar bulan ini
+      $invoicePaid = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereHas('invoice', function ($query) {
+                          $query->where('status_id', 8)
+                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
                       })
-                      ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
+                      ->count();
 
       return response()->json([
           'success' => true,
