@@ -189,24 +189,21 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-// Total customer yang sudah bayar bulan ini (ada invoice status_id = 8 bulan ini)
-      $totalInvoicePaid = Invoice::where('status_id', 8)
-          ->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->whereHas('customer', function ($query) {
-              $query->whereIn('status_id', [3, 4, 9])
-                    ->whereNull('deleted_at');
-          })
-          ->distinct('customer_id')
-          ->count('customer_id');
+// Customer yang memiliki invoice
+      $customersWithInvoice = Invoice::select('invoice.customer_id')
+          ->join('customer', 'invoice.customer_id', '=', 'customer.id')
+          ->whereIn('customer.status_id', [3, 4, 9])
+          ->whereNull('customer.deleted_at')
+          ->distinct()
+          ->count('invoice.customer_id');
 
-      // Total customer yang sudah bayar bulan ini (dihitung dari customer)
-      $customersPaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
+      // Customer yang TIDAK memiliki invoice
+      $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
           ->whereNull('deleted_at')
-          ->whereHas('invoice', function ($query) {
-              $query->where('status_id', 8)
-                    ->whereMonth('created_at', Carbon::now()->month)
-                    ->whereYear('created_at', Carbon::now()->year);
+          ->whereNotExists(function ($query) {
+              $query->select(DB::raw(1))
+                    ->from('invoice')
+                    ->whereColumn('invoice.customer_id', 'customer.id');
           })
           ->count();
 
@@ -231,34 +228,7 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-      // Total customer yang belum bayar bulan ini
-      // = customer aktif - customer yang sudah bayar bulan ini
-      $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
-
-      // Total transaksi yang KONSISTEN dengan totalCustomer
-      // Customer yang sudah bayar bulan ini dengan pembayaran (filter created_at invoice)
-      $customerStatusFilter = [3, 4, 9];
-      $totalTransactions = Invoice::where('status_id', 8)
-          ->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
-              $query->whereNull('deleted_at')
-                    ->whereIn('status_id', $customerStatusFilter);
-          })
-          ->whereHas('pembayaran') // Hanya cek ada pembayaran, tanpa filter tanggal
-          ->distinct('customer_id')
-          ->count('customer_id');
-
-      // Total invoice belum bayar (status_id = 7) bulan ini
-      $totalInvoiceUnpaidThisMonth = Invoice::where('status_id', 7)
-          ->whereMonth('created_at', Carbon::now()->month)
-          ->whereYear('created_at', Carbon::now()->year)
-          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
-              $query->whereNull('deleted_at')
-                    ->whereIn('status_id', $customerStatusFilter);
-          })
-          ->distinct('customer_id')
-          ->count('customer_id');
+      
 
       // DARI CUSTOMER - Semua customer yang punya invoice belum bayar (status_id=7)
       $invoiceUnpaidAll = Customer::withTrashed()
@@ -305,50 +275,6 @@ class DataControllerApi extends Controller
           'invoicePaidAll' => $invoicePaidAll,
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
-          'totalInvoicePaid' => $totalInvoicePaid,
-          'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
-          'totalTransaksi' => $totalTransactions,
-          'totalInvoiceUnpaidThisMonth' => $totalInvoiceUnpaidThisMonth,
-          'invoice_consistency_analysis' => [
-              'using_jatuh_tempo' => [
-                  'paid' => $invoicePaid,
-                  'unpaid' => $invoiceUnpaid,
-                  'total' => $invoicePaid + $invoiceUnpaid,
-                  'missing' => $totalCustomer - ($invoicePaid + $invoiceUnpaid),
-                  'is_consistent' => $totalCustomer === ($invoicePaid + $invoiceUnpaid)
-              ],
-              'using_created_at' => [
-                  'paid' => $totalInvoicePaid,
-                  'unpaid' => $totalInvoiceUnpaidThisMonth,
-                  'total' => $totalInvoicePaid + $totalInvoiceUnpaidThisMonth,
-                  'missing' => $totalCustomer - ($totalInvoicePaid + $totalInvoiceUnpaidThisMonth),
-                  'is_consistent' => $totalCustomer === ($totalInvoicePaid + $totalInvoiceUnpaidThisMonth)
-              ]
-          ],
-          'final_consistent_calculation' => [
-              'paid_this_month' => $customersPaidThisMonth,
-              'unpaid_this_month' => $customersUnpaidThisMonth,
-              'total' => $customersPaidThisMonth + $customersUnpaidThisMonth,
-              'is_finally_consistent' => $totalCustomer === ($customersPaidThisMonth + $customersUnpaidThisMonth),
-              'explanation' => 'Paid = customer dengan invoice status=8 bulan ini, Unpaid = semua customer aktif tanpa invoice status=8 bulan ini'
-          ],
-          'comparison' => [
-              'invoice_based_paid' => $totalInvoicePaid,
-              'customer_based_paid' => $customersPaidThisMonth,
-              'paid_difference' => $totalInvoicePaid - $customersPaidThisMonth,
-              'invoice_based_unpaid' => $totalInvoiceUnpaid,
-              'customer_based_unpaid' => $customersUnpaidThisMonth,
-              'unpaid_difference' => $totalInvoiceUnpaid - $customersUnpaidThisMonth
-          ],
-          'debug_info' => [
-              'total_customer' => $totalCustomer,
-              'customers_with_invoice' => $customersWithInvoice,
-              'customers_without_invoice' => $customersWithoutInvoice,
-              'paid_this_month' => $totalInvoicePaid,
-              'unpaid_calculation' => $totalCustomer - $totalInvoicePaid,
-              'month' => Carbon::now()->month,
-              'year' => Carbon::now()->year
-          ],
           'consistency_check' => [
               'total_customers' => $totalCustomer,
               'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
