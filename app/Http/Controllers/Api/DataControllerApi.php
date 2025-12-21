@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use DB;
+use Illuminate\Support\Facades\DB;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
 use Carbon\Carbon;
@@ -182,8 +182,7 @@ class DataControllerApi extends Controller
           ->whereNotExists(function ($query) {
               $query->select(DB::raw(1))
                     ->from('invoice')
-                    ->whereColumn('invoice.customer_id', 'customer.id')
-                    ->whereNull('invoice.deleted_at'); // tambahkan jika invoice juga soft delete
+                    ->whereColumn('invoice.customer_id', 'customer.id');
           })
           ->count();
 
