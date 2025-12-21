@@ -200,6 +200,26 @@ class DataControllerApi extends Controller
           ->distinct('customer_id')
           ->count('customer_id');
 
+      // Total customer yang sudah bayar bulan ini (dihitung dari customer)
+      $customersPaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at')
+          ->whereHas('invoice', function ($query) {
+              $query->where('status_id', 8)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year);
+          })
+          ->count();
+
+      // Total customer yang belum bayar bulan ini (dihitung dari customer)
+      $customersUnpaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at')
+          ->whereDoesntHave('invoice', function ($query) {
+              $query->where('status_id', 8)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year);
+          })
+          ->count();
+
       // Total customer yang belum bayar bulan ini
       // = customer aktif - customer yang sudah bayar bulan ini
       $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
@@ -213,6 +233,20 @@ class DataControllerApi extends Controller
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'totalInvoicePaid' => $totalInvoicePaid,
           'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
+          'customer_based_calculation' => [
+              'customers_paid_this_month' => $customersPaidThisMonth,
+              'customers_unpaid_this_month' => $customersUnpaidThisMonth,
+              'sum_customer_based' => $customersPaidThisMonth + $customersUnpaidThisMonth,
+              'is_customer_consistent' => $totalCustomer === ($customersPaidThisMonth + $customersUnpaidThisMonth)
+          ],
+          'comparison' => [
+              'invoice_based_paid' => $totalInvoicePaid,
+              'customer_based_paid' => $customersPaidThisMonth,
+              'paid_difference' => $totalInvoicePaid - $customersPaidThisMonth,
+              'invoice_based_unpaid' => $totalInvoiceUnpaid,
+              'customer_based_unpaid' => $customersUnpaidThisMonth,
+              'unpaid_difference' => $totalInvoiceUnpaid - $customersUnpaidThisMonth
+          ],
           'debug_info' => [
               'total_customer' => $totalCustomer,
               'customers_with_invoice' => $customersWithInvoice,
