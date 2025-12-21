@@ -210,7 +210,18 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-      // Total customer yang belum bayar bulan ini (dihitung dari customer)
+      // FINAL SOLUTION: Gunakan AGGREGATE dari semua customer aktif
+      // Total customer yang sudah bayar bulan ini
+      $customersPaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at')
+          ->whereHas('invoice', function ($query) {
+              $query->where('status_id', 8)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year);
+          })
+          ->count();
+
+      // Total customer yang belum bayar bulan ini
       $customersUnpaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
           ->whereNull('deleted_at')
           ->whereDoesntHave('invoice', function ($query) {
@@ -290,11 +301,12 @@ class DataControllerApi extends Controller
                   'is_consistent' => $totalCustomer === ($totalInvoicePaid + $totalInvoiceUnpaidThisMonth)
               ]
           ],
-          'customer_based_calculation' => [
-              'customers_paid_this_month' => $customersPaidThisMonth,
-              'customers_unpaid_this_month' => $customersUnpaidThisMonth,
-              'sum_customer_based' => $customersPaidThisMonth + $customersUnpaidThisMonth,
-              'is_customer_consistent' => $totalCustomer === ($customersPaidThisMonth + $customersUnpaidThisMonth)
+          'final_consistent_calculation' => [
+              'paid_this_month' => $customersPaidThisMonth,
+              'unpaid_this_month' => $customersUnpaidThisMonth,
+              'total' => $customersPaidThisMonth + $customersUnpaidThisMonth,
+              'is_finally_consistent' => $totalCustomer === ($customersPaidThisMonth + $customersUnpaidThisMonth),
+              'explanation' => 'Paid = customer dengan invoice status=8 bulan ini, Unpaid = semua customer aktif tanpa invoice status=8 bulan ini'
           ],
           'comparison' => [
               'invoice_based_paid' => $totalInvoicePaid,
