@@ -281,6 +281,8 @@ class DataControllerApi extends Controller
                       })
                       ->count();
 
+      $fasum = Invoice::where('paket_id', 11)->count();
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
@@ -293,6 +295,7 @@ class DataControllerApi extends Controller
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
+          'fasum' => $fasum,
           'consistency_check_invoice' => [
               'paid' => $invoicePaid,
               'unpaid' => 1547, // Hardcode correct value
