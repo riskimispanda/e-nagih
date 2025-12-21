@@ -24,6 +24,8 @@ Route::get('/dev', [DataControllerApi::class, 'debugging']);
   Route::get('/analyze-status-mismatch', [DataControllerApi::class, 'analyzeStatusMismatchCustomers']);
   Route::get('/verify-fix', [DataControllerApi::class, 'verifyFix']);
   Route::get('/analyze-gap-42', [DataControllerApi::class, 'analyzeGap42']);
+  Route::get('/testInvoice', [CustomerControllerApi::class, 'testInvoice']);
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
   Route::post('/logout', [AuthController::class, 'logout']);

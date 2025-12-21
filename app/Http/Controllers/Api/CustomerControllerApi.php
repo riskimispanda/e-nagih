@@ -10,6 +10,7 @@ use App\Models\Customer;
 use DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Models\BeritaAcara;
 
 class CustomerControllerApi extends Controller
 {
@@ -457,6 +458,79 @@ class CustomerControllerApi extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function testInvoice()
+    {
+      $totalCustomer = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4,9])->count();
+      $customerAktif = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4])->whereNot('paket_id', 11)
+                      ->whereHas('invoice', function ($q) {
+                        $q->where('status_id', 8)->whereMonth('jatuh_tempo', Carbon::now()->month);
+                      })->get();
+      $customerNonAktif = Customer::whereNull('deleted_at')->where('status_id', 9)->whereNot('paket_id', 11)->count();
+      $customerFasum = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4])->where('paket_id', 11)->count();
+      $customerBA = BeritaAcara::count();
+
+      $invoiceFromCustomer = Customer::whereIn('status_id', [3,4,9])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                          ->whereHas('invoice', function ($q) {
+                              $q->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                          })->count();
+      $invoiceFromCustomerPaid = Customer::whereIn('status_id', [3,4])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                          ->whereHas('invoice', function ($q) {
+                              $q->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                          })->count();
+      $invoiceFromCustomerPaidGet = Customer::whereIn('status_id', [3,4,9])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                          ->whereHas('invoice', function ($q) {
+                              $q->where('status_id', 8)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                          })->get();
+      $invoiceFromCustomerUnpaidGet = Customer::whereIn('status_id', [3,4,9])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                          ->whereHas('invoice', function ($q) {
+                              $q->where('status_id', 7)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                          })->get();
+      $invoiceFromCustomerUnpaid = Customer::whereIn('status_id', [3,4,9])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                          ->whereHas('invoice', function ($q) {
+                              $q->where('status_id', 7)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                          })->count();
+
+      $formatPaid = $invoiceFromCustomerPaidGet->map(function ($customer) {
+          return [
+              'id' => $customer->id,
+              'name' => $customer->nama_customer
+          ];
+      });
+
+      $formatUnpaid = $invoiceFromCustomerUnpaidGet->map(function ($customer) {
+          return [
+              'id' => $customer->id,
+              'name' => $customer->nama_customer
+          ];
+      });
+
+      $customerFix = $customerAktif->map(function ($customer) {
+          return [
+              'id' => $customer->id,
+              'name' => $customer->nama_customer
+          ];
+      });
+
+      return response()->json([
+        'success' => true,
+        'totalCustomer' => $totalCustomer,
+        'customerAktif' => $customerAktif->count(),
+        'customerNonAktif' => $customerNonAktif,
+        'fasum' => $customerFasum,
+        'customerBA' => $customerBA,
+        'totalInvoiceCustomer' => $invoiceFromCustomer,
+        'totalInvoicePaid' => $invoiceFromCustomerPaid,
+        'totalInvoiceUnpaid' => $invoiceFromCustomerUnpaid,
+        'data-paid' => [
+          'countPaid' => $formatPaid->count()
+        ],
+        'data-unpaid' => [
+          'countUnpaid' => $formatUnpaid->count()
+        ],
+        'totalPaidUnpaid' => $customerFix
+      ]);
     }
 
 }
