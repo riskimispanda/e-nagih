@@ -188,14 +188,19 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-      // Total invoice yang sudah bayar (status_id = 8)
+// Total customer yang sudah bayar bulan ini (ada invoice status_id = 8 bulan ini)
       $totalInvoicePaid = Invoice::where('status_id', 8)
+          ->whereMonth('created_at', Carbon::now()->month)
+          ->whereYear('created_at', Carbon::now()->year)
           ->whereHas('customer', function ($query) {
               $query->whereIn('status_id', [3, 4, 9])
                     ->whereNull('deleted_at');
           })
-          ->whereMonth('jatuh_tempo', Carbon::now()->month)
-          ->count();
+          ->distinct('customer_id')
+          ->count('customer_id');
+
+      // Total customer yang belum bayar = customer aktif - customer yang sudah bayar
+      $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
 
       // Total invoice yang belum bayar (status_id = 7)
       $totalInvoiceUnpaid = Invoice::where('status_id', 7)
