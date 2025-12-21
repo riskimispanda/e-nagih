@@ -582,7 +582,7 @@ class DataControllerApi extends Controller
       try {
           $paketId = 11;
 
-          $customers = Customer::with(['invoices' => function ($query) {
+          $customers = Customer::with(['invoice' => function ($query) {
                   $query->select('id', 'customer_id')
                         ->orderBy('created_at', 'desc'); // urutkan invoice terbaru
               }])
@@ -593,12 +593,12 @@ class DataControllerApi extends Controller
               ->get()
               ->map(function ($customer) {
                   // Tambahkan flag untuk menandai apakah memiliki invoice
-                  $customer->has_invoice = $customer->invoices->isNotEmpty();
-                  $customer->invoice_count = $customer->invoices->count();
-                  $customer->latest_invoice = $customer->invoices->first(); // invoice terbaru
+                  $customer->has_invoice = $customer->invoice->isNotEmpty();
+                  $customer->invoice_count = $customer->invoice->count();
+                  $customer->latest_invoice = $customer->invoice->first(); // invoice terbaru
 
                   // Hitung total amount dari semua invoice
-                  $customer->total_invoice_amount = $customer->invoices->sum('amount');
+                  $customer->total_invoice_amount = $customer->invoice->sum('amount');
 
                   // Tambahkan status invoice (lunas/belum) jika ada
                   if ($customer->has_invoice) {
