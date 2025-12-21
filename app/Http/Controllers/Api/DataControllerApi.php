@@ -584,25 +584,25 @@ class DataControllerApi extends Controller
 
           // Hitung total customer paket 11
           $totalCustomer = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')
+              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
               ->count();
 
           // Hitung customer dengan invoice
           $withInvoice = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')
+              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
               ->whereHas('invoice')
               ->count();
 
           // Hitung customer tanpa invoice
           $withoutInvoice = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')
+              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
               ->whereDoesntHave('invoice')
               ->count();
 
           // Hitung total invoice untuk paket ini
           $totalInvoices = Invoice::whereHas('customer', function ($query) use ($paketId) {
                   $query->where('paket_id', $paketId)
-                        ->whereNull('deleted_at');
+                        ->whereNull('deleted_at')->whereIn('status_id', [3,4,9]);
               })
               ->count();
 
