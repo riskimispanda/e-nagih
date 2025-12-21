@@ -199,17 +199,9 @@ class DataControllerApi extends Controller
           ->distinct('customer_id')
           ->count('customer_id');
 
-      // Total customer yang belum bayar = customer aktif - customer yang sudah bayar
+      // Total customer yang belum bayar bulan ini
+      // = customer aktif - customer yang sudah bayar bulan ini
       $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
-
-      // Total invoice yang belum bayar (status_id = 7)
-      $totalInvoiceUnpaid = Invoice::where('status_id', 7)
-          ->whereHas('customer', function ($query) {
-              $query->whereIn('status_id', [3, 4, 9])
-                    ->whereNull('deleted_at');
-          })
-          ->whereMonth('jatuh_tempo', Carbon::now()->month)
-          ->count();
 
       return response()->json([
           'success' => true,
@@ -219,6 +211,15 @@ class DataControllerApi extends Controller
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'totalInvoicePaid' => $totalInvoicePaid,
           'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
+          'debug_info' => [
+              'total_customer' => $totalCustomer,
+              'customers_with_invoice' => $customersWithInvoice,
+              'customers_without_invoice' => $customersWithoutInvoice,
+              'paid_this_month' => $totalInvoicePaid,
+              'unpaid_calculation' => $totalCustomer - $totalInvoicePaid,
+              'month' => Carbon::now()->month,
+              'year' => Carbon::now()->year
+          ],
           'consistency_check' => [
               'total_customers' => $totalCustomer,
               'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
