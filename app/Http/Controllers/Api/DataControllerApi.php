@@ -588,6 +588,7 @@ class DataControllerApi extends Controller
               }])
               ->where('paket_id', $paketId)
               ->whereNull('deleted_at')
+              ->whereIn('status_id', [3,4,9])
               ->select('id', 'nama_customer', 'no_hp', 'paket_id', 'status_id', 'created_at', 'alamat')
               ->orderBy('created_at', 'desc')
               ->get()
