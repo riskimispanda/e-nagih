@@ -561,6 +561,7 @@ class DataControllerApi extends Controller
       return response()->json([
           'success' => true,
           'message' => 'Preview generate invoice bulan ini',
+          'fasum' => $fasum,
           'summary' => [
               'total_customers' => $customersToGenerate->count(),
               'valid_customers' => $validCustomers->count(),
@@ -573,7 +574,6 @@ class DataControllerApi extends Controller
           'customers' => $customersToGenerate,
           'valid_customers_list' => $validCustomers,
           'invalid_customers_list' => $invalidCustomers,
-          'fasum' => $fasum
       ]);
   }
 
