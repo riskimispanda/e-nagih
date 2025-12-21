@@ -255,12 +255,19 @@ class DataControllerApi extends Controller
                       })
                       ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
 
+      $invoicePaid = Invoice::with('customer')->where('status_id', 8)
+                      ->whereHas('customer', function ($query) {
+                          $query->whereNull('deleted_at');
+                      })
+                      ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
           'totalAktif' => $totalAktif,
           'totalNonAktif' => $totalNonAktif,
           'invoiceUnpaid' => $invoiceUnpaid,
+          'invoicePaid' => $invoicePaid,
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'totalInvoicePaid' => $totalInvoicePaid,
