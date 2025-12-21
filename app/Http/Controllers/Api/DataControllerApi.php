@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use DB;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
 use Carbon\Carbon;
