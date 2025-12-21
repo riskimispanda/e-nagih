@@ -224,6 +224,20 @@ class DataControllerApi extends Controller
       // = customer aktif - customer yang sudah bayar bulan ini
       $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
 
+      $totalTransactions = Invoice::where('status_id', 8)
+          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+              $query->whereNull('deleted_at')
+                    ->whereIn('status_id', $customerStatusFilter)
+                    ->whereNot('paket_id', 11);
+          })
+          ->whereHas('pembayaran', function ($query) use ($month) {
+              $currentMonth = $month ?? Carbon::now()->month;
+              $query->whereMonth('tanggal_bayar', $currentMonth)
+                    ->whereYear('tanggal_bayar', Carbon::now()->year);
+          })
+          ->distinct('customer_id')
+          ->count('customer_id');
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
@@ -233,6 +247,7 @@ class DataControllerApi extends Controller
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'totalInvoicePaid' => $totalInvoicePaid,
           'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
+          'totalTransaksi' => $totalTransactions,
           'customer_based_calculation' => [
               'customers_paid_this_month' => $customersPaidThisMonth,
               'customers_unpaid_this_month' => $customersUnpaidThisMonth,
