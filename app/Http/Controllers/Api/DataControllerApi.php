@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
 use Carbon\Carbon;
@@ -185,12 +186,6 @@ class DataControllerApi extends Controller
                     ->whereNull('invoice.deleted_at'); // tambahkan jika invoice juga soft delete
           })
           ->count();
-
-      // Atau menggunakan whereDoesntHave jika sudah setup relationship
-      // $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
-      //     ->whereNull('deleted_at')
-      //     ->doesntHave('invoices')
-      //     ->count();
 
       return response()->json([
           'success' => true,
