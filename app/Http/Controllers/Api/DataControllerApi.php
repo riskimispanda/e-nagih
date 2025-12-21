@@ -524,7 +524,6 @@ class DataControllerApi extends Controller
       // Preview customers yang akan dibuatkan invoice bulan ini (backup function)
       $customersToGenerate = Customer::whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9])
-          ->whereNot('paket_id', 11)
           ->whereDoesntHave('invoice', function ($query) {
               $query->whereMonth('created_at', Carbon::now()->month)
                     ->whereYear('created_at', Carbon::now()->year);
