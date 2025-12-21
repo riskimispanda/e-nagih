@@ -281,6 +281,8 @@ class DataControllerApi extends Controller
                       })
                       ->count();
 
+      $coba = Invoice::whereNot('paket_id', 11)->distinct('customer_id')->count('customer_id');
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
@@ -293,6 +295,7 @@ class DataControllerApi extends Controller
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
+          'coba' => $coba,
           'consistency_check_invoice' => [
               'paid' => $invoicePaid,
               'unpaid' => 1547, // Hardcode correct value
