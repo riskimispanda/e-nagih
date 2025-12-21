@@ -577,85 +577,67 @@ class DataControllerApi extends Controller
       ]);
   }
 
-  public function getFasumList()
+  public function getFasumCount()
   {
       try {
           $paketId = 11;
 
-          $customers = Customer::with(['invoice' => function ($query) {
-                  $query->select('id', 'customer_id')
-                        ->orderBy('created_at', 'desc'); // urutkan invoice terbaru
-              }])
-              ->where('paket_id', $paketId)
+          // Hitung total customer paket 11
+          $totalCustomer = Customer::where('paket_id', $paketId)
               ->whereNull('deleted_at')
-              ->whereIn('status_id', [3,4,9])
-              ->select('id', 'nama_customer', 'no_hp', 'paket_id', 'status_id', 'created_at', 'alamat')
-              ->orderBy('created_at', 'desc')
-              ->get()
-              ->map(function ($customer) {
-                  // Tambahkan flag untuk menandai apakah memiliki invoice
-                  $customer->has_invoice = $customer->invoice->isNotEmpty();
-                  $customer->invoice_count = $customer->invoice->count();
-                  $customer->latest_invoice = $customer->invoice->first(); // invoice terbaru
+              ->count();
 
-                  // Hitung total amount dari semua invoice
-                  $customer->total_invoice_amount = $customer->invoice->sum('amount');
+          // Hitung customer dengan invoice
+          $withInvoice = Customer::where('paket_id', $paketId)
+              ->whereNull('deleted_at')
+              ->whereHas('invoice')
+              ->count();
 
-                  // Tambahkan status invoice (lunas/belum) jika ada
-                  if ($customer->has_invoice) {
-                      $customer->invoice_status = $customer->latest_invoice->status ?? null;
-                      $customer->last_invoice_date = $customer->latest_invoice->created_at ?? null;
-                  }
+          // Hitung customer tanpa invoice
+          $withoutInvoice = Customer::where('paket_id', $paketId)
+              ->whereNull('deleted_at')
+              ->whereDoesntHave('invoice')
+              ->count();
 
-                  return $customer;
-              });
-
-          // Pisahkan customer berdasarkan status invoice
-          $customersWithInvoice = $customers->where('has_invoice', true)->values();
-          $customersWithoutInvoice = $customers->where('has_invoice', false)->values();
-
-          // Hitung summary
-          $totalCustomers = $customers->count();
-          $withInvoiceCount = $customersWithInvoice->count();
-          $withoutInvoiceCount = $customersWithoutInvoice->count();
+          // Hitung total invoice untuk paket ini
+          $totalInvoices = Invoice::whereHas('customer', function ($query) use ($paketId) {
+                  $query->where('paket_id', $paketId)
+                        ->whereNull('deleted_at');
+              })
+              ->count();
 
           return response()->json([
               'success' => true,
-              'message' => 'Data customer paket Fasum berhasil diambil',
+              'message' => 'Count data customer paket Fasum berhasil diambil',
               'paket_id' => $paketId,
-              'paket_name' => 'Fasum', // Anda bisa ambil dari tabel paket jika ada
-              'summary' => [
-                  'total_customers' => $totalCustomers,
-                  'with_invoice' => $withInvoiceCount,
-                  'without_invoice' => $withoutInvoiceCount,
-                  'percentage_with_invoice' => $totalCustomers > 0
-                      ? round(($withInvoiceCount / $totalCustomers) * 100, 2)
-                      : 0,
-                  'percentage_without_invoice' => $totalCustomers > 0
-                      ? round(($withoutInvoiceCount / $totalCustomers) * 100, 2)
-                      : 0
+              'paket_name' => 'Fasum',
+              'counts' => [
+                  'total_customers' => $totalCustomer,
+                  'with_invoice' => $withInvoice,
+                  'without_invoice' => $withoutInvoice,
+                  'total_invoices' => $totalInvoices,
               ],
-              'data' => [
-                  'all_customers' => $customers,
-                  'customers_with_invoice' => $customersWithInvoice,
-                  'customers_without_invoice' => $customersWithoutInvoice
+              'percentages' => [
+                  'with_invoice' => $totalCustomer > 0 ?
+                      round(($withInvoice / $totalCustomer) * 100, 2) : 0,
+                  'without_invoice' => $totalCustomer > 0 ?
+                      round(($withoutInvoice / $totalCustomer) * 100, 2) : 0,
+              ],
+              'averages' => [
+                  'invoices_per_customer' => $withInvoice > 0 ?
+                      round($totalInvoices / $withInvoice, 2) : 0,
               ],
               'metadata' => [
-                  'total_records' => $totalCustomers,
-                  'last_updated' => now()->format('Y-m-d H:i:s'),
-                  'generated_in' => round(microtime(true) - LARAVEL_START, 3) . ' seconds'
+                  'generated_at' => now()->format('Y-m-d H:i:s'),
+                  'execution_time' => round(microtime(true) - LARAVEL_START, 3) . 's'
               ]
           ]);
 
       } catch (\Exception $e) {
-          \Log::error('Error in getFasumList: ' . $e->getMessage(), [
-              'trace' => $e->getTraceAsString()
-          ]);
-
           return response()->json([
               'success' => false,
-              'message' => 'Terjadi kesalahan saat mengambil data',
-              'error' => env('APP_DEBUG') ? $e->getMessage() : 'Internal server error'
+              'message' => 'Terjadi kesalahan',
+              'error' => env('APP_DEBUG') ? $e->getMessage() : null
           ], 500);
       }
   }
