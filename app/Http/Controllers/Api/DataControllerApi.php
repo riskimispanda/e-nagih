@@ -224,6 +224,7 @@ class DataControllerApi extends Controller
       // = customer aktif - customer yang sudah bayar bulan ini
       $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
 
+      $customerStatusFilter = [3, 4, 9];
       $totalTransactions = Invoice::where('status_id', 8)
           ->whereHas('customer', function ($query) use ($customerStatusFilter) {
               $query->whereNull('deleted_at')
@@ -231,7 +232,7 @@ class DataControllerApi extends Controller
                     ->whereNot('paket_id', 11);
           })
           ->whereHas('pembayaran', function ($query) use ($month) {
-              $currentMonth = $month ?? Carbon::now()->month;
+              $currentMonth = Carbon::now()->month;
               $query->whereMonth('tanggal_bayar', $currentMonth)
                     ->whereYear('tanggal_bayar', Carbon::now()->year);
           })
