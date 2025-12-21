@@ -468,7 +468,6 @@ class DataControllerApi extends Controller
       // Preview customers yang tidak punya invoice SAMA SEKALI (tanpa create)
       $customersToGenerate = Customer::whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9])
-          ->whereNot('paket_id', 11)
           ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
           ->with(['paket', 'status'])
           ->get()
