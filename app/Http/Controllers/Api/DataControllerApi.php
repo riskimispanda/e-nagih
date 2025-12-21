@@ -272,7 +272,7 @@ class DataControllerApi extends Controller
                       ->whereHas('customer', function ($query) {
                           $query->withTrashed()->whereIn('status_id',[3,4,9]);
                       })
-                      ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
+                      ->distinct('customer_id')->count('customer_id');
 
       // Opsi 1: Semua invoice sudah bayar (termasuk pembayaran tunggakan)
       $invoicePaidAll = Invoice::with('customer')->where('status_id', 8)
