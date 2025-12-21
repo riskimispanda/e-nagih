@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Invoice;
 use App\Models\Pembayaran;
+use App\Models\Customer;
 use DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -281,7 +282,181 @@ class CustomerControllerApi extends Controller
         }
     }
 
+    public function checkInvoiceWithoutPayment()
+    {
+        try {
+            // Cari invoice dengan status 8 (sudah bayar) tapi tidak ada pembayaran tercatat
+            $invoicesWithoutPayment = Invoice::with(['customer', 'pembayaran'])
+                ->where('status_id', 8)
+                ->whereDoesntHave('pembayaran')
+                ->orderBy('created_at', 'desc')
+                ->get();
 
+            if ($invoicesWithoutPayment->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada invoice status 8 tanpa pembayaran',
+                    'data' => [
+                        'total_invoices' => 0,
+                        'invoices' => []
+                    ]
+                ]);
+            }
 
+            // Transform data untuk response
+            $formattedInvoices = $invoicesWithoutPayment->map(function ($invoice) {
+                return [
+                    'invoice_id' => $invoice->id,
+                    'merchant_ref' => $invoice->merchant_ref,
+                    'customer_id' => $invoice->customer_id,
+                    'customer_name' => $invoice->customer ? $invoice->customer->nama_customer : 'N/A',
+                    'customer_status_id' => $invoice->customer ? $invoice->customer->status_id : 'N/A',
+                    'paket_id' => $invoice->paket_id,
+                    'paket_name' => $invoice->paket ? $invoice->paket->nama_paket : 'N/A',
+                    'tagihan' => $invoice->tagihan,
+                    'tambahan' => $invoice->tambahan,
+                    'tunggakan' => $invoice->tunggakan,
+                    'saldo' => $invoice->saldo,
+                    'status_id' => $invoice->status_id,
+                    'jatuh_tempo' => $invoice->jatuh_tempo,
+                    'created_at' => $invoice->created_at,
+                    'updated_at' => $invoice->updated_at,
+                    'issue_type' => 'invoice_status_8_tanpa_pembayaran',
+                    'severity' => 'high',
+                    'recommendation' => 'Perlu investigasi - invoice status 8 tapi tidak ada catatan pembayaran'
+                ];
+            });
+
+            // Statistik tambahan
+            $totalTagihan = $invoicesWithoutPayment->sum('tagihan');
+            $totalTambahan = $invoicesWithoutPayment->sum('tambahan');
+            $totalTunggakan = $invoicesWithoutPayment->sum('tunggakan');
+            $totalSaldo = $invoicesWithoutPayment->sum('saldo');
+
+            // Group by customer untuk analisis
+            $customerBreakdown = $invoicesWithoutPayment->groupBy('customer_id')
+                ->mapWithKeys(function ($group, $customerId) {
+                    $customer = $group->first()->customer;
+                    return [$customerId => [
+                        'customer_name' => $customer ? $customer->nama_customer : 'N/A',
+                        'customer_status_id' => $customer ? $customer->status_id : 'N/A',
+                        'invoice_count' => $group->count(),
+                        'total_tagihan' => $group->sum('tagihan'),
+                        'total_tambahan' => $group->sum('tambahan'),
+                        'total_tunggakan' => $group->sum('tunggakan'),
+                        'total_saldo' => $group->sum('saldo')
+                    ]];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ditemukan invoice status 8 tanpa pembayaran',
+                'data' => [
+                    'summary' => [
+                        'total_invoices' => $invoicesWithoutPayment->count(),
+                        'total_customers_affected' => $customerBreakdown->count(),
+                        'total_tagihan' => $totalTagihan,
+                        'total_tambahan' => $totalTambahan,
+                        'total_tunggakan' => $totalTunggakan,
+                        'total_saldo' => $totalSaldo,
+                        'total_value' => $totalTagihan + $totalTambahan + $totalTunggakan
+                    ],
+                    'customer_breakdown' => $customerBreakdown,
+                    'problematic_invoices' => $formattedInvoices->values()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error checking invoice without payment: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengecek invoice tanpa pembayaran',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function fixInvoiceWithoutPayment()
+    {
+        try {
+            // Cari invoice status 8 tanpa pembayaran
+            $invoicesToFix = Invoice::where('status_id', 8)
+                ->whereDoesntHave('pembayaran')
+                ->get();
+
+            if ($invoicesToFix->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada invoice yang perlu diperbaiki',
+                    'data' => [
+                        'fixed_count' => 0
+                    ]
+                ]);
+            }
+
+            $fixedCount = 0;
+            $errors = [];
+
+            DB::beginTransaction();
+            try {
+                foreach ($invoicesToFix as $invoice) {
+                    try {
+                        // Update status invoice menjadi 7 (belum bayar)
+                        $invoice->update(['status_id' => 7]);
+                        $fixedCount++;
+
+                        Log::info('Invoice status diperbaiki', [
+                            'invoice_id' => $invoice->id,
+                            'customer_id' => $invoice->customer_id,
+                            'old_status' => 8,
+                            'new_status' => 7
+                        ]);
+
+                    } catch (\Exception $e) {
+                        $errors[] = [
+                            'invoice_id' => $invoice->id,
+                            'error' => $e->getMessage()
+                        ];
+                        Log::error('Gagal memperbaiki invoice', [
+                            'invoice_id' => $invoice->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "Berhasil memperbaiki {$fixedCount} invoice",
+                    'data' => [
+                        'fixed_count' => $fixedCount,
+                        'error_count' => count($errors),
+                        'errors' => $errors
+                    ]
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error fixing invoice without payment: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbaiki invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 }

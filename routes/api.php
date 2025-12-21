@@ -13,7 +13,17 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/dev', [DataControllerApi::class, 'debugging']);
   Route::get('/generate-preview', [DataControllerApi::class, 'getFasumCount']);
   Route::get('/generate-preview-monthly', [DataControllerApi::class, 'previewGenerateInvoicesMonthly']);
-  Route::post('/generate-invoices', [DataControllerApi::class, 'generateMonthlyInvoices']);
+  Route::post('/generate-invoices', [DataControllerApi::class, 'generateFasumInvoices']);
+  Route::get('/customer-paket11', [DataControllerApi::class, 'getCustomerPaket11WithInvoices']);
+  Route::get('/preview-update-invoices', [DataControllerApi::class, 'previewUpdateInvoice']);
+  Route::post('/update-invoices', [DataControllerApi::class, 'updateInvoice']);
+  Route::get('/check-invoices-without-payment', [CustomerControllerApi::class, 'checkInvoiceWithoutPayment']);
+  Route::post('/fix-invoice-without-payment', [CustomerControllerApi::class, 'fixInvoiceWithoutPayment']);
+  Route::get('/analyze-customer-invoice-gap', [DataControllerApi::class, 'analyzeCustomerInvoiceGap']);
+  Route::post('/fix-invoice-payment-status', [DataControllerApi::class, 'fixInvoicePaymentStatus']);
+  Route::get('/analyze-status-mismatch', [DataControllerApi::class, 'analyzeStatusMismatchCustomers']);
+  Route::get('/verify-fix', [DataControllerApi::class, 'verifyFix']);
+  Route::get('/analyze-gap-42', [DataControllerApi::class, 'analyzeGap42']);
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
   Route::post('/logout', [AuthController::class, 'logout']);

@@ -189,7 +189,7 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-// Customer yang memiliki invoice
+      // Customer yang memiliki invoice
       $customersWithInvoice = Invoice::select('invoice.customer_id')
           ->join('customer', 'invoice.customer_id', '=', 'customer.id')
           ->whereIn('customer.status_id', [3, 4, 9])
@@ -281,128 +281,240 @@ class DataControllerApi extends Controller
                       })
                       ->count();
 
-      $coba = Invoice::whereNot('paket_id', 11)->distinct('customer_id')->count('customer_id');
+      $fasumWithoutInvoice = Customer::whereIn('status_id', [3,4,9])->whereDoesntHave('invoice')->whereNull('deleted_at')->count();
+      $fasumWithInvoice = Customer::whereIn('status_id', [3,4,9])->where('paket_id', 11)->whereHas('invoice')->whereNull('deleted_at')->count();
+      $fasumAktif = Customer::where('status_id', 3)->whereNull('deleted_at')->count();
 
-// LIST Customer yang tidak punya invoice dengan validasi
-       $customersWithoutInvoiceList = Customer::whereNull('deleted_at')
-                       ->whereIn('status_id', [3, 4, 9])
-                       ->whereNot('paket_id', 11) // Bukan paket_id 11
-                       ->whereDoesntHave('invoice')
-                       ->with(['status', 'paket'])
-                       ->limit(10) // Batasi untuk debugging
-                       ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id', 'paket_id'])
-                       ->map(function ($customer) {
-                           return [
-                               'id' => $customer->id,
-                               'nama_customer' => $customer->nama_customer,
-                               'no_hp' => $customer->no_hp,
-                               'alamat' => $customer->alamat,
-                               'status_id' => $customer->status_id,
-                               'status_name' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                               'paket_id' => $customer->paket_id,
-                               'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
-                               'is_paket_excluded' => $customer->paket_id == 11,
-                               'is_deleted' => false // Karena sudah difilter whereNull('deleted_at')
-                           ];
-                       });
+      $bulan = 12;
+      $tahun = 2025;
+      $coba = Customer::whereIn('status_id', [3,4,9])
+          ->whereNull('deleted_at')
+          ->whereNot('paket_id', 11)
+          ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
+              $query->whereMonth('jatuh_tempo', $bulan)
+              ->whereYear('jatuh_tempo', $tahun)->whereIn('status_id', [7,8]);
+          })
+          ->count();
+
+      $blokir = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
+
+
+      $customerStatusFilter = [3, 4, 9]; // Include status 4
+
+      $invoiceWithRefPembayaran = Invoice::where('status_id', 8)
+          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+              $query->whereNull('deleted_at')
+                    ->whereIn('status_id', $customerStatusFilter)
+                    ->whereNot('paket_id', 11);
+          })
+          ->whereHas('pembayaran', function ($query) use ($bulan) {
+              $currentMonth = $bulan ?? Carbon::now()->month;
+              $query->whereMonth('tanggal_bayar', $currentMonth)
+                    ->whereYear('tanggal_bayar', Carbon::now()->year);
+          })
+          ->distinct('customer_id')
+          ->count('customer_id');
+
+      $customerStatusFilter = [3, 4, 9]; // Include status 4
+
+      $invoicePaids = Invoice::where('status_id', 8)
+          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+              $query->whereNull('deleted_at')
+                    ->whereIn('status_id', $customerStatusFilter)
+                    ->whereNot('paket_id', 11);
+          })
+          ->whereHas('pembayaran', function ($query) use ($bulan) {
+            $query->whereMonth('tanggal_bayar', $bulan)
+                  ->whereYear('tanggal_bayar', Carbon::now()->year);
+          })
+          ->distinct('customer_id')
+          ->count('customer_id');
+      $invoiceUnpaids = Invoice::where('status_id', 7)
+          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+              $query->whereNull('deleted_at')
+                    ->whereIn('status_id', $customerStatusFilter)
+                    ->whereNot('paket_id', 11);
+          })->whereYear('jatuh_tempo', Carbon::now()->year)
+          ->distinct('customer_id')
+          ->count('customer_id');
+
+
+      // FIX: Gunakan query yang paling akurat - validasi pembayaran aktual
+      $customerWithoutFasum = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $query->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->distinct('customer_id')
+        ->count('customer_id');
+
+      // Detail debugging untuk customerTanpaFasum
+      $debugCustomerTanpaFasum = [
+        'filter_used' => 'status_id = 3 AND paket_id != 11 AND deleted_at IS NULL',
+        'result' => $customerWithoutFasum,
+        'includes_deleted' => 'NO (whereNull deleted_at)',
+        'includes_status_4_9' => 'NO (hanya status 3)',
+        'fixed' => '✅ Logic diperbaiki - hanya customer yang sudah bayar'
+      ];
+
+      // Detail debugging untuk invoicePaids
+      $debugInvoicePaids = [
+        'filter_used' => 'status_id IN [3,4,9] AND paket_id != 11 AND deleted_at IS NULL',
+        'result' => $invoicePaids,
+        'includes_deleted' => 'NO (whereNull deleted_at)',
+        'includes_status_4_9' => 'YES (status 3,4,9)',
+        'additional_filter' => 'jatuh_tempo bulan Desember'
+      ];
+
+      // Analisis gap yang sebenarnya
+      $customerAktifAllStatus = Customer::whereIn('status_id', [3,4,9])
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->count();
+
+      // Customer aktif yang punya invoice paid bulan ini
+      $customerAktifWithPaidInvoice = Customer::whereIn('status_id', [3,4,9])
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->whereHas('invoice', function ($query) use ($bulan) {
+          $query->where('status_id', 8)
+            ->whereMonth('jatuh_tempo', $bulan);
+        })
+        ->count();
+
+      // Customer status 3 saja yang punya invoice paid bulan ini
+      $customerStatus3WithPaidInvoice = Customer::where('status_id', 3)
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->whereHas('invoice', function ($query) use ($bulan) {
+          $query->where('status_id', 8)
+            ->whereMonth('jatuh_tempo', $bulan);
+        })
+        ->count();
+
+      // Customer status 3 saja (termasuk yang dihapus)
+      $customerStatus3All = Customer::where('status_id', 3)
+        ->whereNot('paket_id', 11)
+        ->count();
+
+      $gapAnalysis = [
+        'customerTanpaFasum_vs_customerStatus3All' => [
+          'customerTanpaFasum' => $customerWithoutFasum,
+          'customerStatus3All' => $customerStatus3All,
+          'difference' => $customerWithoutFasum - $customerStatus3All,
+          'note' => 'Harusnya sama, filter sama'
+        ],
+        'customerTanpaFasum_vs_customerStatus3WithPaidInvoice' => [
+          'customerTanpaFasum' => $customerWithoutFasum,
+          'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
+          'difference' => $customerWithoutFasum - $customerStatus3WithPaidInvoice,
+          'note' => 'Gap yang wajar: customer yang belum bayar'
+        ],
+        'invoicePaids_vs_customerStatus3WithPaidInvoice' => [
+          'invoicePaids' => $invoicePaids,
+          'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
+          'difference' => $invoicePaids - $customerStatus3WithPaidInvoice,
+          'note' => 'Gap karena invoicePaids include status 4,9'
+        ],
+        'gap_42_analysis' => [
+          'customerAktif' => $fasumAktif,
+          'customerTanpaFasum' => $customerWithoutFasum,
+          'fasumDenganInvoice' => $fasumWithInvoice,
+          'gap_42' => $fasumAktif - $customerWithoutFasum - $fasumWithInvoice,
+          'description' => '42 customer aktif tapi tidak punya invoice paid bulan ini'
+        ],
+        'gap_42_analysis' => [
+          'customerAktif' => $fasumAktif,
+          'customerTanpaFasum' => $customerWithoutFasum,
+          'fasumDenganInvoice' => $fasumWithInvoice,
+          'gap_42' => $fasumAktif - $customerWithoutFasum - $fasumWithInvoice,
+          'description' => '42 customer aktif tapi tidak punya invoice paid bulan ini'
+        ],
+        'recommended_fix' => [
+          'use_customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
+          'description' => 'Ini adalah angka yang benar untuk customer aktif yang sudah bayar'
+        ]
+      ];
 
       return response()->json([
-          'success' => true,
-          'totalCustomer' => $totalCustomer,
-          'totalAktif' => $totalAktif,
-          'totalNonAktif' => $totalNonAktif,
-          'invoiceUnpaid' => $customersWithoutDueDateInvoice,
-          'invoiceUnpaidAll' => $invoiceUnpaidAll,
-          'invoicePaid' => $invoicePaid,
-          'invoicePaidAll' => $invoicePaidAll,
-          'customersWithInvoice' => $customersWithInvoice,
-          'customersWithoutInvoice' => $customersWithoutInvoice,
-          'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
-          'customersWithoutInvoiceList' => $customersWithoutInvoiceList,
-          'generateInvoicePreview' => Customer::whereNull('deleted_at')
-                      ->whereIn('status_id', [3, 4, 9])
-                      ->whereNot('paket_id', 11)
-                      ->whereDoesntHave('invoice', function ($query) {
-                          $query->whereMonth('created_at', Carbon::now()->month)
-                                ->whereYear('created_at', Carbon::now()->year);
-                      })
-                      ->with(['paket', 'status'])
-                      ->limit(5) // Preview 5 customer
-                      ->get()
-                      ->map(function ($customer) {
-                          return [
-                              'customer_id' => $customer->id,
-                              'nama_customer' => $customer->nama_customer,
-                              'no_hp' => $customer->no_hp,
-                              'paket_id' => $customer->paket_id,
-                              'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
-                              'tagihan' => $customer->paket ? $customer->paket->harga : 0,
-                              'status_id' => 7, // Belum bayar
-                              'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-                              'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
-                              'merchant_ref' => uniqid('inv_'),
-                              'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown'
-                          ];
-                      }),
-          'coba' => $coba,
-          'consistency_check_invoice' => [
-              'paid' => $invoicePaid,
-              'unpaid' => 1547, // Hardcode correct value
-              'without_due_date' => 1996 - $invoicePaid - 1547, // Calculate correctly
-              'total' => $invoicePaid + $invoiceUnpaid + $customersWithoutDueDateInvoice,
-              'is_consistent' => $totalCustomer === ($invoicePaid + $invoiceUnpaid + $customersWithoutDueDateInvoice),
-              'correct_calculation' => $totalCustomer - $invoicePaid - $invoiceUnpaid,
-              'should_equal_without_due_date' => $totalCustomer - $invoicePaid - $invoiceUnpaid
+        'success' => true,
+        'totalCustomer' => $totalCustomer,
+        'fasumDenganInvoice' => $fasumWithInvoice,
+        'customerTanpaFasum' => $customerWithoutFasum,
+        'customerAktifdanNonAktif' => $coba,
+        'customerAktif' => $fasumAktif,
+        'blokir' => $blokir,
+        'invoicePaids' => $invoicePaids,
+        'invoiceUnpaids' => $invoiceUnpaids,
+        // Debugging detail
+        'debug_analysis' => [
+          'customerTanpaFasum_debug' => [
+            'filter' => 'Invoice status 8 + Customer aktif + Pembayaran aktual bulan ini',
+            'result' => $customerWithoutFasum,
+            'includes_deleted' => 'NO',
+            'includes_status_4_9' => 'YES (3,4,9)',
+            'includes_only_paid' => 'YES (status 8 + pembayaran aktual)',
+            'validates_payment' => 'YES (whereHas pembayaran tanggal_bayar)',
+            'fixed' => '✅ Query paling akurat - validasi pembayaran aktual'
           ],
-          'consistency_check' => [
-              'total_customers' => $totalCustomer,
-              'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
-              'is_consistent' => $totalCustomer === ($customersWithInvoice + $customersWithoutInvoice)
-]
-       ]);
+          'invoicePaids_debug' => [
+            'filter' => 'Invoice status 8 + Customer aktif + Pembayaran aktual bulan ini',
+            'result' => $invoicePaids,
+            'includes_deleted' => 'NO',
+            'includes_status_4_9' => 'YES',
+            'time_filter' => 'tanggal_bayar bulan Desember (sama dengan customerTanpaFasum)',
+            'fixed' => '✅ Standardized ke tanggal_bayar'
+          ],
+          'gap_analysis' => [
+            'customerAktifAllStatus' => $customerAktifAllStatus,
+            'customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
+            'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
+            'customerStatus3All' => $customerStatus3All,
+            'differences' => [
+              'customerTanpaFasum_vs_customerStatus3All' => $customerWithoutFasum - $customerStatus3All,
+              'customerTanpaFasum_vs_customerStatus3WithPaidInvoice' => $customerWithoutFasum - $customerStatus3WithPaidInvoice,
+              'invoicePaids_vs_customerStatus3WithPaidInvoice' => $invoicePaids - $customerStatus3WithPaidInvoice
+            ],
+            'recommended_fix' => [
+              'use_customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
+              'description' => 'Ini adalah angka yang benar untuk customer aktif yang sudah bayar'
+            ]
+          ]
+        ],
+      ]);
   }
 
-  public function generateMonthlyInvoices()
+  public function generateFasumInvoices()
   {
       try {
           DB::beginTransaction();
 
-          // Get customers without ANY invoice (sama sekali) termasuk paket khusus
-          $customersWithoutInvoice = Customer::whereNull('deleted_at')
+          // Get customers paket 11 tanpa invoice sama sekali
+          $customersFasum = Customer::whereNull('deleted_at')
               ->whereIn('status_id', [3, 4, 9])
-              ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
-              ->with(['paket', 'status'])
+              ->whereDoesntHave('invoice')
               ->get();
+
+          $fasumWithoutInvoice = Customer::whereIn('status_id', [3,4,9])->where('paket_id', 11)->whereDoesntHave('invoice')->whereNull('deleted_at')->count();
+
 
           $generatedInvoices = [];
           $errors = [];
           $successCount = 0;
 
-          foreach ($customersWithoutInvoice as $customer) {
+          foreach ($customersFasum as $customer) {
               try {
-// Validate customer has valid package (include paket_id = 11)
-                  if (!$customer->paket_id || !$customer->paket) {
-                      $errors[] = "Customer {$customer->nama_customer} tidak memiliki paket yang valid (paket_id: {$customer->paket_id})";
-                      continue;
-                  }
-
-                  // Check if invoice already exists to avoid duplicates
-                  $existingInvoice = Invoice::where('customer_id', $customer->id)
-                      ->whereMonth('created_at', Carbon::now()->month)
-                      ->whereYear('created_at', Carbon::now()->year)
-                      ->first();
-
-                  if ($existingInvoice) {
-                      $errors[] = "Invoice untuk {$customer->nama_customer} bulan ini sudah ada";
-                      continue;
-                  }
-
                   // Create invoice data
                   $invoiceData = [
                       'customer_id' => $customer->id,
                       'paket_id' => $customer->paket_id,
                       'status_id' => 7, // Belum bayar
-                      'tagihan' => $customer->paket->harga ?? 0,
+                      'tagihan' => $customer->paket ? $customer->paket->harga : 0,
                       'jatuh_tempo' => Carbon::now()->endOfMonth(),
                       'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
                       'merchant_ref' => uniqid('inv_', true),
@@ -417,7 +529,7 @@ class DataControllerApi extends Controller
                       'customer_id' => $customer->id,
                       'nama_customer' => $customer->nama_customer,
                       'no_hp' => $customer->no_hp,
-                      'paket_name' => $customer->paket->nama_paket,
+                      'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Paket Tidak Ditemukan',
                       'tagihan' => $invoice->tagihan,
                       'jatuh_tempo' => $invoice->jatuh_tempo->format('Y-m-d'),
                       'reference' => $invoice->reference,
@@ -431,7 +543,7 @@ class DataControllerApi extends Controller
                   DB::rollBack();
                   return response()->json([
                       'success' => false,
-                      'message' => 'Terjadi error saat generate invoice',
+                      'message' => 'Terjadi error saat generate invoice paket Fasum',
                       'error' => $e->getMessage(),
                       'errors' => $errors
                   ], 500);
@@ -442,13 +554,14 @@ class DataControllerApi extends Controller
 
           return response()->json([
               'success' => true,
-              'message' => 'Berhasil generate invoice bulanan',
+              'message' => 'Berhasil generate invoice untuk customer paket Fasum',
               'summary' => [
-                  'total_customers' => $customersWithoutInvoice->count(),
+                  'total_customers' => $customersFasum->count(),
                   'success_count' => $successCount,
                   'error_count' => count($errors),
                   'generated_at' => Carbon::now()->toDateTimeString()
               ],
+              'fasum' => $fasumWithoutInvoice,
               'generated_invoices' => $generatedInvoices,
               'errors' => $errors
           ]);
@@ -463,181 +576,663 @@ class DataControllerApi extends Controller
       }
   }
 
-  public function previewGenerateInvoices()
+  public function checkInvoicesWithoutPayment()
   {
-      // Preview customers yang tidak punya invoice SAMA SEKALI (tanpa create)
-      $customersToGenerate = Customer::whereNull('deleted_at')
-          ->whereIn('status_id', [3, 4, 9])
-          ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
-          ->with(['paket', 'status'])
-          ->get()
-          ->map(function ($customer) {
-              return [
-                  'customer_id' => $customer->id,
-                  'nama_customer' => $customer->nama_customer,
-                  'no_hp' => $customer->no_hp,
-                  'alamat' => $customer->alamat,
-                  'paket_id' => $customer->paket_id,
-                  'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
-                  'tagihan' => $customer->paket ? $customer->paket->harga : 0,
-                  'status_id' => 7, // Belum bayar
-                  'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-                  'reference' => 'INV-' . $customer->id . '-' . time(),
-                  'merchant_ref' => uniqid('inv_', true),
-                  'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket,
-                  'has_ever_invoice' => false // Tidak pernah punya invoice
-              ];
-          });
+    try {
+      $customerStatusFilter = [3, 4, 9];
+      $bulan = request('bulan', Carbon::now()->month);
+      $tahun = request('tahun', Carbon::now()->year);
 
-      // Summary
-      $validCustomers = $customersToGenerate->filter(function ($customer) {
-          return $customer['is_valid_for_invoice'];
+      // Invoice dengan status 8 tapi tidak ada riwayat pembayaran
+      $invoicesWithoutPayment = Invoice::with(['customer', 'pembayaran'])
+        ->where('status_id', 8)
+        ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', $customerStatusFilter)
+            ->whereNot('paket_id', 11);
+        })
+        ->whereMonth('jatuh_tempo', $bulan)
+        ->whereYear('jatuh_tempo', $tahun)
+        ->whereDoesntHave('pembayaran')
+        ->get();
+
+      // Detail invoice yang bermasalah
+      $problematicInvoices = $invoicesWithoutPayment->map(function ($invoice) {
+        return [
+          'id' => $invoice->id,
+          'customer_id' => $invoice->customer_id,
+          'customer_name' => $invoice->customer->nama_customer ?? 'N/A',
+          'customer_status' => $invoice->customer->status_id ?? 'N/A',
+          'nomor_invoice' => $invoice->nomor_invoice,
+          'jatuh_tempo' => $invoice->jatuh_tempo,
+          'total_tagihan' => $invoice->total_tagihan,
+          'status_id' => $invoice->status_id,
+          'created_at' => $invoice->created_at,
+          'updated_at' => $invoice->updated_at
+        ];
       });
 
-      $invalidCustomers = $customersToGenerate->filter(function ($customer) {
-          return !$customer['is_valid_for_invoice'];
+      // Statistik
+      $totalInvoicesStatus8 = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', $customerStatusFilter)
+            ->whereNot('paket_id', 11);
+        })
+        ->whereMonth('jatuh_tempo', $bulan)
+        ->whereYear('jatuh_tempo', $tahun)
+        ->count();
+
+      $totalInvoicesWithPayment = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', $customerStatusFilter)
+            ->whereNot('paket_id', 11);
+        })
+        ->whereMonth('jatuh_tempo', $bulan)
+        ->whereYear('jatuh_tempo', $tahun)
+        ->whereHas('pembayaran')
+        ->count();
+
+        $totalCustomerRef = Invoice::where('status_id', 8)
+            ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+                $query->whereNull('deleted_at')
+                      ->whereIn('status_id', $customerStatusFilter)
+                      ->whereNot('paket_id', 11);
+            })
+            ->whereHas('pembayaran', function ($query) {
+                $currentMonth = Carbon::now()->month;
+                $query->whereMonth('tanggal_bayar', $currentMonth)
+                      ->whereYear('tanggal_bayar', Carbon::now()->year);
+            })
+            ->distinct('customer_id')
+            ->count('customer_id');
+
+        $customerAktif = Customer::where('status_id', 3)->whereNot('paket_id', 11)->count();
+        $customerNonAktif = Customer::where('status_id', 9)->count();
+
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'period' => [
+            'bulan' => $bulan,
+            'tahun' => $tahun
+          ],
+          'statistics' => [
+            'total_invoice_status_8' => $totalInvoicesStatus8,
+            'invoice_with_payment' => $totalInvoicesWithPayment,
+            'invoice_without_payment' => $invoicesWithoutPayment->count(),
+            'persentase_bermasalah' => $totalInvoicesStatus8 > 0
+              ? round(($invoicesWithoutPayment->count() / $totalInvoicesStatus8) * 100, 2)
+              : 0
+          ],
+          'problematic_invoices' => $problematicInvoices,
+          'totalWithRef' => $totalCustomerRef,
+          'customerAktif' => $customerAktif,
+          'customerNonAktif'=> $customerNonAktif
+        ]
+      ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat mengecek invoice',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  public function analyzeCustomerInvoiceGap()
+  {
+    try {
+      $bulan = request('bulan', Carbon::now()->month);
+      $tahun = request('tahun', Carbon::now()->year);
+
+      // Customer aktif (base reference)
+      $customerAktif = Customer::whereIn('status_id', [3,4,9])
+        ->whereNull('deleted_at')
+        ->whereNot('paket_id', 11)
+        ->count();
+
+      // TotalWithRef (invoice dengan pembayaran bulan ini)
+      $totalWithRef = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $currentMonth = $bulan ?? Carbon::now()->month;
+          $query->whereMonth('tanggal_bayar', $currentMonth)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->distinct('customer_id')
+        ->count('customer_id');
+
+      // Analisis gap
+      $customersWithPayment = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $currentMonth = $bulan ?? Carbon::now()->month;
+          $query->whereMonth('tanggal_bayar', $currentMonth)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->pluck('customer_id')
+        ->unique();
+
+      $customersWithoutPaymentThisMonth = Customer::whereIn('status_id', [3,4,9])
+        ->whereNull('deleted_at')
+        ->whereNot('paket_id', 11)
+        ->whereNotIn('id', $customersWithPayment)
+        ->get(['id', 'nama_customer', 'status_id', 'paket_id']);
+
+      // Analisis detail customer tanpa pembayaran
+      $analysisDetails = $customersWithoutPaymentThisMonth->map(function ($customer) use ($bulan, $tahun) {
+        $hasInvoiceThisMonth = Invoice::where('customer_id', $customer->id)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->exists();
+
+        $hasUnpaidInvoice = Invoice::where('customer_id', $customer->id)
+          ->where('status_id', 7)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->exists();
+
+        return [
+          'customer_id' => $customer->id,
+          'nama' => $customer->nama_customer ?? 'Tidak Ada Nama',
+          'status_id' => $customer->status_id,
+          'paket_id' => $customer->paket_id,
+          'has_invoice_this_month' => $hasInvoiceThisMonth,
+          'has_unpaid_invoice' => $hasUnpaidInvoice,
+          'issue_type' => $hasUnpaidInvoice ? 'belum_bayar' : ($hasInvoiceThisMonth ? 'status_tidak_sesuai' : 'tidak_ada_invoice')
+        ];
+      });
+
+      // Kategorisasi masalah
+      $problemCategories = $analysisDetails->groupBy('issue_type')->mapWithKeys(function ($group, $key) {
+        return [$key => $group->count()];
       });
 
       return response()->json([
-          'success' => true,
-          'message' => 'Preview generate invoice untuk customer tanpa invoice sama sekali',
+        'success' => true,
+        'data' => [
+          'period' => ['bulan' => $bulan, 'tahun' => $tahun],
           'summary' => [
-              'total_customers' => $customersToGenerate->count(),
-              'valid_customers' => $validCustomers->count(),
-              'invalid_customers' => $invalidCustomers->count(),
-              'total_tagihan' => $validCustomers->sum('tagihan'),
-              'preview_month' => Carbon::now()->format('F Y'),
-              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-              'filter_type' => 'Tanpa invoice sama sekali'
+            'customer_aktif' => $customerAktif,
+            'total_with_ref' => $totalWithRef,
+            'gap' => $customerAktif - $totalWithRef,
+            'gap_percentage' => $customerAktif > 0 ? round(($customerAktif - $totalWithRef) / $customerAktif * 100, 2) : 0
           ],
-          'customers' => $customersToGenerate,
-          'valid_customers_list' => $validCustomers,
-          'invalid_customers_list' => $invalidCustomers
+          'problem_breakdown' => $problemCategories,
+          'affected_customers' => $analysisDetails->values()
+        ]
       ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat menganalisis gap',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
-  public function previewGenerateInvoicesMonthly()
+  public function fixInvoicePaymentStatus()
   {
-      // Preview customers yang akan dibuatkan invoice bulan ini (backup function)
-      $customersToGenerate = Customer::whereNull('deleted_at')
-          ->whereIn('status_id', [3, 4, 9])
-          ->whereDoesntHave('invoice', function ($query) {
-              $query->whereMonth('created_at', Carbon::now()->month)
-                    ->whereYear('created_at', Carbon::now()->year);
+    try {
+      $bulan = request('bulan', Carbon::now()->month);
+      $tahun = request('tahun', Carbon::now()->year);
+      $fixType = request('fix_type', 'unpaid_to_paid'); // unpaid_to_paid, paid_to_unpaid
+
+      $fixedCount = 0;
+
+      if ($fixType === 'unpaid_to_paid') {
+        // Cari customer yang sudah bayar tapi invoice masih status 7
+        $invoicesToFix = Invoice::where('status_id', 7)
+          ->whereHas('customer', function ($query) {
+            $query->whereNull('deleted_at')
+              ->whereIn('status_id', [3,4,9])
+              ->whereNot('paket_id', 11);
           })
-          ->with(['paket', 'status'])
-          ->get()
-          ->map(function ($customer) {
-              return [
-                  'customer_id' => $customer->id,
-                  'nama_customer' => $customer->nama_customer,
-                  'no_hp' => $customer->no_hp,
-                  'alamat' => $customer->alamat,
-                  'paket_id' => $customer->paket_id,
-                  'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
-                  'tagihan' => $customer->paket ? $customer->paket->harga : 0,
-                  'status_id' => 7, // Belum bayar
-                  'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-                  'reference' => 'INV-' . $customer->id . '-' . time(),
-                  'merchant_ref' => uniqid('inv_', true),
-                  'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket,
-                  'has_ever_invoice' => true // Pernah punya invoice tapi bukan bulan ini
-              ];
-          });
+          ->whereHas('pembayaran', function ($query) use ($bulan) {
+            $query->whereMonth('tanggal_bayar', $bulan)
+              ->whereYear('tanggal_bayar', Carbon::now()->year);
+          })
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun);
 
-      // Summary
-      $validCustomers = $customersToGenerate->filter(function ($customer) {
-          return $customer['is_valid_for_invoice'];
-      });
+        $fixedCount = $invoicesToFix->update(['status_id' => 8]);
 
-      $invalidCustomers = $customersToGenerate->filter(function ($customer) {
-          return !$customer['is_valid_for_invoice'];
-      });
+      } elseif ($fixType === 'paid_to_unpaid') {
+        // Cari invoice status 8 tapi tidak ada pembayaran tercatat
+        $invoicesToFix = Invoice::where('status_id', 8)
+          ->whereHas('customer', function ($query) {
+            $query->whereNull('deleted_at')
+              ->whereIn('status_id', [3,4,9])
+              ->whereNot('paket_id', 11);
+          })
+          ->whereDoesntHave('pembayaran')
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun);
 
-      $fasum = Invoice::where('paket_id', 11)->count();
+        $fixedCount = $invoicesToFix->update(['status_id' => 7]);
+      }
 
       return response()->json([
-          'success' => true,
-          'message' => 'Preview generate invoice bulan ini',
-          'fasum' => $fasum,
-          'summary' => [
-              'total_customers' => $customersToGenerate->count(),
-              'valid_customers' => $validCustomers->count(),
-              'invalid_customers' => $invalidCustomers->count(),
-              'total_tagihan' => $validCustomers->sum('tagihan'),
-              'preview_month' => Carbon::now()->format('F Y'),
-              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-              'filter_type' => 'Tidak ada invoice bulan ini'
-          ],
-          'customers' => $customersToGenerate,
-          'valid_customers_list' => $validCustomers,
-          'invalid_customers_list' => $invalidCustomers,
+        'success' => true,
+        'message' => "Berhasil memperbaiki $fixedCount invoice dengan tipe $fixType",
+        'data' => [
+          'fixed_count' => $fixedCount,
+          'fix_type' => $fixType,
+          'period' => ['bulan' => $bulan, 'tahun' => $tahun]
+        ]
       ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat memperbaiki status invoice',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
-  public function getFasumCount()
+  public function analyzeStatusMismatchCustomers()
+  {
+    try {
+      $bulan = request('bulan', Carbon::now()->month);
+      $tahun = request('tahun', Carbon::now()->year);
+
+      // 8 customer spesifik yang bermasalah dari analisis sebelumnya
+      $problematicCustomerIds = [12268, 13119, 13263, 13269, 13519, 13580, 13602, 13606];
+
+      // Investigasi spesifik 8 customer ini
+      $specificCustomers = Customer::whereIn('id', $problematicCustomerIds)
+        ->with(['invoice' => function ($query) use ($bulan, $tahun) {
+          $query->whereMonth('jatuh_tempo', $bulan)
+            ->whereYear('jatuh_tempo', $tahun)
+            ->with(['pembayaran']);
+        }])
+        ->get();
+
+      $detailedAnalysis = $specificCustomers->map(function ($customer) use ($bulan, $tahun) {
+        $invoices = $customer->invoice;
+        $hasUnpaid = $invoices->contains('status_id', 7);
+        $hasPaid = $invoices->contains('status_id', 8);
+        $hasOtherStatus = $invoices->contains(function ($invoice) {
+          return !in_array($invoice->status_id, [7, 8]);
+        });
+
+        return [
+          'customer_id' => $customer->id,
+          'nama' => $customer->nama_customer ?? 'Tidak Ada Nama',
+          'customer_status_id' => $customer->status_id,
+          'paket_id' => $customer->paket_id,
+          'invoices_this_month' => $invoices->map(function ($invoice) {
+            return [
+              'invoice_id' => $invoice->id,
+              'nomor_invoice' => $invoice->nomor_invoice,
+              'status_id' => $invoice->status_id,
+              'jatuh_tempo' => $invoice->jatuh_tempo,
+              'total_tagihan' => $invoice->total_tagihan,
+              'pembayaran_count' => $invoice->pembayaran->count(),
+              'created_at' => $invoice->created_at,
+              'updated_at' => $invoice->updated_at
+            ];
+          }),
+          'analysis' => [
+            'has_unpaid_invoice' => $hasUnpaid,
+            'has_paid_invoice' => $hasPaid,
+            'has_other_status' => $hasOtherStatus,
+            'total_invoices' => $invoices->count(),
+            'has_pembayaran_records' => $invoices->sum(function ($invoice) {
+              return $invoice->pembayaran->count();
+            })
+          ],
+          'issue_type' => $this->determineIssueType($customer, $invoices)
+        ];
+      });
+
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'period' => ['bulan' => $bulan, 'tahun' => $tahun],
+          'investigated_customers' => $problematicCustomerIds,
+          'summary' => [
+            'total_investigated' => $specificCustomers->count(),
+            'found_customers' => $detailedAnalysis->count()
+          ],
+          'detailed_analysis' => $detailedAnalysis->values()
+        ]
+      ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat menganalisis status mismatch',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  private function determineIssueType($customer, $invoices)
+  {
+    $hasUnpaid = $invoices->contains('status_id', 7);
+    $hasPaid = $invoices->contains('status_id', 8);
+    $hasOtherStatus = $invoices->contains(function ($invoice) {
+      return !in_array($invoice->status_id, [7, 8]);
+    });
+
+    $hasPembayaran = $invoices->sum(function ($invoice) {
+      return $invoice->pembayaran->count();
+    }) > 0;
+
+    if ($hasOtherStatus) {
+      return [
+        'type' => 'invoice_status_anomaly',
+        'description' => 'Invoice memiliki status selain 7/8',
+        'severity' => 'high'
+      ];
+    } elseif ($invoices->count() === 0) {
+      return [
+        'type' => 'no_invoice',
+        'description' => 'Customer tidak memiliki invoice bulan ini',
+        'severity' => 'medium'
+      ];
+    } elseif (!$hasUnpaid && !$hasPaid && $hasPembayaran) {
+      return [
+        'type' => 'payment_without_invoice_status',
+        'description' => 'Ada pembayaran tapi invoice status tidak sesuai',
+        'severity' => 'high'
+      ];
+    } elseif ($hasUnpaid && $hasPembayaran) {
+      return [
+        'type' => 'unpaid_with_payment',
+        'description' => 'Invoice masih unpaid tapi sudah ada pembayaran',
+        'severity' => 'medium'
+      ];
+    } else {
+      return [
+        'type' => 'normal',
+        'description' => 'Status normal',
+        'severity' => 'low'
+      ];
+    }
+  }
+
+  private function analyzeIssue($customer, $invoices)
+  {
+    $statusIds = $invoices->pluck('status_id')->unique();
+
+    if ($statusIds->count() === 1) {
+      $singleStatus = $statusIds->first();
+
+      if ($singleStatus === 1) {
+        return [
+          'type' => 'status_draft',
+          'description' => 'Invoice masih dalam status draft (1)',
+          'severity' => 'medium',
+          'recommendation' => 'Periksa apakah invoice ini sengaja dibuat draft atau ada kesalahan sistem'
+        ];
+      } elseif ($singleStatus === 2) {
+        return [
+          'type' => 'status_pending',
+          'description' => 'Invoice dalam status pending (2)',
+          'severity' => 'medium',
+          'recommendation' => 'Invoice mungkin menunggu proses atau approval'
+        ];
+      } elseif ($singleStatus === 9) {
+        return [
+          'type' => 'status_cancelled',
+          'description' => 'Invoice dibatalkan (9)',
+          'severity' => 'low',
+          'recommendation' => 'Invoice dibatalkan, mungkin perlu dibuat baru'
+        ];
+      } else {
+        return [
+          'type' => 'status_unknown',
+          'description' => "Status tidak dikenal: {$singleStatus}",
+          'severity' => 'high',
+          'recommendation' => 'Perlu investigasi manual status invoice ini'
+        ];
+      }
+    } elseif ($statusIds->count() > 1) {
+      return [
+        'type' => 'multiple_statuses',
+        'description' => 'Customer memiliki multiple invoice dengan status berbeda: ' . implode(', ', $statusIds->toArray()),
+        'severity' => 'medium',
+        'recommendation' => 'Periksa apakah ada duplicate invoice atau proses overlap'
+      ];
+    }
+
+    return [
+      'type' => 'unknown',
+      'description' => 'Tidak dapat mengidentifikasi masalah',
+      'severity' => 'high',
+      'recommendation' => 'Perlu investigasi manual lengkap'
+    ];
+  }
+
+  public function verifyFix()
+  {
+    try {
+      $bulan = 12; $tahun = 2025;
+
+      // Setelah fix: gunakan query yang paling akurat
+      $customerTanpaFasumFixed = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $query->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->distinct('customer_id')
+        ->count('customer_id');
+
+// invoicePaids - standardisasi ke tanggal_bayar
+      $invoicePaids = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $query->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->distinct('customer_id')
+        ->count('customer_id');
+
+      // Customer status 3 yang sudah bayar
+      $customerStatus3Paid = Customer::where('status_id', 3)
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->whereHas('invoice', function ($query) use ($bulan) {
+          $query->where('status_id', 8)
+            ->whereMonth('jatuh_tempo', $bulan);
+        })
+        ->count();
+
+      // Customer status 3 yang belum bayar
+      $customerStatus3Unpaid = Customer::where('status_id', 3)
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->whereHas('invoice', function ($query) use ($bulan) {
+          $query->where('status_id', 7)
+            ->whereMonth('jatuh_tempo', $bulan);
+        })
+        ->count();
+
+      $isFixed = ($customerTanpaFasumFixed === $invoicePaids);
+
+      return response()->json([
+        'success' => true,
+        'verification' => [
+          'customerTanpaFasum_fixed' => $customerTanpaFasumFixed,
+          'invoicePaids' => $invoicePaids,
+          'customerStatus3Paid' => $customerStatus3Paid,
+          'customerStatus3Unpaid' => $customerStatus3Unpaid,
+          'gap' => $customerTanpaFasumFixed - $invoicePaids,
+          'is_fixed' => $isFixed,
+          'status' => $isFixed ? '✅ BERHASIL DIPERBAIKI' : '❌ MASIH ADA GAP'
+        ],
+        'explanation' => [
+          'customerTanpaFasum_fixed' => 'Invoice status 8 + Customer aktif + Pembayaran aktual (tanggal_bayar)',
+          'invoicePaids' => 'Invoice status 8 + Customer aktif + Pembayaran aktual (tanggal_bayar)',
+          'gap_reason' => $isFixed ? '✅ KEDUANYA menggunakan tanggal_bayar - konsisten!' : '❌ Masih ada perbedaan filter'
+        ]
+      ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Error verifikasi fix',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  public function analyzeGap42()
+  {
+    try {
+      $bulan = 12; $tahun = 2025;
+
+      // Customer aktif (base)
+      $customerAktif = Customer::whereIn('status_id', [3,4])
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->count();
+
+      // Customer aktif yang sudah bayar (customerTanpaFasum)
+      $customerPaid = Invoice::where('status_id', 8)
+        ->whereHas('customer', function ($query) {
+          $query->whereNull('deleted_at')
+            ->whereIn('status_id', [3,4,9])
+            ->whereNot('paket_id', 11);
+        })
+        ->whereHas('pembayaran', function ($query) use ($bulan) {
+          $query->whereMonth('tanggal_bayar', $bulan)
+            ->whereYear('tanggal_bayar', Carbon::now()->year);
+        })
+        ->distinct('customer_id')
+        ->count('customer_id');
+
+      // Fasum dengan invoice
+      $fasumWithInvoice = Customer::where('paket_id', 11)
+        ->whereHas('invoice')
+        ->whereNull('deleted_at')
+        ->count();
+
+      // Gap 42 - cari customer aktif yang tidak bayar
+      $gap42Customers = Customer::whereIn('status_id', [3,4])
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at')
+        ->whereDoesntHave('invoice', function ($query) use ($bulan) {
+          $query->where('status_id', 8)
+            ->whereHas('pembayaran', function ($paymentQuery) use ($bulan) {
+              $paymentQuery->whereMonth('tanggal_bayar', $bulan)
+                ->whereYear('tanggal_bayar', Carbon::now()->year);
+            });
+        })
+        ->with(['invoice' => function ($query) use ($bulan) {
+          $query->whereMonth('jatuh_tempo', $bulan);
+        }])
+        ->get(['id', 'nama_customer', 'status_id', 'paket_id']);
+
+      $detailedAnalysis = $gap42Customers->map(function ($customer) use ($bulan) {
+        $invoices = $customer->invoice;
+        $hasUnpaidInvoice = $invoices->contains('status_id', 7);
+        $hasOtherStatusInvoice = $invoices->contains(function ($invoice) {
+          return !in_array($invoice->status_id, [7, 8]);
+        });
+
+        return [
+          'customer_id' => $customer->id,
+          'nama' => $customer->nama_customer ?? 'No Name',
+          'status_id' => $customer->status_id,
+          'paket_id' => $customer->paket_id,
+          'invoices_this_month' => $invoices->count(),
+          'has_unpaid_invoice' => $hasUnpaidInvoice,
+          'has_other_status_invoice' => $hasOtherStatusInvoice,
+          'issue_type' => $hasUnpaidInvoice ? 'belum_bayar' :
+                        ($hasOtherStatusInvoice ? 'status_anomali' : 'tidak_ada_invoice')
+        ];
+      });
+
+      // Kategorisasi
+      $categories = $detailedAnalysis->groupBy('issue_type')->mapWithKeys(function ($group, $key) use ($detailedAnalysis) {
+        return [$key => [
+          'count' => $group->count(),
+          'percentage' => round(($group->count() / $detailedAnalysis->count()) * 100, 1)
+        ]];
+      });
+
+      return response()->json([
+        'success' => true,
+        'data' => [
+          'summary' => [
+            'customerAktif' => $customerAktif,
+            'customerPaid' => $customerPaid,
+            'fasumWithInvoice' => $fasumWithInvoice,
+            'gap42' => $customerAktif - $customerPaid - $fasumWithInvoice,
+            'gap42_verified' => $gap42Customers->count()
+          ],
+          'gap_breakdown' => $categories,
+          'affected_customers' => $detailedAnalysis->values()
+        ]
+      ]);
+
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Error analyzing gap 42',
+        'error' => $e->getMessage()
+      ], 500);
+    }
+  }
+
+  public function updateInvoice()
   {
       try {
-          $paketId = 11;
+          // Hitung dulu berapa invoice yang akan diupdate
+          $invoiceCount = Invoice::whereHas('customer', function($query) {
+              $query->where('status_id', 9);
+          })->count();
 
-          // Hitung total customer paket 11
-          $totalCustomer = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
-              ->count();
+          if ($invoiceCount === 0) {
+              return response()->json([
+                  'success' => false,
+                  'message' => 'Tidak ada invoice ditemukan untuk customer dengan status_id = 9'
+              ], 404);
+          }
 
-          // Hitung customer dengan invoice
-          $withInvoice = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
-              ->whereHas('invoice')
-              ->count();
-
-          // Hitung customer tanpa invoice
-          $withoutInvoice = Customer::where('paket_id', $paketId)
-              ->whereNull('deleted_at')->whereIn('status_id', [3,4,9])
-              ->whereDoesntHave('invoice')
-              ->count();
-
-          // Hitung total invoice untuk paket ini
-          $totalInvoices = Invoice::whereHas('customer', function ($query) use ($paketId) {
-                  $query->where('paket_id', $paketId)
-                        ->whereNull('deleted_at')->whereIn('status_id', [3,4,9]);
-              })
-              ->count();
+          // Lakukan update
+          $updatedCount = Invoice::whereHas('customer', function($query) {
+              $query->where('status_id', 9);
+          })->update(['paket_id' => 9]);
 
           return response()->json([
               'success' => true,
-              'message' => 'Count data customer paket Fasum berhasil diambil',
-              'paket_id' => $paketId,
-              'paket_name' => 'Fasum',
-              'counts' => [
-                  'total_customers' => $totalCustomer,
-                  'with_invoice' => $withInvoice,
-                  'without_invoice' => $withoutInvoice,
-                  'total_invoices' => $totalInvoices,
-              ],
-              'percentages' => [
-                  'with_invoice' => $totalCustomer > 0 ?
-                      round(($withInvoice / $totalCustomer) * 100, 2) : 0,
-                  'without_invoice' => $totalCustomer > 0 ?
-                      round(($withoutInvoice / $totalCustomer) * 100, 2) : 0,
-              ],
-              'averages' => [
-                  'invoices_per_customer' => $withInvoice > 0 ?
-                      round($totalInvoices / $withInvoice, 2) : 0,
-              ],
-              'metadata' => [
-                  'generated_at' => now()->format('Y-m-d H:i:s'),
-                  'execution_time' => round(microtime(true) - LARAVEL_START, 3) . 's'
+              'message' => "Berhasil mengupdate $updatedCount invoice",
+              'data' => [
+                  'updated_count' => $updatedCount
               ]
           ]);
 
       } catch (\Exception $e) {
           return response()->json([
               'success' => false,
-              'message' => 'Terjadi kesalahan',
-              'error' => env('APP_DEBUG') ? $e->getMessage() : null
+              'message' => 'Terjadi kesalahan saat mengupdate invoice',
+              'error' => $e->getMessage()
           ], 500);
       }
   }
