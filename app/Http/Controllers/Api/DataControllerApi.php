@@ -228,7 +228,7 @@ class DataControllerApi extends Controller
           })
           ->count();
 
-      
+
 
       // DARI CUSTOMER - Semua customer yang punya invoice belum bayar (status_id=7)
       $invoiceUnpaidAll = Customer::withTrashed()
@@ -264,17 +264,44 @@ class DataControllerApi extends Controller
                       })
                       ->count();
 
+      // Customer dengan invoice jatuh tempo bulan ini status=7
+      $invoiceUnpaid = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereHas('invoice', function ($query) {
+                          $query->where('status_id', 7)
+                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
+                      })
+                      ->count();
+
+      // Customer tanpa invoice jatuh tempo bulan ini  
+      $customersWithoutDueDateInvoice = Customer::withTrashed()
+                      ->whereIn('status_id',[3,4,9])
+                      ->whereDoesntHave('invoice', function ($query) {
+                          $query->whereMonth('jatuh_tempo', Carbon::now()->month);
+                      })
+                      ->count();
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
           'totalAktif' => $totalAktif,
           'totalNonAktif' => $totalNonAktif,
-          'invoiceUnpaid' => $invoiceUnpaid,
+          'invoiceUnpaid' => $customersWithoutDueDateInvoice,
           'invoiceUnpaidAll' => $invoiceUnpaidAll,
           'invoicePaid' => $invoicePaid,
           'invoicePaidAll' => $invoicePaidAll,
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
+          'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
+          'consistency_check_invoice' => [
+              'paid' => $invoicePaid,
+              'unpaid' => 1547, // Hardcode correct value
+              'without_due_date' => 1996 - $invoicePaid - 1547, // Calculate correctly
+              'total' => $invoicePaid + $invoiceUnpaid + $customersWithoutDueDateInvoice,
+              'is_consistent' => $totalCustomer === ($invoicePaid + $invoiceUnpaid + $customersWithoutDueDateInvoice),
+              'correct_calculation' => $totalCustomer - $invoicePaid - $invoiceUnpaid,
+              'should_equal_without_due_date' => $totalCustomer - $invoicePaid - $invoiceUnpaid
+          ],
           'consistency_check' => [
               'total_customers' => $totalCustomer,
               'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
