@@ -583,12 +583,12 @@ class DataControllerApi extends Controller
           $paketId = 11;
 
           $customers = Customer::with(['invoices' => function ($query) {
-                  $query->select('id', 'customer_id', 'invoice_number', 'amount', 'status')
+                  $query->select('id', 'customer_id')
                         ->orderBy('created_at', 'desc'); // urutkan invoice terbaru
               }])
               ->where('paket_id', $paketId)
               ->whereNull('deleted_at')
-              ->select('id', 'name', 'email', 'phone', 'paket_id', 'status_id', 'created_at', 'address')
+              ->select('id', 'nama_customer', 'no_hp', 'paket_id', 'status_id', 'created_at', 'alamat')
               ->orderBy('created_at', 'desc')
               ->get()
               ->map(function ($customer) {
