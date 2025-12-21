@@ -288,7 +288,7 @@ class DataControllerApi extends Controller
                       ->whereIn('status_id', [3, 4, 9])
                       ->whereDoesntHave('invoice')
                       ->with(['status'])
-                      ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id'])
+                      ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id','paket_id'])
                       ->map(function ($customer) {
                           return [
                               'id' => $customer->id,
