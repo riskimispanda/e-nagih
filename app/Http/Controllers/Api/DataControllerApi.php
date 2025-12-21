@@ -273,7 +273,7 @@ class DataControllerApi extends Controller
                       })
                       ->count();
 
-      // Customer tanpa invoice jatuh tempo bulan ini  
+      // Customer tanpa invoice jatuh tempo bulan ini
       $customersWithoutDueDateInvoice = Customer::withTrashed()
                       ->whereIn('status_id',[3,4,9])
                       ->whereDoesntHave('invoice', function ($query) {
