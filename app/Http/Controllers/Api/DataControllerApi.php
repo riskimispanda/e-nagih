@@ -482,7 +482,7 @@ class DataControllerApi extends Controller
                   'tagihan' => $customer->paket ? $customer->paket->harga : 0,
                   'status_id' => 7, // Belum bayar
                   'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
-                  'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
+                  'reference' => 'INV-' . $customer->id . '-' . time(),
                   'merchant_ref' => uniqid('inv_', true),
                   'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
                   'is_valid_for_invoice' => $customer->paket_id && $customer->paket,
