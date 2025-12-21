@@ -367,14 +367,11 @@ class DataControllerApi extends Controller
       try {
           DB::beginTransaction();
 
-          // Get customers without invoice this month
+          // Get customers without ANY invoice (sama sekali)
           $customersWithoutInvoice = Customer::whereNull('deleted_at')
               ->whereIn('status_id', [3, 4, 9])
               ->whereNot('paket_id', 11)
-              ->whereDoesntHave('invoice', function ($query) {
-                  $query->whereMonth('created_at', Carbon::now()->month)
-                        ->whereYear('created_at', Carbon::now()->year);
-              })
+              ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
               ->with(['paket', 'status'])
               ->get();
 
@@ -469,7 +466,62 @@ class DataControllerApi extends Controller
 
   public function previewGenerateInvoices()
   {
-      // Preview customers yang akan dibuatkan invoice (tanpa create)
+      // Preview customers yang tidak punya invoice SAMA SEKALI (tanpa create)
+      $customersToGenerate = Customer::whereNull('deleted_at')
+          ->whereIn('status_id', [3, 4, 9])
+          ->whereNot('paket_id', 11)
+          ->whereDoesntHave('invoice') // Tidak punya invoice sama sekali
+          ->with(['paket', 'status'])
+          ->get()
+          ->map(function ($customer) {
+              return [
+                  'customer_id' => $customer->id,
+                  'nama_customer' => $customer->nama_customer,
+                  'no_hp' => $customer->no_hp,
+                  'alamat' => $customer->alamat,
+                  'paket_id' => $customer->paket_id,
+                  'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
+                  'tagihan' => $customer->paket ? $customer->paket->harga : 0,
+                  'status_id' => 7, // Belum bayar
+                  'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
+                  'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
+                  'merchant_ref' => uniqid('inv_', true),
+                  'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
+                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket,
+                  'has_ever_invoice' => false // Tidak pernah punya invoice
+              ];
+          });
+
+      // Summary
+      $validCustomers = $customersToGenerate->filter(function ($customer) {
+          return $customer['is_valid_for_invoice'];
+      });
+
+      $invalidCustomers = $customersToGenerate->filter(function ($customer) {
+          return !$customer['is_valid_for_invoice'];
+      });
+
+      return response()->json([
+          'success' => true,
+          'message' => 'Preview generate invoice untuk customer tanpa invoice sama sekali',
+          'summary' => [
+              'total_customers' => $customersToGenerate->count(),
+              'valid_customers' => $validCustomers->count(),
+              'invalid_customers' => $invalidCustomers->count(),
+              'total_tagihan' => $validCustomers->sum('tagihan'),
+              'preview_month' => Carbon::now()->format('F Y'),
+              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d'),
+              'filter_type' => 'Tanpa invoice sama sekali'
+          ],
+          'customers' => $customersToGenerate,
+          'valid_customers_list' => $validCustomers,
+          'invalid_customers_list' => $invalidCustomers
+      ]);
+  }
+
+  public function previewGenerateInvoicesMonthly()
+  {
+      // Preview customers yang akan dibuatkan invoice bulan ini (backup function)
       $customersToGenerate = Customer::whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9])
           ->whereNot('paket_id', 11)
@@ -493,7 +545,8 @@ class DataControllerApi extends Controller
                   'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
                   'merchant_ref' => uniqid('inv_', true),
                   'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket
+                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket,
+                  'has_ever_invoice' => true // Pernah punya invoice tapi bukan bulan ini
               ];
           });
 
@@ -515,7 +568,8 @@ class DataControllerApi extends Controller
               'invalid_customers' => $invalidCustomers->count(),
               'total_tagihan' => $validCustomers->sum('tagihan'),
               'preview_month' => Carbon::now()->format('F Y'),
-              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d')
+              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d'),
+              'filter_type' => 'Tidak ada invoice bulan ini'
           ],
           'customers' => $customersToGenerate,
           'valid_customers_list' => $validCustomers,
