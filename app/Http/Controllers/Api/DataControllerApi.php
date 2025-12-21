@@ -296,6 +296,7 @@ class DataControllerApi extends Controller
                               'no_hp' => $customer->no_hp,
                               'alamat' => $customer->alamat,
                               'status_id' => $customer->status_id,
+                              'paket' => $customer->paket->nama_paket,
                               'status_name' => $customer->status ? $customer->status->nama_status : 'Unknown',
                               'is_deleted' => $customer->deleted_at ? true : false
                           ];
