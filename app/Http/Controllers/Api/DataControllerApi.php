@@ -231,7 +231,7 @@ class DataControllerApi extends Controller
                     ->whereIn('status_id', $customerStatusFilter)
                     ->whereNot('paket_id', 11);
           })
-          ->whereHas('pembayaran', function ($query) use ($month) {
+          ->whereHas('pembayaran', function ($query) {
               $currentMonth = Carbon::now()->month;
               $query->whereMonth('tanggal_bayar', $currentMonth)
                     ->whereYear('tanggal_bayar', Carbon::now()->year);
