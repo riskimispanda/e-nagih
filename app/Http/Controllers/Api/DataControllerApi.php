@@ -251,13 +251,13 @@ class DataControllerApi extends Controller
 
       $invoiceUnpaid = Invoice::with('customer')->where('status_id', 7)
                       ->whereHas('customer', function ($query) {
-                          $query->whereNull('deleted_at')->whereIn('status_id',[3,4,9]);
+                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
                       })
                       ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
 
       $invoicePaid = Invoice::with('customer')->where('status_id', 8)
                       ->whereHas('customer', function ($query) {
-                          $query->whereNull('deleted_at')->whereIn('status_id',[3,4,9]);
+                          $query->withTrashed()->whereIn('status_id',[3,4,9]);
                       })
                       ->whereMonth('jatuh_tempo', Carbon::now()->month)->distinct('customer_id')->count('customer_id');
 
