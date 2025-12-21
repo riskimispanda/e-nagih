@@ -188,12 +188,30 @@ class DataControllerApi extends Controller
           })
           ->count();
 
+      // Total invoice yang sudah bayar (status_id = 8)
+      $totalInvoicePaid = Invoice::where('status_id', 8)
+          ->whereHas('customer', function ($query) {
+              $query->whereIn('status_id', [3, 4, 9])
+                    ->whereNull('deleted_at');
+          })
+          ->count();
+
+      // Total invoice yang belum bayar (status_id = 7)
+      $totalInvoiceUnpaid = Invoice::where('status_id', 7)
+          ->whereHas('customer', function ($query) {
+              $query->whereIn('status_id', [3, 4, 9])
+                    ->whereNull('deleted_at');
+          })
+          ->count();
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
           'totalNonAktif' => $totalNonAktif,
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
+          'totalInvoicePaid' => $totalInvoicePaid,
+          'totalInvoiceUnpaid' => $totalInvoiceUnpaid,
           'consistency_check' => [
               'total_customers' => $totalCustomer,
               'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
