@@ -194,6 +194,7 @@ class DataControllerApi extends Controller
               $query->whereIn('status_id', [3, 4, 9])
                     ->whereNull('deleted_at');
           })
+          ->whereMonth('jatuh_tempo', Carbon::now()->month)
           ->count();
 
       // Total invoice yang belum bayar (status_id = 7)
@@ -202,6 +203,7 @@ class DataControllerApi extends Controller
               $query->whereIn('status_id', [3, 4, 9])
                     ->whereNull('deleted_at');
           })
+          ->whereMonth('jatuh_tempo', Carbon::now()->month)
           ->count();
 
       return response()->json([
