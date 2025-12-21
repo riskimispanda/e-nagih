@@ -794,13 +794,15 @@ class KeuanganController extends Controller
         }
 
         $ewalletCount = $ewalletCount->count();
-        $totalCustomer = Invoice::distinct('customer_id')
-            ->where('status_id', 8)
-            ->whereHas('pembayaran', function ($q) use ($month) {
-                $q->whereMonth('tanggal_bayar', $month);
-                $q->whereYear('tanggal_bayar', Carbon::now()->year);
-            })
-            ->count('customer_id');
+        // Use consistent customer status filtering
+        $customerStatusFilter = [3, 4, 9]; // Include status 4
+
+        // Paid customers
+        $totalCustomer = Customer::whereIn('status_id', [3,4])->whereNull('deleted_at')->whereNot('paket_id', 11)
+                        ->whereHas('invoice', function ($q) {
+                            $q->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
+                        })->count();
+        // dd($totalCustomer);
 
         return view('/keuangan/data-pembayaran',[
             'users' => auth()->user(),
