@@ -283,24 +283,28 @@ class DataControllerApi extends Controller
 
       $coba = Invoice::whereNot('paket_id', 11)->distinct('customer_id')->count('customer_id');
 
-      // LIST Customer yang tidak punya invoice
-      $customersWithoutInvoiceList = Customer::withTrashed()
-                      ->whereIn('status_id', [3, 4, 9])
-                      ->whereDoesntHave('invoice')
-                      ->with(['status'])
-                      ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id','paket_id'])
-                      ->map(function ($customer) {
-                          return [
-                              'id' => $customer->id,
-                              'nama_customer' => $customer->nama_customer,
-                              'no_hp' => $customer->no_hp,
-                              'alamat' => $customer->alamat,
-                              'status_id' => $customer->status_id,
-                              'paket' => $customer->paket->nama_paket,
-                              'status_name' => $customer->status ? $customer->status->nama_status : 'Unknown',
-                              'is_deleted' => $customer->deleted_at ? true : false
-                          ];
-                      });
+// LIST Customer yang tidak punya invoice dengan validasi
+       $customersWithoutInvoiceList = Customer::whereNull('deleted_at')
+                       ->whereIn('status_id', [3, 4, 9])
+                       ->whereNot('paket_id', 11) // Bukan paket_id 11
+                       ->whereDoesntHave('invoice')
+                       ->with(['status', 'paket'])
+                       ->limit(10) // Batasi untuk debugging
+                       ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id', 'paket_id'])
+                       ->map(function ($customer) {
+                           return [
+                               'id' => $customer->id,
+                               'nama_customer' => $customer->nama_customer,
+                               'no_hp' => $customer->no_hp,
+                               'alamat' => $customer->alamat,
+                               'status_id' => $customer->status_id,
+                               'status_name' => $customer->status ? $customer->status->nama_status : 'Unknown',
+                               'paket_id' => $customer->paket_id,
+                               'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
+                               'is_paket_excluded' => $customer->paket_id == 11,
+                               'is_deleted' => false // Karena sudah difilter whereNull('deleted_at')
+                           ];
+                       });
 
       return response()->json([
           'success' => true,
