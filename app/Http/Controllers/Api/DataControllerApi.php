@@ -556,6 +556,8 @@ class DataControllerApi extends Controller
           return !$customer['is_valid_for_invoice'];
       });
 
+      $fasum = Invoice::where('paket_id', 11)->count();
+
       return response()->json([
           'success' => true,
           'message' => 'Preview generate invoice bulan ini',
@@ -570,7 +572,8 @@ class DataControllerApi extends Controller
           ],
           'customers' => $customersToGenerate,
           'valid_customers_list' => $validCustomers,
-          'invalid_customers_list' => $invalidCustomers
+          'invalid_customers_list' => $invalidCustomers,
+          'fasum' => $fasum
       ]);
   }
 
