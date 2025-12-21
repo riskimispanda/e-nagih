@@ -224,16 +224,19 @@ class DataControllerApi extends Controller
       // = customer aktif - customer yang sudah bayar bulan ini
       $totalInvoiceUnpaid = $totalCustomer - $totalInvoicePaid;
 
-      // Total transaksi yang konsisten dengan totalCustomer
-      // Customer yang sudah bayar bulan ini (sama seperti totalInvoicePaid)
-      $totalTransactions = Customer::whereIn('status_id', [3, 4, 9])
-          ->whereNull('deleted_at')
-          ->whereHas('invoice', function ($query) {
-              $query->where('status_id', 8)
-                    ->whereMonth('created_at', Carbon::now()->month)
-                    ->whereYear('created_at', Carbon::now()->year);
+      // Total transaksi yang KONSISTEN dengan totalCustomer
+      // Customer yang sudah bayar bulan ini dengan pembayaran (filter created_at invoice)
+      $customerStatusFilter = [3, 4, 9];
+      $totalTransactions = Invoice::where('status_id', 8)
+          ->whereMonth('created_at', Carbon::now()->month)
+          ->whereYear('created_at', Carbon::now()->year)
+          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+              $query->whereNull('deleted_at')
+                    ->whereIn('status_id', $customerStatusFilter);
           })
-          ->count();
+          ->whereHas('pembayaran') // Hanya cek ada pembayaran, tanpa filter tanggal
+          ->distinct('customer_id')
+          ->count('customer_id');
 
       return response()->json([
           'success' => true,
