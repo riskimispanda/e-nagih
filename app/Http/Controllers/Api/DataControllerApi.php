@@ -169,7 +169,7 @@ class DataControllerApi extends Controller
   {
       $totalCustomer = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
       $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
-      $totalAktif = Customer::whereIn('status_id',[3,4])->where('paket_id', '!=', 11)->whereNull('deleted_at')->count();
+      $totalAktif = Customer::whereIn('status_id',[3,4])->whereNot('paket_id', 11)->whereNull('deleted_at')->count();
 
       // Customer yang memiliki invoice (sudah ada di kode sebelumnya)
       $customersWithInvoice = Invoice::select('invoice.customer_id')
