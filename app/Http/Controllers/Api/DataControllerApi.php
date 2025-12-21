@@ -173,6 +173,8 @@ class DataControllerApi extends Controller
       // Customer yang memiliki invoice (sudah ada di kode sebelumnya)
       $customersWithInvoice = Invoice::select('invoice.customer_id')
           ->join('customer', 'invoice.customer_id', '=', 'customer.id')
+          ->whereIn('customer.status_id', [3, 4, 9])
+          ->whereNull('customer.deleted_at')
           ->distinct()
           ->count('invoice.customer_id');
 
