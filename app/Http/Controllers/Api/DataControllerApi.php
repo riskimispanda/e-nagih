@@ -293,7 +293,6 @@ class DataControllerApi extends Controller
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
-          'fasum' => $fasum,
           'consistency_check_invoice' => [
               'paid' => $invoicePaid,
               'unpaid' => 1547, // Hardcode correct value
