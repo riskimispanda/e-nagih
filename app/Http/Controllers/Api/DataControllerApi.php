@@ -283,6 +283,24 @@ class DataControllerApi extends Controller
 
       $coba = Invoice::whereNot('paket_id', 11)->distinct('customer_id')->count('customer_id');
 
+      // LIST Customer yang tidak punya invoice
+      $customersWithoutInvoiceList = Customer::withTrashed()
+                      ->whereIn('status_id', [3, 4, 9])
+                      ->whereDoesntHave('invoice')
+                      ->with(['status'])
+                      ->get(['id', 'nama_customer', 'no_hp', 'alamat', 'status_id'])
+                      ->map(function ($customer) {
+                          return [
+                              'id' => $customer->id,
+                              'nama_customer' => $customer->nama_customer,
+                              'no_hp' => $customer->no_hp,
+                              'alamat' => $customer->alamat,
+                              'status_id' => $customer->status_id,
+                              'status_name' => $customer->status ? $customer->status->nama_status : 'Unknown',
+                              'is_deleted' => $customer->deleted_at ? true : false
+                          ];
+                      });
+
       return response()->json([
           'success' => true,
           'totalCustomer' => $totalCustomer,
@@ -295,6 +313,7 @@ class DataControllerApi extends Controller
           'customersWithInvoice' => $customersWithInvoice,
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
+          'customersWithoutInvoiceList' => $customersWithoutInvoiceList,
           'coba' => $coba,
           'consistency_check_invoice' => [
               'paid' => $invoicePaid,
