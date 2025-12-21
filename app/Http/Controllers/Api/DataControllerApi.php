@@ -168,12 +168,13 @@ class DataControllerApi extends Controller
   {
     $totalCustomer = Customer::whereIn('status_id',[3,4,9])->whereNull('deleted_at')->count();
     $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
-    $totalPaid = Invoice::where('status_id', 8)->where('paket_id', '!=', 11)->whereYear('jatuh_tempo', Carbon::now()->year)->count();
+    $totalPaid = Invoice::distinct('customer_id')->count();
+    $uniqueCustomers = Invoice::select('customer_id')->distinct()->count();
     return response()->json([
       'success' => true,
       'totalCustomer' => $totalCustomer,
       'totalNonAktif' => $totalNonAktif,
-      'totalPaid' => $totalPaid
+      'totalPaid' => $uniqueCustomers
     ]);
   }
 
