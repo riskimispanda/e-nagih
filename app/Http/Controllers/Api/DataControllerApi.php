@@ -319,6 +319,31 @@ class DataControllerApi extends Controller
           'customersWithoutInvoice' => $customersWithoutInvoice,
           'customersWithoutDueDateInvoice' => $customersWithoutDueDateInvoice,
           'customersWithoutInvoiceList' => $customersWithoutInvoiceList,
+          'generateInvoicePreview' => Customer::whereNull('deleted_at')
+                      ->whereIn('status_id', [3, 4, 9])
+                      ->whereNot('paket_id', 11)
+                      ->whereDoesntHave('invoice', function ($query) {
+                          $query->whereMonth('created_at', Carbon::now()->month)
+                                ->whereYear('created_at', Carbon::now()->year);
+                      })
+                      ->with(['paket', 'status'])
+                      ->limit(5) // Preview 5 customer
+                      ->get()
+                      ->map(function ($customer) {
+                          return [
+                              'customer_id' => $customer->id,
+                              'nama_customer' => $customer->nama_customer,
+                              'no_hp' => $customer->no_hp,
+                              'paket_id' => $customer->paket_id,
+                              'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
+                              'tagihan' => $customer->paket ? $customer->paket->harga : 0,
+                              'status_id' => 7, // Belum bayar
+                              'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
+                              'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
+                              'merchant_ref' => uniqid('inv_'),
+                              'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown'
+                          ];
+                      }),
           'coba' => $coba,
           'consistency_check_invoice' => [
               'paid' => $invoicePaid,
@@ -333,7 +358,168 @@ class DataControllerApi extends Controller
               'total_customers' => $totalCustomer,
               'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
               'is_consistent' => $totalCustomer === ($customersWithInvoice + $customersWithoutInvoice)
-          ]
+]
+       ]);
+  }
+
+  public function generateMonthlyInvoices()
+  {
+      try {
+          DB::beginTransaction();
+
+          // Get customers without invoice this month
+          $customersWithoutInvoice = Customer::whereNull('deleted_at')
+              ->whereIn('status_id', [3, 4, 9])
+              ->whereNot('paket_id', 11)
+              ->whereDoesntHave('invoice', function ($query) {
+                  $query->whereMonth('created_at', Carbon::now()->month)
+                        ->whereYear('created_at', Carbon::now()->year);
+              })
+              ->with(['paket', 'status'])
+              ->get();
+
+          $generatedInvoices = [];
+          $errors = [];
+          $successCount = 0;
+
+          foreach ($customersWithoutInvoice as $customer) {
+              try {
+                  // Validate customer has valid package
+                  if (!$customer->paket_id || !$customer->paket || $customer->paket_id == 11) {
+                      $errors[] = "Customer {$customer->nama_customer} tidak memiliki paket yang valid (paket_id: {$customer->paket_id})";
+                      continue;
+                  }
+
+                  // Check if invoice already exists to avoid duplicates
+                  $existingInvoice = Invoice::where('customer_id', $customer->id)
+                      ->whereMonth('created_at', Carbon::now()->month)
+                      ->whereYear('created_at', Carbon::now()->year)
+                      ->first();
+
+                  if ($existingInvoice) {
+                      $errors[] = "Invoice untuk {$customer->nama_customer} bulan ini sudah ada";
+                      continue;
+                  }
+
+                  // Create invoice data
+                  $invoiceData = [
+                      'customer_id' => $customer->id,
+                      'paket_id' => $customer->paket_id,
+                      'status_id' => 7, // Belum bayar
+                      'tagihan' => $customer->paket->harga ?? 0,
+                      'jatuh_tempo' => Carbon::now()->endOfMonth(),
+                      'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
+                      'merchant_ref' => uniqid('inv_', true),
+                      'created_at' => Carbon::now(),
+                      'updated_at' => Carbon::now(),
+                  ];
+
+                  // Insert invoice
+                  $invoice = Invoice::create($invoiceData);
+                  $generatedInvoices[] = [
+                      'invoice_id' => $invoice->id,
+                      'customer_id' => $customer->id,
+                      'nama_customer' => $customer->nama_customer,
+                      'no_hp' => $customer->no_hp,
+                      'paket_name' => $customer->paket->nama_paket,
+                      'tagihan' => $invoice->tagihan,
+                      'jatuh_tempo' => $invoice->jatuh_tempo->format('Y-m-d'),
+                      'reference' => $invoice->reference,
+                      'merchant_ref' => $invoice->merchant_ref,
+                      'status' => 'Generated'
+                  ];
+                  $successCount++;
+
+              } catch (\Exception $e) {
+                  $errors[] = "Error generate invoice untuk {$customer->nama_customer}: " . $e->getMessage();
+                  DB::rollBack();
+                  return response()->json([
+                      'success' => false,
+                      'message' => 'Terjadi error saat generate invoice',
+                      'error' => $e->getMessage(),
+                      'errors' => $errors
+                  ], 500);
+              }
+          }
+
+          DB::commit();
+
+          return response()->json([
+              'success' => true,
+              'message' => 'Berhasil generate invoice bulanan',
+              'summary' => [
+                  'total_customers' => $customersWithoutInvoice->count(),
+                  'success_count' => $successCount,
+                  'error_count' => count($errors),
+                  'generated_at' => Carbon::now()->toDateTimeString()
+              ],
+              'generated_invoices' => $generatedInvoices,
+              'errors' => $errors
+          ]);
+
+      } catch (\Exception $e) {
+          DB::rollBack();
+          return response()->json([
+              'success' => false,
+              'message' => 'Terjadi error sistem',
+              'error' => $e->getMessage()
+          ], 500);
+      }
+  }
+
+  public function previewGenerateInvoices()
+  {
+      // Preview customers yang akan dibuatkan invoice (tanpa create)
+      $customersToGenerate = Customer::whereNull('deleted_at')
+          ->whereIn('status_id', [3, 4, 9])
+          ->whereNot('paket_id', 11)
+          ->whereDoesntHave('invoice', function ($query) {
+              $query->whereMonth('created_at', Carbon::now()->month)
+                    ->whereYear('created_at', Carbon::now()->year);
+          })
+          ->with(['paket', 'status'])
+          ->get()
+          ->map(function ($customer) {
+              return [
+                  'customer_id' => $customer->id,
+                  'nama_customer' => $customer->nama_customer,
+                  'no_hp' => $customer->no_hp,
+                  'alamat' => $customer->alamat,
+                  'paket_id' => $customer->paket_id,
+                  'paket_name' => $customer->paket ? $customer->paket->nama_paket : 'Tidak Ada Paket',
+                  'tagihan' => $customer->paket ? $customer->paket->harga : 0,
+                  'status_id' => 7, // Belum bayar
+                  'jatuh_tempo' => Carbon::now()->endOfMonth()->format('Y-m-d'),
+                  'reference' => 'INV-' . Carbon::now()->format('Ym') . '-' . str_pad($customer->id, 6, '0', STR_PAD_LEFT),
+                  'merchant_ref' => uniqid('inv_', true),
+                  'customer_status' => $customer->status ? $customer->status->nama_status : 'Unknown',
+                  'is_valid_for_invoice' => $customer->paket_id && $customer->paket_id != 11 && $customer->paket
+              ];
+          });
+
+      // Summary
+      $validCustomers = $customersToGenerate->filter(function ($customer) {
+          return $customer['is_valid_for_invoice'];
+      });
+
+      $invalidCustomers = $customersToGenerate->filter(function ($customer) {
+          return !$customer['is_valid_for_invoice'];
+      });
+
+      return response()->json([
+          'success' => true,
+          'message' => 'Preview generate invoice bulan ini',
+          'summary' => [
+              'total_customers' => $customersToGenerate->count(),
+              'valid_customers' => $validCustomers->count(),
+              'invalid_customers' => $invalidCustomers->count(),
+              'total_tagihan' => $validCustomers->sum('tagihan'),
+              'preview_month' => Carbon::now()->format('F Y'),
+              'jatuh_tempo_universal' => Carbon::now()->endOfMonth()->format('Y-m-d')
+          ],
+          'customers' => $customersToGenerate,
+          'valid_customers_list' => $validCustomers,
+          'invalid_customers_list' => $invalidCustomers
       ]);
   }
 

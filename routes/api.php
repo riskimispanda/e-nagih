@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\MikrotikControllerApi;
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/dev', [DataControllerApi::class, 'debugging']);
+  Route::get('/generate-preview', [DataControllerApi::class, 'previewGenerateInvoices']);
+  Route::post('/generate-invoices', [DataControllerApi::class, 'generateMonthlyInvoices']);
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
   Route::post('/logout', [AuthController::class, 'logout']);
