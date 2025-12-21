@@ -162,4 +162,16 @@ class DataControllerApi extends Controller
 
   }
 
+
+  public function debugging()
+  {
+    $totalCustomer = Customer::whereIn('status_id',[3,4,9])->whereNull('deleted_at')->count();
+    $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
+    return response()->json([
+      'success' => true,
+      'totalCustomer' => $totalCustomer,
+      'totalNonAktif' => $totalNonAktif
+    ]);
+  }
+
 }

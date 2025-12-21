@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\MikrotikControllerApi;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
-
+Route::get('/dev', [DataControllerApi::class, 'debugging']);
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
   Route::post('/logout', [AuthController::class, 'logout']);
