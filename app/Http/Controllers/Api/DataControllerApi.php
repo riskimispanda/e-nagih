@@ -166,19 +166,44 @@ class DataControllerApi extends Controller
 
   public function debugging()
   {
-    $totalCustomer = Customer::whereIn('status_id',[3,4,9])->whereNull('deleted_at')->count();
-    $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
-    $totalPaid = Invoice::distinct('customer_id')->count();
-    $uniqueCustomers = Invoice::select('invoice.customer_id')
-        ->join('customer', 'invoice.customer_id', '=', 'customer.id')
-        ->distinct()
-        ->count('invoice.customer_id');
-    return response()->json([
-      'success' => true,
-      'totalCustomer' => $totalCustomer,
-      'totalNonAktif' => $totalNonAktif,
-      'totalPaid' => $uniqueCustomers
-    ]);
+      $totalCustomer = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
+      $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
+
+      // Customer yang memiliki invoice (sudah ada di kode sebelumnya)
+      $customersWithInvoice = Invoice::select('invoice.customer_id')
+          ->join('customer', 'invoice.customer_id', '=', 'customer.id')
+          ->distinct()
+          ->count('invoice.customer_id');
+
+      // Customer yang TIDAK memiliki invoice
+      $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at')
+          ->whereNotExists(function ($query) {
+              $query->select(DB::raw(1))
+                    ->from('invoice')
+                    ->whereColumn('invoice.customer_id', 'customer.id')
+                    ->whereNull('invoice.deleted_at'); // tambahkan jika invoice juga soft delete
+          })
+          ->count();
+
+      // Atau menggunakan whereDoesntHave jika sudah setup relationship
+      // $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
+      //     ->whereNull('deleted_at')
+      //     ->doesntHave('invoices')
+      //     ->count();
+
+      return response()->json([
+          'success' => true,
+          'totalCustomer' => $totalCustomer,
+          'totalNonAktif' => $totalNonAktif,
+          'customersWithInvoice' => $customersWithInvoice,
+          'customersWithoutInvoice' => $customersWithoutInvoice,
+          'consistency_check' => [
+              'total_customers' => $totalCustomer,
+              'sum_with_without_invoice' => $customersWithInvoice + $customersWithoutInvoice,
+              'is_consistent' => $totalCustomer === ($customersWithInvoice + $customersWithoutInvoice)
+          ]
+      ]);
   }
 
 }
