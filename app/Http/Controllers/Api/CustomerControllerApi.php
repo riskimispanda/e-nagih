@@ -498,7 +498,6 @@ class CustomerControllerApi extends Controller
                 ->whereNot('paket_id', 11)->withTrashed();
           })
           ->whereHas('pembayaran')
-          ->where('status_id', 8)
           ->whereMonth('jatuh_tempo', Carbon::now()->month)
           ->distinct('customer_id')
           ->count('customer_id');
