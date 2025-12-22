@@ -1063,7 +1063,7 @@ class DataControllerApi extends Controller
               ->whereYear('tanggal_bayar', Carbon::now()->year);
           })
           ->distinct('customer_id')
-          ->count('customer_id');
+          ->get();
 
       // Customer status 3 yang sudah bayar
       $customerStatus3Paid = Customer::where('status_id', 3)
