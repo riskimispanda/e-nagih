@@ -531,12 +531,12 @@ class CustomerControllerApi extends Controller
           ];
       });
 
-      $customerFix = $customerAktif->map(function ($customer) {
-          return [
-              'id' => $customer->id,
-              'name' => $customer->nama_customer
-          ];
-      });
+      // $customerFix = $customerAktif->map(function ($customer) {
+      //     return [
+      //         'id' => $customer->id,
+      //         'name' => $customer->nama_customer
+      //     ];
+      // });
 
       return response()->json([
         'success' => true,
