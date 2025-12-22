@@ -35,19 +35,42 @@ class TeknisiController extends Controller
      */
 
     //  Rumus Prorate
-     private function calculateProrate($hargaPaket, $tanggalInstalasi)
-     {
-         // Mendapatkan jumlah hari dalam bulan
-         $jumlahHariDalamBulan = $tanggalInstalasi->daysInMonth;
-         // Mendapatkan hari terakhir bulan
-         $akhirBulan = $tanggalInstalasi->copy()->endOfMonth();
-         // Menghitung jumlah hari tersisa dalam bulan (termasuk hari instalasi)
-         $jumlahHariTersisa = $tanggalInstalasi->diffInDays($akhirBulan) + 1;
-         // Menghitung tagihan prorata
-         $tagihanProrata = ($hargaPaket / $jumlahHariDalamBulan) * $jumlahHariTersisa;
-         // Membulatkan ke bilangan bulat (opsional, sesuaikan dengan kebutuhan)
-         return round($tagihanProrata);
-     }
+    private function calculateProrate($hargaPaket, $tanggalInstalasi)
+    {
+        try {
+            // Validasi input
+            if ($hargaPaket <= 0) {
+                throw new \Exception('Harga paket tidak valid: ' . $hargaPaket);
+            }
+
+            $jumlahHariDalamBulan = $tanggalInstalasi->daysInMonth;
+            $akhirBulan = $tanggalInstalasi->copy()->endOfMonth();
+            $jumlahHariTersisa = $tanggalInstalasi->diffInDays($akhirBulan) + 1;
+
+            $tagihanProrata = ($hargaPaket / $jumlahHariDalamBulan) * $jumlahHariTersisa;
+            $hasil = round($tagihanProrata);
+
+            // Tambah logging untuk debugging
+            Log::info('Prorate calculated', [
+                'harga_paket' => $hargaPaket,
+                'jumlah_hari_bulan' => $jumlahHariDalamBulan,
+                'jumlah_hari_tersisa' => $jumlahHariTersisa,
+                'hasil_prorate' => $hasil
+            ]);
+
+            return $hasil;
+
+        } catch (\Exception $e) {
+            Log::error('Prorate calculation failed', [
+                'harga_paket' => $hargaPaket,
+                'tanggal_instalasi' => $tanggalInstalasi,
+                'error' => $e->getMessage()
+            ]);
+            // Fallback ke harga penuh jika error
+            return $hargaPaket;
+        }
+    }
+
 
     public function index(Request $request)
     {
@@ -267,8 +290,6 @@ class TeknisiController extends Controller
                 'gps'             => $request->gps,
             ]);
 
-            $customer->refresh();
-
             // Cek apakah invoice untuk periode ini sudah ada
             $jatuhTempo = $tanggalSelesai->copy()->endOfMonth();
             $existingInvoice = Invoice::where('customer_id', $customer->id)
@@ -285,9 +306,27 @@ class TeknisiController extends Controller
             } else {
                 $panjangKabel = (int) $request->panjang_kabel;
                 $tagihanTambahan = $panjangKabel > 200 ? ($panjangKabel - 200) * 1000 : 0;
-
+                $tanggalInstallasi = $tanggalSelesai;
                 $hargaPaket = $customer->paket->harga;
-                $tanggalMulaiLangganan = Carbon::parse($customer->tanggal_selesai);
+                // VALIDASI SEBELUM PERHITUNGAN PRORATE
+                if (!$customer->paket) {
+                    LOG::error('Package not found for customer', [
+                        'customer_id' => $customer->id,
+                        'paket_id' => $customer->paket_id
+                    ]);
+                    throw new \Exception('Package not found');
+                }
+
+                if (!$customer->paket->harga || $customer->paket->harga <= 0) {
+                    LOG::error('Invalid package price', [
+                        'customer_id' => $customer->id,
+                        'paket_id' => $customer->paket_id,
+                        'harga' => $customer->paket->harga
+                    ]);
+                    throw new \Exception('Invalid package price');
+                }
+
+                $tanggalMulaiLangganan = $tanggalInstallasi;
                 $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
                     ? $hargaPaket
                     : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
