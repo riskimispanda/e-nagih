@@ -1089,7 +1089,7 @@ class DataControllerApi extends Controller
 
       return response()->json([
         'success' => true,
-        'debug' => $fix->customer->nama_customer,
+        'debug' => $fix,
         'verification' => [
           'customerTanpaFasum_fixed' => $customerTanpaFasumFixed,
           'invoicePaids' => $invoicePaids,
