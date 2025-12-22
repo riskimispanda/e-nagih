@@ -463,7 +463,15 @@ class CustomerControllerApi extends Controller
     public function testInvoice()
     {
       $totalCustomer = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4,9])->count();
-      $customerAktif = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4])->whereNot('paket_id', 11)->count();
+      $customerAktif = Invoice::whereHas('customer', function ($q) {
+                $q->whereIn('status_id', [3, 4])
+                  ->whereNull('deleted_at')
+                  ->whereNot('paket_id', 11);
+            })
+            ->whereMonth('jatuh_tempo', Carbon::now()->month)
+            ->whereNot('paket_id', 11)
+            ->distinct('customer_id')
+            ->count('customer_id');
       $customerNonAktif = Customer::whereNull('deleted_at')->where('status_id', 9)->whereNot('paket_id', 11)->count();
       $customerFasum = Customer::whereNull('deleted_at')->whereIn('status_id', [3,4])->where('paket_id', 11)->count();
       $customerBA = BeritaAcara::count();
