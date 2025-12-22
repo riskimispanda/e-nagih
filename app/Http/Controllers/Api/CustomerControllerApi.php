@@ -495,7 +495,7 @@ class CustomerControllerApi extends Controller
 
       $withPayment = Invoice::whereHas('customer', function ($q) {
               $q->whereIn('status_id', [3, 4, 9])
-                ->whereNot('paket_id', 11);
+                ->whereNot('paket_id', 11)->withTrashed();
           })
           ->whereHas('pembayaran')
           ->where('status_id', 8)
