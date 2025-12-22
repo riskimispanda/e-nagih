@@ -1052,6 +1052,19 @@ class DataControllerApi extends Controller
         ->distinct('customer_id')
         ->count('customer_id');
 
+        $fix = Invoice::where('status_id', 7)
+          ->whereHas('customer', function ($query) {
+            $query->whereNull('deleted_at')
+              ->whereIn('status_id', [3,4,9])
+              ->whereNot('paket_id', 11);
+          })
+          ->whereHas('pembayaran', function ($query) use ($bulan) {
+            $query->whereMonth('tanggal_bayar', $bulan)
+              ->whereYear('tanggal_bayar', Carbon::now()->year);
+          })
+          ->distinct('customer_id')
+          ->count('customer_id');
+
       // Customer status 3 yang sudah bayar
       $customerStatus3Paid = Customer::where('status_id', 3)
         ->whereNot('paket_id', 11)
@@ -1076,6 +1089,7 @@ class DataControllerApi extends Controller
 
       return response()->json([
         'success' => true,
+        'debug' => $fix,
         'verification' => [
           'customerTanpaFasum_fixed' => $customerTanpaFasumFixed,
           'invoicePaids' => $invoicePaids,
