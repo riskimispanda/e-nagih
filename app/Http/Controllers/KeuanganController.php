@@ -798,11 +798,31 @@ class KeuanganController extends Controller
         $customerStatusFilter = [3, 4, 9]; // Include status 4
 
         // Paid customers
-        $totalCustomer = Customer::whereIn('status_id', [3,4])->whereNull('deleted_at')->whereNot('paket_id', 11)
-                        ->whereHas('invoice', function ($q) {
-                            $q->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
-                        })->count();
-        // dd($totalCustomer);
+        $withPayment = Invoice::where('status_id', 8)
+              ->whereHas('customer', function ($query) {
+                $query->whereNull('deleted_at')
+                  ->whereIn('status_id', [3,4,9])
+                  ->whereNot('paket_id', 11);
+              })
+              ->whereHas('pembayaran', function ($query) {
+                  $query->whereMonth('tanggal_bayar', Carbon::now()->month)->whereYear('tanggal_bayar', Carbon::now()->year);
+              })
+              ->distinct('customer_id')
+              ->count('customer_id');
+
+        // Tanpa pembayaran
+        $withoutPayment = Customer::where('status_id', 3)
+              ->whereNot('paket_id', 11)
+              ->whereNull('deleted_at')
+              ->whereHas('invoice', function ($query) {
+                $query->where('status_id', 7)
+                  ->whereMonth('jatuh_tempo', Carbon::now()->month);
+              })
+              ->count();
+
+        $pelangganNonAktif = Customer::where('status_id', 9)->count();
+
+        $totalCustomer = $withPayment + $withoutPayment;
 
         return view('/keuangan/data-pembayaran',[
             'users' => auth()->user(),
@@ -827,7 +847,7 @@ class KeuanganController extends Controller
             'cashCount' => $CashCount,
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
-            'totalCustomer' => $totalCustomer
+            'totalCustomer' => $totalCustomer,
         ]);
     }
 
