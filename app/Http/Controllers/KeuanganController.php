@@ -690,18 +690,7 @@ class KeuanganController extends Controller
         $transferPayments = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%transfer%')
                 ->orWhere('metode_bayar', 'like', '%transfer bank%')
-                ->orWhere('metode_bayar', 'like', '%Transfer%')
-                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
-                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
-                ->orWhere('metode_bayar', 'like', '%briva%')
-                ->orWhere('metode_bayar', 'like', '%bcava%')
-                ->orWhere('metode_bayar', 'like', '%bniva%')
-                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
-                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
-                ->orWhere('metode_bayar', 'like', '%alfamart%')
-                ->orWhere('metode_bayar', 'like', '%indomaret%')
-                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
-                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
+                ->orWhere('metode_bayar', 'like', '%Transfer%');
         });
 
         if ($month && $month !== '' && $month !== null) {
@@ -715,18 +704,7 @@ class KeuanganController extends Controller
         $transferCount = Pembayaran::where(function ($q) {
             $q->where('metode_bayar', 'like', '%transfer%')
                 ->orWhere('metode_bayar', 'like', '%transfer bank%')
-                ->orWhere('metode_bayar', 'like', '%Transfer%')
-                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
-                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
-                ->orWhere('metode_bayar', 'like', '%briva%')
-                ->orWhere('metode_bayar', 'like', '%bcava%')
-                ->orWhere('metode_bayar', 'like', '%bniva%')
-                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
-                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
-                ->orWhere('metode_bayar', 'like', '%alfamart%')
-                ->orWhere('metode_bayar', 'like', '%indomaret%')
-                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
-                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
+                ->orWhere('metode_bayar', 'like', '%Transfer%');
         });
 
         if ($month && $month !== '' && $month !== null) {
@@ -762,7 +740,18 @@ class KeuanganController extends Controller
                 ->orWhere('metode_bayar', 'like', '%shopee%')
                 ->orWhere('metode_bayar', 'like', '%QRIS%')
                 ->orWhere('metode_bayar', 'like', '%DANA%') // DANA pindah ke sini
-                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%');
+                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%')
+                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
+                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
+                ->orWhere('metode_bayar', 'like', '%briva%')
+                ->orWhere('metode_bayar', 'like', '%bcava%')
+                ->orWhere('metode_bayar', 'like', '%bniva%')
+                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%alfamart%')
+                ->orWhere('metode_bayar', 'like', '%indomaret%')
+                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
+                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
         });
 
         if ($month && $month !== '' && $month !== null) {
@@ -785,7 +774,18 @@ class KeuanganController extends Controller
                 ->orWhere('metode_bayar', 'like', '%shopee%')
                 ->orWhere('metode_bayar', 'like', '%QRIS%')
                 ->orWhere('metode_bayar', 'like', '%DANA%') // DANA pindah ke sini
-                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%');
+                ->orWhere('metode_bayar', 'like', '%QRIS by ShopeePay%')
+                ->orWhere('metode_bayar', 'like', '%bri virtual account%')
+                ->orWhere('metode_bayar', 'like', '%bca virtual account%')
+                ->orWhere('metode_bayar', 'like', '%briva%')
+                ->orWhere('metode_bayar', 'like', '%bcava%')
+                ->orWhere('metode_bayar', 'like', '%bniva%')
+                ->orWhere('metode_bayar', 'like', '%BRI Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
+                ->orWhere('metode_bayar', 'like', '%alfamart%')
+                ->orWhere('metode_bayar', 'like', '%indomaret%')
+                ->orWhere('metode_bayar', 'like', '%ALFAMART%')
+                ->orWhere('metode_bayar', 'like', '%INDOMARET%');
         });
 
         if ($month && $month !== '' && $month !== null) {
@@ -820,7 +820,7 @@ class KeuanganController extends Controller
               })
               ->count();
 
-        $pelangganNonAktif = Customer::where('status_id', 9)->count();
+        $pelangganAktif = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3,4])->whereNull('deleted_at')->count();
 
         $totalCustomer = $withPayment + $withoutPayment;
 
@@ -847,7 +847,7 @@ class KeuanganController extends Controller
             'cashCount' => $CashCount,
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
-            'totalCustomer' => $totalCustomer,
+            'totalCustomer' => $pelangganAktif,
         ]);
     }
 
