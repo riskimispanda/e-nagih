@@ -492,6 +492,28 @@ class CustomerControllerApi extends Controller
                               $q->where('status_id', 7)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11);
                           })->count();
 
+
+      $withPayment = Invoice::whereHas('customer', function ($q) {
+              $q->whereIn('status_id', [3, 4])
+                ->whereNot('paket_id', 11);
+          })
+          ->whereHas('pembayaran')
+          ->where('status_id', 8)
+          ->whereMonth('jatuh_tempo', Carbon::now()->month)
+          ->distinct('customer_id')
+          ->count('customer_id');
+
+      // Tanpa pembayaran
+      $withoutPayment = Invoice::whereHas('customer', function ($q) {
+              $q->whereIn('status_id', [3, 4])
+                ->whereNot('paket_id', 11);
+          })
+          ->whereDoesntHave('pembayaran')
+          ->where('status_id', 7)
+          ->whereMonth('jatuh_tempo', Carbon::now()->month)
+          ->distinct('customer_id')
+          ->count('customer_id');
+
       $formatPaid = $invoiceFromCustomerPaidGet->map(function ($customer) {
           return [
               'id' => $customer->id,
@@ -529,7 +551,9 @@ class CustomerControllerApi extends Controller
         'data-unpaid' => [
           'countUnpaid' => $formatUnpaid->count()
         ],
-        'totalPaidUnpaid' => $customerFix
+        'totalPaidUnpaid' => $customerFix,
+        'withPayment' => $withPayment,
+        'withoutPayment' => $withoutPayment
       ]);
     }
 
