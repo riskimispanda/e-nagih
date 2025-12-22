@@ -541,7 +541,7 @@ class CustomerControllerApi extends Controller
       return response()->json([
         'success' => true,
         'totalCustomer' => $totalCustomer,
-        'customerAktif' => $customerAktif->count(),
+        'customerAktif' => $customerAktif,
         'customerNonAktif' => $customerNonAktif,
         'fasum' => $customerFasum,
         'customerBA' => $customerBA,
