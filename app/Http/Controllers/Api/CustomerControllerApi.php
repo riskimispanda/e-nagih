@@ -518,7 +518,7 @@ class CustomerControllerApi extends Controller
           ->count('customer_id');
 
       $invMonthly = Invoice::where('status_id', 8)->whereMonth('jatuh_tempo', Carbon::now()->month)
-                  ->whereHas('pembayaran')
+                  ->whereDoesntHave('pembayaran')
                   ->count();
 
       $formatPaid = $invoiceFromCustomerPaidGet->map(function ($customer) {
