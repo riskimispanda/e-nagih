@@ -551,7 +551,6 @@ class CustomerControllerApi extends Controller
         'data-unpaid' => [
           'countUnpaid' => $formatUnpaid->count()
         ],
-        'totalPaidUnpaid' => $customerFix,
         'withPayment' => $withPayment,
         'withoutPayment' => $withoutPayment
       ]);
