@@ -592,7 +592,7 @@
             <div class="payment-card p-4">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted small mb-1 fw-medium">Total Transaksi</p>
+                        <p class="text-muted small mb-1 fw-medium">Total Transaksi Bulan Ini</p>
                         <h5 class="fw-bold text-dark mb-2">{{ number_format($totalTransactions ?? 0, 0, ',', '.') }}</h5>
                     </div>
                     <div class="stat-icon bg-info bg-opacity-10 text-info">
@@ -950,7 +950,7 @@
                                                 </a>
                                             </div>
                                             <div class="d-flex justify-content-center gap-2 mt-3">
-                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" 
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment"
                                                     data-url="/hapus/transaksi/{{ $payment->id }}"
                                                     data-customer="{{ $payment->invoice->customer->nama_customer ?? 'N/A' }}"
                                                     data-amount="{{ number_format($payment->jumlah_bayar, 0, ',', '.') }}"
@@ -965,7 +965,7 @@
                                                 <button class="btn btn-outline-warning btn-sm text-warning" disabled>
                                                     <i class="bx bx-pencil"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment" 
+                                                <button type="button" class="btn btn-outline-danger btn-sm text-danger btn-delete-payment"
                                                     data-url="/hapus/transaksi/{{ $payment->id }}"
                                                     data-customer="{{ $payment->invoice->customer->nama_customer ?? 'N/A' }}"
                                                     data-amount="{{ number_format($payment->jumlah_bayar, 0, ',', '.') }}"
@@ -1640,7 +1640,7 @@
         // Helper function to get action buttons - FIXED: Added notification button
         function getActionButtons(payment) {
         // Cek apakah customer sudah di-soft delete
-        const isCustomerDeleted = payment.invoice?.customer?.deleted_at !== null && 
+        const isCustomerDeleted = payment.invoice?.customer?.deleted_at !== null &&
                                 payment.invoice?.customer?.deleted_at !== undefined;
 
         // Jika customer deleted, tampilkan pesan
@@ -1656,15 +1656,15 @@
         if (payment.status_id == 8) {
             return `
                 <div class="d-flex justify-content-center gap-2">
-                    <a class="btn btn-outline-warning btn-sm text-warning" 
-                    data-bs-toggle="modal" 
+                    <a class="btn btn-outline-warning btn-sm text-warning"
+                    data-bs-toggle="modal"
                     data-bs-target="#editModal${payment.id}">
                         <i class="bx bx-pencil"></i>
                     </a>
-                    <a href="/kirim-ulang/${payment.id}" 
-                    class="btn btn-outline-danger btn-sm text-danger" 
-                    data-bs-toggle="tooltip" 
-                    data-bs-placement="bottom" 
+                    <a href="/kirim-ulang/${payment.id}"
+                    class="btn btn-outline-danger btn-sm text-danger"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="bottom"
                     title="Kirim Notifikasi Pembayaran Berhasil">
                         <i class="bx bx-message"></i>
                     </a>
