@@ -1091,14 +1091,14 @@ class DataControllerApi extends Controller
 
       $debug = Invoice::where('status_id', 7)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereYear('jatuh_tempo', Carbon::now()->year)
               ->whereHas('customer', function ($q) {
-                $q->where('status_id', 3)->whereNull('deleted_at')->whereNot('paket_id', 11);
+                $q->whereIn('status_id', [3,4,9])->whereNull('deleted_at')->whereNot('paket_id', 11);
               })->distinct('customer_id')->count('customer_id');
 
       return response()->json([
         'success' => true,
         'debug' => $fix,
         'pelAktif' => $pelAktif,
-        'debugging' => $debug,
+        'pelAktifUnpaid' => $debug,
         'verification' => [
           'customerTanpaFasum_fixed' => $customerTanpaFasumFixed,
           'invoicePaids' => $invoicePaids,
