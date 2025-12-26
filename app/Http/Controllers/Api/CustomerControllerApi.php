@@ -564,4 +564,47 @@ class CustomerControllerApi extends Controller
       ]);
     }
 
+    public function getUnpaidInvoicesByMonthOptimized()
+    {
+        $monthlyData = Invoice::selectRaw('MONTH(jatuh_tempo) as month, COUNT(DISTINCT customer_id) as unpaid_count')
+            ->whereHas('customer', function ($q) {
+                $q->whereIn('status_id', [3, 4, 9])
+                  ->whereNull('deleted_at')
+                  ->whereNot('paket_id', 11);
+            })
+            ->where('status_id', 7)
+            ->whereYear('jatuh_tempo', 2025)
+            ->whereNot('paket_id', 11)
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        // Format hasil dengan nama bulan
+        $formattedData = $monthlyData->map(function ($item) {
+            return [
+                'month' => $item->month,
+                'month_name' => Carbon::create(2025, $item->month, 1)->format('F'),
+                'unpaid_count' => $item->unpaid_count
+            ];
+        });
+
+        // Isi bulan yang tidak ada data dengan 0
+        $completeData = collect(range(1, 12))->map(function ($month) use ($formattedData) {
+            $existing = $formattedData->firstWhere('month', $month);
+            return $existing ?: [
+                'month' => $month,
+                'month_name' => Carbon::create(2025, $month, 1)->format('F'),
+                'unpaid_count' => 0
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'year' => 2025,
+            'monthly_unpaid_invoices' => $completeData,
+            'total_unpaid_2025' => $completeData->sum('unpaid_count')
+        ]);
+    }
+
+
 }
