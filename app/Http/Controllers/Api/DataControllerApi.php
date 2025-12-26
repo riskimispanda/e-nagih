@@ -1038,7 +1038,7 @@ class DataControllerApi extends Controller
         ->distinct('customer_id')
         ->count('customer_id');
 
-// invoicePaids - standardisasi ke tanggal_bayar
+      // invoicePaids - standardisasi ke tanggal_bayar
       $invoicePaids = Invoice::where('status_id', 8)
         ->whereHas('customer', function ($query) {
           $query->whereNull('deleted_at')
@@ -1087,9 +1087,12 @@ class DataControllerApi extends Controller
 
       $isFixed = ($customerTanpaFasumFixed === $invoicePaids);
 
+      $pelAktif = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
+
       return response()->json([
         'success' => true,
         'debug' => $fix,
+        'pelAktif' => $pelAktif,
         'verification' => [
           'customerTanpaFasum_fixed' => $customerTanpaFasumFixed,
           'invoicePaids' => $invoicePaids,
