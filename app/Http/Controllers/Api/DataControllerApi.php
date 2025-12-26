@@ -1076,7 +1076,7 @@ class DataControllerApi extends Controller
         ->count();
 
       // Customer status 3 yang belum bayar
-      $customerStatus3Unpaid = Customer::where('status_id', 3)
+      $customerStatus3Unpaid = Customer::whereIn('status_id', [3, 4])
         ->whereNot('paket_id', 11)
         ->whereNull('deleted_at')
         ->whereHas('invoice', function ($query) use ($bulan) {
