@@ -1260,4 +1260,73 @@ class DataControllerApi extends Controller
       }
   }
 
+
+  // Fungsi alternatif: Hanya menghitung yang BERINVOICE
+  public function verifyFixSimplified()
+  {
+      try {
+          $bulan = 12;
+          $tahun = 2025;
+
+          // Pelanggan Aktif YANG BERINVOICE bulan ini
+          $pelAktifDenganInvoice = Customer::whereNot('paket_id', 11)
+              ->whereIn('status_id', [3, 4])
+              ->whereNull('deleted_at')
+              ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
+                  $query->whereMonth('jatuh_tempo', $bulan)
+                      ->whereYear('jatuh_tempo', $tahun);
+              })
+              ->count();
+
+          // Invoice Paid (bayar kapan saja, yang penting invoice jatuh tempo bulan ini)
+          $invoicePaidsAll = Invoice::where('status_id', 8)
+              ->whereMonth('jatuh_tempo', $bulan)
+              ->whereYear('jatuh_tempo', $tahun)
+              ->whereHas('customer', function ($query) {
+                  $query->whereNull('deleted_at')
+                      ->whereIn('status_id', [3, 4])
+                      ->whereNot('paket_id', 11);
+              })
+              ->distinct('customer_id')
+              ->count('customer_id');
+
+          // Customer Unpaid (status 3 atau 4)
+          $customerUnpaid = Customer::whereIn('status_id', [3, 4])
+              ->whereNot('paket_id', 11)
+              ->whereNull('deleted_at')
+              ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
+                  $query->where('status_id', 7)
+                      ->whereMonth('jatuh_tempo', $bulan)
+                      ->whereYear('jatuh_tempo', $tahun);
+              })
+              ->count();
+
+          $totalTerhitung = $invoicePaidsAll + $customerUnpaid;
+          $isFixed = ($totalTerhitung === $pelAktifDenganInvoice);
+
+          return response()->json([
+              'success' => true,
+              'summary' => [
+                  'pelanggan_dengan_invoice' => $pelAktifDenganInvoice,
+                  'invoice_paid_all' => $invoicePaidsAll,
+                  'customer_unpaid' => $customerUnpaid,
+                  'total_terhitung' => $totalTerhitung,
+                  'gap' => $pelAktifDenganInvoice - $totalTerhitung,
+                  'is_fixed' => $isFixed
+              ],
+              'formula' => [
+                  'rumus' => "{$invoicePaidsAll} + {$customerUnpaid} = {$totalTerhitung}",
+                  'target' => "{$pelAktifDenganInvoice}",
+                  'status' => $isFixed ? '✅ BERHASIL!' : "❌ Gap: " . ($pelAktifDenganInvoice - $totalTerhitung)
+              ]
+          ]);
+
+      } catch (\Exception $e) {
+          return response()->json([
+              'success' => false,
+              'error' => $e->getMessage()
+          ], 500);
+      }
+  }
+
 }
