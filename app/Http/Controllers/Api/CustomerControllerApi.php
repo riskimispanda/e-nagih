@@ -621,4 +621,167 @@ class CustomerControllerApi extends Controller
     }
 
 
+    public function findMissingCustomers()
+    {
+        try {
+            $bulan = 12;
+            $tahun = 2025;
+
+            // 1. Pelanggan Aktif (target)
+            $pelAktif = Customer::whereNot('paket_id', 11)
+                ->whereIn('status_id', [3, 4])
+                ->whereNull('deleted_at')
+                ->pluck('id');
+
+            // 2. Customer yang sudah masuk hitungan invoicePaids (status 8 + ada pembayaran)
+            $invoicePaidsCustomers = Invoice::where('status_id', 8)
+                ->whereHas('customer', function ($query) {
+                    $query->whereNull('deleted_at')
+                        ->whereIn('status_id', [3, 4, 9])
+                        ->whereNot('paket_id', 11);
+                })
+                ->whereHas('pembayaran', function ($query) use ($bulan, $tahun) {
+                    $query->whereMonth('tanggal_bayar', $bulan)
+                        ->whereYear('tanggal_bayar', $tahun);
+                })
+                ->distinct()
+                ->pluck('customer_id');
+
+            // 3. Customer yang masuk hitungan customerStatus3Unpaid
+            $customerStatus3UnpaidIds = Customer::where('status_id', 3)
+                ->whereNot('paket_id', 11)
+                ->whereNull('deleted_at')
+                ->whereHas('invoice', function ($query) use ($bulan) {
+                    $query->where('status_id', 7)
+                        ->whereMonth('jatuh_tempo', $bulan);
+                })
+                ->pluck('id');
+
+            // 4. Gabungkan customer yang sudah terhitung
+            $countedCustomers = $invoicePaidsCustomers->merge($customerStatus3UnpaidIds)->unique();
+
+            // 5. Temukan customer yang TIDAK terhitung (12 data yang hilang)
+            $missingCustomers = $pelAktif->diff($countedCustomers);
+
+            // 6. Ambil detail customer yang hilang
+            $missingDetails = Customer::whereIn('id', $missingCustomers)
+                ->with(['invoice' => function($q) use ($bulan) {
+                    $q->whereMonth('jatuh_tempo', $bulan)
+                      ->with('pembayaran');
+                }])
+                ->get()
+                ->map(function($customer) use ($bulan) {
+                    $invoices = $customer->invoice;
+
+                    return [
+                        'customer_id' => $customer->id,
+                        'nama' => $customer->nama,
+                        'status_id' => $customer->status_id,
+                        'paket_id' => $customer->paket_id,
+                        'invoice_bulan_ini' => $invoices->map(function($inv) {
+                            return [
+                                'id' => $inv->id,
+                                'status_id' => $inv->status_id,
+                                'jatuh_tempo' => $inv->jatuh_tempo,
+                                'ada_pembayaran' => $inv->pembayaran->count() > 0,
+                                'pembayaran' => $inv->pembayaran->map(function($p) {
+                                    return [
+                                        'tanggal_bayar' => $p->tanggal_bayar,
+                                        'bulan' => date('m', strtotime($p->tanggal_bayar))
+                                    ];
+                                })
+                            ];
+                        }),
+                        'kemungkinan_alasan' => $this->analyzeWhyMissing($customer, $bulan)
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'summary' => [
+                    'total_pelanggan_aktif' => $pelAktif->count(),
+                    'terhitung_invoicePaids' => $invoicePaidsCustomers->count(),
+                    'terhitung_customerStatus3Unpaid' => $customerStatus3UnpaidIds->count(),
+                    'total_terhitung' => $countedCustomers->count(),
+                    'tidak_terhitung' => $missingCustomers->count(),
+                    'rumus' => $invoicePaidsCustomers->count() . ' + ' . $customerStatus3UnpaidIds->count() . ' = ' . $countedCustomers->count() . ' (seharusnya ' . $pelAktif->count() . ')'
+                ],
+                'missing_customers' => $missingDetails,
+                'breakdown' => [
+                    'status_4_tanpa_invoice' => $this->countByScenario($missingDetails, 'status_4_no_invoice'),
+                    'invoice_status_selain_7_8' => $this->countByScenario($missingDetails, 'invoice_other_status'),
+                    'pembayaran_bulan_lain' => $this->countByScenario($missingDetails, 'payment_other_month'),
+                    'tidak_ada_invoice_sama_sekali' => $this->countByScenario($missingDetails, 'no_invoice')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function analyzeWhyMissing($customer, $bulan)
+    {
+        $reasons = [];
+
+        // Cek apakah customer status 4
+        if ($customer->status_id == 4) {
+            $reasons[] = "Status 4 (bukan status 3) - tidak masuk customerStatus3Unpaid";
+        }
+
+        // Cek invoice bulan ini
+        $invoicesBulanIni = $customer->invoice->filter(function($inv) use ($bulan) {
+            return date('m', strtotime($inv->jatuh_tempo)) == $bulan;
+        });
+
+        if ($invoicesBulanIni->isEmpty()) {
+            $reasons[] = "Tidak ada invoice jatuh tempo bulan " . $bulan;
+        } else {
+            foreach ($invoicesBulanIni as $inv) {
+                if ($inv->status_id == 7) {
+                    $reasons[] = "Ada invoice status 7 (unpaid) tapi tidak masuk hitungan customerStatus3Unpaid karena status customer bukan 3";
+                } elseif ($inv->status_id == 8) {
+                    if ($inv->pembayaran->isEmpty()) {
+                        $reasons[] = "Invoice status 8 tapi tidak ada pembayaran";
+                    } else {
+                        $pembayaranBulanLain = $inv->pembayaran->filter(function($p) use ($bulan) {
+                            return date('m', strtotime($p->tanggal_bayar)) != $bulan;
+                        });
+                        if ($pembayaranBulanLain->isNotEmpty()) {
+                            $reasons[] = "Invoice status 8 tapi pembayaran di bulan lain";
+                        }
+                    }
+                } else {
+                    $reasons[] = "Invoice dengan status " . $inv->status_id . " (bukan 7 atau 8)";
+                }
+            }
+        }
+
+        return $reasons;
+    }
+
+    private function countByScenario($missingDetails, $scenario)
+    {
+        return $missingDetails->filter(function($detail) use ($scenario) {
+            $reasons = implode(' ', $detail['kemungkinan_alasan']);
+
+            switch ($scenario) {
+                case 'status_4_no_invoice':
+                    return str_contains($reasons, 'Status 4') && str_contains($reasons, 'Tidak ada invoice');
+                case 'invoice_other_status':
+                    return str_contains($reasons, 'Invoice dengan status') && !str_contains($reasons, '7') && !str_contains($reasons, '8');
+                case 'payment_other_month':
+                    return str_contains($reasons, 'pembayaran di bulan lain');
+                case 'no_invoice':
+                    return str_contains($reasons, 'Tidak ada invoice jatuh tempo');
+                default:
+                    return false;
+            }
+        })->count();
+    }
+
+
 }

@@ -26,6 +26,7 @@ Route::get('/dev', [DataControllerApi::class, 'debugging']);
   Route::get('/verify-fix', [DataControllerApi::class, 'verifyFix']);
   Route::get('/analyze-gap-42', [DataControllerApi::class, 'analyzeGap42']);
   Route::get('/testInvoice', [CustomerControllerApi::class, 'testInvoice']);
+  Route::get('/findMissing', [CustomerControllerApi::class, 'findMissingCustomers']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
