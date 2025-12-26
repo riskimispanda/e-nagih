@@ -1089,7 +1089,7 @@ class DataControllerApi extends Controller
 
       $pelAktif = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
 
-      $debug = Invoice::where('status_id', 8)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereYear('jatuh_tempo', Carbon::now()->year)
+      $debug = Invoice::where('status_id', 7)->whereMonth('jatuh_tempo', Carbon::now()->month)->whereYear('jatuh_tempo', Carbon::now()->year)
               ->whereHas('customer', function ($q) {
                 $q->where('status_id', 3)->whereNull('deleted_at')->whereNot('paket_id', 11);
               })->distinct('customer_id')->count('customer_id');
