@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\MikrotikControllerApi;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/getByMonth', [CustomerControllerApi::class, 'getUnpaidInvoicesByMonthOptimized']);
+Route::get('/getByMonth', [CustomerControllerApi::class, 'getInvoicesByMonthOptimized']);
 Route::get('/dev', [DataControllerApi::class, 'debugging']);
   Route::get('/generate-preview', [DataControllerApi::class, 'getFasumCount']);
   Route::get('/generate-preview-monthly', [DataControllerApi::class, 'previewGenerateInvoicesMonthly']);
