@@ -510,11 +510,18 @@ class DataController extends Controller
             // Tentukan router & paket (selalu ambil dari request)
             $router = Router::findOrFail($request->router);
             $paket  = Paket::findOrFail($request->paket);
+            $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
+            $hargaPaket = $paket->harga;
+            $tanggalMulaiLangganan = $tanggalSelesai;
+            $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
+                ? $hargaPaket
+                : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
 
-            if ($invoice) {
+
+            if ($invoice && $paket->id != $invoice->paket_id) {
                 $invoice->update([
                     'paket_id' => $paket->id,
-                    'tagihan'  => $invoice->tagihan ?? $paket->harga,
+                    'tagihan' => $tagihanProrate
                 ]);
             }
 
@@ -628,5 +635,41 @@ class DataController extends Controller
             'jatuh_tempo'  => $jatuhTempo,
         ]);
         dd('Customer: ' . $customer . 'Invoice: ' . $invoice);
+    }
+
+    private function calculateProrate($hargaPaket, $tanggalInstalasi)
+    {
+        try {
+            // Validasi input
+            if ($hargaPaket <= 0) {
+                throw new \Exception('Harga paket tidak valid: ' . $hargaPaket);
+            }
+
+            $jumlahHariDalamBulan = $tanggalInstalasi->daysInMonth;
+            $akhirBulan = $tanggalInstalasi->copy()->endOfMonth();
+            $jumlahHariTersisa = $tanggalInstalasi->diffInDays($akhirBulan) + 1;
+
+            $tagihanProrata = ($hargaPaket / $jumlahHariDalamBulan) * $jumlahHariTersisa;
+            $hasil = round($tagihanProrata);
+
+            // Tambah logging untuk debugging
+            Log::info('Prorate calculated', [
+                'harga_paket' => $hargaPaket,
+                'jumlah_hari_bulan' => $jumlahHariDalamBulan,
+                'jumlah_hari_tersisa' => $jumlahHariTersisa,
+                'hasil_prorate' => $hasil
+            ]);
+
+            return $hasil;
+
+        } catch (\Exception $e) {
+            Log::error('Prorate calculation failed', [
+                'harga_paket' => $hargaPaket,
+                'tanggal_instalasi' => $tanggalInstalasi,
+                'error' => $e->getMessage()
+            ]);
+            // Fallback ke harga penuh jika error
+            return $hargaPaket;
+        }
     }
 }
