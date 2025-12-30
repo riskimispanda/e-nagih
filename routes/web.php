@@ -81,6 +81,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Http\Controllers\PelangganController;
 
 // Main Page Route
 Route::get('/', [LoginBasic::class, 'index'])
@@ -158,6 +159,13 @@ Route::get('/test-router/{id}', function ($id) {
 });
 
 Route::middleware(['auth'])->group(function () {
+
+  // Pelanggan Dismantle
+  Route::get('/pelanggan-dismantle', [PelangganController::class, 'pelangganDismantle']);
+
+
+  // Corporate
+  Route::get('/data/corporate', [PelangganController::class, 'corporate'])->name('corporate');
   // Export Excel
   Route::get('/semua', [ExportControllers::class, 'exportSemua'])->name('export.semua');
   Route::get('/unpaid', [ExportControllers::class, 'unpaid']);

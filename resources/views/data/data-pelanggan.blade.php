@@ -867,7 +867,8 @@
                         </div>
                     </div>
                     <div class="col-md-6 col-lg-3 mb-3">
-                        <div class="data-card bg-white danger-card" data-bs-toggle="modal" data-bs-target="#dismantle">
+                      <a href="/pelanggan-dismantle" data-bs-toggle="tooltip" title="Pelanggan Dismantle">
+                        <div class="data-card bg-white danger-card">
                             <div class="data-card-icon danger">
                                 <i class="bx bx-check-circle"></i>
                             </div>
@@ -880,6 +881,7 @@
                                 </div>
                             </div>
                         </div>
+                      </a>
                     </div>
                     <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#maintenance">
                         <div class="data-card bg-white danger-card">
@@ -1112,7 +1114,6 @@
                                         <a class="dropdown-item" href="/paket/{{ $paket->id }}">
                                             <i class="bx bx-package"></i>
                                             {{ $paket->nama_paket }}
-                                            <small class="text-muted">({{ $paket->customer->count() }} pelanggan)</small>
                                         </a>
                                     </li>
                                     @empty
