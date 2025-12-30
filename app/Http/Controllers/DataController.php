@@ -514,7 +514,7 @@ class DataController extends Controller
             if ($invoice) {
                 $invoice->update([
                     'paket_id' => $paket->id,
-                    'tagihan'  => $paket->harga,
+                    'tagihan'  => $invoice->tagihan ?? $paket->harga,
                 ]);
             }
 
