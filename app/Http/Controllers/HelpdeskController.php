@@ -78,7 +78,7 @@ class HelpdeskController extends Controller
             $query->where('agen_id', $user->id);
         }
         $customer = $query->whereIn('status_id', [1, 2, 5])->paginate(10);
-
+        $teknisi = User::where('roles_id', 5)->get();
         return view('Helpdesk.data-antrian-helpdesk', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
@@ -87,7 +87,8 @@ class HelpdeskController extends Controller
             'corp' => $corp,
             'perusahaan' => $perusahaan,
             'agen' => $agen,
-            'odp' => $odp
+            'odp' => $odp,
+            'teknisi' => $teknisi
         ]);
     }
 
@@ -117,9 +118,10 @@ class HelpdeskController extends Controller
                     'no_hp' => 'required',
                     'alamat' => 'required',
                     'gps' => 'required',
-                    'paket_id' => 'required',
                     'harga' => 'required',
                     'tanggal' => 'required|date',
+                    'paket' => 'required|string',
+                    'teknisi' => 'required'
                 ]);
             }
 
@@ -133,15 +135,15 @@ class HelpdeskController extends Controller
                     $foto = $request->file('foto');
                     $fileName = uniqid() . '_' . str_replace(' ', '_', $foto->getClientOriginalName());
                     $savePath = public_path('uploads/identitas/' . $fileName);
-                
+
                     $imageManager = new ImageManager(Driver::class);
                     $image = $imageManager->read($foto->getRealPath());
                     $image = $image->scale(width: 1024); // Resize
                     $image->toJpeg(75)->save($savePath);
-                
+
                     $img = 'uploads/identitas/' . $fileName;
                 }
-                
+
 
                 $perusahaan = Perusahaan::create([
                     'nama_perusahaan' => $request->nama_perusahaan,
@@ -149,25 +151,19 @@ class HelpdeskController extends Controller
                     'no_hp' => $nomor,
                     'alamat' => $request->alamat,
                     'gps' => $request->gps,
-                    'paket_id' => $request->paket_id,
+                    'paket' => $request->paket,
                     'user_id' => auth()->id(),
                     'status_id' => 5,
                     'harga' => $request->harga,
                     'speed' => $request->speed,
                     'tanggal' => $request->tanggal,
+                    'admin_id' => $request->teknisi,
                     'foto' => $img,
                 ]);
 
                 activity('perusahaan')
                     ->causedBy(auth()->user())
-                    ->performedOn($perusahaan)
-                    ->withProperties([
-                        'nama_perusahaan' => $perusahaan->nama_perusahaan,
-                        'nama_pic' => $perusahaan->nama_pic,
-                        'paket_id' => $perusahaan->paket_id,
-                        'harga' => $perusahaan->harga,
-                    ])
-                    ->log('Menambahkan data perusahaan baru');
+                    ->log(auth()->user()->name . ' Menambahkan data perusahaan baru nama perusahaan ' . $perusahaan->nama_perusahaan);
 
                 return redirect()->back()->with('success', 'Perusahaan berhasil didaftarkan');
             }
@@ -179,12 +175,12 @@ class HelpdeskController extends Controller
                 $ktp = $request->file('identitas_file');
                 $fileName = uniqid() . '_' . str_replace(' ', '_', $ktp->getClientOriginalName());
                 $savePath = public_path('uploads/identitas/' . $fileName);
-            
+
                 $imageManager = new ImageManager(Driver::class);
                 $image = $imageManager->read($ktp->getRealPath());
                 $image = $image->scale(width: 1024); // Resize
                 $image->toJpeg(75)->save($savePath);
-            
+
                 $identitas_file = 'uploads/identitas/' . $fileName;
             }
             // dd($identitas_file);

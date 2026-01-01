@@ -528,7 +528,7 @@
                                         </td>
                                         <td>
                                             <span class="badge bg-danger bg-opacity-10 text-danger">
-                                                {{ $item->paket->nama_paket }}
+                                                {{ $item->paket }}
                                             </span>
                                         </td>
                                         <td>
@@ -625,21 +625,21 @@
                                             @php
                                                 $gps = $c->gps;
                                                 $isLink = Str::startsWith($gps, ['http://', 'https://']);
-                                                $url = $gps 
-                                                    ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) 
+                                                $url = $gps
+                                                    ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps))
                                                     : '#';
                                             @endphp
 
                                             <td>
-                                                <a href="{{ $url }}" 
-                                                target="_blank" 
-                                                class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}" 
-                                                data-bs-toggle="tooltip" 
-                                                data-bs-placement="bottom" 
+                                                <a href="{{ $url }}"
+                                                target="_blank"
+                                                class="btn btn-action btn-maps {{ $gps ? '' : 'disabled' }}"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="bottom"
                                                 title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
                                                     <i class="bx bx-map"></i>
                                                 </a>
-                                            </td>                                    
+                                            </td>
                                         <td>{{ \Carbon\Carbon::parse($c->created_at)->translatedFormat('d F Y') }}</td>
                                         <td>
                                             <span class="badge badge-status badge-waiting">
@@ -833,24 +833,27 @@
                                 <label class="form-label">Alamat<strong class="text-danger"> *</strong></label>
                                 <textarea name="alamat" id="" cols="20" rows="4" class="form-control" required></textarea>
                             </div>
-                            <div class="col-sm-6 form-group">
-                                <label class="form-label">Foto</label>
+                            <div class="col-sm-4 form-group">
+                                <label class="form-label">Foto KTP</label>
                                 <input type="file" class="form-control" name="foto">
                                 <small class="text-muted">Ukuran File 2MB (JPG, JPEG, PNG)</small>
                             </div>
-                            <div class="col-sm-6 form-group">
+                            <div class="col-sm-4 form-group">
                                 <label class="form-label">Harga Custom<strong class="text-danger"> *</strong></label>
                                 <input type="text" class="form-control" id="harga" oninput="formatRupiah(this)" placeholder="Rp. 0" required>
                                 <input type="text" class="form-control" name="harga" id="harga_real" hidden>
+                            </div><div class="col-sm-4 form-group">
+                                <label class="form-label">Teknisi<strong class="text-danger"> *</strong></label>
+                                <select class="form-control form-select" id="teknisi" name="teknisi" required>
+                                  <option value="">--Pilih Teknisi--</option>
+                                  @foreach($teknisi as $item)
+                                    <option value="{{$item->id}}">{{$item->name}}</option>
+                                  @endforeach
+                                </select>
                             </div>
                             <div class="col-sm-4 form-group">
                                 <label class="form-label">Paket Langganan<strong class="text-danger"> *</strong></label>
-                                <select name="paket" class="form-select" required>
-                                    <option value="" selected disabled>Pilih Paket</option>
-                                    @foreach ($corp as $item)
-                                        <option value="{{ $item->id }}">{{$item->nama_paket}}</option>
-                                    @endforeach
-                                </select>
+                                <input type="text" class="form-control" name="paket">
                             </div>
                             <div class="col-sm-4 form-group">
                                 <label class="form-label">Speed Internet<strong class="text-danger"> *</strong></label>
@@ -875,6 +878,17 @@
         </div>
     </div>
 
+
+    <script>
+    // Teknisi
+      new TomSelect("#teknisi", {
+          create: false,
+          sortField: {
+              field: "text",
+              direction: "asc"
+          }
+      });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -1143,7 +1157,7 @@
             }
             return number;
         }
-    
+
         document.querySelectorAll('.nomor-hp').forEach(el => {
             const raw = el.dataset.no;
             el.textContent = formatToLocalNumber(raw);

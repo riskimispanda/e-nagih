@@ -2,30 +2,14 @@
   "menu": [
     {
       "menuHeader": "Main",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Sales",
-        "NOC",
-        "Helpdesk",
-        "Teknisi"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Sales", "NOC", "Helpdesk", "Teknisi"]
     },
     {
       "url": "/dashboard",
       "name": "Dashboards",
       "icon": "menu-icon tf-icons bx bxs-home-smile",
       "slug": "dashboard",
-      "roles": [
-        "Super Admin",
-        "Teknisi",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Sales",
-        "NOC",
-        "Helpdesk"
-      ]
+      "roles": ["Super Admin", "Teknisi", "Admin Keuangan", "Admin Logistik", "Sales", "NOC", "Helpdesk"]
     },
     {
       "url": "/dashboard/keuangan",
@@ -33,162 +17,108 @@
       "name": "Dashboard Keuangan",
       "icon": "menu-icon tf-icons bx bxs-wallet-alt",
       "slug": "dashboard-keuangan",
-      "roles": [
-      ]
+      "roles": []
     },
     {
       "url": "/dashboard-logistik",
       "name": "Dashboard Logistik",
       "icon": "menu-icon tf-icons bx bxs-package",
       "slug": "dashboard-logistik",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik"]
     },
     {
       "url": "/whatspie/dashboard",
       "name": "Dashboard CS",
       "icon": "menu-icon tf-icons bx bxs-contact",
       "slug": "whatspie.dashboard",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Helpdesk"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Helpdesk"]
     },
     {
       "url": "/laporan",
       "name": "Laporan",
       "icon": "menu-icon tf-icons bx bxs-report",
       "slug": "laporan",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik"]
     },
     {
       "url": "/kalender",
       "name": "Schedule",
       "icon": "menu-icon tf-icons bx bxs-calendar",
       "slug": "kalender",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "NOC",
-        "Teknisi"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "NOC", "Teknisi"]
     },
     {
       "url": "/kinerja",
       "name": "Kinerja",
       "icon": "menu-icon tf-icons bx bx-clipboard",
       "slug": "kinerja",
-      "roles": [
-        "Super Admin"
-      ]
+      "roles": ["Super Admin"]
     },
     {
       "menuHeader": "Data",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Teknisi",
-        "NOC"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Teknisi", "NOC"]
     },
     {
       "url": "/rab",
       "name": "RAB",
       "icon": "menu-icon tf-icons bx bx-timer",
       "slug": "rab",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan"]
     },
     {
       "url": "/profile/paket",
       "name": "Router & Profile",
       "icon": "menu-icon tf-icons bx bx-wifi-2",
       "slug": "profile-paket",
-      "roles": [
-        "Super Admin"
-      ]
+      "roles": ["Super Admin"]
     },
     {
       "name": "Data",
       "icon": "menu-icon tf-icons bx bx-data",
       "slug": "data",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Teknisi",
-        "NOC"
-      ],
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Teknisi", "NOC"],
       "submenu": [
         {
           "url": "/data/pelanggan",
           "name": "Data Pelanggan",
           "slug": "pelanggan",
-          "roles": [
-            "Super Admin",
-            "Teknisi",
-            "Admin Keuangan",
-            "Admin Logistik",
-            "NOC"
-          ]
+          "roles": ["Super Admin", "Teknisi", "Admin Keuangan", "Admin Logistik", "NOC"]
+        },
+        {
+          "url": "/data/corporate",
+          "name": "Data Corporate",
+          "slug": "corporate",
+          "roles": ["Super Admin", "Teknisi", "Admin Keuangan", "Admin Logistik", "NOC"]
         },
         {
           "url": "/teknisi/antrian",
           "name": "Data Antrian",
           "slug": "teknisi",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan",
-            "Admin Logistik"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik"]
         },
         {
           "url": "/data/antrian-noc",
           "name": "Data Antrian",
           "slug": "antrian-noc",
-          "roles": [
-            "NOC"
-          ]
+          "roles": ["NOC"]
         },
         {
           "url": "/teknisi/antrian",
           "name": "Antrian Instalasi",
           "slug": "teknisi",
-          "roles": [
-            "Teknisi",
-            "NOC"
-          ]
+          "roles": ["Teknisi", "NOC"]
         },
         {
           "url": "/data-karyawan",
           "name": "Data Karyawan",
           "slug": "data-karyawan",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         },
         {
           "url": "/data/pendapatan",
           "name": "Data Pendapatan",
           "slug": "pendapatan",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         }
       ]
     },
@@ -197,84 +127,57 @@
       "name": "Master Logistik",
       "icon": "menu-icon tf-icons bx bx-clipboard",
       "slug": "master-aset",
-      "roles": [
-        "Admin Logistik",
-        "Super Admin"
-      ],
+      "roles": ["Admin Logistik", "Super Admin"],
       "submenu": [
         {
           "url": "/data/logistik",
           "name": "Data Logistik",
           "slug": "logistik",
-          "roles": [
-            "Admin Logistik",
-            "Super Admin"
-          ]
+          "roles": ["Admin Logistik", "Super Admin"]
         },
         {
           "url": "/tracking",
           "name": "Tracking Tools",
           "slug": "tracking",
-          "roles": [
-            "Admin Logistik",
-            "Super Admin"
-          ]
+          "roles": ["Admin Logistik", "Super Admin"]
         }
       ]
     },
     {
       "menuHeader": "Pendapatan dan Pengeluaran",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan"]
     },
     {
       "url": "/kas",
       "name": "Kas",
       "icon": "menu-icon tf-icons bx bx-wallet",
       "slug": "kas",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan"]
     },
     {
       "name": "Pendapatan",
       "icon": "menu-icon tf-icons bx bx-wallet-alt",
       "_comment": "Menu Pendapatan",
       "slug": "-",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ],
+      "roles": ["Super Admin", "Admin Keuangan"],
       "submenu": [
         {
           "url": "/pendapatan/global",
           "name": "Pendapatan Global",
           "slug": "global-pendapatan",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         },
         {
           "url": "/data/pendapatan",
           "name": "Langganan",
           "slug": "pendapatan",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         },
         {
           "url": "/pendapatan/non-langganan",
           "name": "Non Langganan",
           "slug": "non-langganan",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         }
       ]
     },
@@ -283,230 +186,155 @@
       "name": "Pengeluaran",
       "icon": "menu-icon tf-icons bx bx-money-withdraw",
       "slug": "pengeluaran-global",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan"]
     },
     {
       "menuHeader": "Tiket",
-      "roles": [
-        "Super Admin",
-        "NOC",
-        "Helpdesk",
-        "Admin Logistik",
-        "Admin Keuangan",
-        "Teknisi"
-      ]
+      "roles": ["Super Admin", "NOC", "Helpdesk", "Admin Logistik", "Admin Keuangan", "Teknisi"]
     },
     {
       "url": "#",
       "name": "Tiket",
       "slug": "ticket",
       "icon": "menu-icon tf-icons bx bx-credit-card-front",
-      "roles": [
-        "NOC",
-        "Super Admin",
-        "Helpdesk",
-        "Admin Logistik",
-        "Admin Keuangan",
-        "Teknisi"
-      ],
+      "roles": ["NOC", "Super Admin", "Helpdesk", "Admin Logistik", "Admin Keuangan", "Teknisi"],
       "submenu": [
         {
           "url": "/tiket-open",
           "name": "Tiket Open",
           "slug": "tiket-open",
-          "roles": [
-            "NOC",
-            "Super Admin",
-            "Helpdesk",
-            "Admin Logistik",
-            "Admin Keuangan"
-          ]
+          "roles": ["NOC", "Super Admin", "Helpdesk", "Admin Logistik", "Admin Keuangan"]
         },
         {
           "url": "/tiket-closed",
           "name": "Tiket Closed",
           "slug": "tiket-closed",
-          "roles": [
-            "NOC",
-            "Super Admin",
-            "Admin Logistik",
-            "Admin Keuangan",
-            "Helpdesk",
-            "Teknisi"
-          ]
+          "roles": ["NOC", "Super Admin", "Admin Logistik", "Admin Keuangan", "Helpdesk", "Teknisi"]
         },
         {
           "url": "/berita-acara",
           "name": "Berita Acara",
           "slug": "berita-acara",
-          "roles": [
-            "NOC",
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["NOC", "Super Admin", "Admin Keuangan"]
         }
       ]
     },
     {
       "menuHeader": "Management",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ]
+      "roles": ["Super Admin", "Admin Keuangan"]
     },
     {
       "url": "/user/management",
       "name": "User Management",
       "icon": "menu-icon tf-icons bx bx-user",
       "slug": "user-management",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan"
-      ],
+      "roles": ["Super Admin", "Admin Keuangan"],
       "submenu": [
         {
           "url": "/user/management",
           "name": "Management",
           "slug": "user",
-          "roles": [
-            "Super Admin"
-          ]
+          "roles": ["Super Admin"]
         },
         {
           "url": "/log/aktivitas",
           "name": "Log Aktivitas",
           "slug": "log-aktivitas",
-          "roles": [
-            "Super Admin"
-          ]
+          "roles": ["Super Admin"]
         },
         {
           "url": "/setting",
           "name": "Pengaturan",
           "slug": "setting",
-          "roles": [
-            "Super Admin",
-            "Admin Keuangan"
-          ]
+          "roles": ["Super Admin", "Admin Keuangan"]
         }
       ]
     },
     {
       "_comment": "Menu untuk customer",
       "menuHeader": "Main",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "url": "/customer",
       "name": "Dashboard",
       "icon": "menu-icon tf-icons bx bx-home-smile",
       "slug": "pelanggan",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "_comment": "Menu untuk customer",
       "menuHeader": "Customer Service",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "url": "/customer/pengaduan",
       "name": "Pengaduan",
       "icon": "menu-icon tf-icons bx bx-chat",
       "slug": "pengaduan",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "url": "/customer/request",
       "name": "Request",
       "icon": "menu-icon tf-icons bx bx-git-pull-request",
       "slug": "request",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "_comment": "Menu untuk customer",
       "menuHeader": "Profile",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "url": "#",
       "name": "Setting Account",
       "icon": "menu-icon tf-icons bx bx-cog",
       "slug": "dashboard-customer",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "url": "/customer/history",
       "name": "Histori",
       "icon": "menu-icon tf-icons bx bx-history",
       "slug": "history",
-      "roles": [
-        "Customer"
-      ]
+      "roles": ["Customer"]
     },
     {
       "_comment": "Menu untuk NOC",
       "menuHeader": "Manajemen",
-      "roles": [
-        "NOC"
-      ]
+      "roles": ["NOC"]
     },
     {
       "url": "#",
       "name": "Manajemen Jaringan",
       "icon": "menu-icon tf-icons bx bx-wifi",
       "slug": "dashboard-customer",
-      "roles": [
-        "NOC"
-      ],
+      "roles": ["NOC"],
       "submenu": [
         {
           "url": "/noc/data-server",
           "name": "Data Server",
           "slug": "data-server",
-          "roles": [
-            "NOC"
-          ]
+          "roles": ["NOC"]
         },
         {
           "url": "/noc/data-olt",
           "name": "Data OLT",
           "slug": "olt",
-          "roles": [
-            "NOC"
-          ]
+          "roles": ["NOC"]
         },
         {
           "url": "/noc/data-odc",
           "name": "Data ODC",
           "slug": "odc",
-          "roles": [
-            "NOC"
-          ]
+          "roles": ["NOC"]
         },
         {
           "url": "/noc/data-odp",
           "name": "Data ODP",
           "slug": "odp",
-          "roles": [
-            "NOC"
-          ]
+          "roles": ["NOC"]
         }
       ]
     },
@@ -515,77 +343,75 @@
       "name": "Peta Mapping",
       "icon": "menu-icon tf-icons bx bx-globe",
       "slug": "broadcast",
-      "roles": [
-      ]
+      "roles": []
     },
     {
       "url": "/profile/paket",
       "name": "Router & Profile",
       "icon": "menu-icon tf-icons bx bx-broadcast",
       "slug": "profile-paket",
-      "roles": [
-        "NOC",
-        "Admin Keuangan"
-      ]
+      "roles": ["NOC", "Admin Keuangan"]
     },
     {
       "_comment": "Menu untuk helpdesk",
       "menuHeader": "Data",
-      "roles": [
-        "Helpdesk",
-        "Agen"
-      ]
+      "roles": ["Helpdesk", "Agen"]
     },
     {
       "url": "/helpdesk/data-antrian",
       "name": "Data Antrian",
       "icon": "menu-icon tf-icons bx bx-list-plus",
       "slug": "antrian-helpdesk",
-      "roles": [
-        "Helpdesk",
-        "Agen"
-      ]
+      "roles": ["Helpdesk", "Agen"]
     },
     {
       "_comment": "Menu untuk helpdesk",
       "menuHeader": "Pengaduan Customer",
-      "roles": [
-        "Helpdesk"
-      ]
+      "roles": ["Helpdesk"]
     },
     {
       "url": "/helpdesk/data-pengaduan",
       "name": "Pengaduan",
       "icon": "menu-icon tf-icons bx bxs-bookmarks",
       "slug": "data-pengaduan",
-      "roles": [
-        "Helpdesk"
-      ]
+      "roles": ["Helpdesk"]
     },
     {
       "_comment": "Menu untuk Agen",
       "menuHeader": "Data Pelanggan",
-      "roles": [
-        "Agen"
-      ]
+      "roles": ["Agen"]
     },
     {
       "url": "/pelanggan-agen",
       "name": "Data Pelanggan",
       "icon": "menu-icon tf-icons bx bxs-user",
       "slug": "pelanggan-agen",
-      "roles": [
-        "Agen"
-      ]
+      "roles": ["Agen"]
     },
     {
       "url": "/agen/data-pelanggan",
       "name": "Data Pembayaran",
       "icon": "menu-icon tf-icons bx bx-money",
       "slug": "data-pembayaran",
-      "roles": [
-        "Agen"
-      ]
+      "roles": ["Agen"]
+    },
+    {
+      "menuHeader": "Communication",
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Helpdesk"]
+    },
+    {
+      "url": "/qontak/test",
+      "name": "Qontak Test",
+      "icon": "menu-icon tf-icons bx bx-message-dots",
+      "slug": "qontak-test",
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Helpdesk"]
+    },
+    {
+      "url": "/qontak/broadcast-logs",
+      "name": "Broadcast Logs",
+      "icon": "menu-icon tf-icons bx bx-history",
+      "slug": "qontak-broadcast-logs",
+      "roles": ["Super Admin", "Admin Keuangan", "Admin Logistik", "Helpdesk"]
     }
   ]
 }

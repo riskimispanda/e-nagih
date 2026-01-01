@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\ModemDetail;
 use Spatie\Activitylog\Models\Activity;
 use Carbon\Carbon;
+use App\Services\QontakServices;
 
 
 class TeknisiController extends Controller
@@ -355,8 +356,8 @@ class TeknisiController extends Controller
                 ]);
 
                 // Kirim WA hanya kalau invoice baru dibuat
-                $chat = new ChatServices();
-                $chat->invoiceProrate($customer->no_hp, $invoice);
+                $chat = new QontakServices();
+                $chat->notifProrate($customer->no_hp, $invoice);
 
                 LOG::info('WA sent', [
                     'customer_id' => $customer->id,

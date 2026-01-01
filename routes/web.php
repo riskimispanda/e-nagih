@@ -76,6 +76,7 @@ use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\KinerjaController;
 use App\Http\Controllers\WhatspieControllers;
+use App\Http\Controllers\QontakController;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -379,6 +380,33 @@ Route::middleware(['auth'])->group(function () {
       Route::get('/connection-test', [WhatsPieControllers::class, 'apiTestConnection'])->name('connection.test');
     });
   // ***
+  // Qontak API Routes
+  Route::prefix('qontak')
+    ->name('qontak.')
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC,Helpdesk')
+    ->group(function () {
+      Route::get('/test', function() {
+        return view('qontak.test',[
+          'users' => auth()->user(),
+          'roles' => auth()->user()->roles
+        ]);
+      })->name('test');
+      Route::get('/test-connection', [QontakController::class, 'testConnection'])->name('test-connection');
+      Route::get('/account-info', [QontakController::class, 'getAccountInfo'])->name('account-info');
+      Route::get('/templates', [QontakController::class, 'getTemplates'])->name('templates');
+      Route::get('/templates/active', [QontakController::class, 'getActiveTemplates'])->name('templates.active');
+      Route::post('/templates/refresh', [QontakController::class, 'refreshTemplates'])->name('templates.refresh');
+      Route::get('/debug-auth', [QontakController::class, 'debugAuth'])->name('debug-auth');
+      Route::post('/send-message', [QontakController::class, 'sendMessage'])->name('send-message');
+      Route::post('/send-to-number', [QontakController::class, 'sendToNumber'])->name('send-to-number');
+      Route::post('/broadcast', [QontakController::class, 'sendBroadcast'])->name('broadcast');
+      Route::get('/broadcast-logs', [QontakController::class, 'showBroadcastLogs'])->name('broadcast-logs');
+      Route::get('/broadcast-history', [QontakController::class, 'getBroadcastHistory'])->name('broadcast-history');
+      Route::get('/broadcast-detail/{broadcastId}', [QontakController::class, 'showBroadcastDetail'])->name('broadcast-detail.view');
+Route::get('/api/broadcast-detail/{broadcastId}', [QontakController::class, 'getBroadcastDetail'])->name('broadcast-detail');
+      Route::get('/test-endpoints', [QontakController::class, 'testBroadcastEndpoints'])->name('test-endpoints');
+    });
+
   //dashboard
   Route::get('/dashboard', [Analytics::class, 'index'])
     ->name('dashboard')

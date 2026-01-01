@@ -12,3 +12,8 @@ Artisan::command('inspire', function () {
 //     ->dailyAt('00:01')
 //     ->timezone('Asia/Jakarta')
 //     ->description('Cek invoice dan blokir otomatis');
+//
+Schedule::command('app:send-warning')
+      ->monthlyOn(2, '00:01')
+      ->timezone('Asia/Jakarta')
+      ->description('Send Warning Tagihan');

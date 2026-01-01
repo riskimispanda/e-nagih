@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '00:01')
             ->timezone('Asia/Jakarta') // Sesuaikan timezone
             ->description('Generate invoice untuk bulan depan');
-        // $schedule->command('app:send-warning')->dailyAt('08:00');
+        $schedule->command('app:send-warning')->monthlyOn(2, '00:01')->timezone('Asia/Jakarta');
     }
 
     /**

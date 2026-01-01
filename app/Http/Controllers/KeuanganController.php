@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Log;
 use Exception;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\CustomerAgen;
+use App\Services\QontakServices;
 
 
 class KeuanganController extends Controller
@@ -317,6 +318,7 @@ class KeuanganController extends Controller
             ->whereHas('invoice.customer', function ($query) {
                 $query->withTrashed(); // Include soft deleted customers
             })
+            ->whereYear('created_at', Carbon::now()->year)
             ->sum('jumlah_bayar');
 
         $customerCountQuery = clone $query;
@@ -811,22 +813,19 @@ class KeuanganController extends Controller
                   ->whereIn('status_id', [3,4,9])
                   ->whereNot('paket_id', 11);
               })
-              ->whereHas('pembayaran', function ($query) {
-                  $query->whereMonth('tanggal_bayar', Carbon::now()->month)->whereYear('tanggal_bayar', Carbon::now()->year);
-              })
+              ->whereYear('jatuh_tempo', Carbon::now()->year)
               ->distinct('customer_id')
               ->count('customer_id');
 
         // Tanpa pembayaran
-        $withoutPayment = Customer::where('status_id', 3)
+        $withoutPayment = Customer::whereIn('status_id', [3, 4])
               ->whereNot('paket_id', 11)
               ->whereNull('deleted_at')
               ->whereHas('invoice', function ($query) {
-                $query->where('status_id', 7)
+                $query->where('status_id', 8)
                   ->whereMonth('jatuh_tempo', Carbon::now()->month);
               })
               ->count();
-
         $pelangganAktif = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3,4])->whereNull('deleted_at')->count();
 
         $totalCustomer = $withPayment + $withoutPayment;
@@ -854,7 +853,7 @@ class KeuanganController extends Controller
             'cashCount' => $CashCount,
             'transferCount' => $transferCount,
             'ewalletCount' => $ewalletCount,
-            'totalCustomer' => $pelangganAktif,
+            'totalCustomer' => $withPayment,
         ]);
     }
 
@@ -1887,10 +1886,10 @@ class KeuanganController extends Controller
                 'bukti_bayar'     => $buktiPath,
                 'saldo'           => $saldoBaru,
             ]);
-            $pembayaran->refresh();
+            $pembayaran->load(['invoice.customer', 'user']);
             // Notifikasi
-            $chat = new ChatServices();
-            $chat->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
+            $chat = new QontakServices();
+            $chat->konfirmasiPembayaran($invoice->customer->no_hp, $pembayaran);
 
             // ================================
             // Update Invoice
