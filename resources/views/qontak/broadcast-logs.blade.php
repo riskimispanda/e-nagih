@@ -260,9 +260,9 @@ tailwind.config = {
 
 @section('content')
 <!-- Enhanced Content with Tailwind CSS -->
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100">
+<div class="col-sm-12 min-h-screen">
     <!-- Enhanced Header -->
-    <header class="bg-white shadow-soft border-b border-gray-100/50 backdrop-blur-sm bg-opacity-90 sticky top-0 z-40">
+    <header class="bg-white shadow-soft rounded-lg border-b border-gray-100/50 backdrop-blur-sm bg-opacity-90 sticky top-0 z-40 mb-5">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex items-center space-x-4">
@@ -296,7 +296,7 @@ tailwind.config = {
     </header>
 
     <!-- Enhanced Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto">
         <!-- Enhanced Filters Section -->
         <div class="bg-white rounded-2xl shadow-soft p-6 mb-8 card-hover">
             <div class="flex items-center mb-6">
@@ -727,14 +727,14 @@ function displayBroadcastLogs(data) {
                     contactName = broadcast.contact_extra || broadcast.contact_full_name || 'Unknown';
                 }
             } else if (typeof broadcast.contact_extra === 'object') {
-                contactName = broadcast.contact_extra.name || broadcast.contact_extra.full_name || broadcast.contact_extra.contact_name || broadcast.contact_full_name || 'Unknown';
+                contactName = broadcast.contact_extra.nama || broadcast.contact_extra.full_name || broadcast.contact_extra.contact_name || broadcast.contact_full_name || 'Unknown';
             }
         } else {
             contactName = broadcast.contact_full_name || 'Unknown';
         }
 
         // Extract phone number
-        const phoneNumber = broadcast.contact_phone_number || 'N/A';
+        const phoneNumber = broadcast.contact_extra.nama || 'N/A';
 
         const createdAt = broadcast.created_at;
 
@@ -765,7 +765,7 @@ function displayBroadcastLogs(data) {
                         <div class="bg-purple-100 rounded-lg p-1.5 mr-2">
                             <i class="fas fa-file-alt text-purple-500 text-xs"></i>
                         </div>
-                        <span class="text-sm font-medium text-gray-900">${templateName}</span>
+                        <span class="text-sm font-medium text-gray-900">${broadcast.message_template.name}</span>
                     </div>
                     <div class="text-xs text-gray-500 ml-8">
                         <i class="fas fa-user mr-1"></i>${contactName}
@@ -782,7 +782,7 @@ function displayBroadcastLogs(data) {
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="status-badge status-${status.toLowerCase()}">${status}</span>
+                <span class="status-badge status-${status.toLowerCase()}">${broadcast.execute_status}</span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
