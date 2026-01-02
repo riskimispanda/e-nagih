@@ -344,7 +344,7 @@ class QontakServices
                 ]
             ];
 
-            $formattedPhone = $this->formatPhoneNumber($to);
+            $formattedPhone = $this->formatNomor($to);
 
             // 3. Siapkan payload untuk mengirim pesan
             $messageData = [
@@ -441,7 +441,7 @@ class QontakServices
               ]
           ];
 
-          $formattedPhone = $this->formatPhoneNumber($to);
+          $formattedPhone = $this->formatNomor($to);
 
 
           // 3. Siapkan payload untuk mengirim pesan
@@ -544,7 +544,7 @@ class QontakServices
               ]
           ];
 
-          $formattedPhone = $this->formatPhoneNumber($to);
+          $formattedPhone = $this->formatNomor($to);
 
           // 3. Siapkan payload untuk mengirim pesan
           $messageData = [
@@ -595,7 +595,7 @@ class QontakServices
     /**
      * Format nomor telepon ke format internasional (62) dengan validasi
      */
-    private function formatPhoneNumber($phoneNumber)
+    private function formatNomor($phoneNumber)
     {
         // Jika null atau empty, return as-is
         if (empty($phoneNumber)) {
