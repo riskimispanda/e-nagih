@@ -1887,9 +1887,6 @@ class KeuanganController extends Controller
                 'saldo'           => $saldoBaru,
             ]);
             $pembayaran->load(['invoice.customer', 'user']);
-            // Notifikasi
-            $chat = new QontakServices();
-            $chat->konfirmasiPembayaran($invoice->customer->no_hp, $pembayaran);
 
             // ================================
             // Update Invoice
