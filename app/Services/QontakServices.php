@@ -143,7 +143,7 @@ class QontakServices
                 ]);
 
                 $errorMessage = "Qontak API request failed with status {$response->status()}: " . $response->body();
-                
+
                 // Handle specific authentication errors
                 if ($response->status() === 401) {
                     $errorMessage = "Authentication failed: Invalid or expired access token. Please check your Qontak API credentials in the configuration.";
@@ -494,7 +494,7 @@ class QontakServices
           }
 
           // 1. Cari template berdasarkan nama
-          $template = $this->getTemplateByName('payment_invoice'); // atau nama template Anda
+          $template = $this->getTemplateByName('notif_tagihan'); // atau nama template Anda
 
           if (!$template || !is_array($template) || !isset($template['id'])) {
               throw new Exception('Template konfirmasi pembayaran tidak ditemukan atau format tidak valid');
@@ -514,23 +514,23 @@ class QontakServices
               ],
               [
                   'key' => '2',
-                  'value' => 'tanggal',
-                  'value_text' => now()->format('d-m-Y')
+                  'value' => 'no_invoice',
+                  'value_text' => 'INV-NBilling-' . $invoice->customer->nama_customer . '-' . $time
               ],
               [
                   'key' => '3',
-                  'value' => 'jumlah',
-                  'value_text' => number_format($invoice->tagihan + $invoice->tunggakan ?? 0, 0, ',', '.')
+                  'value' => 'tanggal',
+                  'value_text' => Carbon::now()->format('d-F-Y')
               ],
               [
                   'key' => '4',
-                  'value' => 'tunggakan',
-                  'value_text' => number_format($invoice->tunggakan ?? 0, 0, ',', '.')
+                  'value' => 'tagihan',
+                  'value_text' => 'Rp ' . number_format($invoice->tagihan + $invoice->tunggakan ?? 0, 0, ',', '.')
               ],
               [
                   'key' => '5',
-                  'value' => 'no_invoice',
-                  'value_text' => $invoice->customer->nama_customer . '--' .  $time
+                  'value' => 'tunggakan',
+                  'value_text' => 'Rp ' . number_format($invoice->tunggakan ?? 0, 0, ',', '.')
               ],
               [
                   'key' => '6',

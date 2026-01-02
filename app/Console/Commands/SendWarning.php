@@ -81,7 +81,7 @@ class SendWarning extends Command
 
         $this->info("📊 Total customer dengan tagihan bulan lalu yang belum dibayar: " . count($customerInvoices));
 
-        $limit = 50;
+        $limit = 1000;
         $customerInvoices = array_slice($customerInvoices, 0, $limit, true);
 
         $this->info("📊 Mengirim ke {$limit} customer pertama (percobaan)");
