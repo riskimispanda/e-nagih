@@ -59,8 +59,8 @@ class SendWarning extends Command
 
         // Get unpaid invoices dari bulan lalu saja
         $invoiceGroups = Invoice::where('status_id', 7) // Belum bayar
-            ->whereMonth('jatuh_tempo', $bulanBulanLalu) // Jatuh tempo bulan lalu
-            ->whereYear('jatuh_tempo', $tahunBulanLalu) // Tahun bulan lalu
+            ->whereMonth('jatuh_tempo', Carbon::now()->month) // Jatuh tempo bulan lalu
+            ->whereYear('jatuh_tempo', Carbon::now()->year) // Tahun bulan lalu
             ->where('paket_id', '!=', 11) // Bukan paket khusus
             ->whereHas('customer', function ($query) {
                 $query->whereNull('deleted_at'); // Hanya customer aktif
@@ -81,7 +81,7 @@ class SendWarning extends Command
 
         $this->info("📊 Total customer dengan tagihan bulan lalu yang belum dibayar: " . count($customerInvoices));
 
-        $limit = 1000;
+        $limit = 900;
         $customerInvoices = array_slice($customerInvoices, 0, $limit, true);
 
         $this->info("📊 Mengirim ke {$limit} customer pertama (percobaan)");
