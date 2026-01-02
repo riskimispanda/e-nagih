@@ -433,13 +433,5 @@
             <p>Dicetak pada: {{ date('d/m/Y H:i:s') }}</p>
         </div>
     </div>
-
-    <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() {
-                window.print();
-            }, 1000);
-        });
-    </script>
 </body>
 </html>
