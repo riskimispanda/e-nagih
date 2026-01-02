@@ -648,6 +648,7 @@ class NocController extends Controller
         if ($existingSecret) {
             Log::info("Existing secret found: " . json_encode($existingSecret));
             MikrotikServices::updatePPPSecret($client, $existingSecret['.id'], $pppData);
+            $disconnectResult = MikrotikServices::removeActiveConnections($client, $request->usersecret);
             $message = 'Berhasil Update PPP Secret di Mikrotik';
         } else {
             MikrotikServices::addPPPSecret($client, $pppData);
