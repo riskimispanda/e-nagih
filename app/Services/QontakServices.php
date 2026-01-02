@@ -344,9 +344,11 @@ class QontakServices
                 ]
             ];
 
+            $formattedPhone = $this->formatPhoneNumber($to);
+
             // 3. Siapkan payload untuk mengirim pesan
             $messageData = [
-                'to_number' => $to,
+                'to_number' => $formattedPhone,
                 'to_name' => $pembayaran->invoice->customer->nama_customer ?? 'Pelanggan',
                 'message_template_id' => $template['id'],
                 'channel_integration_id' => $this->channelId,
@@ -439,9 +441,12 @@ class QontakServices
               ]
           ];
 
+          $formattedPhone = $this->formatPhoneNumber($to);
+
+
           // 3. Siapkan payload untuk mengirim pesan
           $messageData = [
-              'to_number' => $to,
+              'to_number' => $formattedPhone,
               'to_name' => $invoice->customer->nama_customer,
               'message_template_id' => $template['id'],
               'channel_integration_id' => $this->channelId,
@@ -539,9 +544,11 @@ class QontakServices
               ]
           ];
 
+          $formattedPhone = $this->formatPhoneNumber($to);
+
           // 3. Siapkan payload untuk mengirim pesan
           $messageData = [
-              'to_number' => $to,
+              'to_number' => $formattedPhone,
               'to_name' => $invoice->customer->nama_customer,
               'message_template_id' => $template['id'],
               'channel_integration_id' => $this->channelId,
@@ -583,6 +590,62 @@ class QontakServices
               'error' => $e->getMessage()
           ];
       }
+    }
+
+    /**
+     * Format nomor telepon ke format internasional (62) dengan validasi
+     */
+    private function formatPhoneNumber($phoneNumber)
+    {
+        // Jika null atau empty, return as-is
+        if (empty($phoneNumber)) {
+            return $phoneNumber;
+        }
+
+        // Hapus semua karakter non-digit
+        $cleanNumber = preg_replace('/[^0-9]/', '', (string) $phoneNumber);
+
+        // Jika kosong setelah dibersihkan
+        if (empty($cleanNumber)) {
+            return $phoneNumber;
+        }
+
+        // Cek panjang minimum (8-15 digit setelah 62)
+        if (strlen($cleanNumber) < 10 || strlen($cleanNumber) > 16) {
+            return $phoneNumber; // Return as-is jika tidak valid
+        }
+
+        // Format berdasarkan pola
+        $patterns = [
+            '/^62/' => '62',           // Sudah format 62
+            '/^0/'  => '62',           // Dimulai dengan 0
+            '/^8/'  => '62',           // Dimulai dengan 8 (tanpa 0)
+            '/^\+62/' => '62',         // Dimulai dengan +62
+        ];
+
+        foreach ($patterns as $pattern => $replacement) {
+            if (preg_match($pattern, $phoneNumber)) {
+                $cleanNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+
+                // Jika sudah 62, return as-is
+                if (substr($cleanNumber, 0, 2) === '62') {
+                    return $cleanNumber;
+                }
+
+                // Jika dimulai dengan 0, ganti dengan 62
+                if (substr($cleanNumber, 0, 1) === '0') {
+                    return '62' . substr($cleanNumber, 1);
+                }
+
+                // Jika dimulai dengan 8, tambahkan 62
+                if (substr($cleanNumber, 0, 1) === '8') {
+                    return '62' . $cleanNumber;
+                }
+            }
+        }
+
+        // Default: return cleaned number
+        return $cleanNumber;
     }
 
     /**
