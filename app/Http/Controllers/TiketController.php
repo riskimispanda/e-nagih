@@ -352,14 +352,15 @@ class TiketController extends Controller
                     'remote' => $request->remote_address
                 ]);
                 $customer->refresh();
-
+                $client = MikrotikServices::connect(Router::findOrFail($customer->router_id));
                 MikrotikServices::UpgradeDowngrade(
-                    MikrotikServices::connect(Router::findOrFail($customer->router_id)),
+                    $client,
                     $customer->usersecret,
                     $customer->paket->paket_name,
                     $customer->local_address,
                     $customer->remote_address,
                 );
+                $disconnectResult = MikrotikServices::removeActiveConnections($client,$customer->usersecret);
             }
 
             // Update invoice sekali saja
