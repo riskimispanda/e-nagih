@@ -42,7 +42,7 @@ class SendWarning extends Command
         // ============================================
         // BAGIAN 2: KIRIM PESAN PADA TANGGAL 2
         // ============================================
-        if ($today->day != 2) {
+        if ($today->day != 5) {
             $this->info("⏭️ Command hanya berjalan pada tanggal 2 (kirim) dan akhir bulan (reset). Hari ini tanggal {$today->day}.");
             Log::info("SendWarning skipped - hanya berjalan tanggal 2 & akhir bulan", ['tanggal' => $today->format('Y-m-d')]);
             return Command::SUCCESS;
