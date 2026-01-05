@@ -59,11 +59,10 @@ class SendWarning extends Command
 
         // Get unpaid invoices dari bulan lalu saja
         $invoiceGroups = Invoice::where('status_id', 7) // Belum bayar
-            ->whereMonth('jatuh_tempo', Carbon::now()->month) // Jatuh tempo bulan lalu
-            ->whereYear('jatuh_tempo', Carbon::now()->year) // Tahun bulan lalu
+            ->whereYear('jatuh_tempo', $tahunBulanLalu)
             ->where('paket_id', '!=', 11) // Bukan paket khusus
             ->whereHas('customer', function ($query) {
-                $query->whereNull('deleted_at'); // Hanya customer aktif
+                $query->whereNull('deleted_at')->whereIn('status_id', [3,9]); // Hanya customer aktif
             })
             ->select('customer_id', 'id', 'jatuh_tempo')
             ->get()
