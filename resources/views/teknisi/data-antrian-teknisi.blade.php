@@ -998,12 +998,8 @@
                 url.searchParams.delete('month');
             }
             
-            // Set year filter
-            if (selectedYear) {
-                url.searchParams.set('year', selectedYear);
-            } else {
-                url.searchParams.delete('year');
-            }
+            // Set year filter (selalu set year, bahkan jika bulan kosong)
+            url.searchParams.set('year', selectedYear);
             
             // Reset to page 1 when filtering
             url.searchParams.set('corp_page', '1');

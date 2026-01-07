@@ -91,10 +91,13 @@ class TeknisiController extends Controller
         // Query untuk data Customer dengan filter bulan dan pagination
         $customerQuery = Customer::where('status_id', 5)->latest();
 
-        // Filter berdasarkan bulan jika bulan dipilih (bukan 'all')
+        // Filter berdasarkan bulan dan tahun
         if ($currentMonth && $currentMonth !== 'all') {
             $customerQuery->whereYear('created_at', $currentYear)
                 ->whereMonth('created_at', $currentMonth);
+        } elseif ($currentYear) {
+            // Jika hanya tahun yang dipilih (bulan = all atau kosong)
+            $customerQuery->whereYear('created_at', $currentYear);
         }
 
         $customers = $customerQuery->paginate($waitingPerPage, ['*'], 'waiting_page')->withQueryString();
@@ -110,6 +113,9 @@ class TeknisiController extends Controller
         if ($currentMonth && $currentMonth !== 'all') {
             $antrianQuery->whereYear('created_at', $currentYear)
                 ->whereMonth('created_at', $currentMonth);
+        } elseif ($currentYear) {
+            // Jika hanya tahun yang dipilih (bulan = all atau kosong)
+            $antrianQuery->whereYear('created_at', $currentYear);
         }
 
         $antrian = $antrianQuery->paginate($progressPerPage, ['*'], 'progress_page')->withQueryString();
@@ -125,6 +131,9 @@ class TeknisiController extends Controller
         if ($currentMonth && $currentMonth !== 'all') {
             $corpQuery->whereYear('tanggal', $currentYear)
                 ->whereMonth('tanggal', $currentMonth);
+        } elseif ($currentYear) {
+            // Jika hanya tahun yang dipilih (bulan = all atau kosong)
+            $corpQuery->whereYear('tanggal', $currentYear);
         }
 
         $corp = $corpQuery->paginate($corpPerPage, ['*'], 'corp_page')->withQueryString();
