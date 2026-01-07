@@ -79,9 +79,9 @@ class TeknisiController extends Controller
         $user = auth()->user();
         $customersWithTeknisi = Customer::whereNotNull('teknisi_id')->exists();
 
-        // Ambil bulan dari request, default ke bulan saat ini jika tidak ada
+        // Ambil bulan dan tahun dari request dengan default values
         $currentMonth = $request->get('month', Carbon::now()->month);
-        $currentYear = Carbon::now()->year;
+        $currentYear = $request->get('year', Carbon::now()->year);
 
         // Get per page values from request with defaults
         $corpPerPage = $request->get('corp_per_page', 10);
@@ -129,6 +129,12 @@ class TeknisiController extends Controller
 
         $corp = $corpQuery->paginate($corpPerPage, ['*'], 'corp_page')->withQueryString();
 
+        // Generate year options (5 years back and 2 years forward)
+        $yearOptions = [];
+        for ($i = -5; $i <= 2; $i++) {
+            $yearOptions[] = Carbon::now()->year + $i;
+        }
+
         return view('/teknisi/data-antrian-teknisi', [
             'data' => $customers,
             'progressData' => $antrian,
@@ -137,6 +143,8 @@ class TeknisiController extends Controller
             'customersWithTeknisi' => $customersWithTeknisi,
             'corp' => $corp,
             'currentMonth' => $currentMonth,
+            'currentYear' => $currentYear,
+            'yearOptions' => $yearOptions,
             'corpPerPage' => $corpPerPage,
             'waitingPerPage' => $waitingPerPage,
             'progressPerPage' => $progressPerPage

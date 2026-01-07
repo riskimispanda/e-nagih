@@ -496,17 +496,24 @@
                         <label for="monthFilter" class="form-label mb-0 me-2 fw-semibold">Bulan:</label>
                         <select class="month-filter" id="monthFilter">
                             <option value="">Semua Bulan</option>
-                            @php
-                                $tahunIni = date('Y');
-                            @endphp
                             @for ($i = 1; $i <= 12; $i++)
                                 @php
                                     $namaBulan = \Carbon\Carbon::create()->month($i)->locale('id')->monthName;
                                 @endphp
                                 <option value="{{ $i }}" {{ $i == $currentMonth ? 'selected' : '' }}>
-                                    {{ ucfirst($namaBulan) }} {{ $tahunIni }}
+                                    {{ ucfirst($namaBulan) }}
                                 </option>
                             @endfor
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <label for="yearFilter" class="form-label mb-0 me-2 fw-semibold">Tahun:</label>
+                        <select class="month-filter" id="yearFilter">
+                            @foreach ($yearOptions as $year)
+                                <option value="{{ $year }}" {{ $year == $currentYear ? 'selected' : '' }}>
+                                    {{ $year }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilter">
@@ -974,18 +981,28 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
         });
         
-        // Month filter functionality
+        // Month and Year filter functionality
         const monthFilter = document.getElementById('monthFilter');
+        const yearFilter = document.getElementById('yearFilter');
         const resetFilter = document.getElementById('resetFilter');
         
-        monthFilter.addEventListener('change', function() {
-            const selectedMonth = this.value;
+        function applyFilters() {
+            const selectedMonth = monthFilter.value;
+            const selectedYear = yearFilter.value;
             const url = new URL(window.location.href);
             
+            // Set month filter
             if (selectedMonth) {
                 url.searchParams.set('month', selectedMonth);
             } else {
                 url.searchParams.delete('month');
+            }
+            
+            // Set year filter
+            if (selectedYear) {
+                url.searchParams.set('year', selectedYear);
+            } else {
+                url.searchParams.delete('year');
             }
             
             // Reset to page 1 when filtering
@@ -994,11 +1011,15 @@
             url.searchParams.set('progress_page', '1');
             
             window.location.href = url.toString();
-        });
+        }
+        
+        monthFilter.addEventListener('change', applyFilters);
+        yearFilter.addEventListener('change', applyFilters);
         
         resetFilter.addEventListener('click', function() {
             const url = new URL(window.location.href);
             url.searchParams.delete('month');
+            url.searchParams.delete('year');
             // Reset semua page ke 1
             url.searchParams.set('corp_page', '1');
             url.searchParams.set('waiting_page', '1');
