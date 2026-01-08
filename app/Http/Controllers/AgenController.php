@@ -20,10 +20,11 @@ class AgenController extends Controller
     {
         $agen = Auth::user()->id;
 
-        // Get current month as default filter
+        // Get current month and year as default filter
         $currentYear = Carbon::now()->format('Y');
         $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
+        $filterYear = $request->get('year', $currentYear);
         $perPage = $request->get('per_page', 10); // Default 10
         $statusFilter = $request->get('status');
 
@@ -56,8 +57,12 @@ class AgenController extends Controller
 
         // Apply month filter
         if ($filterMonth !== 'all') {
-            $query->whereYear('jatuh_tempo', $currentYear)
+            $yearToUse = ($filterYear !== 'all') ? $filterYear : $currentYear;
+            $query->whereYear('jatuh_tempo', $yearToUse)
                 ->whereMonth('jatuh_tempo', intval($filterMonth));
+        } elseif ($filterYear !== 'all') {
+            // If year is selected but month is "all", filter by year only
+            $query->whereYear('jatuh_tempo', $filterYear);
         }
 
         // Apply search filter
@@ -99,7 +104,7 @@ class AgenController extends Controller
 
         // Calculate statistics
         $searchTerm = $request->get('search', '');
-        $statistics = $this->calculateStatistics($agen, $filterMonth, $searchTerm);
+        $statistics = $this->calculateStatistics($agen, $filterMonth, $searchTerm, $filterYear);
 
         // Get available months for filter dropdown
         $availableMonths = $this->getAvailableMonths($agen);
@@ -129,6 +134,7 @@ class AgenController extends Controller
             'currentMonthName' => $currentMonthName,
             'selectedMonth' => $filterMonth,
             'selectedMonthName' => $selectedMonthName,
+            'selectedYear' => $filterYear,
             'statistics' => $statistics,
         ]);
     }
@@ -140,14 +146,16 @@ class AgenController extends Controller
     {
         $agen = Auth::user()->id;
 
-        // Get current month as default filter
+        // Get current month and year as default filter
+        $currentYear = Carbon::now()->format('Y');
         $currentMonth = Carbon::now()->format('m');
         $filterMonth = $request->get('month', $currentMonth);
+        $filterYear = $request->get('year', $currentYear);
         $searchTerm = $request->get('search', '');
         $statusFilter = $request->get('status', '');
 
         // Calculate statistics with all filters
-        $statistics = $this->calculateStatisticsWithStatus($agen, $filterMonth, $searchTerm, $statusFilter);
+        $statistics = $this->calculateStatisticsWithStatus($agen, $filterMonth, $searchTerm, $statusFilter, $filterYear);
 
         return response()->json([
             'success' => true,
@@ -232,7 +240,7 @@ class AgenController extends Controller
     /**
      * Calculate statistics for invoices including soft deleted customers - CONSISTENT WITH INDEX
      */
-    private function calculateStatistics($agenId, $filterMonth, $searchTerm = '')
+    private function calculateStatistics($agenId, $filterMonth, $searchTerm = '', $filterYear = '')
     {
         // GUNAKAN QUERY YANG SAMA PERSIS DENGAN INDEX
         $invoicesQuery = Invoice::with([
@@ -256,9 +264,14 @@ class AgenController extends Controller
             })
             ->orderBy('jatuh_tempo', 'desc'); // Konsisten dengan index
 
-        // Apply month filter - SAMA DENGAN INDEX
+        // Apply month and year filter - SAMA DENGAN INDEX
         if ($filterMonth !== 'all') {
-            $invoicesQuery->whereMonth('jatuh_tempo', intval($filterMonth));
+            $yearToUse = (!empty($filterYear) && $filterYear !== 'all') ? $filterYear : Carbon::now()->format('Y');
+            $invoicesQuery->whereYear('jatuh_tempo', $yearToUse)
+                ->whereMonth('jatuh_tempo', intval($filterMonth));
+        } elseif (!empty($filterYear) && $filterYear !== 'all') {
+            // If year is selected but month is "all", filter by year only
+            $invoicesQuery->whereYear('jatuh_tempo', $filterYear);
         }
 
         $invoices = $invoicesQuery->get();
@@ -350,7 +363,7 @@ class AgenController extends Controller
     /**
      * Calculate statistics with status filter included - CONSISTENT VERSION
      */
-    private function calculateStatisticsWithStatus($agenId, $filterMonth, $searchTerm = '', $statusFilter = '')
+    private function calculateStatisticsWithStatus($agenId, $filterMonth, $searchTerm = '', $statusFilter = '', $filterYear = '')
     {
         // GUNAKAN QUERY YANG SAMA PERSIS
         $invoicesQuery = Invoice::with([
@@ -374,9 +387,14 @@ class AgenController extends Controller
             })
             ->orderBy('jatuh_tempo', 'desc');
 
-        // Apply month filter - SAMA
+        // Apply month and year filter - SAMA
         if ($filterMonth !== 'all') {
-            $invoicesQuery->whereMonth('jatuh_tempo', intval($filterMonth));
+            $yearToUse = (!empty($filterYear) && $filterYear !== 'all') ? $filterYear : Carbon::now()->format('Y');
+            $invoicesQuery->whereYear('jatuh_tempo', $yearToUse)
+                ->whereMonth('jatuh_tempo', intval($filterMonth));
+        } elseif (!empty($filterYear) && $filterYear !== 'all') {
+            // If year is selected but month is "all", filter by year only
+            $invoicesQuery->whereYear('jatuh_tempo', $filterYear);
         }
 
         // Apply status filter if provided
