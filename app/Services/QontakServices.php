@@ -519,18 +519,19 @@ class QontakServices
               ],
               [
                   'key' => '2',
-                  'value' => 'no_invoice',
-                  'value_text' => 'INV-NBilling-' . $invoice->customer->nama_customer . '-' . $time
-              ],
-              [
-                  'key' => '3',
                   'value' => 'tanggal',
                   'value_text' => Carbon::now()->format('d-F-Y')
               ],
+
               [
-                  'key' => '4',
+                  'key' => '3',
                   'value' => 'tagihan',
                   'value_text' => 'Rp ' . number_format($invoice->tagihan + $invoice->tunggakan ?? 0, 0, ',', '.')
+              ],
+              [
+                  'key' => '4',
+                  'value' => 'no_invoice',
+                  'value_text' => 'INV-NBilling-' . $invoice->customer->nama_customer . '-' . $time
               ],
               [
                   'key' => '5',
