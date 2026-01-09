@@ -499,7 +499,7 @@ class QontakServices
           }
 
           // 1. Cari template berdasarkan nama
-          $template = $this->getTemplateByName('notif_tagihan'); // atau nama template Anda
+          $template = $this->getTemplateByName('payment_invoice'); // atau nama template Anda
 
           if (!$template || !is_array($template) || !isset($template['id'])) {
               throw new Exception('Template konfirmasi pembayaran tidak ditemukan atau format tidak valid');
