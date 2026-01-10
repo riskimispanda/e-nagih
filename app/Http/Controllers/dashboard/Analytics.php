@@ -436,9 +436,9 @@ class Analytics extends Controller
         "unblock_result" => $unblockResult,
         "remove_koneksi" => $removeKoneksi,
       ]);
-      activity('Unblokir')
-        ->causedBy(auth()->user()->id)
-        ->log(auth()->user()->name . ' Melakukan Unblokir kepada Pelanggan ' . $customer->nama_customer);
+      // activity('Unblokir')
+      //   ->causedBy(auth()->user()->id)
+      //   ->log(auth()->user()->name . ' Melakukan Unblokir kepada Pelanggan ' . $customer->nama_customer);
       return redirect()->back()->with("toast_success", "Pelanggan berhasil diaktifkan kembali");
     } catch (\Exception $e) {
       \Log::error("❌ Gagal unblock pelanggan: " . $e->getMessage(), [
