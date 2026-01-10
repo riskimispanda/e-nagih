@@ -604,6 +604,11 @@ class MikrotikServices
                 }
 
                 // Remove active connections sebelum ganti profile
+
+
+
+                // Ganti profile ke profile paket (dari profile apapun saat ini)
+                $updateResult = self::changeUserProfileToPackage($client, $usersecret, $targetProfileName, $customer, $currentProfile);
                 $disconnectResult = self::removeAktifKoneksi($client, $usersecret);
 
                 if ($disconnectResult['success'] && $disconnectResult['disconnected'] > 0) {
@@ -614,8 +619,6 @@ class MikrotikServices
                     sleep(2);
                 }
 
-                // Ganti profile ke profile paket (dari profile apapun saat ini)
-                $updateResult = self::changeUserProfileToPackage($client, $usersecret, $targetProfileName, $customer, $currentProfile);
 
                 if ($updateResult['success']) {
                     $updatedCount++;
