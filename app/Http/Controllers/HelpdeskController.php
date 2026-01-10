@@ -302,7 +302,10 @@ class HelpdeskController extends Controller
     public function hapusAntrian($id)
     {
         $customer = Customer::find($id);
-        $customer->delete();
+        $customer->forceDelete();
+        activity('delete')
+          ->causedBy(auth()->user())
+          ->log(auth()->user()->name . " Menghapus data antrian " . $customer->nama_customer);
         return redirect()->back()->with('success', 'Antrian berhasil dihapus');
     }
 
