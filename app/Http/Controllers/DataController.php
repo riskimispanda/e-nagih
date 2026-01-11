@@ -166,7 +166,7 @@ class DataController extends Controller
             ->orderBy('tanggal_selesai', 'desc')
             ->get();
 
-        $bulananInstallasi = Customer::whereIn('status_id', [3, 4])
+        $bulananInstallasi = Customer::whereIn('status_id', [3, 4, 9])
             ->whereMonth('tanggal_selesai', now()->month)
             ->whereYear('tanggal_selesai', now()->year)
             ->count();
