@@ -1178,6 +1178,7 @@
                         <thead>
                             <tr class="text-center">
                                 <th>No</th>
+                                <th>Aksi</th>
                                 <th>Nama</th>
                                 <th>Telp.</th>
                                 <th>PIC</th>
@@ -1188,7 +1189,7 @@
                                 <th>History Pembayaran</th>
                                 <th>Pembayaran Terakhir</th>
                                 <th>Remote IP</th>
-                                <th>Aksi</th>
+                                {{-- <th>Aksi</th> --}}
                             </tr>
                         </thead>
                         <tbody id="customerTableBody">
@@ -1199,6 +1200,36 @@
                                 data-invoice-id="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}"
                                 data-tagihan-tambahan="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->tambahan : '' }}">
                                 <td class="text-center">{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
+                                <td>
+                                  <div class="row justify-content-center">
+                                    @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 4)
+                                    <a href="/blokir/{{ $item->id }}"
+                                        class="btn btn-danger action-btn blokir-customer-btn mb-2"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Blokir Pelanggan">
+                                        <i class="bx bx-block"></i>
+                                    </a>
+                                    <a href="/unblokir/{{ $item->id }}"
+                                        class="btn btn-warning action-btn unblokir-customer-btn mb-2"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Aktifkan Pelanggan">
+                                        <i class="bx bx-check-circle"></i>
+                                    </a>
+                                    @endif
+                                    <a href="/detail-pelanggan/{{ $item->id }}"
+                                        class="btn btn-info action-btn detail-customer-btn mb-2"
+                                        data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Detail Pelanggan">
+                                        <i class="bx bx-show"></i>
+                                    </a>
+                                    <a href="/edit-pelanggan/{{ $item->id }}"
+                                        class="btn btn-secondary action-btn detail-customer-btn mb-2"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Pelanggan"
+                                        title="Edit Pelanggan">
+                                        <i class="bx bx-pencil text-white"></i>
+                                    </a>
+                                  </div>
+                                </td>
                                 <td class="customer-name">
                                     <div class="fw-bold">
                                     {{ $item->nama_customer }}
@@ -1265,7 +1296,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                {{-- <td class="text-center">
                                     <div class="row">
                                         <div class="d-flex justify-content-center">
                                             @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 4)
@@ -1296,7 +1327,7 @@
                                             </a>
                                         </div>
                                     </div>
-                                </td>
+                                </td> --}}
                             </tr>
                             @endforeach
                             <tr>
