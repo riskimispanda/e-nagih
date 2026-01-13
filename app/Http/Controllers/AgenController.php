@@ -552,7 +552,7 @@ class AgenController extends Controller
             ]);
 
             // Notifikasi
-            (new ChatServices())->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
+            // (new ChatServices())->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
 
             // Update invoice
             $newTagihan   = in_array('tagihan', $pilihan)   ? 0 : $invoice->tagihan;
