@@ -486,7 +486,7 @@ Route::get('/api/broadcast-detail/{broadcastId}', [QontakController::class, 'get
 
   // Teknisi
   Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])
-    ->middleware('auth', 'roles:Super Admin,Teknisi,NOC')
+    ->middleware('auth', 'roles:Super Admin,Teknisi,NOC,Admin Keuangan')
     ->name('teknisi');
   Route::get('/teknisi/selesai/{id}', [TeknisiController::class, 'selesai'])->name('teknisi.selesai');
   Route::get('/teknisi/selesai/{id}/print', [TeknisiController::class, 'print'])->name('teknisi.print');
