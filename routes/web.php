@@ -93,6 +93,11 @@ Route::post('/login', [LoginBasic::class, 'login'])
   ->name('login.post')
   ->middleware('guest');
 
+
+  // Tambah ke web.php
+  Route::get('/test-mikrotik-cache/{router_id}', [MikrotikController::class, 'testCacheConnection']);
+
+
 Route::post('/login', [LoginBasic::class, 'login'])->name('login.post');
 Route::get('/login', fn() => redirect()->route('login'));
 
@@ -925,7 +930,7 @@ Route::get('/api/broadcast-detail/{broadcastId}', [QontakController::class, 'get
     'get-pengaduan-data'
   );
   Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])
-    ->middleware('auth', 'roles:Helpdesk,Agen')
+    ->middleware('auth', 'roles:Helpdesk,Agen,Super Admin')
     ->name('antrian-helpdesk');
   Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
   Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name(
