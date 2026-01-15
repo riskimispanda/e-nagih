@@ -46,14 +46,15 @@ class AgenController extends Controller
                 })
                     // Kondisi 2: Atau, tampilkan HANYA invoice yang sudah lunas dari customer yang sudah dihapus
                     ->orWhere(function ($subQ) {
-                        $subQ->whereHas('customer', function ($customerQuery) {
-                            $customerQuery->onlyTrashed();
+                    $subQ->whereHas('customer', function ($customerQuery) {
+                        $customerQuery->onlyTrashed();
                     })->whereHas('status', function ($statusQuery) {
-                    $statusQuery->where('nama_status', 'Sudah Bayar');
+                        $statusQuery->where('nama_status', 'Sudah Bayar');
                     });
                 });
             })
-            ->orderBy('jatuh_tempo', 'desc');
+            ->orderBy('jatuh_tempo', 'desc')
+            ->orderBy('id', 'desc');
 
         // Apply month filter
         if ($filterMonth !== 'all') {
@@ -260,9 +261,10 @@ class AgenController extends Controller
                                 ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
                                 ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
                         });
-            });
+                    });
             })
-            ->orderBy('jatuh_tempo', 'desc'); // Konsisten dengan index
+            ->orderBy('jatuh_tempo', 'desc') // Konsisten dengan index
+            ->orderBy('id', 'desc');
 
         // Apply month and year filter - SAMA DENGAN INDEX
         if ($filterMonth !== 'all') {
@@ -330,8 +332,8 @@ class AgenController extends Controller
                 if (!$isDeleted) {
                     // ✅ Customer aktif yang belum bayar
                     $totalAmount += $invoiceTotal;
-                $totalUnpaid += $invoiceTotal;
-                $countUnpaid++;
+                    $totalUnpaid += $invoiceTotal;
+                    $countUnpaid++;
                     $countTotal++;
 
                     \Log::info("→ COUNTED as UNPAID: Invoice {$invoice->id} (active customer)");
@@ -383,9 +385,10 @@ class AgenController extends Controller
                                 ->orWhere('alamat', 'LIKE', "%{$searchTerm}%")
                                 ->orWhere('no_hp', 'LIKE', "%{$searchTerm}%");
                         });
-            });
+                    });
             })
-            ->orderBy('jatuh_tempo', 'desc');
+            ->orderBy('jatuh_tempo', 'desc')
+            ->orderBy('id', 'desc');
 
         // Apply month and year filter - SAMA
         if ($filterMonth !== 'all') {
@@ -456,13 +459,13 @@ class AgenController extends Controller
                 // Tanpa filter: gunakan logic yang sama
                 if ($isPaid) {
                     $totalAmount += $invoiceTotal;
-                $totalPaid += $invoiceTotal;
-                $countPaid++;
+                    $totalPaid += $invoiceTotal;
+                    $countPaid++;
                     $countTotal++;
                 } else if (!$isDeleted) {
                     $totalAmount += $invoiceTotal;
-                $totalUnpaid += $invoiceTotal;
-                $countUnpaid++;
+                    $totalUnpaid += $invoiceTotal;
+                    $countUnpaid++;
                     $countTotal++;
                 }
             }
@@ -485,8 +488,8 @@ class AgenController extends Controller
         $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
 
         $request->validate([
-            'metode_id'        => 'required|string',
-            'jumlah_bayar'     => 'nullable|numeric|min:0',
+            'metode_id' => 'required|string',
+            'jumlah_bayar' => 'nullable|numeric|min:0',
             'bukti_pembayaran' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
@@ -496,8 +499,8 @@ class AgenController extends Controller
             $gunakanSaldo = $request->has('saldo');
 
             // ====== Hitung Nominal ======
-            $bayarTagihan   = in_array('tagihan', $pilihan)   ? $invoice->tagihan   : 0;
-            $bayarTambahan  = in_array('tambahan', $pilihan)  ? $invoice->tambahan  : 0;
+            $bayarTagihan = in_array('tagihan', $pilihan) ? $invoice->tagihan : 0;
+            $bayarTambahan = in_array('tambahan', $pilihan) ? $invoice->tambahan : 0;
             $bayarTunggakan = in_array('tunggakan', $pilihan) ? $invoice->tunggakan : 0;
 
             $totalDipilih = $bayarTagihan + $bayarTambahan + $bayarTunggakan;
@@ -507,16 +510,16 @@ class AgenController extends Controller
             if ($gunakanSaldo && $invoice->saldo > 0) {
                 if ($invoice->saldo >= $totalDipilih) {
                     $saldoTerpakai = $totalDipilih;
-                    $totalDipilih  = 0;
-                    $saldoBaru     = $invoice->saldo - $saldoTerpakai;
+                    $totalDipilih = 0;
+                    $saldoBaru = $invoice->saldo - $saldoTerpakai;
                 } else {
                     $saldoTerpakai = $invoice->saldo;
-                    $totalDipilih  -= $invoice->saldo;
-                    $saldoBaru     = 0;
+                    $totalDipilih -= $invoice->saldo;
+                    $saldoBaru = 0;
                 }
             }
 
-            $jumlahBayar = $saldoTerpakai + (int)$request->input('jumlah_bayar', 0);
+            $jumlahBayar = $saldoTerpakai + (int) $request->input('jumlah_bayar', 0);
 
             // Upload bukti pembayaran
             $buktiPath = null;
@@ -528,10 +531,14 @@ class AgenController extends Controller
 
             // ====== Keterangan ======
             $keteranganArr = [];
-            if ($bayarTagihan > 0)   $keteranganArr[] = "Tagihan";
-            if ($bayarTambahan > 0)  $keteranganArr[] = "Tambahan";
-            if ($bayarTunggakan > 0) $keteranganArr[] = "Tunggakan";
-            if ($saldoTerpakai > 0)  $keteranganArr[] = "pakai saldo";
+            if ($bayarTagihan > 0)
+                $keteranganArr[] = "Tagihan";
+            if ($bayarTambahan > 0)
+                $keteranganArr[] = "Tambahan";
+            if ($bayarTunggakan > 0)
+                $keteranganArr[] = "Tunggakan";
+            if ($saldoTerpakai > 0)
+                $keteranganArr[] = "pakai saldo";
 
             $keteranganPembayaran = "Pembayaran " . implode(", ", $keteranganArr) .
                 " dari " . auth()->user()->name .
@@ -539,15 +546,15 @@ class AgenController extends Controller
 
             // Simpan pembayaran
             $pembayaran = Pembayaran::create([
-                'invoice_id'    => $invoice->id,
-                'jumlah_bayar'  => $jumlahBayar,
+                'invoice_id' => $invoice->id,
+                'jumlah_bayar' => $jumlahBayar,
                 'tanggal_bayar' => now(),
-                'metode_bayar'  => $request->metode_id,
-                'keterangan'    => $keteranganPembayaran,
-                'status_id'     => 8,
-                'user_id'       => auth()->id(),
-                'bukti_bayar'   => $buktiPath,
-                'saldo'         => $saldoBaru,
+                'metode_bayar' => $request->metode_id,
+                'keterangan' => $keteranganPembayaran,
+                'status_id' => 8,
+                'user_id' => auth()->id(),
+                'bukti_bayar' => $buktiPath,
+                'saldo' => $saldoBaru,
                 'tipe_pembayaran' => 'reguler'
             ]);
 
@@ -555,17 +562,17 @@ class AgenController extends Controller
             // (new ChatServices())->pembayaranBerhasil($invoice->customer->no_hp, $pembayaran);
 
             // Update invoice
-            $newTagihan   = in_array('tagihan', $pilihan)   ? 0 : $invoice->tagihan;
-            $newTambahan  = in_array('tambahan', $pilihan)  ? 0 : $invoice->tambahan;
+            $newTagihan = in_array('tagihan', $pilihan) ? 0 : $invoice->tagihan;
+            $newTambahan = in_array('tambahan', $pilihan) ? 0 : $invoice->tambahan;
             $newTunggakan = in_array('tunggakan', $pilihan) ? 0 : $invoice->tunggakan;
 
             $statusInvoice = ($newTagihan == 0 && $newTambahan == 0 && $newTunggakan == 0)
                 ? 8 : 7;
 
             $invoice->update([
-                'tambahan'  => $newTambahan,
+                'tambahan' => $newTambahan,
                 'tunggakan' => $newTunggakan,
-                'saldo'     => $saldoBaru,
+                'saldo' => $saldoBaru,
                 'status_id' => $statusInvoice,
             ]);
 
@@ -586,17 +593,17 @@ class AgenController extends Controller
 
                 if (!$sudahAda) {
                     Invoice::create([
-                        'customer_id'    => $invoice->customer_id,
-                        'paket_id'       => $customer->paket_id,
-                        'tagihan'        => $customer->paket->harga,
-                        'tambahan'       => $newTambahan,
-                        'tunggakan'      => $newTunggakan,
-                        'saldo'          => $saldoBaru,
+                        'customer_id' => $invoice->customer_id,
+                        'paket_id' => $customer->paket_id,
+                        'tagihan' => $customer->paket->harga,
+                        'tambahan' => $newTambahan,
+                        'tunggakan' => $newTunggakan,
+                        'saldo' => $saldoBaru,
                         'merchant_ref' => $merchant,
-                        'status_id'      => 7,
-                        'created_at'     => $tanggalAwal,
-                        'updated_at'     => $tanggalAwal,
-                        'jatuh_tempo'    => $tanggalJatuhTempo,
+                        'status_id' => 7,
+                        'created_at' => $tanggalAwal,
+                        'updated_at' => $tanggalAwal,
+                        'jatuh_tempo' => $tanggalJatuhTempo,
                         'tanggal_blokir' => $invoice->tanggal_blokir,
                     ]);
                 }
@@ -604,12 +611,12 @@ class AgenController extends Controller
 
             // Catat ke kas
             Kas::create([
-                'debit'       => $pembayaran->jumlah_bayar,
+                'debit' => $pembayaran->jumlah_bayar,
                 'tanggal_kas' => $pembayaran->tanggal_bayar,
-                'keterangan'  => 'Pembayaran dari ' . auth()->user()->name . ' untuk ' . $invoice->customer->nama_customer,
-                'kas_id'      => 1,
-                'user_id'     => auth()->id(),
-                'status_id'   => 3,
+                'keterangan' => 'Pembayaran dari ' . auth()->user()->name . ' untuk ' . $invoice->customer->nama_customer,
+                'kas_id' => 1,
+                'user_id' => auth()->id(),
+                'status_id' => 3,
                 'customer_id' => $invoice->customer_id,
                 'pengeluaran_id' => null,
             ]);
@@ -671,7 +678,7 @@ class AgenController extends Controller
             ]);
         }
 
-        return view('agen.pelanggan-agen',[
+        return view('agen.pelanggan-agen', [
             'users' => Auth::user(),
             'roles' => Auth::user()->roles,
             'pelanggan' => $pelanggan
