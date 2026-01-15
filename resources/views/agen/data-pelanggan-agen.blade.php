@@ -734,15 +734,12 @@
             <th>Keterangan</th>
           </tr>
         </thead>
-        <tbody class="text-center">
-          @include('agen.partials.customer-table-rows', ['invoices' => $invoices])
+        <tbody class="text-center" id="customerTableBody">
+          {{-- Data will be rendered by DataTables --}}
         </tbody>
-      </table> <!-- Tag penutup table yang sebelumnya hilang -->
+      </table>
     </div>
-    <div class="d-flex justify-content-center" id="pagination-container">
-      @if($invoices->perPage() != -1)
-        {{ $invoices->links('pagination::bootstrap-5') }}
-      @endif
+    {{-- Pagination handled by DataTables --}}
     </div>
   </div>
 
@@ -767,7 +764,7 @@
         let searchTimeout;
         let dataTable; // DataTables instance
         const searchInput = document.getElementById('searchCustomer');
-        const tableBody = document.querySelector('#customerTable tbody');
+        const tableBody = document.getElementById('customerTableBody'); // Updated to use ID
         const paginationContainer = document.getElementById('pagination-container');
         const visibleCountEl = document.getElementById('visibleCount');
         const totalCountEl = document.getElementById('totalCount');
@@ -829,8 +826,18 @@
           });
         }
 
-        // Initialize on page load
-        initDataTable();
+        // Load initial data on page load
+        const currentMonth = '{{ $selectedMonth }}';
+        const currentYear = '{{ $selectedYear }}';
+        const initialPerPage = '{{ $invoices->perPage() == -1 ? "all" : $invoices->perPage() }}';
+
+        // Set initial values
+        document.getElementById('bulan').value = currentMonth;
+        document.getElementById('tahun').value = currentYear;
+        document.getElementById('perPage').value = initialPerPage;
+
+        // Load data and initialize DataTables
+        fetchData(1, '', currentMonth, initialPerPage, '', currentYear);
 
       function fetchData(page = 1, search = '', month = '', perPage = '10', status = '', year = '') {
         const url = new URL("{{ route('data-pelanggan-agen-search') }}");
