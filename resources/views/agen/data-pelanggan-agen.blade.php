@@ -875,46 +875,50 @@
             totalCountEl.textContent = data.total_count;
 
             // Reinitialize DataTables after content update
-            if ($.fn.DataTable.isDataTable('#customerTable')) {
-              $('#customerTable').DataTable().destroy();
-            }
-
-            // Reinitialize with new page length
-            dataTable = $('#customerTable').DataTable({
-              responsive: true,
-              paging: perPage !== 'all', // Disable paging if "all" selected
-              searching: false,
-              info: true,
-              ordering: true,
-              pageLength: perPage === 'all' ? 10000 : parseInt(perPage),
-              order: [[7, 'desc']],
-              columnDefs: [
-                { orderable: false, targets: [9, 10, 11] }
-              ],
-              language: {
-                emptyTable: "Tidak ada data yang tersedia",
-                zeroRecords: "Tidak ditemukan data yang sesuai",
-                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-                infoFiltered: "(difilter dari _MAX_ total data)",
-                paginate: {
-                  first: "Pertama",
-                  last: "Terakhir",
-                  next: "Selanjutnya",
-                  previous: "Sebelumnya"
-                }
-              },
-              drawCallback: function() {
-                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                  return new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-
-                var info = dataTable.page.info();
-                if (visibleCountEl) visibleCountEl.textContent = info.recordsDisplay;
-                if (totalCountEl) totalCountEl.textContent = info.recordsTotal;
+            if (typeof $ !== 'undefined' && typeof $.fn.DataTable !== 'undefined') {
+              if ($.fn.DataTable.isDataTable('#customerTable')) {
+                $('#customerTable').DataTable().destroy();
               }
-            });
+
+              // Reinitialize with new page length
+              dataTable = $('#customerTable').DataTable({
+                responsive: true,
+                paging: perPage !== 'all', // Disable paging if "all" selected
+                searching: false,
+                info: true,
+                ordering: true,
+                pageLength: perPage === 'all' ? 10000 : parseInt(perPage),
+                order: [[7, 'desc']],
+                columnDefs: [
+                  { orderable: false, targets: [9, 10, 11] }
+                ],
+                language: {
+                  emptyTable: "Tidak ada data yang tersedia",
+                  zeroRecords: "Tidak ditemukan data yang sesuai",
+                  info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                  infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                  infoFiltered: "(difilter dari _MAX_ total data)",
+                  paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Selanjutnya",
+                    previous: "Sebelumnya"
+                  }
+                },
+                drawCallback: function() {
+                  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                  });
+
+                  var info = dataTable.page.info();
+                  if (visibleCountEl) visibleCountEl.textContent = info.recordsDisplay;
+                  if (totalCountEl) totalCountEl.textContent = info.recordsTotal;
+                }
+              });
+            } else {
+              console.error('jQuery or DataTables not loaded yet');
+            }
           })
           .catch(error => {
             console.error('Error fetching data:', error);
