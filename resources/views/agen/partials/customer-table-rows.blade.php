@@ -9,8 +9,7 @@
     <tr class="customer-row text-center {{ $customer && $customer->trashed() ? 'customer-deleted' : '' }}"
         data-id="{{ $customer->id ?? '-' }}"
         data-tagihan="{{ $invoice->status ? ($invoice->status->nama_status == 'Sudah Bayar' ? '0' : ($invoice->tagihan ?? '0')) : '0' }}"
-        data-customer-id="{{ $customer->id ?? '-' }}"
-        data-invoice-id="{{ $invoice->id }}"
+        data-customer-id="{{ $customer->id ?? '-' }}" data-invoice-id="{{ $invoice->id }}"
         data-tagihan-tambahan="{{ $invoice->tambahan ?? '0' }}"
         data-status-tagihan="{{ $invoice->status->nama_status ?? 'N/A' }}"
         data-jatuh-tempo="{{ $invoice->jatuh_tempo ?? '' }}"
@@ -50,19 +49,22 @@
 
         {{-- Total tagihan --}}
         <td class="text-end">
-            Rp {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - ($invoice->saldo ?? 0)), 0, ',', '.') }}
+            Rp
+            {{ number_format(($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan - ($invoice->saldo ?? 0)), 0, ',', '.') }}
         </td>
 
         {{-- Status pembayaran --}}
         <td class="text-center">
             @if ($invoice->status)
+                <span class="d-none">{{ $invoice->status->nama_status }}</span>
                 <span class="badge
-                    bg-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}
-                    bg-opacity-10
-                    text-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}">
+                            bg-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}
+                            bg-opacity-10
+                            text-{{ $invoice->status->nama_status == 'Sudah Bayar' ? 'success' : 'danger' }}">
                     {{ $invoice->status->nama_status }}
                 </span>
             @else
+                <span class="d-none">N/A</span>
                 <span class="badge bg-secondary bg-opacity-10 text-secondary">N/A</span>
             @endif
         </td>
@@ -79,7 +81,8 @@
                 }
             @endphp
             @if($jatuhTempo)
-                <span class="badge {{ $isOverdue ? 'bg-danger' : 'bg-info' }} bg-opacity-10 {{ $isOverdue ? 'text-danger' : 'text-info' }}">
+                <span
+                    class="badge {{ $isOverdue ? 'bg-danger' : 'bg-info' }} bg-opacity-10 {{ $isOverdue ? 'text-danger' : 'text-info' }}">
                     {{ $jatuhTempo->format('d M Y') }}
                     @if($isOverdue)
                         <br><small>Terlambat</small>
@@ -105,10 +108,8 @@
         <td class="text-center">
             <div class="d-flex justify-content-center gap-2">
                 @if($invoice->status && $invoice->status->nama_status != 'Sudah Bayar' && (!$customer || !$customer->trashed()))
-                    <button class="btn btn-outline-success btn-sm mb-1"
-                            data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
-                            data-bs-toggle="modal"
-                            title="Request Pembayaran">
+                    <button class="btn btn-outline-success btn-sm mb-1" data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}"
+                        data-bs-toggle="modal" title="Request Pembayaran">
                         <i class="bx bx-money"></i>
                     </button>
                 @else
@@ -118,8 +119,7 @@
                     </span>
                 @endif
 
-                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}"
-                    class="btn btn-outline-info btn-sm mb-1"
+                <a href="/riwayatPembayaran/{{ $invoice->customer_id }}" class="btn btn-outline-info btn-sm mb-1"
                     title="Histori pembayaran {{ $customer->nama_customer ?? '' }}">
                     <i class="bx bx-history"></i>
                 </a>

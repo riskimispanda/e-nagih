@@ -880,6 +880,21 @@
         $('#customerTableBody').html(data.table_html);
         $('#modal-container').html(data.modals_html);
 
+        // Update dropdowns to match current filter state
+        if (data.selected_year) {
+          const yearValue = data.selected_year === 'Semua Tahun' ? 'all' : data.selected_year;
+          $('#tahun').val(yearValue);
+        }
+        if (data.selected_month_name) {
+          const monthMap = {
+            'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
+            'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
+            'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
+          };
+          const monthValue = data.selected_month_name === 'Semua Periode' ? 'all' : monthMap[data.selected_month_name];
+          if (monthValue) $('#bulan').val(monthValue);
+        }
+
         // Update pagination if available
         if (data.pagination_html) {
           $('#paginationContainer').html(data.pagination_html);
@@ -972,15 +987,10 @@
         $('#searchCustomer').val('');
         $('#statusTagihan').val('');
         $('#perPage').val('10');
+        $('#bulan').val('all');
+        $('#tahun').val('all');
 
-        const currentDate = new Date();
-        const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const currentYear = String(currentDate.getFullYear());
-
-        $('#bulan').val(currentMonth);
-        $('#tahun').val(currentYear);
-
-        fetchData(1, '', currentMonth, '10', '', currentYear);
+        fetchData(1, '', 'all', '10', '', 'all');
       }
 
       function showLoading(show) {
