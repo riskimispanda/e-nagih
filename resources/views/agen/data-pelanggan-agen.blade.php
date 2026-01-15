@@ -327,13 +327,19 @@
     /* DataTables Integration Styling */
     .dataTables_wrapper .dataTables_length,
     .dataTables_wrapper .dataTables_filter,
-    .dataTables_wrapper .dataTables_info,
     .dataTables_wrapper .dataTables_processing {
       display: none !important; /* Hide default DataTables controls */
     }
 
+    /* Show DataTables pagination and info */
     .dataTables_wrapper .dataTables_paginate {
-      display: none !important; /* Use custom pagination */
+      margin-top: 1rem;
+    }
+
+    .dataTables_wrapper .dataTables_info {
+      padding-top: 1rem;
+      font-size: 0.875rem;
+      color: #6c757d;
     }
 
     /* Ensure table styling is preserved */
@@ -766,6 +772,11 @@
         const visibleCountEl = document.getElementById('visibleCount');
         const totalCountEl = document.getElementById('totalCount');
 
+        // Hide custom pagination container
+        if (paginationContainer) {
+          paginationContainer.style.display = 'none';
+        }
+
         // Initialize DataTables
         function initDataTable() {
           // Check if DataTables is loaded
@@ -780,17 +791,28 @@
 
           dataTable = $('#customerTable').DataTable({
             responsive: true,
-            paging: false, // We use custom pagination
+            paging: true, // ✅ Enable DataTables pagination
             searching: false, // We use custom search
-            info: false,
+            info: true, // ✅ Show DataTables info
             ordering: true,
+            pageLength: parseInt(document.getElementById('perPage').value) || 10, // Get from dropdown
             order: [[7, 'desc']], // Sort by Jatuh Tempo column (index 7) descending
             columnDefs: [
-              { orderable: false, targets: [9, 10] } // Disable sorting on Aksi and Status Customer columns
+              { orderable: false, targets: [9, 10, 11] } // Disable sorting on Aksi, Status Customer, Keterangan
             ],
             language: {
               emptyTable: "Tidak ada data yang tersedia",
-              zeroRecords: "Tidak ditemukan data yang sesuai"
+              zeroRecords: "Tidak ditemukan data yang sesuai",
+              info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+              infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+              infoFiltered: "(difilter dari _MAX_ total data)",
+              paginate: {
+                first: "Pertama",
+                last: "Terakhir",
+                next: "Selanjutnya",
+                previous: "Sebelumnya"
+              },
+              lengthMenu: "Tampilkan _MENU_ data"
             },
             drawCallback: function() {
               // Re-initialize tooltips after table redraw
@@ -798,6 +820,11 @@
               var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
               });
+
+              // Update custom counters
+              var info = dataTable.page.info();
+              if (visibleCountEl) visibleCountEl.textContent = info.recordsDisplay;
+              if (totalCountEl) totalCountEl.textContent = info.recordsTotal;
             }
           });
         }
@@ -811,7 +838,11 @@
         if (search) url.searchParams.append('search', search);
         if (month) url.searchParams.append('month', month);
         if (year) url.searchParams.append('year', year);
-        if (perPage) url.searchParams.append('per_page', perPage);
+        if (perPage === 'all') {
+          url.searchParams.append('per_page', '10000'); // Large number for "all"
+        } else {
+          url.searchParams.append('per_page', perPage);
+        }
         if (status) url.searchParams.append('status', status);
 
         // Add loading indicator
@@ -829,13 +860,6 @@
             // Update modals
             document.getElementById('modal-container').innerHTML = data.modals_html;
 
-            // Update pagination
-            if (perPage === 'all') {
-              paginationContainer.innerHTML = ''; // Sembunyikan pagination jika 'Semua'
-            } else {
-              paginationContainer.innerHTML = data.pagination_html;
-            }
-
             // Update statistics
             updateStatisticsCards(data.statistics);
 
@@ -844,12 +868,45 @@
             totalCountEl.textContent = data.total_count;
 
             // Reinitialize DataTables after content update
-            initDataTable();
+            if ($.fn.DataTable.isDataTable('#customerTable')) {
+              $('#customerTable').DataTable().destroy();
+            }
 
-            // Re-initialize tooltips for new content
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-              return new bootstrap.Tooltip(tooltipTriggerEl);
+            // Reinitialize with new page length
+            dataTable = $('#customerTable').DataTable({
+              responsive: true,
+              paging: perPage !== 'all', // Disable paging if "all" selected
+              searching: false,
+              info: true,
+              ordering: true,
+              pageLength: perPage === 'all' ? 10000 : parseInt(perPage),
+              order: [[7, 'desc']],
+              columnDefs: [
+                { orderable: false, targets: [9, 10, 11] }
+              ],
+              language: {
+                emptyTable: "Tidak ada data yang tersedia",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(difilter dari _MAX_ total data)",
+                paginate: {
+                  first: "Pertama",
+                  last: "Terakhir",
+                  next: "Selanjutnya",
+                  previous: "Sebelumnya"
+                }
+              },
+              drawCallback: function() {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                  return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+
+                var info = dataTable.page.info();
+                if (visibleCountEl) visibleCountEl.textContent = info.recordsDisplay;
+                if (totalCountEl) totalCountEl.textContent = info.recordsTotal;
+              }
             });
           })
           .catch(error => {
@@ -911,20 +968,7 @@
         fetchData(1, searchTerm, month, perPage, status, year);
       });
 
-      // Pagination handler
-      document.addEventListener('click', function (e) {
-        const paginationLink = e.target.closest('.pagination a');
-        if (paginationLink) {
-          e.preventDefault();
-          const page = new URL(paginationLink.href).searchParams.get('page');
-          const searchTerm = searchInput.value;
-          const month = document.getElementById('bulan').value;
-          const year = document.getElementById('tahun').value;
-          const perPage = document.getElementById('perPage').value;
-          const status = document.getElementById('statusTagihan').value;
-          fetchData(page, searchTerm, month, perPage, status, year);
-        }
-      });
+      // Note: Pagination is now handled by DataTables, no custom handler needed
 
       // Reset filters handler
       document.getElementById('resetFilters').addEventListener('click', function () {
