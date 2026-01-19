@@ -26,12 +26,12 @@ class AgenController extends Controller
 
     // Handle filter parameters - force 'all' for non-AJAX requests to show all data
     if ($request->ajax()) {
-        $filterMonth = $request->get('month', 'all');
-        $filterYear = $request->get('year', 'all');
+      $filterMonth = $request->get('month', 'all');
+      $filterYear = $request->get('year', 'all');
     } else {
-        // For initial page load, always show all data
-        $filterMonth = 'all';
-        $filterYear = 'all';
+      // For initial page load, always show all data
+      $filterMonth = 'all';
+      $filterYear = 'all';
     }
     $perPage = $request->get('per_page', 10);
     $statusFilter = $request->get('status', '');
@@ -366,6 +366,10 @@ class AgenController extends Controller
   public function requestPembayaran(Request $request, $id)
   {
     $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
+
+    if ($invoice->status_id == 8) {
+      return redirect()->back()->with('error', 'Status Invoice Sudah di Bayar');
+    }
 
     $request->validate([
       'metode_id' => 'required|string',

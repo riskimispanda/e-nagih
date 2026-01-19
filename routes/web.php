@@ -332,7 +332,7 @@ Route::middleware(['auth'])->group(function () {
   // * Export Pengeluaran
   // Routes untuk Export Excel Pengeluaran
   Route::get('/pengeluaran/export/all', [PengeluaranController::class, 'exportAll'])->name('pengeluaran.export.all');
-  Route::get('/pengeluaran/export/month/{month}', [PengeluaranController::class, 'exportByMonth'])->name(
+  Route::get('/pengeluaran/export/month/{month}/{year?}', [PengeluaranController::class, 'exportByMonth'])->name(
     'pengeluaran.export.month'
   );
 

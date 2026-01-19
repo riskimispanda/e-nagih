@@ -13,109 +13,114 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithChunkReading
 {
-    protected $month;
+  protected $month;
+  protected $year;
 
-    public function __construct($month = null)
-    {
-        $this->month = $month;
+  public function __construct($month = null, $year = null)
+  {
+    $this->month = $month;
+    $this->year = $year ?? date('Y');
+  }
+
+  public function query()
+  {
+    $query = Pengeluaran::with('user:id,name');
+
+    if ($this->month && $this->month !== 'all') {
+      $query->whereMonth('tanggal_pengeluaran', $this->month)
+        ->whereYear('tanggal_pengeluaran', $this->year);
+    } elseif ($this->year) {
+      // Jika hanya tahun yang dipilih (tanpa bulan spesifik)
+      $query->whereYear('tanggal_pengeluaran', $this->year);
     }
 
-    public function query()
-    {
-        $query = Pengeluaran::with('user:id,name');
-        
-        if ($this->month && $this->month !== 'all') {
-            $query->whereMonth('tanggal_pengeluaran', $this->month)
-                  ->whereYear('tanggal_pengeluaran', date('Y'));
-        }
-        
-        return $query->orderBy('tanggal_pengeluaran', 'desc');
-    }
+    return $query->orderBy('tanggal_pengeluaran', 'desc');
+  }
 
-    public function headings(): array
-    {
-        return [
-            'No',
-            'Tanggal Pengeluaran',
-            'Jenis Pengeluaran',
-            'Keterangan',
-            'Jumlah Pengeluaran',
-            'Metode Pengeluaran',
-            'Jenis Kas',
-            'Status',
-            'Admin',
-        ];
-    }
+  public function headings(): array
+  {
+    return [
+      'No',
+      'Tanggal Pengeluaran',
+      'Jenis Pengeluaran',
+      'Keterangan',
+      'Jumlah Pengeluaran',
+      'Metode Pengeluaran',
+      'Jenis Kas',
+      'Status',
+      'Admin',
+    ];
+  }
 
-    public function map($pengeluaran): array
-    {
-        static $i = 0;
-        $i++;
-        
-        return [
-            $i,
-            $pengeluaran->tanggal_pengeluaran,
-            $pengeluaran->jenis_pengeluaran,
-            $pengeluaran->keterangan,
-            $pengeluaran->jumlah_pengeluaran,
-            $pengeluaran->metode_bayar,
-            $pengeluaran->kas->jenis_kas ?? '-',
-            $this->getStatusText($pengeluaran->status_id),
-            $pengeluaran->user->name ?? 'N/A',
-        ];
-    }
+  public function map($pengeluaran): array
+  {
+    static $i = 0;
+    $i++;
 
-    public function styles(Worksheet $sheet)
-    {
-        return [
-            // Style untuk header
-            1 => [
-                'font' => [
-                    'bold' => true, 
-                    'color' => ['rgb' => 'FFFFFF']
-                ],
-                'fill' => [
-                    'fillType' => 'solid', 
-                    'startColor' => ['rgb' => '3498DB']
-                ]
-            ],
-            // Style untuk kolom jumlah (rata kanan)
-            'E' => [
-                'alignment' => [
-                    'horizontal' => 'right'
-                ]
-            ]
-        ];
-    }
+    return [
+      $i,
+      $pengeluaran->tanggal_pengeluaran,
+      $pengeluaran->jenis_pengeluaran,
+      $pengeluaran->keterangan,
+      $pengeluaran->jumlah_pengeluaran,
+      $pengeluaran->metode_bayar,
+      $pengeluaran->kas->jenis_kas ?? '-',
+      $this->getStatusText($pengeluaran->status_id),
+      $pengeluaran->user->name ?? 'N/A',
+    ];
+  }
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 8,  // No
-            'B' => 15, // Tanggal
-            'C' => 20, // Jenis Pengeluaran
-            'D' => 30, // Keterangan
-            'E' => 18, // Jumlah
-            'F' => 18, // Metode
-            'G' => 15, // Jenis Kas
-            'H' => 20, // Status
-            'I' => 15, // Admin
-        ];
-    }
+  public function styles(Worksheet $sheet)
+  {
+    return [
+      // Style untuk header
+      1 => [
+        'font' => [
+          'bold' => true,
+          'color' => ['rgb' => 'FFFFFF']
+        ],
+        'fill' => [
+          'fillType' => 'solid',
+          'startColor' => ['rgb' => '3498DB']
+        ]
+      ],
+      // Style untuk kolom jumlah (rata kanan)
+      'E' => [
+        'alignment' => [
+          'horizontal' => 'right'
+        ]
+      ]
+    ];
+  }
 
-    public function chunkSize(): int
-    {
-        return 1000; // Process 1000 records at a time
-    }
+  public function columnWidths(): array
+  {
+    return [
+      'A' => 8,  // No
+      'B' => 15, // Tanggal
+      'C' => 20, // Jenis Pengeluaran
+      'D' => 30, // Keterangan
+      'E' => 18, // Jumlah
+      'F' => 18, // Metode
+      'G' => 15, // Jenis Kas
+      'H' => 20, // Status
+      'I' => 15, // Admin
+    ];
+  }
 
-    private function getStatusText($statusId)
-    {
-        $status = [
-            1 => 'Menunggu Konfirmasi',
-            2 => 'Approved',
-            3 => 'Berhasil'
-        ];
+  public function chunkSize(): int
+  {
+    return 1000; // Process 1000 records at a time
+  }
 
-        return $status[$statusId] ?? 'Unknown';
-    }
+  private function getStatusText($statusId)
+  {
+    $status = [
+      1 => 'Menunggu Konfirmasi',
+      2 => 'Approved',
+      3 => 'Berhasil'
+    ];
+
+    return $status[$statusId] ?? 'Unknown';
+  }
 }
