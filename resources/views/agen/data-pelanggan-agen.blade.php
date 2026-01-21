@@ -6,7 +6,162 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.3/css/responsive.dataTables.min.css">
 
 <style>
-  .search-highlight {
+  /* DataTable-style Pagination */
+  .datatable-pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 0;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .datatable-info {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+
+  .datatable-info strong {
+    color: #495057;
+    font-weight: 600;
+  }
+
+  .datatable-pagination {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0.25rem;
+  }
+
+  .datatable-pagination .page-item {
+    margin: 0;
+  }
+
+  .datatable-pagination .page-link {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    color: #495057;
+    background-color: #fff;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    text-decoration: none;
+  }
+
+  .datatable-pagination .page-link:hover {
+    background-color: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .datatable-pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  }
+
+  .datatable-pagination .page-item.disabled .page-link {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .datatable-pagination .page-link i {
+    font-size: 1.1rem;
+  }
+
+  /* Table Controls Section */
+  .table-controls {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 0.75rem;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .table-controls .controls-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .table-controls .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+  }
+
+  /* Responsive Pagination */
+  @media (max-width: 576px) {
+    .datatable-pagination-wrapper {
+      flex-direction: column;
+      align-items: stretch;
+      padding: 1rem 0;
+      gap: 0.75rem;
+    }
+
+    .datatable-info {
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+
+    .datatable-pagination {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.15rem;
+    }
+
+    .datatable-pagination .page-link {
+      padding: 0.35rem 0.5rem;
+      min-width: 32px;
+      font-size: 0.75rem;
+    }
+
+    .datatable-pagination .page-link i {
+      font-size: 0.9rem;
+    }
+
+    /* Hide some page numbers on very small screens */
+    .datatable-pagination .page-item:not(.active):not(:first-child):not(:last-child):not(:nth-child(2)):not(:nth-last-child(2)) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .datatable-pagination-wrapper {
+      padding: 1rem 0.5rem;
+    }
+
+    .datatable-pagination {
+      flex-wrap: wrap;
+      gap: 0.2rem;
+    }
+
+    .datatable-pagination .page-link {
+      padding: 0.4rem 0.65rem;
+      min-width: 36px;
+      font-size: 0.8rem;
+    }
+  }
+
+
+  <style>.search-highlight {
     background-color: #fff3cd;
     padding: 2px 4px;
     border-radius: 3px;
@@ -16,25 +171,37 @@
     border-radius: 0.5rem;
     overflow: hidden;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    background: white;
   }
 
   .modern-table thead th {
-    background: #343a40;
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%) !important;
     border: none;
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.85rem;
     letter-spacing: 0.5px;
+    padding: 1rem 0.75rem !important;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .modern-table tbody tr {
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f3f4f6;
   }
 
   .modern-table tbody tr:hover {
     background-color: #f8f9fa;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .modern-table tbody td {
+    padding: 0.875rem 0.75rem;
+    vertical-align: middle;
   }
 
   .status-badge {
@@ -42,14 +209,18 @@
     font-weight: 600;
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
+    display: inline-block;
+    min-width: 90px;
+    text-align: center;
   }
 
   .search-container {
-    background: #f8f9fa;
-    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 0.75rem;
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
 
   .input-group .btn {
@@ -93,6 +264,7 @@
 
   .customer-row {
     border-left: 3px solid transparent;
+    transition: all 0.2s ease;
   }
 
   .customer-row[data-status-tagihan="Sudah Bayar"] {
@@ -270,11 +442,13 @@
     margin-bottom: 0.5rem;
     display: flex;
     align-items: center;
+    font-weight: 500;
   }
 
   .form-group .form-label i {
     font-size: 1rem;
     color: #667eea;
+    margin-right: 0.25rem;
   }
 
   .form-group .form-select {
@@ -323,23 +497,48 @@
       padding: 0.5rem;
       font-size: 0.75rem;
     }
+
+    .modern-table thead th {
+      font-size: 0.75rem;
+      padding: 0.75rem 0.5rem !important;
+    }
+
+    .modern-table tbody td {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.85rem;
+    }
   }
 
-  /* DataTables Tailwind Integration Styling */
-
-
+  /* DataTables Enhanced Styling */
   table.dataTable {
     border-collapse: collapse !important;
+    width: 100% !important;
   }
 
   table.dataTable thead th {
-    background: #1f2937 !important;
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%) !important;
     color: white !important;
+    border-bottom: 2px solid #667eea !important;
   }
 
   table.dataTable.dtr-inline.collapsed>tbody>tr>td.dtr-control:before,
   table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
     background-color: #667eea;
+  }
+
+  /* DataTable sorting icons */
+  table.dataTable thead .sorting:before,
+  table.dataTable thead .sorting_asc:before,
+  table.dataTable thead .sorting_desc:before,
+  table.dataTable thead .sorting:after,
+  table.dataTable thead .sorting_asc:after,
+  table.dataTable thead .sorting_desc:after {
+    opacity: 0.6;
+  }
+
+  table.dataTable thead .sorting:hover:before,
+  table.dataTable thead .sorting:hover:after {
+    opacity: 1;
   }
 
   /* Loading overlay */
@@ -354,13 +553,39 @@
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    backdrop-filter: blur(4px);
   }
 
   .loading-spinner {
     background: white;
     padding: 2rem;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     text-align: center;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Table wrapper for better scrolling */
+  .table-wrapper {
+    position: relative;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Smooth fade-in animation */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
   }
 </style>
 
@@ -701,56 +926,67 @@
       </div>
     </div>
     <hr class="my-2 mb-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
-      <div class="d-flex align-items-center gap-3">
-        <div>
+
+    {{-- Table Controls --}}
+    <div class="table-controls">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div class="controls-left">
           @php
             $totalRows = $invoices->total();
           @endphp
-          <span class="text-muted" id="searchResults">
-            Menampilkan
-            <span class="fw-bold text-primary" id="visibleCount">{{ $invoices->count() }}</span>
-            dari
-            <span class="fw-bold" id="totalCount">{{ $totalRows }}</span> data
-          </span>
-          <span class="badge bg-info ms-2" id="filterIndicator" style="display: none;">
+          <div>
+            <i class="bx bx-data text-primary me-1"></i>
+            <span class="text-muted" id="searchResults">
+              Menampilkan
+              <strong class="text-primary" id="visibleCount">{{ $invoices->count() }}</strong>
+              dari
+              <strong class="text-dark" id="totalCount">{{ $totalRows }}</strong>
+              data
+            </span>
+          </div>
+          <span class="badge bg-info" id="filterIndicator" style="display: none;">
             <i class="bx bx-filter-alt me-1"></i>Filter Aktif
           </span>
         </div>
-      </div>
-      <div>
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilters">
-          <i class="bx bx-refresh me-1"></i>Reset Filter
-        </button>
+        <div>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="resetFilters">
+            <i class="bx bx-refresh me-1"></i>Reset Filter
+          </button>
+        </div>
       </div>
     </div>
-    <div class="overflow-x-auto mb-2">
-      <table class="min-w-full bg-white shadow-lg rounded-lg overflow-hidden modern-table" id="customerTable">
-        <thead class="bg-gray-800 text-white text-center font-bold">
-          <tr>
-            <th class="px-4 py-3">No</th>
-            <th class="px-4 py-3">Nama</th>
-            <th class="px-4 py-3">Alamat</th>
-            <th class="px-4 py-3">Telp.</th>
-            <th class="px-4 py-3">Paket</th>
-            <th class="px-4 py-3">Tagihan</th>
-            <th class="px-4 py-3">Status Tagihan</th>
-            <th class="px-4 py-3">Jatuh Tempo</th>
-            <th class="px-4 py-3">Tanggal Bayar</th>
-            <th class="px-4 py-3">Aksi</th>
-            <th class="px-4 py-3">Status Customer</th>
-            <th class="px-4 py-3">Keterangan</th>
-          </tr>
-        </thead>
-        <tbody class="text-center" id="customerTableBody">
-          {{-- Data will be rendered by DataTables --}}
-        </tbody>
-      </table>
-    </div>
-
-    {{-- Pagination --}}
-    <div class="d-flex justify-content-between align-items-center mt-3" id="paginationContainer">
-      {{-- Pagination will be loaded via AJAX --}}
+    <div class="card">
+      <div class="card-body">
+        <div class="table-wrapper mb-2">
+          <table class="min-w-full bg-white shadow-lg rounded-lg overflow-hidden modern-table" id="customerTable">
+            <thead class="bg-gray-800 text-white text-center font-bold">
+              <tr>
+                <th class="px-4 py-3" style="min-width: 50px;">No</th>
+                <th class="px-4 py-3" style="min-width: 150px;">Nama</th>
+                <th class="px-4 py-3" style="min-width: 200px;">Alamat</th>
+                <th class="px-4 py-3" style="min-width: 120px;">Telp.</th>
+                <th class="px-4 py-3" style="min-width: 120px;">Paket</th>
+                <th class="px-4 py-3" style="min-width: 120px;">Tagihan</th>
+                <th class="px-4 py-3" style="min-width: 130px;">Status Tagihan</th>
+                <th class="px-4 py-3" style="min-width: 120px;">Jatuh Tempo</th>
+                <th class="px-4 py-3" style="min-width: 120px;">Tanggal Bayar</th>
+                <th class="px-4 py-3" style="min-width: 100px;">Aksi</th>
+                <th class="px-4 py-3" style="min-width: 130px;">Status Customer</th>
+                <th class="px-4 py-3" style="min-width: 150px;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody class="text-center" id="customerTableBody">
+              {{-- Data will be rendered by DataTables --}}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {{-- Pagination --}}
+      <div id="paginationContainer">
+        @if($invoices->hasPages())
+          {{ $invoices->links('vendor.pagination.datatable') }}
+        @endif
+      </div>
     </div>
   </div>
 
@@ -812,6 +1048,7 @@
       }
 
       function loadInitialData() {
+        // Use current month and year as default
         fetchData(1, '', config.selectedMonth, config.initialPerPage, '', config.selectedYear);
       }
 
@@ -877,29 +1114,35 @@
       }
 
       function updateTableContent(data) {
-        $('#customerTableBody').html(data.table_html);
-        $('#modal-container').html(data.modals_html);
+        // Batch DOM updates using requestAnimationFrame for better performance
+        requestAnimationFrame(() => {
+          // Update table body
+          $('#customerTableBody').html(data.table_html);
 
-        // Update dropdowns to match current filter state
-        if (data.selected_year) {
-          const yearValue = data.selected_year === 'Semua Tahun' ? 'all' : data.selected_year;
-          $('#tahun').val(yearValue);
-        }
-        if (data.selected_month_name) {
-          const monthMap = {
-            'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
-            'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
-            'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
-          };
-          const monthValue = data.selected_month_name === 'Semua Periode' ? 'all' : monthMap[data.selected_month_name];
-          if (monthValue) $('#bulan').val(monthValue);
-        }
+          // Update modals
+          $('#modal-container').html(data.modals_html);
 
-        // Update pagination if available
-        if (data.pagination_html) {
-          $('#paginationContainer').html(data.pagination_html);
-          setupPaginationLinks();
-        }
+          // Update dropdowns to match current filter state
+          if (data.selected_year) {
+            const yearValue = data.selected_year === 'Semua Tahun' ? 'all' : data.selected_year;
+            $('#tahun').val(yearValue);
+          }
+          if (data.selected_month_name) {
+            const monthMap = {
+              'Januari': '01', 'Februari': '02', 'Maret': '03', 'April': '04',
+              'Mei': '05', 'Juni': '06', 'Juli': '07', 'Agustus': '08',
+              'September': '09', 'Oktober': '10', 'November': '11', 'Desember': '12'
+            };
+            const monthValue = data.selected_month_name === 'Semua Periode' ? 'all' : monthMap[data.selected_month_name];
+            if (monthValue) $('#bulan').val(monthValue);
+          }
+
+          // Update pagination if available
+          if (data.pagination_html) {
+            $('#paginationContainer').html(data.pagination_html);
+            setupPaginationLinks();
+          }
+        });
       }
 
       function updateStatistics(stats) {
@@ -928,51 +1171,57 @@
       }
 
       function initializeDataTable(perPage) {
-        // Destroy existing instance
-        if (dataTable !== null) {
-          try {
-            dataTable.destroy();
-          } catch (e) {
-            console.warn('Error destroying DataTable:', e);
-          }
-          dataTable = null;
-        }
-
         // Check if DataTables is available
         if (typeof $.fn.DataTable === 'undefined') {
           console.warn('DataTables library not loaded. Table will work without DataTables features.');
-          // Initialize tooltips even without DataTables
           initializeTooltips();
           return;
         }
 
-        try {
-          dataTable = $('#customerTable').DataTable({
-            responsive: true,
-            paging: false, // Disable client-side pagination since we use server-side pagination
-            searching: false, // Disable built-in search
-            info: false, // Disable built-in info display
-            ordering: true, // Keep sorting enabled
-            order: [[7, 'desc']], // Default sort by Jatuh Tempo column
-            columnDefs: [
-              { orderable: false, targets: [9, 10, 11] } // Disable sorting on Aksi, Status Customer, and Keterangan columns
-            ],
-            language: {
-              emptyTable: "Tidak ada data yang tersedia",
-              zeroRecords: "Tidak ditemukan data yang sesuai"
-            },
-            drawCallback: function () {
-              // Reinitialize tooltips after table redraw
-              initializeTooltips();
-            }
-          });
+        // Only initialize once, then just refresh data
+        if (dataTable === null) {
+          try {
+            dataTable = $('#customerTable').DataTable({
+              responsive: true,
+              paging: false, // Server-side pagination
+              searching: false, // Server-side search
+              info: false, // Custom info display
+              ordering: true, // Enable sorting
+              order: [[7, 'desc']], // Default sort by Jatuh Tempo
+              columnDefs: [
+                { orderable: false, targets: [0, 9, 10, 11] }, // Disable sorting on No, Aksi, Status Customer, Keterangan
+                { className: 'text-center', targets: '_all' }
+              ],
+              language: {
+                emptyTable: "Tidak ada data yang tersedia",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                loadingRecords: "Memuat data...",
+                processing: "Memproses..."
+              },
+              drawCallback: function () {
+                initializeTooltips();
+                // Add fade-in animation to rows
+                $('#customerTableBody tr').addClass('fade-in');
+              },
+              autoWidth: false,
+              scrollX: true,
+              scrollCollapse: true
+            });
 
-          console.log('DataTable initialized successfully');
-        } catch (error) {
-          console.error('Error initializing DataTable:', error);
-          console.warn('Continuing without DataTables features...');
-          // Initialize tooltips even if DataTables fails
-          initializeTooltips();
+            console.log('✅ DataTable initialized successfully');
+          } catch (error) {
+            console.error('❌ Error initializing DataTable:', error);
+            console.warn('Continuing without DataTables features...');
+            initializeTooltips();
+          }
+        } else {
+          // Just redraw existing DataTable with new data
+          try {
+            dataTable.draw(false); // false = stay on current page
+            console.log('✅ DataTable refreshed');
+          } catch (error) {
+            console.warn('⚠️ Error refreshing DataTable:', error);
+          }
         }
       }
 
@@ -984,13 +1233,18 @@
       }
 
       function resetFilters() {
+        // Get current month and year
+        const currentDate = new Date();
+        const currentMonth = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const currentYear = String(currentDate.getFullYear());
+
         $('#searchCustomer').val('');
         $('#statusTagihan').val('');
         $('#perPage').val('10');
-        $('#bulan').val('all');
-        $('#tahun').val('all');
+        $('#bulan').val(currentMonth);
+        $('#tahun').val(currentYear);
 
-        fetchData(1, '', 'all', '10', '', 'all');
+        fetchData(1, '', currentMonth, '10', '', currentYear);
       }
 
       function showLoading(show) {

@@ -24,14 +24,14 @@ class AgenController extends Controller
     $currentYear = Carbon::now()->format('Y');
     $currentMonth = Carbon::now()->format('m');
 
-    // Handle filter parameters - force 'all' for non-AJAX requests to show all data
+    // Handle filter parameters - default to current month and year
     if ($request->ajax()) {
-      $filterMonth = $request->get('month', 'all');
-      $filterYear = $request->get('year', 'all');
+      $filterMonth = $request->get('month', $currentMonth);
+      $filterYear = $request->get('year', $currentYear);
     } else {
-      // For initial page load, always show all data
-      $filterMonth = 'all';
-      $filterYear = 'all';
+      // For initial page load, show current month and year
+      $filterMonth = $currentMonth;
+      $filterYear = $currentYear;
     }
     $perPage = $request->get('per_page', 10);
     $statusFilter = $request->get('status', '');
@@ -149,7 +149,7 @@ class AgenController extends Controller
       return response()->json([
         'table_html' => view('agen.partials.customer-table-rows', ['invoices' => $invoices, 'is_ajax' => true])->render(),
         'modals_html' => view('agen.partials.payment-modal', ['invoices' => $invoices])->render(),
-        'pagination_html' => $invoices->links()->toHtml(),
+        'pagination_html' => $invoices->links('vendor.pagination.datatable')->toHtml(),
         'statistics' => $statistics,
         'visible_count' => $invoices->count(),
         'total_count' => $invoices->total(),
