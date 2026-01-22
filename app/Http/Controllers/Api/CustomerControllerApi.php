@@ -626,8 +626,8 @@ class CustomerControllerApi extends Controller
   public function findMissingCustomers()
   {
     try {
-      $bulan = 12;
-      $tahun = 2025;
+      $bulan = Carbon::now()->month;
+      $tahun = Carbon::now()->year;
 
       // 1. Pelanggan Aktif (target)
       $pelAktif = Customer::whereNot('paket_id', 11)
