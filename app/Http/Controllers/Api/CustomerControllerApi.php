@@ -651,7 +651,7 @@ class CustomerControllerApi extends Controller
 
       $countAllInvoice = Invoice::distinct('customer_id')->whereNot('paket_id', 11)
         ->whereHas('customer', function ($q) {
-          $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9])->whereNot('paket_id', 11);
+          $q->whereNull('deleted_at')->where('status_id', 3)->whereNot('paket_id', 11);
         })
         ->count('customer_id');
 
