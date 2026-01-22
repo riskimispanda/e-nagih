@@ -679,7 +679,7 @@ class CustomerControllerApi extends Controller
 
           return [
             'customer_id' => $customer->id,
-            'nama' => $customer->nama,
+            'nama' => $customer->nama_customer,
             'status_id' => $customer->status_id,
             'paket_id' => $customer->paket_id,
             'invoice_bulan_ini' => $invoices->map(function ($inv) {
