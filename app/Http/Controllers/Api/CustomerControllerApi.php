@@ -655,6 +655,8 @@ class CustomerControllerApi extends Controller
         })
         ->count('customer_id');
 
+      $customerAll = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at')->whereNot('paket_id', 11)->count();
+
       // 3. Customer yang masuk hitungan customerStatus3Unpaid
       $customerStatus3UnpaidIds = Customer::where('status_id', 3)
         ->whereNot('paket_id', 11)
@@ -718,6 +720,7 @@ class CustomerControllerApi extends Controller
         ],
         'missing_customers' => $missingDetails,
         'total_all_invoice' => $countAllInvoice,
+        'total_all_customer' => $customerAll,
         'breakdown' => [
           'status_4_tanpa_invoice' => $this->countByScenario($missingDetails, 'status_4_no_invoice'),
           'invoice_status_selain_7_8' => $this->countByScenario($missingDetails, 'invoice_other_status'),
