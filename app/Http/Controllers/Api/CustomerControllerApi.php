@@ -290,6 +290,7 @@ class CustomerControllerApi extends Controller
       $invoicesWithoutPayment = Invoice::with(['customer', 'pembayaran'])
         ->where('status_id', 8)
         ->whereDoesntHave('pembayaran')
+        ->whereMonth('jatuh_tempo', Carbon::now()->month)
         ->orderBy('created_at', 'desc')
         ->get();
 
