@@ -3,46 +3,229 @@ namespace App\Services;
 
 use RouterOS\Client;
 use RouterOS\Query;
-use RouterOS\Exception;
+use RouterOS\Exceptions\Exception as RouterOSException;
 use App\Models\Router;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Exception;
+use Illuminate\Support\Facades\Redis;
 use App\Models\Customer;
 
 class MikrotikServices
 {
+    const CONNECTION_TTL = 300; // 5 menit
+    const CACHE_PREFIX = 'mikrotik_connection_';
     protected static array $klien = [];
+    // protected static array $klien;
 
-    public static function connect(Router $router): Client
+    public function getKlien()
     {
-        // Buat key unik berdasarkan ID atau kombinasi IP+Port
-        $key = $router->id;
+        return $this->klien;
+    }
 
-        if (!isset(self::$klien[$key])) {
-            try {
-                Log::info("🔌 Login pertama ke router: {$router->nama_router} ({$router->ip_address}:{$router->port})");
+    public static function connect(Router $router): Client {
+        $cacheKey = self::CACHE_PREFIX . $router->id;
 
-                self::$klien[$key] = new Client([
+        // 1. Cek static array cache
+        if (isset(self::$klien[$router->id])) {
+            Log::info("♻️ Pakai static cache untuk router: {$router->nama_router}");
+            return self::$klien[$router->id];
+        }
+
+        // 2. Cek Redis cache (connection data, bukan object)
+        try {
+            $cached = Redis::connection('cache')->get($cacheKey);
+            if ($cached) {
+                $connectionData = unserialize($cached);
+
+                // Re-create client dari cached data
+                $client = new Client([
+                    'host' => $connectionData['host'],
+                    'user' => $connectionData['user'],
+                    'pass' => $connectionData['pass'],
+                    'port' => $connectionData['port'],
+                    'timeout' => $connectionData['timeout'],
+                ]);
+
+                // Test koneksi
+                $client->connect();
+
+                // Simpan ke static cache
+                self::$klien[$router->id] = $client;
+                Log::info("📦 Pakai Redis cache data untuk router: {$router->nama_router}");
+                return $client;
+            }
+        } catch (\Exception $e) {
+            Log::warning("Redis cache gagal, buat koneksi baru: " . $e->getMessage());
+        }
+
+        // 3. Buat koneksi baru
+        try {
+            Log::info("🔌 Login baru ke router: {$router->nama_router}");
+
+            $client = new Client([
+                'host' => $router->ip_address,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int) $router->port,
+                'timeout' => 15,
+            ]);
+
+            $client->connect();
+
+            // 4. Simpan ke cache (connection data, bukan object)
+            self::$klien[$router->id] = $client;
+
+            $connectionData = [
+                'host' => $router->ip_address,
+                'user' => $router->username,
+                'pass' => $router->password,
+                'port' => (int) $router->port,
+                'timeout' => 15,
+                'created_at' => now()->timestamp,
+            ];
+
+            Redis::connection('cache')->setex($cacheKey, self::CONNECTION_TTL, serialize($connectionData));
+            // Validation: cek apakah cache berhasil disimpan
+            $validation = Redis::connection('cache')->exists($cacheKey);
+            if ($validation) {
+                Log::info("✅ Cache successfully saved for router: {$router->nama_router}");
+            } else {
+                Log::error("❌ Cache save FAILED for router: {$router->nama_router}");
+            }
+
+
+            Log::info("💾 Koneksi data disimpan ke cache untuk router: {$router->nama_router}");
+            return $client;
+
+        } catch (\Throwable $e) {
+            Log::error("❌ Gagal konek ke router {$router->nama_router}: " . $e->getMessage());
+            throw new \Exception("Tidak bisa konek ke router {$router->nama_router}");
+        }
+    }
+
+    public static function getCacheInfo($routerId): array
+    {
+        try {
+            $cacheKey = self::CACHE_PREFIX . $routerId;
+
+            // FIX: Gunakan cache connection yang konsisten
+            $cache = Redis::connection('cache');
+            $exists = $cache->exists($cacheKey);
+            $ttl = $cache->ttl($cacheKey);
+            $staticExists = isset(self::$klien[$routerId]);
+
+            return [
+                'router_id' => $routerId,
+                'cache_key' => $cacheKey,
+                'redis_cache_exists' => $exists,
+                'redis_cache_ttl' => $ttl > 0 ? $ttl . 's' : 'No cache',
+                'static_cache_exists' => $staticExists,
+                'connection_ttl' => self::CONNECTION_TTL . 's',
+                'redis_prefix' => config('database.redis.options.prefix', '')
+            ];
+        } catch (\Exception $e) {
+            return [
+                'router_id' => $routerId,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+
+
+
+
+    // public static function connect(Router $router): Client
+    // {
+    //     // Buat key unik berdasarkan ID atau kombinasi IP+Port
+    //     $key = $router->id;
+
+    //     if (!isset(self::$klien[$key])) {
+    //         try {
+    //             Log::info("🔌 Login pertama ke router: {$router->nama_router} ({$router->ip_address}:{$router->port})");
+
+    //             self::$klien[$key] = new Client([
+    //                 'host' => $router->ip_address,
+    //                 'user' => $router->username,
+    //                 'pass' => $router->password,
+    //                 'port' => (int) $router->port,
+    //                 'timeout' => 15,
+    //             ]);
+
+    //             // Cek koneksi langsung setelah connect
+    //             self::$klien[$key]->connect();
+
+    //         } catch (\Throwable $e) {
+    //             Log::error("❌ Gagal konek ke router {$router->nama_router} ({$router->ip_address}): " . $e->getMessage());
+    //             throw new \Exception("Tidak bisa konek ke router {$router->nama_router}");
+    //         }
+    //     } else {
+    //         Log::info("♻️ Pakai koneksi cache untuk router: {$router->nama_router}");
+    //     }
+
+    //     return self::$klien[$key];
+    // }
+
+    /**
+     * Test koneksi DENGAN cache (untuk cek apakah cache masih valid)
+     */
+    public static function testCachedConnection(Router $router): array
+    {
+        $cacheKey = "mikrotik_connection_{$router->id}";
+        $startTime = microtime(true);
+
+        try {
+            // Cek apakah ada di cache
+            $cached = Redis::get($cacheKey);
+            $fromCache = false;
+
+            if ($cached) {
+                $client = unserialize($cached);
+                $fromCache = true;
+                Log::info("📦 Test menggunakan koneksi dari cache");
+            } else {
+                $client = new Client([
                     'host' => $router->ip_address,
                     'user' => $router->username,
                     'pass' => $router->password,
                     'port' => (int) $router->port,
                     'timeout' => 15,
                 ]);
-
-                // Cek koneksi langsung setelah connect
-                self::$klien[$key]->connect();
-
-            } catch (\Throwable $e) {
-                Log::error("❌ Gagal konek ke router {$router->nama_router} ({$router->ip_address}): " . $e->getMessage());
-                throw new \Exception("Tidak bisa konek ke router {$router->nama_router}");
+                Log::info("🔌 Test dengan koneksi baru (cache kosong)");
             }
-        } else {
-            Log::info("♻️ Pakai koneksi cache untuk router: {$router->nama_router}");
-        }
 
-        return self::$klien[$key];
+            // Test koneksi
+            $query = new Query('/system/identity/print');
+            $identity = $client->query($query)->read();
+
+            $endTime = microtime(true);
+            $responseTime = round(($endTime - $startTime) * 1000, 2);
+
+            // Kalau berhasil dan tidak dari cache, save ke cache
+            if (!$fromCache) {
+                Redis::setex($cacheKey, $this->CONNECTION_TTL, serialize($client));
+            }
+
+            $cacheTTL = Redis::ttl($cacheKey);
+
+            return [
+                'success' => true,
+                'router' => $router->nama_router,
+                'ip' => $router->ip_address,
+                'identity' => $identity[0]['name'] ?? 'Unknown',
+                'response_time' => $responseTime . ' ms',
+                'from_cache' => $fromCache,
+                'cache_ttl' => $cacheTTL > 0 ? $cacheTTL . 's' : 'No cache',
+                'message' => $fromCache
+                    ? '✅ Koneksi berhasil (dari cache)'
+                    : '✅ Koneksi berhasil (koneksi baru)',
+            ];
+
+        } catch (\Throwable $e) {
+            throw new Exception("Test koneksi gagal: " . $e->getMessage());
+        }
     }
 
     public static function checkPPPSecret($client, $usersecret)
@@ -492,6 +675,42 @@ class MikrotikServices
             return [
                 'success' => false,
                 'message' => '❌ Error lain: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    public static function checkUsersecret($client, $usersecret)
+    {
+        try {
+            $query = new Query('/ppp/secret/print');
+            $query->where('name', $usersecret);
+            $response = $client->query($query)->read();
+
+            if (!empty($response)) {
+                Log::info("✅ Usersecret ditemukan di Mikrotik: {$usersecret}");
+                return [
+                    'exists' => true,
+                    'usersecret' => $usersecret,
+                    'data' => $response[0],
+                    'message' => 'Usersecret ditemukan di Mikrotik'
+                ];
+            } else {
+                Log::warning("❌ Usersecret tidak ditemukan di Mikrotik: {$usersecret}");
+                return [
+                    'exists' => false,
+                    'usersecret' => $usersecret,
+                    'data' => null,
+                    'message' => 'Usersecret tidak ditemukan di Mikrotik'
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::error("Error checking usersecret {$usersecret}: " . $e->getMessage());
+            return [
+                'exists' => false,
+                'usersecret' => $usersecret,
+                'data' => null,
+                'message' => 'Error: ' . $e->getMessage(),
+                'error' => $e->getMessage()
             ];
         }
     }
@@ -1199,7 +1418,7 @@ class MikrotikServices
         }
     }
 
-    public static function changeUserProfileSingle(Client $client, $usersecret, $profileName = 'ISOLIREBILLING')
+    public static function changeUserProfileSingle(Client $client, $usersecret = "Gesing-wonderland-E822@niscala.net.id", $profileName = 'ISOLIREBILLING')
     {
         try {
             $query = new Query('/ppp/secret/print');
@@ -1225,8 +1444,13 @@ class MikrotikServices
             $setQuery->equal('profile', $profileName);
             $client->query($setQuery)->read();
 
+            $logMessage = "✅ Update profile berhasil" ;
+
             Log::info('MikrotikServices::changeUserProfileSingle Success - User: ' . $usersecret . ', ID: ' . $user['.id'] . ', Profile: ' . $profileName);
-            return true;
+            return [
+                'success' => true,
+                'message' => $logMessage
+            ];
         } catch (Exception $e) {
             Log::error('MikrotikServices::changeUserProfileSingle error: ' . $e->getMessage());
             return false;

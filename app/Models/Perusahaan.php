@@ -28,7 +28,8 @@ class Perusahaan extends Model
         'seri_perangkat',
         'mac_address',
         'perangkat_id',
-        'server'
+        'server',
+        'paket'
     ];
 
     public function usr()

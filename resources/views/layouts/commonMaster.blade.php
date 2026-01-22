@@ -46,7 +46,7 @@
     @include('layouts/sections/scripts')
     @include('layouts/sections/scriptsIncludes')
 
-
+    @yield('scripts')
 
 </body>
 
