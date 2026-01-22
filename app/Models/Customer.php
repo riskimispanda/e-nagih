@@ -242,4 +242,62 @@ class Customer extends Model
     {
         return $this->hasOne(Invoice::class, 'customer_id')->latest('created_at');
     }
+
+    /**
+     * Send WhatsApp message using Qontak service
+     */
+    public function sendWhatsAppMessage($message, $channelId = null)
+    {
+        try {
+            $qontakService = new \App\Services\QontakServices($this);
+            return $qontakService->sendToCustomer($this, $message, $channelId);
+        } catch (\Exception $e) {
+            Log::error("Failed to send WhatsApp message to customer {$this->nama_customer}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Send payment reminder via WhatsApp
+     */
+    public function sendPaymentReminder($invoice, $channelId = null)
+    {
+        $message = "Halo {$this->nama_customer},\n\n" .
+                   "Ini adalah pengingat pembayaran untuk invoice #{$invoice->id}.\n" .
+                   "Jumlah: Rp " . number_format($invoice->jumlah, 0, ',', '.') . "\n" .
+                   "Jatuh tempo: " . $invoice->tanggal_jatuh_tempo->format('d M Y') . "\n\n" .
+                   "Silakan lakukan pembayaran segera. Terima kasih!";
+
+        return $this->sendWhatsAppMessage($message, $channelId);
+    }
+
+    /**
+     * Send welcome message via WhatsApp
+     */
+    public function sendWelcomeMessage($channelId = null)
+    {
+        $message = "Selamat datang {$this->nama_customer}! 🎉\n\n" .
+                   "Terima kasih telah bergabung dengan layanan kami.\n" .
+                   "Jika ada pertanyaan, jangan ragu menghubungi kami.\n\n" .
+                   "Tim Support";
+
+        return $this->sendWhatsAppMessage($message, $channelId);
+    }
+
+    /**
+     * Get phone number for WhatsApp
+     */
+    public function getWhatsAppNumber()
+    {
+        // Prioritize no_hp, then no_telepon if available
+        return $this->no_hp ?? $this->no_telepon ?? null;
+    }
+
+    /**
+     * Check if customer has WhatsApp number
+     */
+    public function hasWhatsAppNumber(): bool
+    {
+        return !empty($this->getWhatsAppNumber());
+    }
 }

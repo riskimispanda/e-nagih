@@ -15,6 +15,24 @@ class MikrotikController extends Controller
      * Display a listing of the resource.
      */
 
+     protected $mikrotik;
+
+
+     // public function index()
+     //     {
+     //         $router = Router::findOrFail(3);
+
+     //         try {
+     //             // Benar: pakai instance $this->mikrotik
+     //             $result = $this->mikrotik->testCachedConnection($router);
+     //             return response()->json($result);
+     //         } catch (\Exception $e) {
+     //             return response()->json([
+     //                 'success' => false,
+     //                 'message' => $e->getMessage()
+     //             ], 500);
+     //         }
+     //     }
     public function index()
     {
         $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
@@ -27,6 +45,7 @@ class MikrotikController extends Controller
         // 1. Ganti semua profile dari ISOLIR ke profile paket
         $result = MikrotikServices::changeAllProfilesToPackageProfile($client);
         $blokir = MikrotikServices::changeProfileToIsolirebillingForPaket9($client);
+        $testRedis = MikrotikServices::testCachedConnection($router);
 
 
         // Aktifkan dengan opsi advanced
@@ -37,8 +56,74 @@ class MikrotikController extends Controller
         //     'delay_between_activation' => 1, // Delay 1 detik antara aktivasi
         // ]);
 
-        dd($result);
+        dd($testRedis);
     }
+
+    // Method di MikrotikController
+    public function testCacheConnection($router_id) {
+        $router = Router::findOrFail($router_id);
+
+        try {
+            // Test 1: Fresh connection
+            $start1 = microtime(true);
+            $client1 = MikrotikServices::connect($router);
+            $time1 = round((microtime(true) - $start1) * 1000, 2);
+
+            // Test 2: Static cache (clear dulu biar fair)
+            // MikrotikServices::clearConnectionCache($router_id);
+            $start2 = microtime(true);
+            $client2 = MikrotikServices::connect($router);
+            $time2 = round((microtime(true) - $start2) * 1000, 2);
+
+            // Test 3: Redis cache (clear static cache, biar ambil dari Redis)
+            // Clear static cache tanpa menghapus Redis cache
+            $reflection = new \ReflectionClass('App\Services\MikrotikServices');
+            $property = $reflection->getProperty('klien');
+            $property->setAccessible(true);
+            $property->setValue(null, []);
+
+            $start3 = microtime(true);
+            $client3 = MikrotikServices::connect($router);
+            $time3 = round((microtime(true) - $start3) * 1000, 2);
+
+            // Test query validation
+            $query = new Query('/system/identity/print');
+            $identity = $client3->query($query)->read();
+
+            // Get cache info
+            $cacheInfo = MikrotikServices::getCacheInfo($router_id);
+
+            return response()->json([
+                'success' => true,
+                'router' => [
+                    'id' => $router->id,
+                    'nama' => $router->nama_router,
+                    'ip' => $router->ip_address,
+                    'port' => $router->port
+                ],
+                'performance' => [
+                    'fresh_connection' => $time1 . 'ms',
+                    'static_cache' => $time2 . 'ms',
+                    'redis_cache' => $time3 . 'ms',
+                    'static_speedup' => round(($time1 - $time2) / $time1 * 100, 1) . '%',
+                    'redis_speedup' => round(($time1 - $time3) / $time1 * 100, 1) . '%'
+                ],
+                'cache_info' => $cacheInfo,
+                'validation' => [
+                    'identity' => $identity[0]['name'] ?? 'Unknown',
+                    'connection_valid' => true
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
 
     public function testKoneksi($id)
     {
@@ -122,7 +207,6 @@ class MikrotikController extends Controller
         $pelanggan = Customer::findOrFail($id);
         $router    = Router::findOrFail($pelanggan->router_id);
         $result = MikrotikServices::trafficPelanggan($router, $pelanggan->usersecret);
-        // dd($result);
         return view('pelanggan.traffic-pelanggan', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
