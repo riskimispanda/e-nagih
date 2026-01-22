@@ -649,7 +649,11 @@ class CustomerControllerApi extends Controller
         ->distinct()
         ->pluck('customer_id');
 
-      $countAllInvoice = Invoice::distinct('customer_id')->count('customer_id');
+      $countAllInvoice = Invoice::distinct('customer_id')->whereNot('paket_id', 11)
+        ->whereHas('customer', function ($q) {
+          $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+        })
+        ->count('customer_id');
 
       // 3. Customer yang masuk hitungan customerStatus3Unpaid
       $customerStatus3UnpaidIds = Customer::where('status_id', 3)
