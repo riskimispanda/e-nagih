@@ -519,7 +519,7 @@ class CustomerControllerApi extends Controller
       ->distinct('customer_id')
       ->count('customer_id');
 
-    $invMonthly = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', Carbon::now()->month)->whereNot('paket_id', 11)
+    $invMonthly = Invoice::whereIn('status_id', [7, 8])->whereMonth('jatuh_tempo', Carbon::now()->month)
       ->distinct('customer_id')->count();
 
     $formatPaid = $invoiceFromCustomerPaidGet->map(function ($customer) {

@@ -41,11 +41,10 @@ class ExportControllers extends Controller
 
     public function exportPaket($id)
     {
-        $paket = Paket::findOrFail($id);
         activity('Export')
             ->causedBy(auth()->user()->id)
             ->log(auth()->user()->name . ' Melakukan Export data pelanggan berdasarkan Paket');
-        return Excel::download(new ExportPelanggan('paket', $id), 'pelanggan-paket-'.$paket->nama_paket.'.xlsx');
+        return Excel::download(new ExportPelanggan('paket', $id), 'pelanggan-paket-'.$id.'.xlsx');
     }
 
     public function exportRingkasanPaket()
