@@ -649,6 +649,8 @@ class CustomerControllerApi extends Controller
         ->distinct()
         ->pluck('customer_id');
 
+      $countAllInvoice = Invoice::distinct('customer_id')->count('customer_id');
+
       // 3. Customer yang masuk hitungan customerStatus3Unpaid
       $customerStatus3UnpaidIds = Customer::where('status_id', 3)
         ->whereNot('paket_id', 11)
@@ -711,6 +713,7 @@ class CustomerControllerApi extends Controller
           'rumus' => $invoicePaidsCustomers->count() . ' + ' . $customerStatus3UnpaidIds->count() . ' = ' . $countedCustomers->count() . ' (seharusnya ' . $pelAktif->count() . ')'
         ],
         'missing_customers' => $missingDetails,
+        'total_all_invoice' => $countAllInvoice,
         'breakdown' => [
           'status_4_tanpa_invoice' => $this->countByScenario($missingDetails, 'status_4_no_invoice'),
           'invoice_status_selain_7_8' => $this->countByScenario($missingDetails, 'invoice_other_status'),
