@@ -252,18 +252,18 @@
     }
 
     /* .export-dropdown .dropdown-toggle {
-                      background-color: #2dce89;
-                      border: none;
-                      color: white;
-                      padding: 0.5rem 1rem;
-                      font-size: 0.875rem;
-                      border-radius: 4px;
-                      transition: all 0.2s ease;
-                      display: flex;
-                      align-items: center;
-                      gap: 0.5rem;
-                      cursor: pointer;
-                  } */
+                              background-color: #2dce89;
+                              border: none;
+                              color: white;
+                              padding: 0.5rem 1rem;
+                              font-size: 0.875rem;
+                              border-radius: 4px;
+                              transition: all 0.2s ease;
+                              display: flex;
+                              align-items: center;
+                              gap: 0.5rem;
+                              cursor: pointer;
+                          } */
 
     .export-dropdown .dropdown-toggle:hover {
       background-color: #24a46d;
@@ -1435,7 +1435,7 @@
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="4">Tidak ada data</td>
+                    <td colspan="6">Tidak ada data</td>
                   </tr>
                 @endforelse
               </tbody>
