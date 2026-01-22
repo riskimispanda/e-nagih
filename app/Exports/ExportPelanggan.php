@@ -77,7 +77,7 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             case 'nonaktif':
                 return $query->where('status_id', 9)->get();
             case 'paket':
-                return $query->where('paket_id', $this->paketId)->whereNull('deleted_at')->whereIn('status_id', [3,4,9])->get();
+                return $query->where('paket_id', $this->paketId)->get();
             case 'ringkasan':
                 return Paket::withCount(['customer' => function ($q) {
                     $q->withTrashed();
