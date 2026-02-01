@@ -26,7 +26,9 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '00:01')
             ->timezone('Asia/Jakarta') // Sesuaikan timezone
             ->description('Generate invoice untuk bulan depan');
-        $schedule->command('app:send-warning')->monthlyOn(2, '00:01')->timezone('Asia/Jakarta');
+
+        // NOTE: app:send-warning dijadwalkan di routes/console.php
+        // (tanggal 2 dan 3 setiap bulan jam 08:00 WIB)
     }
 
     /**
@@ -34,7 +36,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
