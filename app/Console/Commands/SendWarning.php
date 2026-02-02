@@ -62,7 +62,8 @@ class SendWarning extends Command
     // Contoh: Jika sekarang Jan 2026, akan ambil Des 2025 (tahun lalu)
     $invoices = Invoice::with(['customer']) // Eager loading untuk optimasi
       ->where('status_id', 7) // Belum bayar
-      ->whereBetween('jatuh_tempo', [$awalBulanLalu, $akhirBulanLalu]) // Bulan lalu (apapun tahunnya)
+      ->whereMonth('jatuh_tempo', Carbon::now()->month) // Bulan lalu (apapun tahunnya)
+      ->whereYear('jatuh_tempo', Carbon::now()->year) // Bulan lalu (apapun tahunnya)
       ->where('paket_id', '!=', 11) // Bukan paket khusus
       ->whereHas('customer', function ($query) {
         $query->whereNull('deleted_at')
