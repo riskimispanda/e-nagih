@@ -778,6 +778,8 @@ class KeuanganController extends Controller
         ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
         ->orWhere('metode_bayar', 'like', '%alfamart%')
         ->orWhere('metode_bayar', 'like', '%indomaret%')
+        ->orWhere('metode_bayar', 'like', '%alfamidi%')
+        ->orWhere('metode_bayar', 'like', '%ALFAMIDI%')
         ->orWhere('metode_bayar', 'like', '%ALFAMART%')
         ->orWhere('metode_bayar', 'like', '%INDOMARET%');
     });
@@ -812,6 +814,8 @@ class KeuanganController extends Controller
         ->orWhere('metode_bayar', 'like', '%BCA Virtual Account%')
         ->orWhere('metode_bayar', 'like', '%alfamart%')
         ->orWhere('metode_bayar', 'like', '%indomaret%')
+        ->orWhere('metode_bayar', 'like', '%alfamidi%')
+        ->orWhere('metode_bayar', 'like', '%ALFAMIDI%')
         ->orWhere('metode_bayar', 'like', '%ALFAMART%')
         ->orWhere('metode_bayar', 'like', '%INDOMARET%');
     });
