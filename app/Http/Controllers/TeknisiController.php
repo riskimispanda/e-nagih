@@ -335,14 +335,14 @@ class TeknisiController extends Controller
           throw new \Exception('Package not found');
         }
 
-        if (!$customer->paket->harga || $customer->paket->harga <= 0) {
-          LOG::error('Invalid package price', [
-            'customer_id' => $customer->id,
-            'paket_id' => $customer->paket_id,
-            'harga' => $customer->paket->harga
-          ]);
-          throw new \Exception('Invalid package price');
-        }
+        // if (!$customer->paket->harga || $customer->paket->harga <= 0) {
+        //   LOG::error('Invalid package price', [
+        //     'customer_id' => $customer->id,
+        //     'paket_id' => $customer->paket_id,
+        //     'harga' => $customer->paket->harga
+        //   ]);
+        //   throw new \Exception('Invalid package price');
+        // }
 
         $tanggalMulaiLangganan = $tanggalInstallasi;
         // Hitung prorate, kecuali untuk paket_id = 11
