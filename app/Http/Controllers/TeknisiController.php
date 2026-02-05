@@ -347,7 +347,7 @@ class TeknisiController extends Controller
         $tanggalMulaiLangganan = $tanggalInstallasi;
         // Hitung prorate, kecuali untuk paket_id = 11
         if ($customer->paket_id == 11) {
-          $tagihanProrate = $hargaPaket;
+          $tagihanProrate = $hargaPaket; // Langsung gunakan harga penuh tanpa prorate
         } else {
           $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
             ? $hargaPaket
