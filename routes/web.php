@@ -174,6 +174,14 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/data/corporate', [PelangganController::class, 'corporate'])->name('corporate');
   Route::get('/api/corporate', [PelangganController::class, 'corporateData'])->name('api.corporate');
   Route::post('/api/corporate/store', [PelangganController::class, 'storeCorporate'])->name('api.corporate.store');
+
+  // Corporate Data API - PerusahaanController
+  Route::get('/api/corporate/data', [PerusahaanController::class, 'dataCorporate'])->name('api.corporate.data');
+  Route::get('/api/corporate/invoice', [PerusahaanController::class, 'dataInvoiceCorporate'])->name('api.corporate.invoice');
+  Route::get('/api/corporate/statistics', [PerusahaanController::class, 'getStatistics'])->name('api.corporate.statistics');
+  Route::post('/api/corporate/invoice/{id}/confirm-payment', [PerusahaanController::class, 'confirmPayment'])->name('api.corporate.confirm-payment');
+  Route::get('/corporate/payment-history', [PerusahaanController::class, 'paymentPage'])->name('corporate.payment.history');
+  Route::get('/api/corporate/payment-history', [PerusahaanController::class, 'dataPaymentCorporate'])->name('api.corporate.payment-history');
   // Export Excel
   Route::get('/semua', [ExportControllers::class, 'exportSemua'])->name('export.semua');
   Route::get('/unpaid', [ExportControllers::class, 'unpaid']);
@@ -835,10 +843,12 @@ Route::middleware(['auth'])->group(function () {
     'auth',
     'roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik'
   );
-  Route::post('/update-pelanggan/{id}', [DataController::class, 'updatePelanggan'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik'
-  );
+  Route::put('/data/pelanggan/{id}', [DataController::class, 'updatePelanggan'])
+    ->name('pelanggan.update')
+    ->middleware(
+      'auth',
+      'roles:Super Admin,Admin Keuangan,NOC,Teknisi,Helpdesk,Admin Logistik'
+    );
   Route::get('/edit-rab/{id}', [RabController::class, 'editRab'])->middleware(
     'auth',
     'roles:Super Admin,Admin Keuangan'

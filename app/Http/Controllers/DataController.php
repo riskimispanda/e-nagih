@@ -1,7 +1,8 @@
 <?php
-
 namespace App\Http\Controllers;
 
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\Metode;
@@ -510,6 +511,32 @@ class DataController extends Controller
     try {
       $pelanggan = Customer::findOrFail($id);
 
+      // Handle File Upload for Identitas
+      $identitasPath = $pelanggan->identitas; // Default keep existing
+      if ($request->hasFile('identitas_file')) {
+        $file = $request->file('identitas_file');
+        $fileName = uniqid() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+        $savePath = public_path('uploads/identitas/' . $fileName);
+
+        // Ensure directory exists
+        if (!file_exists(public_path('uploads/identitas'))) {
+          mkdir(public_path('uploads/identitas'), 0755, true);
+        }
+
+        // Use Intervention Image to resize and save
+        $manager = new ImageManager(Driver::class);
+        $image = $manager->read($file->getRealPath());
+        $image->scale(width: 1024); // Resize to max width 1024
+        $image->toJpeg(75)->save($savePath);
+
+        $identitasPath = 'uploads/identitas/' . $fileName;
+
+        // Optional: Delete old file if exists
+        if ($pelanggan->identitas && file_exists(public_path($pelanggan->identitas))) {
+          @unlink(public_path($pelanggan->identitas));
+        }
+      }
+
       // Data request langsung diassign ke pelanggan
       $data = [
         'nama_customer' => $request->nama,
@@ -532,6 +559,7 @@ class DataController extends Controller
         'usersecret' => $request->usersecret,
         'pass_secret' => $request->pass_secret,
         'agen_id' => $request->agen_id,
+        'identitas' => $identitasPath, // Include foto path
       ];
 
       // Update langsung tanpa filter
