@@ -100,6 +100,31 @@ class CekPayment extends Command
 
     $this->info("📦 Total customer dengan invoice belum bayar: {$totalCustomers}");
 
+    // ✅ ANOMALY DETECTION - Cegah mass blocking
+    if ($totalCustomers > 500) {
+      $this->error("🚨 ANOMALI TERDETEKSI: {$totalCustomers} customer akan diproses!");
+      $this->error("Ini mungkin indikasi masalah. Sangat disarankan untuk menjalankan dengan --dry-run terlebih dahulu.");
+
+      Log::critical('🚨 ANOMALY DETECTED: Terlalu banyak customer akan diproses', [
+        'total_customers' => $totalCustomers,
+        'threshold' => 500,
+        'dry_run' => $isDryRun,
+        'timestamp' => now()->toDateTimeString()
+      ]);
+
+      if (!$isDryRun) {
+        $this->warn('⚠️ Operasi dihentikan untuk keamanan. Jalankan dengan --dry-run untuk melihat detail.');
+        return;
+      }
+    } elseif ($totalCustomers > 100) {
+      $this->warn("⚠️ WARNING: {$totalCustomers} customer akan diproses. Pastikan ini sudah sesuai.");
+
+      Log::warning('⚠️ WARNING: Banyak customer akan diproses', [
+        'total_customers' => $totalCustomers,
+        'dry_run' => $isDryRun
+      ]);
+    }
+
     // Process per customer
     $query->chunk(500, function ($customers) use ($tanggalHariIni, $isDryRun) {
       foreach ($customers as $customer) {
@@ -432,7 +457,7 @@ class CekPayment extends Command
 
     try {
       // Block user in MikroTik
-      $blok = MikrotikServices::changeUserProfile($client, $customer->usersecret);
+      $blok = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret);
 
       if ($blok) {
         // Update customer status in transaction
