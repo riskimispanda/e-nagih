@@ -79,7 +79,7 @@ class CekPayment extends Command
     // PERBAIKAN: Gunakan 'invoice' (bukan 'invoices') sesuai nama relasi di model
     $query = Customer::whereHas('invoice', function ($query) {
       $query->where('status_id', 7) // Belum bayar
-        ->where('paket_id', '!=', 11);
+        ->where('paket_id', '!=', 11)->whereMonth('jatuh_tempo', '<=', now()->month);
     })
       ->whereNull('deleted_at') // Hanya yang tidak soft deleted
       ->with([
