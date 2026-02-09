@@ -526,18 +526,18 @@ class QontakServices
         [
           'key' => '3',
           'value' => 'tagihan',
-          'value_text' => 'Rp ' . number_format($invoice->tagihan + $invoice->tunggakan ?? 0, 0, ',', '.')
+          'value_text' => number_format($invoice->tagihan + $invoice->tunggakan + $invoice->tambahan ?? 0, 0, ',', '.')
         ],
 
         [
           'key' => '4',
           'value' => 'tunggakan',
-          'value_text' => 'Rp ' . number_format($invoice->tunggakan ?? 0, 0, ',', '.')
+          'value_text' => number_format($invoice->tunggakan ?? 0, 0, ',', '.')
         ],
         [
           'key' => '5',
           'value' => 'no_invoice',
-          'value_text' => 'INV-NBilling-' . $invoice->customer->nama_customer . '-' . $time
+          'value_text' => $invoice->customer->nama_customer . '-' . $time
         ],
         [
           'key' => '6',
