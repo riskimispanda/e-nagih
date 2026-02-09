@@ -116,7 +116,7 @@
             <h1 class="text-3xl font-bold tracking-tight">{{ $customer->nama_customer }}</h1>
             <span
               class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                                      {{ $customer->status_id == 3 ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
+                                          {{ $customer->status_id == 3 ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
     ($customer->status_id == 9 ? 'bg-red-500/20 text-red-100 border border-red-500/30' : 'bg-yellow-500/20 text-yellow-100 border border-yellow-500/30') }}">
               {{ $customer->status_id == 3 ? 'Aktif' : ($customer->status_id == 9 ? 'Nonaktif' : 'Status Lain') }}
             </span>
@@ -140,11 +140,36 @@
 
         <!-- Actions -->
         <div class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
-          <a href="{{ $customer->gps }}" target="_blank"
-            class="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl text-white font-medium transition-all duration-200 border border-white/20 group">
-            <i class="bx bx-map text-xl group-hover:scale-110 transition-transform"></i>
-            <span>Lokasi</span>
-          </a>
+          @if($customer->gps)
+            @php
+              // Check if GPS field is a URL or coordinates
+              $gpsValue = $customer->gps;
+              $gpsUrl = $gpsValue;
+
+              // If it's not a URL (doesn't start with http/https), assume it's coordinates
+              if (!preg_match('/^https?:\/\//i', $gpsValue)) {
+                // Remove any spaces and check if it's in coordinate format (lat,lng)
+                $cleanCoords = trim($gpsValue);
+
+                // Check if it matches coordinate pattern (e.g., "-7.123,110.456" or "-7.123, 110.456")
+                if (preg_match('/^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/', $cleanCoords)) {
+                  // Convert to Google Maps URL
+                  $gpsUrl = 'https://www.google.com/maps?q=' . str_replace(' ', '', $cleanCoords);
+                }
+              }
+            @endphp
+            <a href="{{ $gpsUrl }}" target="_blank"
+              class="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl text-white font-medium transition-all duration-200 border border-white/20 group">
+              <i class="bx bx-map text-xl group-hover:scale-110 transition-transform"></i>
+              <span>Lokasi</span>
+            </a>
+          @else
+            <button disabled
+              class="flex items-center justify-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md rounded-xl text-white/50 font-medium cursor-not-allowed border border-white/10">
+              <i class="bx bx-map text-xl"></i>
+              <span>Lokasi Tidak Tersedia</span>
+            </button>
+          @endif
           <a href="{{ url('/pelanggan/edit/' . $customer->id) }}"
             class="flex items-center justify-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-indigo-50 transition-all duration-200 transform hover:-translate-y-0.5">
             <i class="bx bx-edit text-xl"></i>
