@@ -854,6 +854,13 @@ class KeuanganController extends Controller
 
     $totalCustomer = $withPayment + $withoutPayment;
 
+    $paymentNow = Pembayaran::whereDate('tanggal_bayar', Carbon::today())
+      ->with('invoice')
+      ->get()
+      ->pluck('invoice.customer_id')
+      ->unique()
+      ->count();
+
     return view('/keuangan/data-pembayaran', [
       'users' => auth()->user(),
       'roles' => auth()->user()->roles,
@@ -878,6 +885,7 @@ class KeuanganController extends Controller
       'transferCount' => $transferCount,
       'ewalletCount' => $ewalletCount,
       'totalCustomer' => $withPayment,
+      'paymentNow' => $paymentNow,
     ]);
   }
 

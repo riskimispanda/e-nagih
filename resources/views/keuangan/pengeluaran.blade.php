@@ -404,7 +404,7 @@
                           </button>
                         </a>
                         <button class="btn btn-outline-danger btn-sm mb-1" data-bs-toggle="modal"
-                          data-bs-target="#deletePengeluaran{{ $pengeluaran->id }}" title="Hapus"
+                          data-bs-target="#deletePengeluaranModal" data-id="{{ $pengeluaran->id }}" title="Hapus"
                           data-bs-placement="bottom">
                           <i class="bx bx-trash"></i>
                         </button>
@@ -560,38 +560,6 @@
     </div>
   </div>
 @endsection
-{{-- Modal Request Hapus Pengeluaran --}}
-@foreach ($pengeluarans as $pengeluaran)
-  <div class="modal fade" id="deletePengeluaran{{ $pengeluaran->id }}" tabindex="-1" aria-modal="true" role="dialog">
-    <div class="modal-dialog modal-dialog-scrollable" role="document">
-      <input type="text" hidden value="{{ $pengeluaran->id }}">
-      <div class="modal-content">
-        <div class="modal-header bg-white">
-          <h5 class="modal-title" id="modalScrollableTitle"><i class="bx bx-trash me-1 text-danger"></i>Hapus Pengeluaran
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <form action="/pengeluaran/hapus/{{ $pengeluaran->id }}" method="POST" enctype="multipart/form-data">
-          @csrf
-          <div class="modal-body border-bottom border-top mt-2 mb-2">
-            <div class="row mb-3">
-              <div class="col-sm-12">
-                <label class="form-label fw-medium">Alasan<span class="text-danger">*</span></label>
-                <textarea name="alasan" class="form-control" id="alasan" rows="3"
-                  placeholder="Masukkan alasan ingin menghapus pengeluaran..." required></textarea>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer gap-2 mt-6">
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-danger btn-sm">Request</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-@endforeach
-
 <script>
   function formatRupiah(input) {
     let value = input.value.replace(/\D/g, '');
@@ -613,6 +581,55 @@
       }
     }
   }
+</script>
+
+{{-- Modal Request Hapus Pengeluaran (Single Generic Modal) --}}
+<div class="modal fade" id="deletePengeluaranModal" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-white">
+        <h5 class="modal-title" id="modalScrollableTitle"><i class="bx bx-trash me-1 text-danger"></i>Hapus
+          Pengeluaran
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="deletePengeluaranForm" action="" method="POST" enctype="multipart/form-data">
+        @csrf
+        <div class="modal-body border-bottom border-top mt-2 mb-2">
+          <div class="row mb-3">
+            <div class="col-sm-12">
+              <label class="form-label fw-medium">Alasan<span class="text-danger">*</span></label>
+              <textarea name="alasan" class="form-control" id="alasan" rows="3"
+                placeholder="Masukkan alasan ingin menghapus pengeluaran..." required></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer gap-2 mt-6">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-danger btn-sm">Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Event delegation for delete buttons
+    // Since buttons might be loaded via AJAX, we bind the click event to a parent or use the modal show event
+    var deleteModal = document.getElementById('deletePengeluaranModal');
+    if (deleteModal) {
+      deleteModal.addEventListener('show.bs.modal', function (event) {
+        // Button that triggered the modal
+        var button = event.relatedTarget;
+        // Extract info from data-* attributes
+        var id = button.getAttribute('data-id');
+        // Update the modal's content.
+        var form = deleteModal.querySelector('#deletePengeluaranForm');
+        form.action = '/pengeluaran/hapus/' + id;
+      });
+    }
+  });
 </script>
 
 @section('page-script')
