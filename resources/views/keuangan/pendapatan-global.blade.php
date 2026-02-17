@@ -227,41 +227,56 @@
       </div>
     </div>
     <!-- Statistics Modal (Simplified Flexbox Centering) -->
-    <div id="statsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <!-- Flex Container for Centering -->
-        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+    <div id="statsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog"
+      aria-modal="true">
+      <!-- Flex Container for Centering -->
+      <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
 
-            <!-- Background Overlay -->
-            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" onclick="closeStatsModal()"></div>
+        <!-- Background Overlay -->
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true"
+          onclick="closeStatsModal()"></div>
 
-            <!-- Modal Panel -->
-            <div class="relative inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+        <!-- Modal Panel -->
+        <div
+          class="relative inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
 
-                <!-- Header -->
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-title">
-                        Perbandingan Pendapatan Langganan
-                    </h3>
-                    <button type="button" onclick="closeStatsModal()" class="text-gray-400 bg-transparent hover:text-gray-500 focus:outline-none">
-                        <span class="sr-only">Close</span>
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-
-                <!-- Content -->
-                <div class="mt-2">
-                    <!-- Chart Container -->
-                    <div id="revenueChart" class="w-full h-96"></div>
-                </div>
-
-                <!-- Footer -->
-                <div class="mt-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" onclick="closeStatsModal()" class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
-                        Tutup
-                    </button>
-                </div>
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-title">
+              Perbandingan Pendapatan Langganan
+            </h3>
+            <div class="flex items-center space-x-2">
+              <select id="modalYearFilter"
+                class="appearance-none bg-white border border-gray-200 text-gray-700 py-1.5 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm font-medium shadow-sm transition-all cursor-pointer hover:border-blue-400">
+                @foreach($availableYears as $year)
+                  <option value="{{ $year }}" {{ $year == $selectedYear ? 'selected' : '' }}>
+                    {{ $year }}
+                  </option>
+                @endforeach
+              </select>
+              <button type="button" onclick="closeStatsModal()"
+                class="text-gray-400 bg-transparent hover:text-gray-500 focus:outline-none">
+                <span class="sr-only">Close</span>
+                <i class="fas fa-times text-xl"></i>
+              </button>
             </div>
+          </div>
+
+          <!-- Content -->
+          <div class="mt-2">
+            <!-- Chart Container -->
+            <div id="revenueChart" class="w-full h-96"></div>
+          </div>
+
+          <!-- Footer -->
+          <div class="mt-6 sm:flex sm:flex-row-reverse">
+            <button type="button" onclick="closeStatsModal()"
+              class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+              Tutup
+            </button>
+          </div>
         </div>
+      </div>
     </div>
   </div>
 
@@ -349,13 +364,13 @@
         else if (category.color.includes('indigo')) iconBgColor = 'bg-indigo-50';
 
         categoryCell.innerHTML = `
-                                <div class="flex items-center">
-                                    <div class="p-2 ${iconBgColor} rounded-lg mr-3 shadow-sm">
-                                        <i class="${category.icon} ${category.color} text-sm"></i>
+                                    <div class="flex items-center">
+                                        <div class="p-2 ${iconBgColor} rounded-lg mr-3 shadow-sm">
+                                            <i class="${category.icon} ${category.color} text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700">${category.name}</span>
                                     </div>
-                                    <span class="text-sm font-medium text-gray-700">${category.name}</span>
-                                </div>
-                            `;
+                                `;
         row.appendChild(categoryCell);
 
         // Monthly Data
@@ -415,9 +430,9 @@
             updateSummaryCards();
 
             document.getElementById('yearBadge').innerHTML = `
-                                      <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
-                                      Tahun ${currentSelectedYear}
-                                  `;
+                                          <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
+                                          Tahun ${currentSelectedYear}
+                                      `;
           } else {
             alert('Gagal memuat data');
           }
@@ -475,6 +490,13 @@
 
     function openStatsModal() {
       document.getElementById('statsModal').classList.remove('hidden');
+
+      // Sync modal filter with current global filter or default
+      const modalSelect = document.getElementById('modalYearFilter');
+      if(modalSelect) {
+         modalSelect.value = currentSelectedYear;
+      }
+
       loadComparisonData();
     }
 
@@ -485,7 +507,11 @@
     function loadComparisonData() {
       // Show loading state in chart container if needed
 
-      const currentYear = currentSelectedYear;
+      // Get year from modal filter if available, otherwise use global currentSelectedYear
+      const modalSelect = document.getElementById('modalYearFilter');
+      const selectedYear = modalSelect ? parseInt(modalSelect.value) : currentSelectedYear;
+
+      const currentYear = selectedYear;
       const lastYear = currentYear - 1;
 
       fetch(`{{ route('keuangan.getComparisonData') }}?year=${currentYear}&compare_year=${lastYear}`, {
@@ -537,7 +563,7 @@
           width: 3
         },
         title: {
-          text: 'Tren Pendapatan Langganan Bulanan',
+          text: `Tren Pendapatan Langganan (vs ${data.lastYear})`,
           align: 'left',
           style: {
              fontFamily: 'Inter, sans-serif'
@@ -590,6 +616,11 @@
       } else {
         alert('Filter semua tahun belum tersedia');
       }
+    });
+
+    // Event listener for modal year filter
+    document.getElementById('modalYearFilter').addEventListener('change', function() {
+        loadComparisonData();
     });
 
     document.addEventListener('DOMContentLoaded', function () {
