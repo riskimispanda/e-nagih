@@ -891,6 +891,9 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/keuangan/global-pendapatan-data', [KeuanganController::class, 'getGlobalPendapatanData'])->name(
     'keuangan.getGlobalPendapatanData'
   );
+  Route::get('/keuangan/comparison-data', [KeuanganController::class, 'getComparisonData'])->name(
+    'keuangan.getComparisonData'
+  );
 
   Route::get('/traffic-pelanggan/{id}', [MikrotikController::class, 'trafficPelanggan'])
     ->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Admin Keuangan,Helpdesk,Admin Logistik,Agen')

@@ -97,8 +97,8 @@
       <!-- Metric Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <!-- Pendapatan Langganan -->
-        <div
-          class="bg-white rounded-xl p-6 shadow-lg border-t-4 border-emerald-500 transform hover:-translate-y-1 transition-all duration-300">
+        <div onclick="openStatsModal()"
+          class="bg-white rounded-xl p-6 shadow-lg border-t-4 border-emerald-500 transform hover:-translate-y-1 transition-all duration-300 cursor-pointer">
           <div class="flex justify-between items-start mb-4">
             <div class="p-3 bg-emerald-50 rounded-lg">
               <i class="fas fa-wallet text-emerald-600 text-xl"></i>
@@ -226,7 +226,47 @@
         </div>
       </div>
     </div>
+    <!-- Statistics Modal (Simplified Flexbox Centering) -->
+    <div id="statsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Flex Container for Centering -->
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+
+            <!-- Background Overlay -->
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" aria-hidden="true" onclick="closeStatsModal()"></div>
+
+            <!-- Modal Panel -->
+            <div class="relative inline-block w-full max-w-4xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold leading-6 text-gray-900" id="modal-title">
+                        Perbandingan Pendapatan Langganan
+                    </h3>
+                    <button type="button" onclick="closeStatsModal()" class="text-gray-400 bg-transparent hover:text-gray-500 focus:outline-none">
+                        <span class="sr-only">Close</span>
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="mt-2">
+                    <!-- Chart Container -->
+                    <div id="revenueChart" class="w-full h-96"></div>
+                </div>
+
+                <!-- Footer -->
+                <div class="mt-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" onclick="closeStatsModal()" class="inline-flex justify-center w-full px-4 py-2 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
   </div>
+
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
   <script>
     // Data from controller
@@ -309,13 +349,13 @@
         else if (category.color.includes('indigo')) iconBgColor = 'bg-indigo-50';
 
         categoryCell.innerHTML = `
-                              <div class="flex items-center">
-                                  <div class="p-2 ${iconBgColor} rounded-lg mr-3 shadow-sm">
-                                      <i class="${category.icon} ${category.color} text-sm"></i>
-                                  </div>
-                                  <span class="text-sm font-medium text-gray-700">${category.name}</span>
-                              </div>
-                          `;
+                                <div class="flex items-center">
+                                    <div class="p-2 ${iconBgColor} rounded-lg mr-3 shadow-sm">
+                                        <i class="${category.icon} ${category.color} text-sm"></i>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">${category.name}</span>
+                                </div>
+                            `;
         row.appendChild(categoryCell);
 
         // Monthly Data
@@ -375,9 +415,9 @@
             updateSummaryCards();
 
             document.getElementById('yearBadge').innerHTML = `
-                                    <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
-                                    Tahun ${currentSelectedYear}
-                                `;
+                                      <i class="far fa-calendar-alt mr-2 text-gray-400"></i>
+                                      Tahun ${currentSelectedYear}
+                                  `;
           } else {
             alert('Gagal memuat data');
           }
@@ -429,6 +469,118 @@
       });
 
       doc.save(`Laporan_Keuangan_Global_${currentSelectedYear}.pdf`);
+    }
+
+    let chart = null;
+
+    function openStatsModal() {
+      document.getElementById('statsModal').classList.remove('hidden');
+      loadComparisonData();
+    }
+
+    function closeStatsModal() {
+      document.getElementById('statsModal').classList.add('hidden');
+    }
+
+    function loadComparisonData() {
+      // Show loading state in chart container if needed
+
+      const currentYear = currentSelectedYear;
+      const lastYear = currentYear - 1;
+
+      fetch(`{{ route('keuangan.getComparisonData') }}?year=${currentYear}&compare_year=${lastYear}`, {
+        method: 'GET',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderChart(data.data);
+        } else {
+          alert('Gagal memuat data perbandingan');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat memuat data grafik');
+      });
+    }
+
+    function renderChart(data) {
+      const options = {
+        series: [{
+          name: `Tahun ${data.currentYear}`,
+          data: data.currentYearData
+        }, {
+          name: `Tahun ${data.lastYear}`,
+          data: data.lastYearData
+        }],
+        chart: {
+          height: 350,
+          type: 'line',
+          toolbar: {
+            show: false
+          },
+          zoom: {
+            enabled: false
+          }
+        },
+        colors: ['#10B981', '#6B7280'], // Emerald-500 for current year, Gray-500 for last year
+        dataLabels: {
+          enabled: false
+        },
+        stroke: {
+          curve: 'smooth',
+          width: 3
+        },
+        title: {
+          text: 'Tren Pendapatan Langganan Bulanan',
+          align: 'left',
+          style: {
+             fontFamily: 'Inter, sans-serif'
+          }
+        },
+        grid: {
+          borderColor: '#f1f1f1',
+        },
+        xaxis: {
+          categories: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
+        },
+        yaxis: {
+          labels: {
+            formatter: function (value) {
+              return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumSignificantDigits: 3
+              }).format(value);
+            }
+          }
+        },
+        tooltip: {
+          y: {
+            formatter: function (value) {
+              return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR'
+              }).format(value);
+            }
+          }
+        },
+        legend: {
+          position: 'top'
+        }
+      };
+
+      if (chart) {
+        chart.destroy();
+      }
+
+      chart = new ApexCharts(document.querySelector("#revenueChart"), options);
+      chart.render();
     }
 
     document.getElementById('globalYearFilter').addEventListener('change', function () {

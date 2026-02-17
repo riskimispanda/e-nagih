@@ -1831,6 +1831,44 @@ class KeuanganController extends Controller
     ]);
   }
 
+  public function getComparisonData(Request $request)
+  {
+    $currentYear = $request->get('year', date('Y'));
+    $lastYear = $request->get('compare_year', $currentYear - 1);
+
+    // Get Data for Current Year
+    $currentYearData = Pembayaran::whereYear('tanggal_bayar', $currentYear)
+      ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
+      ->groupBy('month')
+      ->get();
+
+    $currentMonthlyData = array_fill(1, 12, 0);
+    foreach ($currentYearData as $data) {
+      $currentMonthlyData[$data->month] = $data->total;
+    }
+
+    // Get Data for Last Year
+    $lastYearData = Pembayaran::whereYear('tanggal_bayar', $lastYear)
+      ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
+      ->groupBy('month')
+      ->get();
+
+    $lastMonthlyData = array_fill(1, 12, 0);
+    foreach ($lastYearData as $data) {
+      $lastMonthlyData[$data->month] = $data->total;
+    }
+
+    return response()->json([
+      'success' => true,
+      'data' => [
+        'currentYear' => $currentYear,
+        'lastYear' => $lastYear,
+        'currentYearData' => array_values($currentMonthlyData),
+        'lastYearData' => array_values($lastMonthlyData)
+      ]
+    ]);
+  }
+
   public function requestPembayaran(Request $request, $id)
   {
     $invoice = Invoice::with('customer', 'paket')->findOrFail($id);
