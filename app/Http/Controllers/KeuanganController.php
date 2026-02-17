@@ -1763,7 +1763,7 @@ class KeuanganController extends Controller
     $monthlyOperationalCost = array_fill(1, 12, 0);
 
     // Get subscription revenue by month
-    $pembayaranData = Pembayaran::whereYear('tanggal_bayar', Carbon::now()->year)
+    $pembayaranData = Pembayaran::whereYear('tanggal_bayar', $year)
       ->selectRaw('MONTH(tanggal_bayar) as month, SUM(jumlah_bayar) as total')
       ->groupBy('month')
       ->get();
