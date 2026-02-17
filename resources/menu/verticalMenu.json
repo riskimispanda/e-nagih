@@ -51,23 +51,14 @@
       "name": "Dashboard CS",
       "icon": "menu-icon tf-icons bx bxs-contact",
       "slug": "whatspie.dashboard",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "Helpdesk"
-      ]
+      "roles": []
     },
     {
       "url": "/laporan",
       "name": "Laporan",
       "icon": "menu-icon tf-icons bx bxs-report",
       "slug": "laporan",
-      "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik"
-      ]
+      "roles": []
     },
     {
       "url": "/kalender",
