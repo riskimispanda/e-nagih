@@ -23,7 +23,7 @@ class PengeluaranController extends Controller
   {
     $tahunSekarang = Carbon::now()->year;
     $bulanSekarang = Carbon::now()->month;
-    $rab = Rab::where('status_id', 12)->get();
+    $rab = Rab::all();
 
     $kas = JenisKas::all();
     $metodes = Metode::all();
