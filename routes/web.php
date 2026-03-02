@@ -417,6 +417,10 @@ Route::middleware(['auth'])->group(function () {
       Route::post('/broadcast', [QontakController::class, 'sendBroadcast'])->name('broadcast');
       Route::get('/broadcast-logs', [QontakController::class, 'showBroadcastLogs'])->name('broadcast-logs');
       Route::get('/broadcast-history', [QontakController::class, 'getBroadcastHistory'])->name('broadcast-history');
+
+      // WhatsLog Datatables
+      Route::get('/whats-log', [QontakController::class, 'whatsLogView'])->name('whats-log');
+      Route::get('/api/whats-log-data', [QontakController::class, 'whatsLogData'])->name('api.whats-log-data');
       Route::get('/broadcast-detail/{broadcastId}', [QontakController::class, 'showBroadcastDetail'])->name('broadcast-detail.view');
       Route::get('/api/broadcast-detail/{broadcastId}', [QontakController::class, 'getBroadcastDetail'])->name('broadcast-detail');
       Route::get('/test-endpoints', [QontakController::class, 'testBroadcastEndpoints'])->name('test-endpoints');

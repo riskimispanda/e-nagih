@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Services\QontakServices;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class SendWarning extends Command
 {
@@ -62,8 +63,8 @@ class SendWarning extends Command
     // Contoh: Jika sekarang Jan 2026, akan ambil Des 2025 (tahun lalu)
     $invoices = Invoice::with(['customer']) // Eager loading untuk optimasi
       ->where('status_id', 7) // Belum bayar
-      ->whereMonth('jatuh_tempo', Carbon::now()->month) // Bulan lalu (apapun tahunnya)
-      ->whereYear('jatuh_tempo', Carbon::now()->year) // Bulan lalu (apapun tahunnya)
+      ->whereMonth('jatuh_tempo', $bulanLalu->month) // Bulan lalu
+      ->whereYear('jatuh_tempo', $bulanLalu->year) // Tahun lalu
       ->where('paket_id', '!=', 11) // Bukan paket khusus
       ->whereHas('customer', function ($query) {
         $query->whereNull('deleted_at')
@@ -166,48 +167,138 @@ class SendWarning extends Command
       try {
         $hasil = $chat->notifTagihan($customer->no_hp, $invoice);
 
-        if (isset($hasil['success']) && $hasil['success'] === false) {
-          Log::warning("Gagal kirim warning", [
-            'customer' => $customerName,
-            'customer_id' => $customer->id,
-            'invoice_id' => $invoice->id,
-            'error' => $hasil['message'] ?? 'Unknown error'
-          ]);
-          $failedCount++;
-        } elseif (isset($hasil['error']) && $hasil['error'] === true) {
-          Log::error("Error kirim warning", [
-            'customer' => $customerName,
-            'customer_id' => $customer->id,
-            'invoice_id' => $invoice->id,
-            'error' => $hasil['pesan'] ?? 'Unknown error'
-          ]);
-          $failedCount++;
-        } else {
-          // PROTEKSI LAYER 2: Atomic update dengan WHERE condition
-          // Update hanya jika warning_sent masih NULL (mencegah race condition)
-          $updated = Customer::where('id', $customer->id)
-            ->whereNull('warning_sent')
-            ->update(['warning_sent' => 1]);
+        // PENANGANAN: Jika Qontak API menolak / memuntahkan Error di level payload (meski HTTP 200 OK)
+        if (isset($hasil['status']) && ($hasil['status'] === 'failed' || $hasil['status'] === 'error')) {
+          $errorMessage = $hasil['error']['message'] ?? $hasil['message'] ?? 'Message undeliverable / rejected';
+          $errorDetail = $hasil['error']['details'] ?? '';
 
-          if ($updated) {
-            Log::info("✅ Warning berhasil dikirim", [
+          Log::warning("Gagal kirim warning via Qontak", [
+            'customer' => $customerName,
+            'customer_id' => $customer->id,
+            'invoice_id' => $invoice->id,
+            'error' => $errorMessage,
+            'detail' => $errorDetail
+          ]);
+          $failedCount++;
+
+          // OPTIMASI LOG KETIKA GAGAL: Jangan update `warning_sent` customer, agar bisa di-retry esok hari.
+          DB::table('whats_log')->insert([
+            'customer_id' => $customer->id,
+            'jenis_pesan' => 'warning_bayar',
+            'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Ditolak Qontak)',
+            'qontak_broadcast_id' => $hasil['message_id'] ?? null,
+            'status_pengiriman' => 'failed',
+            'no_tujuan' => $customer->no_hp,
+            'error_message' => trim($errorMessage . ' ' . $errorDetail),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now()
+          ]);
+
+          // PENANGANAN: Gagal murni dari fungsi Local (CURL/Internal Server Error)
+        } elseif (isset($hasil['success']) && $hasil['success'] === false) {
+          Log::error("Error internal saat merangkai Payload Warning", [
+            'customer' => $customerName,
+            'customer_id' => $customer->id,
+            'invoice_id' => $invoice->id,
+            'error' => $hasil['message'] ?? $hasil['error'] ?? 'Internal Server Error'
+          ]);
+          $failedCount++;
+
+          DB::table('whats_log')->insert([
+            'customer_id' => $customer->id,
+            'jenis_pesan' => 'warning_bayar',
+            'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Sistem Error)',
+            'qontak_broadcast_id' => null,
+            'status_pengiriman' => 'failed',
+            'no_tujuan' => $customer->no_hp,
+            'error_message' => (is_string($hasil['error'] ?? null)) ? $hasil['error'] : ($hasil['message'] ?? 'Internal Request Failed'),
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now()
+          ]);
+
+          // PENANGANAN: Sukses Meluncur ke Qontak Antrian (Status = 'pending' atau 'todo')
+        } else {
+          $qontakStatus = $hasil['status'] ?? 'pending'; // Normalnya Qontak membalas "todo" atau "pending"
+          $errorMessage = null;
+
+          // POLLING STATUS: Tunggu 5 detik agar Server WA Memproses Pesan
+          if (!empty($hasil['message_id'])) {
+            sleep(5);
+            try {
+              $logDetails = $chat->getBroadcastLog($hasil['message_id']);
+              if (!empty($logDetails) && isset($logDetails[0]['status'])) {
+                $qontakStatus = $logDetails[0]['status'];
+                if ($qontakStatus === 'failed') {
+                  $errorMessage = $logDetails[0]['whatsapp_error_message'] ?? 'Message undeliverable';
+                }
+              }
+            } catch (\Exception $e) {
+              // Abaikan error saat polling, pertahankan status awal
+            }
+          }
+
+          // HASIL POLLING: WA Laporan Pesan Gagal Terkirim
+          if ($qontakStatus === 'failed') {
+            Log::warning("Gagal kirim warning (WhatsApp API Asynchronous Failed)", [
               'customer' => $customerName,
               'customer_id' => $customer->id,
               'invoice_id' => $invoice->id,
-              'periode_tagihan' => $bulanLalu->format('F Y'),
-              'jatuh_tempo' => $invoice->jatuh_tempo,
-              'tanggal_kirim' => $today->format('Y-m-d')
+              'error' => $errorMessage
             ]);
-            $sentCount++;
+            $failedCount++;
+
+            // JANGAN UPDATE `warning_sent` customer.
+            DB::table('whats_log')->insert([
+              'customer_id' => $customer->id,
+              'jenis_pesan' => 'warning_bayar',
+              'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Pengiriman Gagal)',
+              'qontak_broadcast_id' => $hasil['message_id'] ?? null,
+              'status_pengiriman' => 'failed',
+              'no_tujuan' => $customer->no_hp,
+              'error_message' => $errorMessage,
+              'created_at' => Carbon::now(),
+              'updated_at' => Carbon::now()
+            ]);
+
+            // HASIL POLLING: SUKSES atau MASIH DI ANTRIAN
           } else {
-            // Jika update gagal, berarti sudah di-update oleh process lain
-            Log::warning("⚠️ Customer sudah di-update oleh process lain", [
-              'customer' => $customerName,
-              'customer_id' => $customer->id,
-              'invoice_id' => $invoice->id,
-              'reason' => 'Atomic update failed - warning_sent sudah tidak NULL'
-            ]);
-            $alreadySentDuringLoopCount++;
+            $updated = Customer::where('id', $customer->id)
+              ->whereNull('warning_sent')
+              ->update(['warning_sent' => 1]);
+
+            if ($updated) {
+              Log::info("✅ Warning berhasil diserahkan ke sistem Qontak", [
+                'customer' => $customerName,
+                'customer_id' => $customer->id,
+                'periode_tagihan' => $bulanLalu->format('F Y'),
+                'qontak_status' => $qontakStatus
+              ]);
+              $sentCount++;
+
+              // Cek apakah balikan status dari Qontak mengindikasikan final status aman / sampai
+              $finalStatus = in_array(strtolower($qontakStatus), ['done', 'sent', 'delivered', 'read']) ? 'sent' : 'pending';
+
+              // OPTIMASI LOG KETIKA MASUK ANTRIAN ATAU SUKSES
+              DB::table('whats_log')->insert([
+                'customer_id' => $customer->id,
+                'jenis_pesan' => 'warning_bayar',
+                'pesan' => 'Pesan Tagihan berjalan dengan Qontak Broadcast',
+                'qontak_broadcast_id' => $hasil['message_id'] ?? null,
+                'status_pengiriman' => $finalStatus,
+                'no_tujuan' => $customer->no_hp,
+                'error_message' => null,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+              ]);
+
+            } else {
+              // Jika update gagal, berarti sudah di-update oleh process lain
+              Log::warning("⚠️ Customer sudah di-update oleh process lain", [
+                'customer' => $customerName,
+                'customer_id' => $customer->id
+              ]);
+              $alreadySentDuringLoopCount++;
+            }
           }
         }
 
