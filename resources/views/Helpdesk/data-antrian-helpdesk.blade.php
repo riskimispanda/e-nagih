@@ -197,9 +197,9 @@
     }
 
     /* .modal-header .btn-close:hover {
-              background-color: rgba(0, 0, 0, 0.05);
-              opacity: 1;
-          } */
+                background-color: rgba(0, 0, 0, 0.05);
+                opacity: 1;
+            } */
 
     .modal-title {
       font-weight: 600;
@@ -580,14 +580,14 @@
               <p class="card-subtitle">Daftar Antrian Pelanggan Personal</p>
             </div>
             <div class="d-flex align-items-center col-sm-4">
-              <form method="GET" action="{{ route('antrian-helpdesk') }}" class="d-flex w-100">
+              <form method="GET" action="/helpdesk/data-antrian" class="d-flex w-100">
                 <input type="text" name="search" class="form-control me-2" placeholder="Cari pelanggan..."
                   value="{{ request('search') }}" id="searchCustomer">
                 <button type="submit" class="btn btn-outline-primary btn-sm">
                   <i class="bx bx-search"></i>
                 </button>
                 @if(request('search'))
-                  <a href="{{ route('antrian-helpdesk') }}" class="btn btn-outline-secondary btn-sm ms-1" title="Reset">
+                  <a href="/helpdesk/data-antrian" class="btn btn-outline-secondary btn-sm ms-1" title="Reset">
                     <i class="bx bx-x"></i>
                   </a>
                 @endif
