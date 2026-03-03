@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class SendWarning extends Command
 {
   protected $signature = 'app:send-warning';
-  protected $description = 'Kirim pesan warning untuk tagihan bulan lalu (kirim tanggal 2-3, 900/hari, reset akhir bulan)';
+  protected $description = 'Kirim pesan warning untuk tagihan bulan ini (kirim tanggal 2-3, 900/hari, reset akhir bulan)';
 
   public function handle()
   {
@@ -49,22 +49,21 @@ class SendWarning extends Command
       return Command::SUCCESS;
     }
 
-    $bulanLalu = $today->copy()->subMonth();
-    $awalBulanLalu = $bulanLalu->copy()->startOfMonth();
-    $akhirBulanLalu = $bulanLalu->copy()->endOfMonth();
+    $bulanIni = $today->copy();
+    $awalBulanIni = $bulanIni->copy()->startOfMonth();
+    $akhirBulanIni = $bulanIni->copy()->endOfMonth();
 
-    $this->info("🔍 Mencari tagihan bulan lalu: {$bulanLalu->format('F Y')}");
-    $this->info("📅 Periode: {$awalBulanLalu->format('d M Y')} - {$akhirBulanLalu->format('d M Y')}");
+    $this->info("🔍 Mencari tagihan bulan ini: {$bulanIni->format('F Y')}");
+    $this->info("📅 Periode: {$awalBulanIni->format('d M Y')} - {$akhirBulanIni->format('d M Y')}");
     $this->info("💡 Info: Reset warning_sent akan dilakukan pada akhir bulan");
 
     $chat = new QontakServices();
 
-    // Get unpaid invoices dari bulan lalu (tanpa batasan tahun)
-    // Contoh: Jika sekarang Jan 2026, akan ambil Des 2025 (tahun lalu)
+    // Get unpaid invoices dari bulan ini
     $invoices = Invoice::with(['customer']) // Eager loading untuk optimasi
       ->where('status_id', 7) // Belum bayar
-      ->whereMonth('jatuh_tempo', $bulanLalu->month) // Bulan lalu
-      ->whereYear('jatuh_tempo', $bulanLalu->year) // Tahun lalu
+      ->whereMonth('jatuh_tempo', Carbon::now()->month)
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
       ->where('paket_id', '!=', 11) // Bukan paket khusus
       ->whereHas('customer', function ($query) {
         $query->whereNull('deleted_at')
@@ -85,16 +84,10 @@ class SendWarning extends Command
     }
 
     $totalFound = count($customerInvoices);
-    $this->info("📊 Total customer dengan tagihan bulan lalu yang belum dibayar & belum dikirim: {$totalFound}");
+    $this->info("📊 Total customer dengan tagihan bulan ini yang belum dibayar & belum dikirim: {$totalFound}");
 
     if ($totalFound === 0) {
-      $this->info("✅ Tidak ada tagihan bulan lalu yang perlu dikirim warning.");
-      Log::info("Tidak ada tagihan yang perlu dikirim", [
-        'periode' => $bulanLalu->format('F Y'),
-        'periode_mulai' => $awalBulanLalu->format('Y-m-d'),
-        'periode_akhir' => $akhirBulanLalu->format('Y-m-d'),
-        'tanggal' => $today->day
-      ]);
+      $this->info("✅ Tidak ada tagihan bulan ini yang perlu dikirim warning.");
       return Command::SUCCESS;
     }
 
@@ -185,7 +178,7 @@ class SendWarning extends Command
           DB::table('whats_log')->insert([
             'customer_id' => $customer->id,
             'jenis_pesan' => 'warning_bayar',
-            'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Ditolak Qontak)',
+            'pesan' => 'Tagihan Periode ' . $bulanIni->format('F Y') . ' (Ditolak Qontak)',
             'qontak_broadcast_id' => $hasil['message_id'] ?? null,
             'status_pengiriman' => 'failed',
             'no_tujuan' => $customer->no_hp,
@@ -207,7 +200,7 @@ class SendWarning extends Command
           DB::table('whats_log')->insert([
             'customer_id' => $customer->id,
             'jenis_pesan' => 'warning_bayar',
-            'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Sistem Error)',
+            'pesan' => 'Tagihan Periode ' . $bulanIni->format('F Y') . ' (Sistem Error)',
             'qontak_broadcast_id' => null,
             'status_pengiriman' => 'failed',
             'no_tujuan' => $customer->no_hp,
@@ -251,7 +244,7 @@ class SendWarning extends Command
             DB::table('whats_log')->insert([
               'customer_id' => $customer->id,
               'jenis_pesan' => 'warning_bayar',
-              'pesan' => 'Tagihan Periode ' . $bulanLalu->format('F Y') . ' (Pengiriman Gagal)',
+              'pesan' => 'Tagihan Periode ' . $bulanIni->format('F Y') . ' (Pengiriman Gagal)',
               'qontak_broadcast_id' => $hasil['message_id'] ?? null,
               'status_pengiriman' => 'failed',
               'no_tujuan' => $customer->no_hp,
@@ -270,7 +263,6 @@ class SendWarning extends Command
               Log::info("✅ Warning berhasil diserahkan ke sistem Qontak", [
                 'customer' => $customerName,
                 'customer_id' => $customer->id,
-                'periode_tagihan' => $bulanLalu->format('F Y'),
                 'qontak_status' => $qontakStatus
               ]);
               $sentCount++;
@@ -326,9 +318,6 @@ class SendWarning extends Command
     Log::info("📊 SendWarning selesai - Pengiriman Tanggal {$today->day}", [
       'tanggal' => $today->format('Y-m-d'),
       'hari_ke' => $today->day,
-      'periode_tagihan' => $bulanLalu->format('F Y'),
-      'periode_mulai' => $awalBulanLalu->format('Y-m-d'),
-      'periode_akhir' => $akhirBulanLalu->format('Y-m-d'),
       'total_customers_processed' => count($customerInvoices),
       'total_customers_found' => $totalFound,
       'total_sent' => $sentCount,
@@ -342,8 +331,6 @@ class SendWarning extends Command
     $this->info("\n📊 SUMMARY SEND WARNING - TANGGAL {$today->day}");
     $this->info("=====================================");
     $this->info("Tanggal Kirim: {$today->format('Y-m-d')}");
-    $this->info("Periode Tagihan: {$bulanLalu->format('F Y')}");
-    $this->info("Range: {$awalBulanLalu->format('d M Y')} - {$akhirBulanLalu->format('d M Y')}");
     $this->info("Total Customer Tersedia: {$totalFound}");
     $this->info("Total Customer Diproses: " . count($customerInvoices));
     $this->info("📤 Status Pengiriman:");
