@@ -594,6 +594,117 @@ class QontakServices
     }
   }
 
+  public function notifTagihanMassal($to, $invoiceGroup)
+  {
+    try {
+      if ($invoiceGroup->isEmpty()) {
+        throw new Exception('Grup invoice kosong');
+      }
+
+      $firstInvoice = $invoiceGroup->first();
+
+      if (!$firstInvoice->relationLoaded('customer')) {
+        $firstInvoice->load('customer');
+      }
+
+      // 1. Cari template berdasarkan nama
+      $template = $this->getTemplateByName('payment_invoice');
+
+      if (!$template || !is_array($template) || !isset($template['id'])) {
+        throw new Exception('Template konfirmasi pembayaran tidak ditemukan atau format tidak valid');
+      }
+
+      $url = url('/payment/invoice/' . encrypt($firstInvoice->customer_id));
+      $time = now()->format('dmY');
+
+      // Hitung total tagihan dari keseluruhan invoice bulan tsb
+      $totalTagihan = 0;
+      $totalTunggakan = 0;
+      foreach ($invoiceGroup as $inv) {
+        $totalTagihan += ($inv->tagihan + $inv->tunggakan + $inv->tambahan);
+        $totalTunggakan += $inv->tunggakan;
+      }
+
+      // 2. Siapkan parameter untuk template
+      $templateParams = [
+        [
+          'key' => '1',
+          'value' => 'nama',
+          'value_text' => $firstInvoice->customer->nama_customer
+        ],
+        [
+          'key' => '2',
+          'value' => 'tanggal',
+          'value_text' => Carbon::now()->format('d-F-Y')
+        ],
+        [
+          'key' => '3',
+          'value' => 'tagihan',
+          'value_text' => number_format($totalTagihan ?? 0, 0, ',', '.')
+        ],
+        [
+          'key' => '4',
+          'value' => 'tunggakan',
+          'value_text' => number_format($totalTunggakan ?? 0, 0, ',', '.')
+        ],
+        [
+          'key' => '5',
+          'value' => 'no_invoice',
+          'value_text' => $firstInvoice->customer->nama_customer . '-' . $time
+        ],
+        [
+          'key' => '6',
+          'value' => 'link',
+          'value_text' => $url
+        ]
+      ];
+
+      $formattedPhone = $this->formatNomor($to);
+
+      // 3. Siapkan payload untuk mengirim pesan
+      $messageData = [
+        'to_number' => $formattedPhone,
+        'to_name' => $firstInvoice->customer->nama_customer,
+        'message_template_id' => $template['id'],
+        'channel_integration_id' => $this->channelId,
+        'language' => [
+          'code' => 'id'
+        ],
+        'parameters' => [
+          'body' => $templateParams
+        ]
+      ];
+
+      // 4. Kirim pesan
+      $result = $this->makeRequest(
+        'POST',
+        '/qontak/chat/v1/broadcasts/whatsapp/direct',
+        $messageData
+      );
+
+      if (!$result['success']) {
+        throw new Exception($result['message'] ?? 'Gagal mengirim tagihan massal');
+      }
+
+      $responseData = is_array($result['data']) ? $result['data'] : [];
+
+      return [
+        'success' => true,
+        'message_id' => $responseData['id'] ?? null,
+        'status' => $responseData['execute_status'] ?? null
+      ];
+
+    } catch (Exception $e) {
+      error_log('Error notifikasi tagihan massal: ' . $e->getMessage());
+      Log::info('Error Notif Tagihan Massal: ' . $e->getMessage());
+
+      return [
+        'success' => false,
+        'error' => $e->getMessage()
+      ];
+    }
+  }
+
   /**
    * Format nomor telepon ke format internasional (62) dengan validasi
    */

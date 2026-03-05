@@ -260,42 +260,133 @@ class SuperAdmin extends Controller
 
   public function globalInvoice(Request $request)
   {
-    $invoices = Invoice::with('customer', 'paket')
-      ->where('status_id', 7)
-      ->whereMonth('jatuh_tempo', now()->month)
-      ->whereYear('jatuh_tempo', now()->year)
-      ->get()
-      ->groupBy('customer_id');
+    $bulan = $request->query('bulan');
+    $tahun = $request->query('tahun');
+    $mode = $request->query('mode', 'process'); // 'count' atau 'process'
+    $offset = $request->query('offset', 0);
+    $limit = $request->query('limit', 10); // Batch kecil agar tidak timeout
 
-    // dd($invoices);
-    $chat = new ChatServices();
-
-    foreach ($invoices as $customerId => $invoiceGroup) {
-      $customer = $invoiceGroup->first()->customer;
-
-      if (!$customer || !$customer->no_hp) {
-        continue; // Skip jika tidak ada customer atau no_hp
-      }
-
-      $chat->kirimInvoiceMassal($customer, $invoiceGroup);
+    if (empty($bulan)) {
+      $bulan = now()->month;
+    }
+    if (empty($tahun)) {
+      $tahun = now()->year;
     }
 
-    activity('Send Invoice')
-      ->causedBy(auth()->user())
-      ->log(auth()->user()->name . ' Mengirim invoice global ' . $invoices->count() . ' Invoice');
-    return redirect()->back()->with('success', 'Invoice massal berhasil dikirim.');
+    // Ambil list ID customer yang memiliki tagihan belum bayar
+    $customerIdsQuery = Invoice::where('status_id', 7)
+      ->whereMonth('jatuh_tempo', $bulan)
+      ->whereYear('jatuh_tempo', $tahun)
+      ->distinct();
+
+    // Filter customer valid (tidak trashed & punya HP)
+    $validCustomerQuery = Customer::whereIn('id', $customerIdsQuery->pluck('customer_id'))
+      ->whereNotNull('no_hp')
+      ->where('no_hp', '!=', '')
+      ->whereNull('deleted_at');
+
+    if ($mode === 'count') {
+      return response()->json([
+        'status' => 'success',
+        'total' => $validCustomerQuery->count()
+      ]);
+    }
+
+    // Ambil batch sekarang
+    $customersBatch = $validCustomerQuery->skip((int) $offset)->take((int) $limit)->get();
+
+    $dispatchedCount = 0;
+    $failedCount = 0;
+    $chat = new QontakServices();
+    $namaBulan = Carbon::create()->month((int) $bulan)->isoFormat('MMMM');
+
+    foreach ($customersBatch as $customer) {
+      // PROTEKSI: Cek apakah sudah pernah kirim invoice sukses/pending untuk bulan & tahun ini
+      $alreadySent = DB::table('whats_log')
+        ->where('customer_id', $customer->id)
+        ->where('jenis_pesan', 'kirim_invoice')
+        ->where('pesan', 'like', "Invoice Global ({$namaBulan} {$tahun})%")
+        ->whereIn('status_pengiriman', ['sent', 'pending', 'delivered', 'read'])
+        ->exists();
+
+      if ($alreadySent) {
+        continue; // Skip jika sudah dikirim sebelumnya
+      }
+
+      // Ambil invoice untuk customer ini
+      $invoiceGroup = Invoice::with('customer', 'paket')
+        ->where('status_id', 7)
+        ->whereMonth('jatuh_tempo', $bulan)
+        ->whereYear('jatuh_tempo', $tahun)
+        ->where('customer_id', $customer->id)
+        ->get();
+
+      if ($invoiceGroup->isEmpty())
+        continue;
+
+      $hasil = $chat->notifTagihanMassal($customer->no_hp, $invoiceGroup);
+
+      $status = 'pending';
+      $errorMessage = null;
+
+      if (isset($hasil['success']) && $hasil['success'] === false) {
+        $status = 'failed';
+        $errorMessage = $hasil['error'] ?? 'Internal Server Error';
+        $failedCount++;
+      } else if (isset($hasil['status']) && ($hasil['status'] === 'failed' || $hasil['status'] === 'error')) {
+        $status = 'failed';
+        $errorMessage = $hasil['error']['message'] ?? $hasil['message'] ?? 'Message rejected';
+        $failedCount++;
+      } else {
+        $dispatchedCount++;
+      }
+
+      // Catat ke log
+      DB::table('whats_log')->insert([
+        'customer_id' => $customer->id,
+        'jenis_pesan' => 'kirim_invoice',
+        'pesan' => "Invoice Global ({$namaBulan} {$tahun})",
+        'qontak_broadcast_id' => $hasil['message_id'] ?? null,
+        'status_pengiriman' => $status,
+        'no_tujuan' => $customer->no_hp,
+        'error_message' => $errorMessage,
+        'created_at' => Carbon::now(),
+        'updated_at' => Carbon::now()
+      ]);
+    }
+
+    // Catat aktivitas jika batch pertama
+    if ($offset == 0) {
+      activity('Send Invoice')
+        ->causedBy(auth()->user())
+        ->log(auth()->user()->name . " Memulai pengiriman invoice global batching ({$namaBulan} {$tahun})");
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'processed' => count($customersBatch),
+      'sent' => $dispatchedCount,
+      'failed' => $failedCount,
+      'offset_next' => (int) $offset + count($customersBatch)
+    ]);
   }
 
   public function kirimInvoice($id)
   {
-    $invoice = Invoice::find($id);
-    $customer = $invoice->customer->nama_customer;
+    $invoice = Invoice::with('customer')->findOrFail($id);
+
+    // Cegah kirim manual ke customer yang sudah di-soft-delete
+    if ($invoice->customer->trashed()) {
+      return redirect()->back()->with('error', 'Tidak dapat mengirim invoice. User telah dinonaktifkan / dihapus.');
+    }
+
+    $customerName = $invoice->customer->nama_customer;
     $chat = new QontakServices();
     $chat->notifTagihan($invoice->customer->no_hp, $invoice);
     activity('Send Invoice')
       ->causedBy(auth()->user())
       ->log(auth()->user()->name . ' Mengirim invoice ke ' . $invoice->customer->nama_customer);
-    return redirect()->back()->with('success', "Invoice berhasil dikirim ke {$customer}.");
+    return redirect()->back()->with('success', "Invoice berhasil dikirim ke {$customerName}.");
   }
 
   public function hapusUser($id)
