@@ -104,8 +104,13 @@
           <option value="pending">Status: Pending</option>
         </select>
 
+        <button id="btn-sync"
+          class="px-4 py-2 text-sm font-medium text-white transition-colors bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 shadow-sm whitespace-nowrap">
+          <i class="fas fa-cloud-download-alt mr-2"></i> Sync Status Qontak
+        </button>
+
         <button id="btn-refresh"
-          class="px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 shadow-sm whitespace-nowrap">
+          class="px-4 py-2 text-sm font-medium text-blue-600 transition-colors bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 shadow-sm whitespace-nowrap">
           <i class="fas fa-sync-alt mr-2"></i> Refresh Tabel
         </button>
       </div>
@@ -186,7 +191,7 @@
               data: null,
               render: function (data) {
                 return `<div class="font-medium text-gray-900">${data.nama_customer || 'Guest / Terhapus'}</div>
-                                              <div class="text-xs text-gray-500 mt-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i> ${data.no_tujuan || '-'}</div>`;
+                                                  <div class="text-xs text-gray-500 mt-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i> ${data.no_tujuan || '-'}</div>`;
               }
             },
             {
@@ -194,8 +199,8 @@
               render: function (data) {
                 let formatted = data ? data.replace(/_/g, ' ').toUpperCase() : '-';
                 return `<span class="px-2 py-1 text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded">
-                                                  ${formatted}
-                                              </span>`;
+                                                      ${formatted}
+                                                  </span>`;
               }
             },
             {
@@ -242,8 +247,8 @@
                     icon = 'fa-info-circle';
                 }
                 return `<span class="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold border rounded-full ${badgeClass}">
-                                                  <i class="fas ${icon} mr-1.5"></i> ${data.charAt(0).toUpperCase() + data.slice(1)}
-                                              </span>`;
+                                                      <i class="fas ${icon} mr-1.5"></i> ${data.charAt(0).toUpperCase() + data.slice(1)}
+                                                  </span>`;
               }
             },
             {
@@ -276,6 +281,42 @@
         if (filterEl) {
           filterEl.addEventListener('change', function () {
             if (table) table.ajax.reload();
+          });
+        }
+
+        // BIND TOMBOL SYNC MANUAL
+        const btnSync = document.getElementById('btn-sync');
+        if (btnSync) {
+          btnSync.addEventListener('click', function () {
+            const originalContent = btnSync.innerHTML;
+            btnSync.disabled = true;
+            btnSync.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...';
+
+            fetch("{{ route('qontak.api.sync-logs') }}", {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+              },
+              body: JSON.stringify({ limit: 50 })
+            })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  alert(data.message);
+                  if (table) table.ajax.reload();
+                } else {
+                  alert('Gagal: ' + data.message);
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat sinkronisasi.');
+              })
+              .finally(() => {
+                btnSync.disabled = false;
+                btnSync.innerHTML = originalContent;
+              });
           });
         }
 

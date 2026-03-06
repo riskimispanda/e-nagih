@@ -1175,4 +1175,76 @@ class QontakServices
       ];
     }
   }
+  /**
+   * Sync status of a single message from Qontak API
+   */
+  public function syncMessageStatus($broadcastId)
+  {
+    if (empty($broadcastId))
+      return null;
+
+    try {
+      // Endpoint to get broadcast detail status
+      $result = $this->makeRequest('GET', "/qontak/chat/v1/broadcasts/{$broadcastId}/whatsapp/log");
+
+      if (!$result['success'] || !isset($result['data']) || empty($result['data'])) {
+        return null;
+      }
+
+      // Qontak normally returns an array of recipients for a broadcast.
+      // For "direct" messages, there's typically only one recipient record.
+      $logData = $result['data'];
+
+      // If it's an array of logs, we take the FIRST one (since it's direct message)
+      $firstLog = is_array($logData) && isset($logData[0]) ? $logData[0] : (is_array($logData) ? $logData : null);
+
+      if (!$firstLog)
+        return null;
+
+      // Extract status. Usually "status" or "execute_status"
+      $status = $firstLog['status'] ?? $firstLog['execute_status'] ?? null;
+      $error = $firstLog['error_message'] ?? null;
+
+      // Map Qontak status to our local status if needed
+      // (Optional: normalized statuses like 'read', 'delivered', 'sent', 'failed')
+
+      return [
+        'status' => $status,
+        'error_message' => $error,
+        'raw_log' => $firstLog
+      ];
+
+    } catch (Exception $e) {
+      Log::error('Qontak status sync failed for ' . $broadcastId . ': ' . $e->getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Universal Sync Logic for Qontak logs
+   */
+  public function syncAllPendingLogs($limit = 50)
+  {
+    $pendingLogs = \App\Models\WhatsLog::whereIn('status_pengiriman', ['sent', 'pending', 'delivered'])
+      ->whereNotNull('qontak_broadcast_id')
+      ->orderBy('created_at', 'desc')
+      ->limit($limit)
+      ->get();
+
+    $updatedCount = 0;
+
+    foreach ($pendingLogs as $log) {
+      $syncData = $this->syncMessageStatus($log->qontak_broadcast_id);
+
+      if ($syncData && isset($syncData['status']) && $syncData['status'] !== $log->status_pengiriman) {
+        $log->update([
+          'status_pengiriman' => $syncData['status'],
+          'error_message' => $syncData['error_message'] ?? $log->error_message
+        ]);
+        $updatedCount++;
+      }
+    }
+
+    return $updatedCount;
+  }
 }

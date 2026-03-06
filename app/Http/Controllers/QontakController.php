@@ -521,7 +521,7 @@ class QontakController extends Controller
 
       // Aplikasikan klausa WHERE kondisional jika status ada dan isinya bukan 'all'
       if ($statusFilter && $statusFilter !== 'all') {
-          $query->where('whats_log.status_pengiriman', $statusFilter);
+        $query->where('whats_log.status_pengiriman', $statusFilter);
       }
 
       // Finalisasi query, order dan pelindung batas 5k agar ram tidak kepenuhan
@@ -536,6 +536,28 @@ class QontakController extends Controller
       return response()->json([
         'success' => false,
         'message' => 'Failed to fetch logs: ' . $e->getMessage()
+      ], 500);
+    }
+  }
+
+  /**
+   * Sync Logs Status Manual
+   */
+  public function syncLogs(Request $request): JsonResponse
+  {
+    try {
+      $limit = $request->input('limit', 20);
+      $updatedCount = $this->qontakService->syncAllPendingLogs($limit);
+
+      return response()->json([
+        'success' => true,
+        'message' => "Sinkronisasi selesai. {$updatedCount} status berhasil diperbarui.",
+        'updated_count' => $updatedCount
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Gagal sinkronisasi: ' . $e->getMessage()
       ], 500);
     }
   }

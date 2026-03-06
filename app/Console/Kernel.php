@@ -29,6 +29,11 @@ class Kernel extends ConsoleKernel
 
         // NOTE: app:send-warning dijadwalkan di routes/console.php
         // (tanggal 2 dan 3 setiap bulan jam 08:00 WIB)
+
+        $schedule->command('qontak:sync-status')
+            ->everyFifteenMinutes()
+            ->timezone('Asia/Jakarta')
+            ->appendOutputTo(storage_path('logs/qontak-sync.log'));
     }
 
     /**

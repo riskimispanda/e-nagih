@@ -424,7 +424,13 @@ Route::middleware(['auth'])->group(function () {
       Route::get('/broadcast-detail/{broadcastId}', [QontakController::class, 'showBroadcastDetail'])->name('broadcast-detail.view');
       Route::get('/api/broadcast-detail/{broadcastId}', [QontakController::class, 'getBroadcastDetail'])->name('broadcast-detail');
       Route::get('/test-endpoints', [QontakController::class, 'testBroadcastEndpoints'])->name('test-endpoints');
+
+      // Manual Sync Button API
+      Route::post('/api/sync-logs', [QontakController::class, 'syncLogs'])->name('api.sync-logs');
     });
+
+  // Webhook Qontak (Outside Qontak prefix to simplify exclusion if needed)
+  Route::post('/qontak/webhook', [App\Http\Controllers\QontakWebhookController::class, 'handle'])->name('qontak.webhook');
 
   //dashboard
   Route::get('/dashboard', [Analytics::class, 'index'])

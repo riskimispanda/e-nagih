@@ -14,6 +14,6 @@ class VerifyCsrfTokens extends Middleware
     protected $except = [
         '/payment/callback',
         '/tripay-callback',
-        // Tambah route lain jika perlu
+        '/qontak/webhook',
     ];
 }
