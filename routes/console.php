@@ -24,3 +24,8 @@ Artisan::command('inspire', function () {
 //   ->monthlyOn(3, '08:00')
 //   ->timezone('Asia/Jakarta')
 //   ->description('Send Warning Tagihan - Tanggal 3');
+
+Schedule::command('qontak:sync-status')
+  ->everyMinute()
+  ->timezone('Asia/Jakarta')
+  ->description('Sync status pesan otomatis');
