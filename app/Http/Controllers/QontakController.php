@@ -469,25 +469,52 @@ class QontakController extends Controller
   }
 
   /**
+   * Helper untuk menghitung statistik log
+   */
+  private function calculateStats(): array
+  {
+    $stats = DB::table('whats_log')
+      ->select('status_pengiriman', DB::raw('count(*) as total'))
+      ->groupBy('status_pengiriman')
+      ->get();
+
+    $counts = [
+      'total' => 0,
+      'sent' => 0,
+      'delivered' => 0,
+      'read' => 0,
+      'failed' => 0,
+      'pending' => 0,
+    ];
+
+    foreach ($stats as $stat) {
+      $status = $stat->status_pengiriman;
+      $total = (int) $stat->total;
+      $counts['total'] += $total;
+
+      // Mapping status sesuai dengan UI (lihat whats_log.blade.php)
+      if ($status === 'sent' || $status === 'done') {
+        $counts['sent'] += $total;
+      } elseif ($status === 'delivered') {
+        $counts['delivered'] += $total;
+      } elseif ($status === 'read') {
+        $counts['read'] += $total;
+      } elseif ($status === 'failed' || $status === 'error') {
+        $counts['failed'] += $total;
+      } elseif ($status === 'pending' || $status === 'todo') {
+        $counts['pending'] += $total;
+      }
+    }
+
+    return $counts;
+  }
+
+  /**
    * View DataTables WhatsLog
    */
   public function whatsLogView()
   {
-    // Hitung metrik / card counters
-    $stats = DB::table('whats_log')
-      ->select('status_pengiriman', DB::raw('count(*) as total'))
-      ->groupBy('status_pengiriman')
-      ->get()
-      ->keyBy('status_pengiriman');
-
-    $counts = [
-      'total' => $stats->sum('total'),
-      'sent' => $stats->get('sent')->total ?? 0,
-      'delivered' => $stats->get('delivered')->total ?? 0,
-      'read' => $stats->get('read')->total ?? 0,
-      'failed' => $stats->get('failed')->total ?? 0,
-      'pending' => $stats->get('pending')->total ?? 0,
-    ];
+    $counts = $this->calculateStats();
 
     return view('qontak.whats_log', [
       'users' => auth()->user(),
@@ -530,7 +557,8 @@ class QontakController extends Controller
         ->get();
 
       return response()->json([
-        'data' => $logs
+        'data' => $logs,
+        'stats' => $this->calculateStats()
       ]);
     } catch (\Exception $e) {
       return response()->json([
@@ -552,7 +580,8 @@ class QontakController extends Controller
       return response()->json([
         'success' => true,
         'message' => "Sinkronisasi selesai. {$updatedCount} status berhasil diperbarui.",
-        'updated_count' => $updatedCount
+        'updated_count' => $updatedCount,
+        'stats' => $this->calculateStats()
       ]);
     } catch (\Exception $e) {
       return response()->json([

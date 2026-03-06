@@ -40,7 +40,7 @@
     <!-- Total Card -->
     <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 flex flex-col justify-center items-center">
       <div class="text-gray-500 mb-1 text-[10px] font-bold uppercase tracking-wider">Total</div>
-      <div class="text-2xl font-bold text-gray-800">{{ number_format($counts['total']) }}</div>
+      <div class="text-2xl font-bold text-gray-800" id="stat-total">{{ number_format($counts['total']) }}</div>
     </div>
 
     <!-- Pending Card -->
@@ -48,7 +48,7 @@
       <div class="text-yellow-600 mb-1 text-[10px] font-bold uppercase tracking-wider">
         <i class="fas fa-clock mr-1"></i> Pending
       </div>
-      <div class="text-2xl font-bold text-yellow-700">{{ number_format($counts['pending']) }}</div>
+      <div class="text-2xl font-bold text-yellow-700" id="stat-pending">{{ number_format($counts['pending']) }}</div>
     </div>
 
     <!-- Sent Card -->
@@ -56,7 +56,7 @@
       <div class="text-blue-600 mb-1 text-[10px] font-bold uppercase tracking-wider">
         <i class="fas fa-paper-plane mr-1"></i> Sent
       </div>
-      <div class="text-2xl font-bold text-blue-700">{{ number_format($counts['sent']) }}</div>
+      <div class="text-2xl font-bold text-blue-700" id="stat-sent">{{ number_format($counts['sent']) }}</div>
     </div>
 
     <!-- Delivered Card -->
@@ -64,7 +64,7 @@
       <div class="text-purple-600 mb-1 text-[10px] font-bold uppercase tracking-wider">
         <i class="fas fa-check-double mr-1"></i> Delivered
       </div>
-      <div class="text-2xl font-bold text-purple-700">{{ number_format($counts['delivered']) }}</div>
+      <div class="text-2xl font-bold text-purple-700" id="stat-delivered">{{ number_format($counts['delivered']) }}</div>
     </div>
 
     <!-- Read Card -->
@@ -73,7 +73,7 @@
       <div class="text-emerald-600 mb-1 text-[10px] font-bold uppercase tracking-wider">
         <i class="fas fa-check-double mr-1 text-emerald-500"></i> Read
       </div>
-      <div class="text-2xl font-bold text-emerald-700">{{ number_format($counts['read']) }}</div>
+      <div class="text-2xl font-bold text-emerald-700" id="stat-read">{{ number_format($counts['read']) }}</div>
     </div>
 
     <!-- Failed Card -->
@@ -81,7 +81,7 @@
       <div class="text-red-500 mb-1 text-[10px] font-bold uppercase tracking-wider">
         <i class="fas fa-times-circle mr-1"></i> Failed
       </div>
-      <div class="text-2xl font-bold text-red-700">{{ number_format($counts['failed']) }}</div>
+      <div class="text-2xl font-bold text-red-700" id="stat-failed">{{ number_format($counts['failed']) }}</div>
     </div>
   </div>
 
@@ -191,7 +191,7 @@
               data: null,
               render: function (data) {
                 return `<div class="font-medium text-gray-900">${data.nama_customer || 'Guest / Terhapus'}</div>
-                                                  <div class="text-xs text-gray-500 mt-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i> ${data.no_tujuan || '-'}</div>`;
+                                                      <div class="text-xs text-gray-500 mt-1"><i class="fab fa-whatsapp text-green-500 mr-1"></i> ${data.no_tujuan || '-'}</div>`;
               }
             },
             {
@@ -199,8 +199,8 @@
               render: function (data) {
                 let formatted = data ? data.replace(/_/g, ' ').toUpperCase() : '-';
                 return `<span class="px-2 py-1 text-[10px] font-bold text-gray-600 bg-gray-100 border border-gray-200 rounded">
-                                                      ${formatted}
-                                                  </span>`;
+                                                          ${formatted}
+                                                      </span>`;
               }
             },
             {
@@ -247,8 +247,8 @@
                     icon = 'fa-info-circle';
                 }
                 return `<span class="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold border rounded-full ${badgeClass}">
-                                                      <i class="fas ${icon} mr-1.5"></i> ${data.charAt(0).toUpperCase() + data.slice(1)}
-                                                  </span>`;
+                                                          <i class="fas ${icon} mr-1.5"></i> ${data.charAt(0).toUpperCase() + data.slice(1)}
+                                                      </span>`;
               }
             },
             {
@@ -283,6 +283,27 @@
             if (table) table.ajax.reload();
           });
         }
+
+        // Fungsi Helper untuk Update Angka di Card Statistik
+        function updateStatCards(stats) {
+          if (!stats) return;
+
+          const fields = ['total', 'pending', 'sent', 'delivered', 'read', 'failed'];
+          fields.forEach(field => {
+            const el = document.getElementById('stat-' + field);
+            if (el && stats[field] !== undefined) {
+              // Animasi angka sederhana atau langsung ganti
+              el.innerText = new Intl.NumberFormat('id-ID').format(stats[field]);
+            }
+          });
+        }
+
+        // Re-sync stats setiap kali tabel reload data
+        $('#whatsLogTable').on('xhr.dt', function (e, settings, json, xhr) {
+          if (json && json.stats) {
+            updateStatCards(json.stats);
+          }
+        });
 
         // BIND TOMBOL SYNC MANUAL
         const btnSync = document.getElementById('btn-sync');
