@@ -436,6 +436,11 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/dashboard', [Analytics::class, 'index'])
     ->name('dashboard')
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk');
+
+  Route::get('/api/dashboard/activity-logs', [Analytics::class, 'getActivityLogs'])
+    ->name('api.dashboard.activity-logs')
+    ->middleware('auth');
+
   Route::get('/dashboard-debug', function () {
     try {
       return app(Analytics::class)->index();

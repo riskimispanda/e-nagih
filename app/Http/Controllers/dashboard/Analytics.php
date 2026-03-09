@@ -50,9 +50,11 @@ class Analytics extends Controller
       ->whereHas('invoice.customer', function ($q) {
         $q->withTrashed();
       })
-      ->with(['invoice.customer' => function ($q) {
-        $q->withTrashed(); // Load relation dengan safe access
-      }])
+      ->with([
+        'invoice.customer' => function ($q) {
+          $q->withTrashed(); // Load relation dengan safe access
+        }
+      ])
       ->orderBy('created_at', 'desc')
       ->get();
 
@@ -66,37 +68,37 @@ class Analytics extends Controller
       })
       ->sum('jumlah_bayar');
 
-      $countInvoiceAllPaid = Invoice::with('customer')
-          ->where('status_id', 8)
-          ->whereHas('customer', function ($q) {
-              $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
-          })
-          ->whereMonth('jatuh_tempo', Carbon::now()->month)
-          ->whereYear('jatuh_tempo', Carbon::now()->year)
-          ->where('paket_id', '!=', 11)
-          ->distinct('customer_id')
-          ->count();
+    $countInvoiceAllPaid = Invoice::with('customer')
+      ->where('status_id', 8)
+      ->whereHas('customer', function ($q) {
+        $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
+      })
+      ->whereMonth('jatuh_tempo', Carbon::now()->month)
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
+      ->where('paket_id', '!=', 11)
+      ->distinct('customer_id')
+      ->count();
 
     $countPelangganLunas = Invoice::with('customer')
-        ->where('status_id', 8)
-        ->whereHas('customer', function ($q) {
-            $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
-        })
-        ->whereYear('jatuh_tempo', Carbon::now()->year)
-        ->where('paket_id', '!=', 11)
-        ->distinct('customer_id')
-        ->count();
+      ->where('status_id', 8)
+      ->whereHas('customer', function ($q) {
+        $q->withTrashed()->whereIn('status_id', [3, 4, 9]);
+      })
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
+      ->where('paket_id', '!=', 11)
+      ->distinct('customer_id')
+      ->count();
 
     // Lebih efisien dengan sum di database
     $countInvoiceAllUnPaid = Invoice::with('customer')
-        ->where('status_id', 7)
-        ->whereHas('customer', function ($q) {
-            $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
-        })
-        ->whereYear('jatuh_tempo', Carbon::now()->year)
-        ->where('paket_id', '!=', 11)
-        ->distinct('customer_id')
-        ->count();
+      ->where('status_id', 7)
+      ->whereHas('customer', function ($q) {
+        $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+      })
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
+      ->where('paket_id', '!=', 11)
+      ->distinct('customer_id')
+      ->count();
 
     $pelangganBelumLunas = Invoice::where('status_id', 7)
       ->whereHas('customer', fn($q) => $q->whereNull('deleted_at'))
@@ -111,19 +113,19 @@ class Analytics extends Controller
       });
 
     $countPelangganBelumLunas = Invoice::with('customer')
-        ->where('status_id', 7)
-        ->whereHas('customer', function ($q) {
-            $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
-        })
-        ->whereMonth('jatuh_tempo', Carbon::now()->month)
-        ->whereYear('jatuh_tempo', Carbon::now()->year)
-        ->where('paket_id', '!=', 11)
-        ->distinct('customer_id')
-        ->count();
+      ->where('status_id', 7)
+      ->whereHas('customer', function ($q) {
+        $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+      })
+      ->whereMonth('jatuh_tempo', Carbon::now()->month)
+      ->whereYear('jatuh_tempo', Carbon::now()->year)
+      ->where('paket_id', '!=', 11)
+      ->distinct('customer_id')
+      ->count();
 
     $todaySchedules = Schedules::active()
-      ->where('user_id', auth()->id())
       ->whereDate('date', $today)
+      ->orderBy('date', 'asc')
       ->get();
 
     // Total Pendapatan - tetap include semua (tidak perlu filter soft delete)
@@ -200,7 +202,7 @@ class Analytics extends Controller
         "status" => [
           "id" => $customer->status->id ?? null,
           "nama_status" =>
-          $customer->status->nama_status ?? "Unknown",
+            $customer->status->nama_status ?? "Unknown",
         ],
         "paket" => [
           "id" => $customer->paket->id ?? null,
@@ -208,7 +210,7 @@ class Analytics extends Controller
         ],
         "getServer" => [
           "lokasi_server" =>
-          $customer->getServer->lokasi_server ?? "Unknown",
+            $customer->getServer->lokasi_server ?? "Unknown",
         ],
         "invoice" => $customer->invoice
           ->map(function ($invoice) {
@@ -217,7 +219,7 @@ class Analytics extends Controller
               "status" => [
                 "id" => $invoice->status->id ?? null,
                 "nama_status" =>
-                $invoice->status->nama_status ?? "Unknown",
+                  $invoice->status->nama_status ?? "Unknown",
               ],
               "tagihan" => $invoice->tagihan,
               "jatuh_tempo" => $invoice->jatuh_tempo,
@@ -499,16 +501,16 @@ class Analytics extends Controller
           "status" => [
             "id" => $customer->status->id ?? null,
             "nama_status" =>
-            $customer->status->nama_status ?? "Unknown",
+              $customer->status->nama_status ?? "Unknown",
           ],
           "paket" => [
             "id" => $customer->paket->id ?? null,
             "nama_paket" =>
-            $customer->paket->nama_paket ?? "Unknown",
+              $customer->paket->nama_paket ?? "Unknown",
           ],
           "getServer" => [
             "lokasi_server" =>
-            $customer->getServer->lokasi_server ?? "Unknown",
+              $customer->getServer->lokasi_server ?? "Unknown",
           ],
           "invoice" => $customer->invoice
             ->map(function ($inv) {
@@ -517,7 +519,7 @@ class Analytics extends Controller
                 "status" => [
                   "id" => $inv->status->id ?? null,
                   "nama_status" =>
-                  $inv->status->nama_status ?? "Unknown",
+                    $inv->status->nama_status ?? "Unknown",
                 ],
                 "tagihan" => $inv->tagihan,
                 "jatuh_tempo" => $inv->jatuh_tempo,
@@ -576,23 +578,23 @@ class Analytics extends Controller
             return [
               "id" => $customer->id,
               "nama_customer" =>
-              $customer->nama_customer ?? "Unknown",
+                $customer->nama_customer ?? "Unknown",
               "alamat" => $customer->alamat ?? "",
               "no_hp" => $customer->no_hp ?? "",
               "status_id" => $customer->status_id,
               "status" => [
                 "id" => $customer->status->id ?? null,
                 "nama_status" =>
-                $customer->status->nama_status ?? "Unknown",
+                  $customer->status->nama_status ?? "Unknown",
               ],
               "paket" => [
                 "id" => $customer->paket->id ?? null,
                 "nama_paket" =>
-                $customer->paket->nama_paket ?? "Unknown",
+                  $customer->paket->nama_paket ?? "Unknown",
               ],
               "getServer" => [
                 "lokasi_server" =>
-                $customer->getServer->lokasi_server ??
+                  $customer->getServer->lokasi_server ??
                   "Unknown",
               ],
               "invoice" => $customer->invoice
@@ -601,9 +603,9 @@ class Analytics extends Controller
                     "id" => $invoice->id,
                     "status" => [
                       "id" =>
-                      $invoice->status->id ?? null,
+                        $invoice->status->id ?? null,
                       "nama_status" =>
-                      $invoice->status->nama_status ??
+                        $invoice->status->nama_status ??
                         "Unknown",
                     ],
                     "tagihan" => $invoice->tagihan,
@@ -642,10 +644,54 @@ class Analytics extends Controller
         [
           "success" => false,
           "message" =>
-          "Error fetching customer data: " . $e->getMessage(),
+            "Error fetching customer data: " . $e->getMessage(),
         ],
         500
       );
     }
+  }
+
+  /**
+   * Mengambil data activity_log untuk datatable view dengan polling
+   *
+   * @param Request $request
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function getActivityLogs(Request $request)
+  {
+    if ($request->ajax()) {
+      $logs = DB::table('activity_log')
+        ->leftJoin('users', 'activity_log.causer_id', '=', 'users.id')
+        ->leftJoin('roles', 'users.roles_id', '=', 'roles.id')
+        ->select(
+          'activity_log.id',
+          'activity_log.log_name',
+          'activity_log.description',
+          'users.name as causer_name',
+          'roles.name as role_name',
+          'activity_log.created_at'
+        )
+        ->orderBy('activity_log.created_at', 'desc')
+        ->limit(100) // limit untuk performa
+        ->get();
+
+      $formattedLogs = $logs->map(function ($log) {
+        return [
+          'id' => $log->id,
+          'log_name' => $log->log_name ?? 'System',
+          'causer_name' => $log->causer_name ?? 'System',
+          'role_name' => $log->role_name ?? '-',
+          'description' => $log->description,
+          'created_at' => Carbon::parse($log->created_at)->locale('id')->diffForHumans(),
+          'created_at_raw' => Carbon::parse($log->created_at)->format('Y-m-d H:i:s'),
+        ];
+      });
+
+      return response()->json([
+        'data' => $formattedLogs
+      ]);
+    }
+
+    return response()->json(['message' => 'Invalid Request'], 400);
   }
 }
