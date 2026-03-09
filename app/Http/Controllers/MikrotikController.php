@@ -17,13 +17,14 @@ class MikrotikController extends Controller
 
   public function index()
   {
-    $router = Router::findOrFail(2); // atau sesuaikan dengan ID dinamis dari route
+    $router = Router::findOrFail(3); // atau sesuaikan dengan ID dinamis dari route
     $client = MikrotikServices::connect($router);
 
     $inter = MikrotikServices::trafficPelanggan($router, 'SAHID-Office@niscala.net.id');
     $user = MikrotikServices::getPPPSecret($client);
     $tes = MikrotikServices::testKoneksi($router->ip_address, $router->port, $router->username, $router->password);
     $firewall = MikrotikServices::getFirewallRules($router);
+    $information = MikrotikServices::checkRouterInfoById($router->id);
     // 1. Ganti semua profile dari ISOLIR ke profile paket
     // $result = MikrotikServices::changeAllProfilesToPackageProfile($client);
     // $blokir = MikrotikServices::changeProfileToIsolirebillingForPaket9($client);

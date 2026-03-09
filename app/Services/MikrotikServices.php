@@ -1272,11 +1272,113 @@ class MikrotikServices
     }
   }
 
-  public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile, string $localAddress, string $remoteAddress): bool
+  // public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile, ?string $localAddress = null, ?string $remoteAddress = null): bool
+  // {
+  //   try {
+  //     if (empty($usersecret) || empty($newProfile)) {
+  //       Log::warning("Gagal Memperbaharui di Mikrotik: usersecret atau profile tidak lengkap", [
+  //         'usersecret' => $usersecret,
+  //         'newProfile' => $newProfile,
+  //         'localAddress' => $localAddress,
+  //         'remoteAddress' => $remoteAddress
+  //       ]);
+  //       return false;
+  //     }
+
+  //     // Cari user dengan approach yang lebih safe
+  //     $query = new Query('/ppp/secret/print');
+  //     $query->where('name', $usersecret);
+  //     $users = $client->query($query)->read();
+
+  //     // Debug: Log response dari Mikrotik
+  //     Log::info("Mikrotik User Search Response", [
+  //       'usersecret' => $usersecret,
+  //       'users_count' => count($users),
+  //       'users_data' => $users
+  //     ]);
+
+  //     if (empty($users)) {
+  //       Log::warning("UpgradeDowngrade: user tidak ditemukan", [
+  //         'usersecret' => $usersecret
+  //       ]);
+  //       return false;
+  //     }
+
+  //     $user = $users[0] ?? null;
+
+  //     if (!$user) {
+  //       Log::warning("UpgradeDowngrade: user data kosong", [
+  //         'usersecret' => $usersecret
+  //       ]);
+  //       return false;
+  //     }
+
+  //     // Cek jika .id exists dalam response
+  //     if (!isset($user['.id'])) {
+  //       Log::error("UpgradeDowngrade: .id tidak ditemukan dalam response", [
+  //         'usersecret' => $usersecret,
+  //         'user_data' => $user
+  //       ]);
+  //       return false;
+  //     }
+
+  //     $userId = $user['.id'];
+
+  //     // ✅ Check jika profile sudah sama
+  //     $currentProfile = $user['profile'] ?? null;
+  //     if ($currentProfile === $newProfile) {
+  //       Log::info("UpgradeDowngrade: profile sama, skip update", [
+  //         'usersecret' => $usersecret,
+  //         'profile' => $newProfile,
+  //         'localAddress' => $localAddress,
+  //         'remoteAddress' => $remoteAddress
+  //       ]);
+  //       return true;
+  //     }
+
+  //     // Update profile dengan approach yang lebih robust
+  //     $setQuery = new Query('/ppp/secret/set');
+  //     $setQuery->equal('.id', $userId);
+  //     $setQuery->equal('profile', $newProfile);
+
+  //     // Hanya set local-address jika tidak null
+  //     if ($localAddress !== null && $remoteAddress !== null) {
+  //       $setQuery->equal('local-address', $localAddress);
+  //       $setQuery->equal('remote-address', $remoteAddress);
+  //     } else {
+  //       $setQuery->equal('local-address', '');
+  //       $setQuery->equal('remote-address', '');
+  //     }
+
+  //     $result = $client->query($setQuery)->read();
+
+  //     Log::info("UpgradeDowngrade: profile updated successfully", [
+  //       'usersecret' => $usersecret,
+  //       'oldProfile' => $currentProfile,
+  //       'newProfile' => $newProfile,
+  //       'localAddress' => $localAddress,
+  //       'remoteAddress' => $remoteAddress,
+  //       'user_id' => $userId,
+  //       'result' => $result,
+  //     ]);
+
+  //     return true;
+  //   } catch (Exception $e) {
+  //     Log::error("UpgradeDowngrade ERROR", [
+  //       'usersecret' => $usersecret,
+  //       'newProfile' => $newProfile,
+  //       'error' => $e->getMessage(),
+  //       'trace' => $e->getTraceAsString()
+  //     ]);
+  //     return false;
+  //   }
+  // }
+
+  public static function UpgradeDowngrade(Client $client, string $usersecret, string $newProfile, ?string $localAddress = null, ?string $remoteAddress = null): bool
   {
     try {
-      if (empty($usersecret) || empty($newProfile) || empty($localAddress) || empty($remoteAddress)) {
-        Log::warning("Gagal Memperbaharui di Mikrotik: usersecret atau profile atau localAddress atau remoteAddress tidak lengkap", [
+      if (empty($usersecret) || empty($newProfile)) {
+        Log::warning("Gagal Memperbaharui di Mikrotik: usersecret atau profile tidak lengkap", [
           'usersecret' => $usersecret,
           'newProfile' => $newProfile,
           'localAddress' => $localAddress,
@@ -1285,12 +1387,11 @@ class MikrotikServices
         return false;
       }
 
-      // Cari user dengan approach yang lebih safe
+      // Cari user
       $query = new Query('/ppp/secret/print');
       $query->where('name', $usersecret);
       $users = $client->query($query)->read();
 
-      // Debug: Log response dari Mikrotik
       Log::info("Mikrotik User Search Response", [
         'usersecret' => $usersecret,
         'users_count' => count($users),
@@ -1306,16 +1407,8 @@ class MikrotikServices
 
       $user = $users[0] ?? null;
 
-      if (!$user) {
-        Log::warning("UpgradeDowngrade: user data kosong", [
-          'usersecret' => $usersecret
-        ]);
-        return false;
-      }
-
-      // Cek jika .id exists dalam response
-      if (!isset($user['.id'])) {
-        Log::error("UpgradeDowngrade: .id tidak ditemukan dalam response", [
+      if (!$user || !isset($user['.id'])) {
+        Log::warning("UpgradeDowngrade: user data tidak valid", [
           'usersecret' => $usersecret,
           'user_data' => $user
         ]);
@@ -1323,47 +1416,84 @@ class MikrotikServices
       }
 
       $userId = $user['.id'];
-
-      // ✅ Check jika profile sudah sama
       $currentProfile = $user['profile'] ?? null;
-      if ($currentProfile === $newProfile) {
-        Log::info("UpgradeDowngrade: profile sama, skip update", [
+
+      // STEP 1: Update profile jika berbeda
+      if ($currentProfile !== $newProfile) {
+        $setProfileQuery = new Query('/ppp/secret/set');
+        $setProfileQuery->equal('.id', $userId);
+        $setProfileQuery->equal('profile', $newProfile);
+        $client->query($setProfileQuery)->read();
+
+        Log::info("Profile updated", [
           'usersecret' => $usersecret,
-          'profile' => $newProfile,
-          'localAddress' => $localAddress,
+          'oldProfile' => $currentProfile,
+          'newProfile' => $newProfile
+        ]);
+      } else {
+        Log::info("Profile sama, tidak perlu update", [
+          'usersecret' => $usersecret,
+          'profile' => $newProfile
+        ]);
+      }
+
+      // STEP 2: SELALU proses local-address dan remote-address (TERPISAH dari profile)
+      // Ini akan tetap dijalankan meskipun profile sama
+
+      // Handle local-address
+      if ($localAddress !== null) {
+        // Set local-address jika diberikan nilai
+        $setLocalQuery = new Query('/ppp/secret/set');
+        $setLocalQuery->equal('.id', $userId);
+        $setLocalQuery->equal('local-address', $localAddress);
+        $client->query($setLocalQuery)->read();
+        Log::info("local-address updated", [
+          'usersecret' => $usersecret,
+          'localAddress' => $localAddress
+        ]);
+      } else {
+        // Unset local-address jika null (hapus)
+        $unsetLocalQuery = new Query('/ppp/secret/unset');
+        $unsetLocalQuery->equal('.id', $userId);
+        $unsetLocalQuery->equal('value-name', 'local-address');
+        $client->query($unsetLocalQuery)->read();
+        Log::info("local-address unset (removed)", [
+          'usersecret' => $usersecret
+        ]);
+      }
+
+      // Handle remote-address
+      if ($remoteAddress !== null) {
+        // Set remote-address jika diberikan nilai
+        $setRemoteQuery = new Query('/ppp/secret/set');
+        $setRemoteQuery->equal('.id', $userId);
+        $setRemoteQuery->equal('remote-address', $remoteAddress);
+        $client->query($setRemoteQuery)->read();
+        Log::info("remote-address updated", [
+          'usersecret' => $usersecret,
           'remoteAddress' => $remoteAddress
         ]);
-        return true;
+      } else {
+        // Unset remote-address jika null (hapus)
+        $unsetRemoteQuery = new Query('/ppp/secret/unset');
+        $unsetRemoteQuery->equal('.id', $userId);
+        $unsetRemoteQuery->equal('value-name', 'remote-address');
+        $client->query($unsetRemoteQuery)->read();
+        Log::info("remote-address unset (removed)", [
+          'usersecret' => $usersecret
+        ]);
       }
 
-      // Update profile dengan approach yang lebih robust
-      $setQuery = new Query('/ppp/secret/set');
-      $setQuery->equal('.id', $userId);
-      $setQuery->equal('profile', $newProfile);
-
-      // Hanya set local-address jika tidak null
-      if ($localAddress !== null) {
-        $setQuery->equal('local-address', $localAddress);
-      }
-
-      // Hanya set remote-address jika tidak null
-      if ($remoteAddress !== null) {
-        $setQuery->equal('remote-address', $remoteAddress);
-      }
-
-      $result = $client->query($setQuery)->read();
-
-      Log::info("UpgradeDowngrade: profile updated successfully", [
+      Log::info("UpgradeDowngrade completed successfully", [
         'usersecret' => $usersecret,
         'oldProfile' => $currentProfile,
         'newProfile' => $newProfile,
         'localAddress' => $localAddress,
-        'remoteAddress' => $remoteAddress,
-        'user_id' => $userId,
-        'result' => $result,
+        'remoteAddress' => $remoteAddress
       ]);
 
       return true;
+
     } catch (Exception $e) {
       Log::error("UpgradeDowngrade ERROR", [
         'usersecret' => $usersecret,
@@ -1415,14 +1545,52 @@ class MikrotikServices
     return [];
   }
 
+  public static function checkRouterInfoById($id)
+  {
+    try {
+      $router = Router::findOrFail($id);
+      $client = self::connect($router);
+
+      $identityQuery = new Query('/system/identity/print');
+      $identity = $client->query($identityQuery)->read();
+
+      $resourceQuery = new Query('/system/resource/print');
+      $resource = $client->query($resourceQuery)->read();
+
+      $routerboardQuery = new Query('/system/routerboard/print');
+      $routerboard = $client->query($routerboardQuery)->read();
+
+      return [
+        'status' => 'success',
+        'message' => 'Berhasil mengambil informasi router mikrotik',
+        'data' => [
+          'identity' => $identity[0] ?? [],
+          'resource' => $resource[0] ?? [],
+          'routerboard' => $routerboard[0] ?? [],
+          'router_db' => $router
+        ]
+      ];
+    } catch (\Exception $e) {
+      Log::error('MikrotikServices::checkRouterInfoById error: ' . $e->getMessage());
+      return [
+        'status' => 'error',
+        'message' => 'Gagal mengecek informasi router: ' . $e->getMessage(),
+        'data' => null
+      ];
+    }
+  }
+
   public static function addPPPSecret(Client $client, $data)
   {
-    // dd($client);
     $query = new Query('/ppp/secret/add');
     $query->equal('name', $data['name']);
     $query->equal('password', $data['password']);
     $query->equal('profile', $data['profile']);
-    $query->equal('service', $data['service']);
+
+    // Fallback if data service is empty, assuming pppoe by default.
+    $service = !empty($data['service']) ? $data['service'] : 'pppoe';
+    $query->equal('service', $service);
+
     if (!empty($data['localAddress'])) {
       $query->equal('local-address', $data['localAddress']);
     }
@@ -1432,11 +1600,30 @@ class MikrotikServices
     $query->equal('comment', 'Created by NBilling');
 
     try {
-      $client->query($query)->read();
+      Log::info('Executing addPPPSecret dengan data: ', $data);
+      $response = $client->query($query)->read();
+      Log::info('Response dari Mikrotik addPPPSecret: ', ['response' => $response]);
+
+      // Khusus Mikrotik: Deteksi jika ada 'trap' (Warning/Error Message) di dalam format kembalian
+      if (isset($response['!trap']) || (is_array($response) && isset($response[0]['!trap']))) {
+        Log::error('Mikrotik menolak addPPPSecret: ', ['response' => $response, 'data' => $data]);
+        return false;
+      }
+
+      // Check for common error strings inside the first element if any
+      if (is_array($response) && !empty($response)) {
+        if (isset($response[0]['message'])) {
+          Log::error('Mikrotik menolak addPPPSecret (message detected): ', ['response' => $response]);
+          return false;
+        }
+      }
+
       return true;
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
+      Log::error('MikrotikServices::addPPPSecret Terputus: ' . $e->getMessage());
       return false;
     }
+
   }
 
   // Di MikrotikServices
@@ -1459,7 +1646,7 @@ class MikrotikServices
     try {
       $query = new Query('/ppp/secret/print');
       // $query->where('comment', 'Created by NBilling');
-      $query->where('name', 'app@gpl.uz');
+      $query->where('name', 'asaaaaaCoba3@niscala.net.id');
       return $client->query($query)->read();
     } catch (\Exception $e) {
       Log::error('Gagal mengambil PPP Secret: ' . $e->getMessage());
@@ -1575,7 +1762,7 @@ class MikrotikServices
     }
   }
 
-  public static function getInterfacePelanggan(Client $client, string $usersecret = null): array
+  public static function getInterfacePelanggan(Client $client, ?string $usersecret = null): array
   {
     try {
       $result = [];

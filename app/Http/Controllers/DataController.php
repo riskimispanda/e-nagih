@@ -503,6 +503,133 @@ class DataController extends Controller
     ]);
   }
 
+  // public function updatePelanggan(Request $request, $id)
+  // {
+  //   $invoice = Invoice::where('customer_id', $id)->latest()->first();
+
+  //   DB::beginTransaction();
+  //   try {
+  //     $pelanggan = Customer::findOrFail($id);
+
+  //     // Handle File Upload for Identitas
+  //     $identitasPath = $pelanggan->identitas; // Default keep existing
+  //     if ($request->hasFile('identitas_file')) {
+  //       $file = $request->file('identitas_file');
+  //       $fileName = uniqid() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+  //       $savePath = public_path('uploads/identitas/' . $fileName);
+
+  //       // Ensure directory exists
+  //       if (!file_exists(public_path('uploads/identitas'))) {
+  //         mkdir(public_path('uploads/identitas'), 0755, true);
+  //       }
+
+  //       // Use Intervention Image to resize and save
+  //       $manager = new ImageManager(Driver::class);
+  //       $image = $manager->read($file->getRealPath());
+  //       $image->scale(width: 1024); // Resize to max width 1024
+  //       $image->toJpeg(75)->save($savePath);
+
+  //       $identitasPath = 'uploads/identitas/' . $fileName;
+
+  //       // Optional: Delete old file if exists
+  //       if ($pelanggan->identitas && file_exists(public_path($pelanggan->identitas))) {
+  //         @unlink(public_path($pelanggan->identitas));
+  //       }
+  //     }
+
+  //     // Data request langsung diassign ke pelanggan
+  //     $data = [
+  //       'nama_customer' => $request->nama,
+  //       'no_hp' => $request->no_hp,
+  //       'alamat' => $request->alamat,
+  //       'gps' => $request->gps,
+  //       'no_identitas' => $request->no_identitas,
+  //       'router_id' => $request->router,
+  //       'paket_id' => $request->paket,
+  //       'lokasi_id' => $request->odp,
+  //       'access_point' => $request->access_point,
+  //       'koneksi_id' => $request->koneksi,
+  //       'media_id' => $request->media,
+  //       'perangkat_id' => $request->perangkat,
+  //       'local_address' => $request->local_address,
+  //       'remote_address' => $request->remote_address,
+  //       'remote' => $request->remote,
+  //       'seri_perangkat' => $request->seri,
+  //       'mac_address' => $request->mac,
+  //       'usersecret' => $request->usersecret,
+  //       'pass_secret' => $request->pass_secret,
+  //       'agen_id' => $request->agen_id,
+  //       'identitas' => $identitasPath, // Include foto path
+  //     ];
+
+  //     // Update langsung tanpa filter
+  //     $pelanggan->update($data);
+  //     $pelanggan->refresh();
+
+  //     // Tentukan router & paket (selalu ambil dari request)
+  //     $router = Router::findOrFail($request->router);
+  //     $paket = Paket::findOrFail($request->paket);
+  //     $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
+  //     $hargaPaket = $paket->harga;
+  //     $tanggalMulaiLangganan = $tanggalSelesai;
+  //     $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
+  //       ? $hargaPaket
+  //       : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
+
+
+  //     if ($invoice && $paket->id != $invoice->paket_id) {
+  //       $invoice->update([
+  //         'paket_id' => $paket->id,
+  //         'tagihan' => $tagihanProrate
+  //       ]);
+  //     }
+
+
+  //     // Update profile di MikroTik
+  //     $konek = strtolower($pelanggan->koneksi->nama_koneksi);
+
+  //     $client = MikrotikServices::connect($router);
+  //     $existingSecret = MikrotikServices::checkPPPSecret($client, $pelanggan->usersecret);
+  //     if ($existingSecret) {
+  //       MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $pelanggan->paket->paket_name, $pelanggan->local_address, $pelanggan->remote_address);
+  //       MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
+  //     } else {
+  //       MikrotikServices::addPPPSecret($client, [
+  //         'name' => $pelanggan->usersecret,
+  //         'password' => $pelanggan->pass_secret,
+  //         'profile' => $pelanggan->paket->paket_name,
+  //         'service' => $konek,
+  //         'remoteAddress' => $pelanggan->remote_address,
+  //         'localAddress' => $pelanggan->local_address,
+  //       ]);
+  //     }
+
+
+  //     Log::info('Success update profile Pelanggan di Mikrotik: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket->paket_name);
+
+  //     // Update Data Modem
+  //     ModemDetail::updateOrCreate(
+  //       ['customer_id' => $pelanggan->id], // kondisi cek
+  //       [
+  //         'logistik_id' => $request->perangkat,
+  //         'serial_number' => $pelanggan->seri_perangkat,
+  //         'mac_address' => $pelanggan->mac_address,
+  //         'status_id' => 13
+  //       ]
+  //     );
+  //     activity('Edit Pelanggan')
+  //       ->causedBy(auth()->user())
+  //       ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan ' . $pelanggan->nama_customer);
+  //     DB::commit();
+
+  //     return redirect('/data/pelanggan')->with('success', 'Data pelanggan berhasil diperbarui.');
+  //   } catch (\Exception $e) {
+  //     DB::rollBack();
+  //     Log::error('Gagal update pelanggan: ' . $e->getMessage());
+  //     return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
+  //   }
+  // }
+
   public function updatePelanggan(Request $request, $id)
   {
     $invoice = Invoice::where('customer_id', $id)->latest()->first();
@@ -512,104 +639,127 @@ class DataController extends Controller
       $pelanggan = Customer::findOrFail($id);
 
       // Handle File Upload for Identitas
-      $identitasPath = $pelanggan->identitas; // Default keep existing
+      $identitasPath = $pelanggan->identitas;
       if ($request->hasFile('identitas_file')) {
         $file = $request->file('identitas_file');
         $fileName = uniqid() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
         $savePath = public_path('uploads/identitas/' . $fileName);
 
-        // Ensure directory exists
         if (!file_exists(public_path('uploads/identitas'))) {
           mkdir(public_path('uploads/identitas'), 0755, true);
         }
 
-        // Use Intervention Image to resize and save
         $manager = new ImageManager(Driver::class);
         $image = $manager->read($file->getRealPath());
-        $image->scale(width: 1024); // Resize to max width 1024
+        $image->scale(width: 1024);
         $image->toJpeg(75)->save($savePath);
 
         $identitasPath = 'uploads/identitas/' . $fileName;
 
-        // Optional: Delete old file if exists
         if ($pelanggan->identitas && file_exists(public_path($pelanggan->identitas))) {
           @unlink(public_path($pelanggan->identitas));
         }
       }
 
-      // Data request langsung diassign ke pelanggan
+      // 🔥 AMBIL NILAI DARI REQUEST UNTUK MIKROTIK
+      $localAddress = $request->local_address;
+      $remoteAddress = $request->remote_address;
+      $usersecret = $request->usersecret ?? $pelanggan->usersecret;
+      $passSecret = $request->pass_secret ?? $pelanggan->pass_secret;
+      $paketId = $request->paket;
+      $routerId = $request->router;
+
+      // 🔥 UPDATE MIKROTIK DULU (dengan nilai dari request)
+      $router = Router::findOrFail($routerId);
+      $paket = Paket::findOrFail($paketId);
+      $konek = strtolower($pelanggan->koneksi->nama_koneksi);
+
+      $client = MikrotikServices::connect($router);
+      $existingSecret = MikrotikServices::checkPPPSecret($client, $usersecret);
+
+      if ($existingSecret) {
+        // Update profile di Mikrotik dengan nilai dari REQUEST
+
+        $updateResult = MikrotikServices::UpgradeDowngrade(
+          $client,
+          $usersecret,
+          $paket->paket_name,
+          $localAddress,  // ✅ Pakai nilai dari request
+          $remoteAddress   // ✅ Pakai nilai dari request
+        );
+
+        if (!$updateResult) {
+          Log::warning("Gagal update Mikrotik, tetapi lanjut update database", [
+            'usersecret' => $usersecret,
+            'paket' => $paket->paket_name
+          ]);
+        }
+
+        MikrotikServices::removeActiveConnections($client, $usersecret);
+      } else {
+        // Add new secret di Mikrotik
+        $newDial = MikrotikServices::addPPPSecret($client, [
+          'name' => $usersecret,
+          'password' => $passSecret,
+          'profile' => $paket->paket_name,
+          'service' => $konek,
+          'remoteAddress' => $remoteAddress,
+          'localAddress' => $localAddress,
+        ]);
+        // Wajib Evaluasi
+        if (!$newDial) {
+          throw new \Exception("Gagal membuat Dial Secret baru di Mikrotik. Cek Format Alamat IP atau Profil!");
+        }
+      }
+
+      Log::info('Success update profile Pelanggan di Mikrotik: ' . $usersecret . '-' . $paket->paket_name);
+
+      // 🔥 BARU UPDATE DATABASE (setelah Mikrotik sukses)
       $data = [
         'nama_customer' => $request->nama,
         'no_hp' => $request->no_hp,
         'alamat' => $request->alamat,
         'gps' => $request->gps,
         'no_identitas' => $request->no_identitas,
-        'router_id' => $request->router,
-        'paket_id' => $request->paket,
+        'router_id' => $routerId,
+        'paket_id' => $paketId,
         'lokasi_id' => $request->odp,
         'access_point' => $request->access_point,
         'koneksi_id' => $request->koneksi,
         'media_id' => $request->media,
         'perangkat_id' => $request->perangkat,
-        'local_address' => $request->local_address,
-        'remote_address' => $request->remote_address,
+        'local_address' => $localAddress,  // ✅ Nilai dari request
+        'remote_address' => $remoteAddress, // ✅ Nilai dari request
         'remote' => $request->remote,
         'seri_perangkat' => $request->seri,
         'mac_address' => $request->mac,
-        'usersecret' => $request->usersecret,
-        'pass_secret' => $request->pass_secret,
+        'usersecret' => $usersecret,
+        'pass_secret' => $passSecret,
         'agen_id' => $request->agen_id,
-        'identitas' => $identitasPath, // Include foto path
+        'identitas' => $identitasPath,
       ];
 
-      // Update langsung tanpa filter
       $pelanggan->update($data);
       $pelanggan->refresh();
 
-      // Tentukan router & paket (selalu ambil dari request)
-      $router = Router::findOrFail($request->router);
-      $paket = Paket::findOrFail($request->paket);
-      $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
-      $hargaPaket = $paket->harga;
-      $tanggalMulaiLangganan = $tanggalSelesai;
-      $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
-        ? $hargaPaket
-        : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
-
-
+      // Update invoice jika perlu
       if ($invoice && $paket->id != $invoice->paket_id) {
+        $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
+        $hargaPaket = $paket->harga;
+        $tanggalMulaiLangganan = $tanggalSelesai;
+        $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
+          ? $hargaPaket
+          : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
+
         $invoice->update([
           'paket_id' => $paket->id,
           'tagihan' => $tagihanProrate
         ]);
       }
 
-
-      // Update profile di MikroTik
-      $konek = strtolower($pelanggan->koneksi->nama_koneksi);
-
-      $client = MikrotikServices::connect($router);
-      $existingSecret = MikrotikServices::checkPPPSecret($client, $pelanggan->usersecret);
-      if ($existingSecret) {
-        MikrotikServices::UpgradeDowngrade($client, $pelanggan->usersecret, $pelanggan->paket->paket_name, $pelanggan->local_address, $pelanggan->remote_address);
-        MikrotikServices::removeActiveConnections($client, $pelanggan->usersecret);
-      } else {
-        MikrotikServices::addPPPSecret($client, [
-          'name' => $pelanggan->usersecret,
-          'password' => $pelanggan->pass_secret,
-          'profile' => $pelanggan->paket->paket_name,
-          'service' => $konek,
-          'remoteAddress' => $pelanggan->remote_address,
-          'localAddress' => $pelanggan->local_address,
-        ]);
-      }
-
-
-      Log::info('Success update profile Pelanggan di Mikrotik: ' . $pelanggan->nama_customer . '-' . $pelanggan->usersecret . '-' . $paket->paket_name);
-
       // Update Data Modem
       ModemDetail::updateOrCreate(
-        ['customer_id' => $pelanggan->id], // kondisi cek
+        ['customer_id' => $pelanggan->id],
         [
           'logistik_id' => $request->perangkat,
           'serial_number' => $pelanggan->seri_perangkat,
@@ -617,16 +767,21 @@ class DataController extends Controller
           'status_id' => 13
         ]
       );
+
       activity('Edit Pelanggan')
         ->causedBy(auth()->user())
         ->log(auth()->user()->name . ' Melakukan Edit Data Pelanggan ' . $pelanggan->nama_customer);
+
       DB::commit();
 
       return redirect('/data/pelanggan')->with('success', 'Data pelanggan berhasil diperbarui.');
+
     } catch (\Exception $e) {
       DB::rollBack();
-      Log::error('Gagal update pelanggan: ' . $e->getMessage());
-      return back()->with('error', 'Terjadi kesalahan saat memperbarui data.');
+      Log::error('Gagal update pelanggan: ' . $e->getMessage(), [
+        'trace' => $e->getTraceAsString()
+      ]);
+      return back()->with('error', 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage());
     }
   }
 
