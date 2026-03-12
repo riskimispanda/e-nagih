@@ -339,6 +339,7 @@
           text: "Apakah data yang dimasukkan sudah benar? Perubahan akan disimpan ke sistem dan Router Mikrotik.",
           icon: 'question',
           showCancelButton: true,
+          topLayer: true,
           confirmButtonColor: '#3085d6',
           cancelButtonColor: '#d33',
           confirmButtonText: 'Ya, Simpan!',

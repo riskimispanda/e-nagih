@@ -3,6 +3,7 @@
 @section('title', 'Data Pelanggan')
 
 @section('page-style')
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
   <style>
     /* Header Styles */
     .modern-card-header {
@@ -252,18 +253,18 @@
     }
 
     /* .export-dropdown .dropdown-toggle {
-                              background-color: #2dce89;
-                              border: none;
-                              color: white;
-                              padding: 0.5rem 1rem;
-                              font-size: 0.875rem;
-                              border-radius: 4px;
-                              transition: all 0.2s ease;
-                              display: flex;
-                              align-items: center;
-                              gap: 0.5rem;
-                              cursor: pointer;
-                          } */
+                                background-color: #2dce89;
+                                border: none;
+                                color: white;
+                                padding: 0.5rem 1rem;
+                                font-size: 0.875rem;
+                                border-radius: 4px;
+                                transition: all 0.2s ease;
+                                display: flex;
+                                align-items: center;
+                                gap: 0.5rem;
+                                cursor: pointer;
+                            } */
 
     .export-dropdown .dropdown-toggle:hover {
       background-color: #24a46d;
@@ -999,7 +1000,13 @@
     <div class="col-sm-12">
       <div class="card">
         <div class="card-header modern-card-header mb-5">
-          <h4 class="header-title">Daftar Pelanggan</h4>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <h4 class="header-title mb-0" style="padding-bottom: 0px !important;">Daftar Pelanggan</h4>
+            <button type="button" class="btn btn-sm btn-primary" id="btn-tutorial-sort" data-bs-toggle="tooltip"
+              data-bs-placement="top" title="Panduan Penggunaan">
+              <i class="bx bx-help-circle me-1"></i> Panduan
+            </button>
+          </div>
 
           <!-- Success/Error Messages -->
           @if (session('success'))
@@ -1042,7 +1049,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-12 col-md-3 mb-4">
+            <div class="col-12 col-md-3 mb-4" id="tutorial-sort-container">
               <div class="sort-group col-sm-12">
                 <div class="sort-label">Urutkan Berdasarkan</div>
                 <select class="sort-select" id="sortSelect">
@@ -1726,6 +1733,7 @@
 
 
 @section('page-script')
+  <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       // DOM Elements
@@ -1796,6 +1804,25 @@
       const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
       });
+
+      // Tutorial functionality setup using driver.js
+      if (typeof window.driver !== 'undefined') {
+        const driver = window.driver.js.driver;
+        const driverObj = driver({
+          showProgress: true,
+          nextBtnText: 'Lanjut &rarr;',
+          prevBtnText: '&larr; Kembali',
+          doneBtnText: 'Selesai',
+          steps: [
+            { element: '#tutorial-sort-container', popover: { title: 'Fitur Pengurutan', description: 'Gunakan fitur ini untuk mengurutkan daftar pelanggan berdasarkan berbagai kriteria yang Anda inginkan.', side: "bottom", align: 'start' } },
+            { element: '#sortSelect', popover: { title: 'Pilih Kriteria', description: 'Klik dropdown ini untuk memilih kriteria pengurutan seperti Default (waktu selesai pengerjaan), Nama (A-Z/Z-A), atau Status Pelanggan Aktif/Non-Aktif.', side: "bottom", align: 'start' } }
+          ]
+        });
+
+        document.getElementById('btn-tutorial-sort').addEventListener('click', function () {
+          driverObj.drive();
+        });
+      }
     });
   </script>
 
