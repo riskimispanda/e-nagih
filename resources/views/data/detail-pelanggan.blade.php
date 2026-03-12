@@ -113,11 +113,11 @@
         <!-- Main Info -->
         <div class="flex-grow text-center md:text-left space-y-2">
           <div class="flex flex-col md:flex-row items-center gap-3">
-            <h1 class="text-3xl font-bold tracking-tight">{{ $customer->nama_customer }}</h1>
+            <h1 class="text-3xl font-bold tracking-tight text-white">{{ $customer->nama_customer }}</h1>
             <span
               class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                                                  {{ $customer->status_id == 3 ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
-    ($customer->status_id == 9 ? 'bg-red-500/20 text-red-100 border border-red-500/30' : 'bg-yellow-500/20 text-yellow-100 border border-yellow-500/30') }}">
+                                                                            {{ $customer->status_id == 3 ? 'bg-green-500 text-green-100 border border-green-500' :
+    ($customer->status_id == 9 ? 'bg-red-500 text-red-100 border border-red-500' : 'bg-yellow-500 text-yellow-100 border border-yellow-500') }}">
               {{ $customer->status_id == 3 ? 'Aktif' : ($customer->status_id == 9 ? 'Nonaktif' : 'Status Lain') }}
             </span>
           </div>
@@ -170,7 +170,7 @@
               <span>Lokasi Tidak Tersedia</span>
             </button>
           @endif
-          <a href="{{ url('/pelanggan/edit/' . $customer->id) }}"
+          <a href="{{ url('/edit-pelanggan', $customer->id) }}"
             class="flex items-center justify-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl font-bold shadow-lg hover:shadow-xl hover:bg-indigo-50 transition-all duration-200 transform hover:-translate-y-0.5">
             <i class="bx bx-edit text-xl"></i>
             <span>Edit Data</span>
