@@ -50,8 +50,7 @@ class DataController extends Controller
       'getServer',
       'odp.odc.olt'
     ])->whereIn('status_id', [3, 4, 9, 16, 17])
-      ->whereNull('deleted_at')
-      ->orderBy('tanggal_selesai', 'desc');
+      ->whereNull('deleted_at');
 
     $import = Customer::where('cek', 'Imported')->count();
     $dismantle = Customer::onlyTrashed()
