@@ -116,7 +116,7 @@
             <h1 class="text-3xl font-bold tracking-tight">{{ $customer->nama_customer }}</h1>
             <span
               class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-                                          {{ $customer->status_id == 3 ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
+                                            {{ $customer->status_id == 3 ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
     ($customer->status_id == 9 ? 'bg-red-500/20 text-red-100 border border-red-500/30' : 'bg-yellow-500/20 text-yellow-100 border border-yellow-500/30') }}">
               {{ $customer->status_id == 3 ? 'Aktif' : ($customer->status_id == 9 ? 'Nonaktif' : 'Status Lain') }}
             </span>
@@ -296,6 +296,14 @@
               <div class="flex justify-between items-center py-2 border-b border-slate-50">
                 <span class="text-sm text-slate-500">ODP</span>
                 <span class="font-semibold text-slate-700">{{ $customer->odp->nama_odp ?? '-' }}</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                <span class="text-sm text-slate-500">Panjang Kabel</span>
+                <span class="font-semibold text-slate-700">{{ $customer->panjang_kabel ?? '-' }} Meter</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-50">
+                <span class="text-sm text-slate-500">Redaman</span>
+                <span class="font-semibold text-slate-700">{{ $customer->redaman ?? '-' }}</span>
               </div>
             </div>
 
