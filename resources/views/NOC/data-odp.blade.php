@@ -305,13 +305,12 @@
                     initMap();
                     clearMarkers();
                     
-                    fetch('{{ route("peta.data") }}')
+                    fetch('{{ route("peta.data") }}?type=odp')
                         .then(res => res.json())
                         .then(data => {
-                            const odpData = data.filter(d => d.jenis === 'odp');
                             const bounds = [];
 
-                            odpData.forEach(odp => {
+                            data.forEach(odp => {
                                 if (odp.lat && odp.lng) {
                                     const marker = L.marker([odp.lat, odp.lng])
                                         .addTo(map)
@@ -325,6 +324,10 @@
                                 map.fitBounds(bounds);
                             }
                             map.invalidateSize();
+                        })
+                        .catch(err => {
+                            console.error('Error fetching map data:', err);
+                            alert('Gagal mengambil data peta. Silakan coba lagi.');
                         });
                 }, 300);
             });

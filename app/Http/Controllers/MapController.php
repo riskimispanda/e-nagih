@@ -51,74 +51,82 @@ class MapController extends Controller
 
     public function data()
     {
-        $server = Server::all()->map(function ($item) {
-            $coord = $this->parseGps($item->gps);
-            return [
-                'id' => $item->id,
-                'nama' => $item->lokasi_server,
-                'lat' => $coord['lat'],
-                'lng' => $coord['lng'],
-                'jenis' => 'server'
-            ];
-        });
+        $type = request('type');
+        $data = collect();
 
-        $olt = Lokasi::all()->map(function ($item) {
-            $coord = $this->parseGps($item->gps);
-            return [
-                'id' => $item->id,
-                'nama' => $item->nama_lokasi,
-                'lat' => $coord['lat'],
-                'lng' => $coord['lng'],
-                'jenis' => 'olt',
-                'server_id' => $item->id_server
-            ];
-        });
-
-        $odc = ODC::all()->map(function ($item) {
-            $coord = $this->parseGps($item->gps);
-            return [
-                'id' => $item->id,
-                'nama' => $item->nama_odc,
-                'lat' => $coord['lat'],
-                'lng' => $coord['lng'],
-                'jenis' => 'odc',
-                'olt_id' => $item->lokasi_id
-            ];
-        });
-
-        $odp = ODP::all()->map(function ($item) {
-            $coord = $this->parseGps($item->gps);
-            return [
-                'id' => $item->id,
-                'nama' => $item->nama_odp,
-                'lat' => $coord['lat'],
-                'lng' => $coord['lng'],
-                'jenis' => 'odp',
-                'odc_id' => $item->odc_id
-            ];
-        });
-
-        $customer = Customer::whereNull('deleted_at') // ✅ Hanya customer aktif
-            ->get()
-            ->map(function ($item) {
+        if (!$type || $type === 'server') {
+            $data = $data->merge(Server::all()->map(function ($item) {
                 $coord = $this->parseGps($item->gps);
                 return [
                     'id' => $item->id,
-                    'nama' => $item->nama_customer,
+                    'nama' => $item->lokasi_server,
                     'lat' => $coord['lat'],
                     'lng' => $coord['lng'],
-                    'jenis' => 'customer',
-                    'odp_id' => $item->lokasi_id
+                    'jenis' => 'server'
                 ];
-            });
+            }));
+        }
+
+        if (!$type || $type === 'olt') {
+            $data = $data->merge(Lokasi::all()->map(function ($item) {
+                $coord = $this->parseGps($item->gps);
+                return [
+                    'id' => $item->id,
+                    'nama' => $item->nama_lokasi,
+                    'lat' => $coord['lat'],
+                    'lng' => $coord['lng'],
+                    'jenis' => 'olt',
+                    'server_id' => $item->id_server
+                ];
+            }));
+        }
+
+        if (!$type || $type === 'odc') {
+            $data = $data->merge(ODC::all()->map(function ($item) {
+                $coord = $this->parseGps($item->gps);
+                return [
+                    'id' => $item->id,
+                    'nama' => $item->nama_odc,
+                    'lat' => $coord['lat'],
+                    'lng' => $coord['lng'],
+                    'jenis' => 'odc',
+                    'olt_id' => $item->lokasi_id
+                ];
+            }));
+        }
+
+        if (!$type || $type === 'odp') {
+            $data = $data->merge(ODP::all()->map(function ($item) {
+                $coord = $this->parseGps($item->gps);
+                return [
+                    'id' => $item->id,
+                    'nama' => $item->nama_odp,
+                    'lat' => $coord['lat'],
+                    'lng' => $coord['lng'],
+                    'jenis' => 'odp',
+                    'odc_id' => $item->odc_id
+                ];
+            }));
+        }
+
+        if (!$type || $type === 'customer') {
+            $data = $data->merge(Customer::whereNull('deleted_at')
+                ->get()
+                ->map(function ($item) {
+                    $coord = $this->parseGps($item->gps);
+                    return [
+                        'id' => $item->id,
+                        'nama' => $item->nama_customer,
+                        'lat' => $coord['lat'],
+                        'lng' => $coord['lng'],
+                        'jenis' => 'customer',
+                        'odp_id' => $item->lokasi_id
+                    ];
+                }));
+        }
 
         return response()->json(
-            $server
-                ->merge($olt)
-                ->merge($odc)
-                ->merge($odp)
-                ->merge($customer)
-                ->filter(fn($item) => $item['lat'] && $item['lng']) // Hanya koordinat valid
+            $data->filter(fn($item) => $item['lat'] && $item['lng'])
                 ->values()
         );
     }
