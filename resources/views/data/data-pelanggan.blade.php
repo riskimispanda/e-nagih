@@ -1264,9 +1264,18 @@
                     <td class="nomor-hp">{{ $item->no_hp }}</td>
                     <td class="fw-bold">{{$item->agen->name ?? '-'}}</td>
                     <td>
-                      <span class="badge bg-info bg-opacity-10 status-badge text-info">
-                        {{ $item->media_id == 3 ? ($item->odp->nama_odp ?? '-') : '-' }}
-                      </span>
+                      @if($item->media_id == 3 && isset($item->odp))
+                        @php
+                          $gps = $item->odp->gps;
+                          $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
+                          $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                        @endphp
+                        <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }} class="badge bg-info bg-opacity-10 status-badge text-info">
+                          {{ $item->odp->nama_odp ?? '-' }}
+                        </a>
+                      @else
+                        <span class="badge bg-info bg-opacity-10 status-badge text-info">-</span>
+                      @endif
                     </td>
                     <td class="nama-paket">
                       <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
