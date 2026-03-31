@@ -66,11 +66,7 @@
       "icon": "menu-icon tf-icons bx bxs-calendar",
       "slug": "kalender",
       "roles": [
-        "Super Admin",
-        "Admin Keuangan",
-        "Admin Logistik",
-        "NOC",
-        "Teknisi"
+        "Super Admin"
       ]
     },
     {
@@ -484,7 +480,9 @@
       "icon": "menu-icon tf-icons bx bx-wifi",
       "slug": "dashboard-customer",
       "roles": [
-        "NOC"
+        "NOC",
+        "Super Admin",
+        "Teknisi"
       ],
       "submenu": [
         {
@@ -492,7 +490,9 @@
           "name": "Data Server",
           "slug": "data-server",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin",
+            "Teknisi"
           ]
         },
         {
@@ -500,7 +500,9 @@
           "name": "Data OLT",
           "slug": "olt",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin",
+            "Teknisi"
           ]
         },
         {
@@ -508,7 +510,9 @@
           "name": "Data ODC",
           "slug": "odc",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin",
+            "Teknisi"
           ]
         },
         {
@@ -516,7 +520,9 @@
           "name": "Data ODP",
           "slug": "odp",
           "roles": [
-            "NOC"
+            "NOC",
+            "Super Admin",
+            "Teknisi"
           ]
         }
       ]
