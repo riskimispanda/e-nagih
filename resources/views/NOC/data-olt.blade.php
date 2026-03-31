@@ -275,17 +275,25 @@
 
             function parseGps(gps) {
                 if (!gps) return null;
+                gps = gps.trim();
 
-                // Format: "-8.044889109411237, 110.4827779828878"
+                // Format: "-8.04488, 110.48277"
                 const simpleMatch = gps.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
                 if (simpleMatch) {
                     return [parseFloat(simpleMatch[1]), parseFloat(simpleMatch[2])];
                 }
 
-                // Format: "...?q=-8.04488,110.48277"
-                const qMatch = gps.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                // Format: "...?q=-8.04488,110.48277" or "q=loc:-8.04488+110.48277"
+                const qMatch = gps.match(/q=(-?\d+\.\d+)(?:,|[+])(-?\d+\.\d+)/) || 
+                               gps.match(/q=loc:(-?\d+\.\d+)(?:,|[+])(-?\d+\.\d+)/);
                 if (qMatch) {
                     return [parseFloat(qMatch[1]), parseFloat(qMatch[2])];
+                }
+                
+                // Format: "@-8.04488,110.48277" (Google Maps URL part)
+                const atMatch = gps.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                if (atMatch) {
+                    return [parseFloat(atMatch[1]), parseFloat(atMatch[2])];
                 }
 
                 return null;
