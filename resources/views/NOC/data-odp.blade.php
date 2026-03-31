@@ -1,5 +1,22 @@
 @extends('layouts.contentNavbarLayout')
 @section('title', 'Data ODP')
+@section('vendor-style')
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #mapOdp {
+            height: 500px;
+            width: 100%;
+            border-radius: 0 0 0.5rem 0.5rem;
+        }
+
+        .leaflet-container {
+            z-index: 1;
+        }
+    </style>
+@endsection
+@section('vendor-script')
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@endsection
 @section('content')
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -14,10 +31,15 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 fw-bold">Lokasi ODP</h4>
-                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#modalTambahOdp">
-                        <i class="bx bxs-add-to-queue me-2"></i>Tambah ODP
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-info btn-sm" id="btnOpenMap">
+                            <i class="bx bx-map-alt me-2"></i>Peta ODP
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#modalTambahOdp">
+                            <i class="bx bxs-add-to-queue me-2"></i>Tambah ODP
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="row mb-4">
@@ -55,9 +77,18 @@
                                         @endphp
 
                                         <td class="text-center">
-                                            <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }} data-bs-toggle="tooltip" title="Lokasi ODP" data-bs-placement="bottom">
-                                                <i class="bx bx-map {{ $url == '#' ? 'text-muted' : 'text-primary' }}"></i>
-                                            </a>
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <a href="javascript:void(0)" class="view-map-btn" data-gps="{{ $od->gps }}"
+                                                    data-nama="{{ $od->nama_odp }}" data-bs-toggle="tooltip"
+                                                    title="Lihat di Peta" data-bs-placement="bottom">
+                                                    <i class="bx bx-map {{ !$od->gps ? 'text-muted' : 'text-primary' }}"></i>
+                                                </a>
+                                                <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }}
+                                                    data-bs-toggle="tooltip" title="Google Maps" data-bs-placement="bottom">
+                                                    <i
+                                                        class="bx bxl-google {{ $url == '#' ? 'text-muted' : 'text-success' }}"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-warning">
@@ -172,9 +203,31 @@
             </div>
         </div>
     </div>
+    {{-- Modal Map --}}
+    <div class="modal fade" id="modalMapOdp" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center">
+                        <i class="bx bx-map-alt me-2 text-primary fs-4"></i>
+                        <h5 class="modal-title mb-0">Peta Lokasi ODP</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="mapOdp"></div>
+                </div>
+                <div class="modal-footer">
+                    <small class="text-muted me-auto">* Klik marker untuk melihat info ODP</small>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
+            // Edit ODP Logic (keeping jQuery for compatibility)
             $('.edit-odp-btn').click(function(e) {
                 e.preventDefault();
                 var id = $(this).data('id');
@@ -189,6 +242,109 @@
                         $('#modalEditOdp').modal('show');
                     }
                 });
+            });
+
+            // MAP LOGIC
+            let map;
+            let markers = [];
+            const modalMapElement = document.getElementById('modalMapOdp');
+            const mapModal = new bootstrap.Modal(modalMapElement);
+
+            function initMap() {
+                if (!map) {
+                    map = L.map('mapOdp').setView([-1.0269916, 110.48579129], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+                }
+            }
+
+            function clearMarkers() {
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+            }
+
+            function parseGps(gps) {
+                if (!gps) return null;
+
+                const simpleMatch = gps.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+                if (simpleMatch) {
+                    return [parseFloat(simpleMatch[1]), parseFloat(simpleMatch[2])];
+                }
+
+                const qMatch = gps.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                if (qMatch) {
+                    return [parseFloat(qMatch[1]), parseFloat(qMatch[2])];
+                }
+
+                return null;
+            }
+
+            // Open Map for All ODPs
+            document.getElementById('btnOpenMap').addEventListener('click', function() {
+                mapModal.show();
+                setTimeout(() => {
+                    initMap();
+                    clearMarkers();
+                    
+                    fetch('{{ route("peta.data") }}')
+                        .then(res => res.json())
+                        .then(data => {
+                            const odpData = data.filter(d => d.jenis === 'odp');
+                            const bounds = [];
+
+                            odpData.forEach(odp => {
+                                if (odp.lat && odp.lng) {
+                                    const marker = L.marker([odp.lat, odp.lng])
+                                        .addTo(map)
+                                        .bindPopup(`<b>${odp.nama}</b><br>Tipe: ODP`);
+                                    markers.push(marker);
+                                    bounds.push([odp.lat, odp.lng]);
+                                }
+                            });
+
+                            if (bounds.length > 0) {
+                                map.fitBounds(bounds);
+                            }
+                            map.invalidateSize();
+                        });
+                }, 300);
+            });
+
+            // Open Map for specific ODP
+            document.querySelectorAll('.view-map-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const gps = this.getAttribute('data-gps');
+                    const nama = this.getAttribute('data-nama');
+                    const coords = parseGps(gps);
+
+                    if (!coords) {
+                        alert('Koordinat tidak valid atau belum diatur.');
+                        return;
+                    }
+
+                    mapModal.show();
+                    setTimeout(() => {
+                        initMap();
+                        clearMarkers();
+
+                        const marker = L.marker(coords)
+                            .addTo(map)
+                            .bindPopup(`<b>${nama}</b><br>Tipe: ODP`)
+                            .openPopup();
+                        markers.push(marker);
+
+                        map.setView(coords, 16);
+                        map.invalidateSize();
+                    }, 300);
+                });
+            });
+
+            // Adjust map size when modal is fully shown
+            modalMapElement.addEventListener('shown.bs.modal', function () {
+                if (map) {
+                    map.invalidateSize();
+                }
             });
         });
     </script>
