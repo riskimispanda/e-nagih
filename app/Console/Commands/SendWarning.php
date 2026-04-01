@@ -175,6 +175,8 @@ class SendWarning extends Command
           $failedCount++;
 
           // OPTIMASI LOG KETIKA GAGAL: Jangan update `warning_sent` customer, agar bisa di-retry esok hari.
+          \App\Models\Invoice::where('id', $invoice->id)->update(['cek' => 0]);
+
           DB::table('whats_log')->insert([
             'customer_id' => $customer->id,
             'jenis_pesan' => 'warning_bayar',
@@ -196,6 +198,8 @@ class SendWarning extends Command
             'error' => $hasil['message'] ?? $hasil['error'] ?? 'Internal Server Error'
           ]);
           $failedCount++;
+
+          \App\Models\Invoice::where('id', $invoice->id)->update(['cek' => 0]);
 
           DB::table('whats_log')->insert([
             'customer_id' => $customer->id,
@@ -240,6 +244,8 @@ class SendWarning extends Command
             ]);
             $failedCount++;
 
+            \App\Models\Invoice::where('id', $invoice->id)->update(['cek' => 0]);
+
             // JANGAN UPDATE `warning_sent` customer.
             DB::table('whats_log')->insert([
               'customer_id' => $customer->id,
@@ -258,6 +264,8 @@ class SendWarning extends Command
             $updated = Customer::where('id', $customer->id)
               ->whereNull('warning_sent')
               ->update(['warning_sent' => 1]);
+
+            \App\Models\Invoice::where('id', $invoice->id)->update(['cek' => 1]);
 
             if ($updated) {
               Log::info("✅ Warning berhasil diserahkan ke sistem Qontak", [

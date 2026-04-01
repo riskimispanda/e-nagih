@@ -45,6 +45,34 @@ class QontakWebhookController extends Controller
                                         'error_message' => $error ?: $log->error_message
                                 ]);
 
+                                // Update otomatis field cek di tabel invoice
+                                if ($log->jenis_pesan === 'kirim_invoice' && preg_match('/Invoice Global \((.+) (\d{4})\)/', $log->pesan, $matches)) {
+                                        $namaBulan = $matches[1];
+                                        $tahun = $matches[2];
+                                        
+                                        $bulanMap = [
+                                                'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
+                                                'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
+                                                'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
+                                        ];
+                                        
+                                        $bulanAngka = $bulanMap[$namaBulan] ?? null;
+                                        
+                                        if ($bulanAngka) {
+                                                $cekValue = (strtolower($status) === 'failed') ? 0 : 1;
+                                                \App\Models\Invoice::where('customer_id', $log->customer_id)
+                                                        ->whereMonth('jatuh_tempo', $bulanAngka)
+                                                        ->whereYear('jatuh_tempo', $tahun)
+                                                        ->update(['cek' => $cekValue]);
+                                        }
+                                } elseif ($log->jenis_pesan === 'warning_bayar') {
+                                        $cekValue = (strtolower($status) === 'failed') ? 0 : 1;
+                                        \App\Models\Invoice::where('customer_id', $log->customer_id)
+                                                ->whereMonth('jatuh_tempo', $log->created_at->month)
+                                                ->whereYear('jatuh_tempo', $log->created_at->year)
+                                                ->update(['cek' => $cekValue]);
+                                }
+
                                 return response()->json(['success' => true, 'message' => 'Log updated']);
                         }
                 }

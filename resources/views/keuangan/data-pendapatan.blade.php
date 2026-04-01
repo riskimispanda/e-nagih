@@ -607,14 +607,14 @@
                     @if ($invoice->status && $invoice->status->nama_status == 'Belum Bayar')
                       <button
                         class="action-btn bg-success bg-opacity-10 text-success btn-sm
-                                                                                                                                                                                                                                                                                                                                                                                      @if($invoice->customer->trashed()) disabled @endif"
+                                                                                                                                                                                                                                                                                                                                                                                                  @if($invoice->customer->trashed()) disabled @endif"
                         data-bs-target="#konfirmasiPembayaran{{ $invoice->id }}" data-bs-toggle="modal"
                         @if($invoice->customer->trashed()) disabled @endif>
                         <i class="bx bx-money"></i>
                       </button>
                       <a href="/riwayatPembayaran/{{ $invoice->customer_id }}"
                         class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary
-                                                                                                                                                                                                                                                                                                                                                                                      @if($invoice->customer->trashed()) disabled @endif"
+                                                                                                                                                                                                                                                                                                                                                                                                  @if($invoice->customer->trashed()) disabled @endif"
                         data-bs-toggle="tooltip" data-bs-placement="bottom"
                         title="History Pembayaran {{ $invoice->customer->nama_customer ?? 'Not Found' }}">
                         <i class="bx bx-history"></i>
@@ -623,7 +623,7 @@
 
                     <a href="/kirim/invoice/{{ $invoice->id }}"
                       class="action-btn bg-warning bg-opacity-10 text-warning btn-sm
-                                                                                                                                                                                                                                                                    @if($invoice->customer->trashed()) disabled @endif"
+                                                                                                                                                                                                                                                                            @if($invoice->customer->trashed()) disabled @endif"
                       data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kirim Invoice"
                       @if($invoice->customer->trashed()) onclick="return false;" @endif>
                       <i class="bx bx-message"></i>
@@ -633,7 +633,7 @@
                       @csrf
                       <button type="submit"
                         class="action-btn bg-danger bg-opacity-10 text-danger btn-sm
-                                                                                                                                                                                                                                                                        @if($invoice->customer->trashed()) disabled @endif"
+                                                                                                                                                                                                                                                                                @if($invoice->customer->trashed()) disabled @endif"
                         data-bs-toggle="tooltip" data-bs-placement="bottom" title="Sync Payment"
                         @if($invoice->customer->trashed()) disabled @endif>
                         <i class="bx bx-cart"></i>
@@ -671,7 +671,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="10" class="text-center py-5">
+                <td colspan="11" class="text-center py-5">
                   <div class="d-flex flex-column align-items-center">
                     <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
                     <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
@@ -1260,161 +1260,161 @@
       const jatuhTempo = invoice.jatuh_tempo ? new Date(invoice.jatuh_tempo).toISOString().split('T')[0] : '';
 
       return `
-                                                                                                                  <div class="modal fade" id="konfirmasiPembayaran${invoice.id}" tabindex="-1" aria-hidden="true">
-                                                                                                                      <div class="modal-dialog modal-dialog-centered" role="document">
-                                                                                                                          <div class="modal-content">
-                                                                                                                              <div class="modal-header border-bottom">
-                                                                                                                                  <h5 class="modal-title mb-6">
-                                                                                                                                      <i class="bx bx-wallet me-2 text-danger"></i>
-                                                                                                                                      Konfirmasi Pembayaran <span class="text-danger fw-bold">${invoice.customer?.nama_customer || 'N/A'}</span>
-                                                                                                                                  </h5>
-                                                                                                                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                                                      <div class="modal fade" id="konfirmasiPembayaran${invoice.id}" tabindex="-1" aria-hidden="true">
+                                                                                                                          <div class="modal-dialog modal-dialog-centered" role="document">
+                                                                                                                              <div class="modal-content">
+                                                                                                                                  <div class="modal-header border-bottom">
+                                                                                                                                      <h5 class="modal-title mb-6">
+                                                                                                                                          <i class="bx bx-wallet me-2 text-danger"></i>
+                                                                                                                                          Konfirmasi Pembayaran <span class="text-danger fw-bold">${invoice.customer?.nama_customer || 'N/A'}</span>
+                                                                                                                                      </h5>
+                                                                                                                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                                                                  </div>
+                                                                                                                                  <form action="/request/pembayaran/${invoice.id}" method="POST" enctype="multipart/form-data">
+                                                                                                                                      @csrf
+                                                                                                                                      <div class="modal-body">
+                                                                                                                                          <input type="hidden" name="invoice_id" value="${invoice.id}">
+
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col mb-4">
+                                                                                                                                                  <label class="form-label">Tanggal Jatuh Tempo</label>
+                                                                                                                                                  <input type="date" class="form-control" value="${jatuhTempo}" readonly>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col mb-4">
+                                                                                                                                                  <label class="form-label">Tipe Pembayaran</label>
+                                                                                                                                                  <select name="tipe_pembayaran" class="form-select" required>
+                                                                                                                                                      <option value="">Pilih Tipe Pembayaran</option>
+                                                                                                                                                      <option value="reguler">Pembayaran Reguler</option>
+                                                                                                                                                      <option value="diskon">Pembayaran Diskon</option>
+                                                                                                                                                  </select>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col mb-4 col-lg-4">
+                                                                                                                                                  <label class="form-label mb-2">Tagihan</label>
+                                                                                                                                                  <div class="form-check">
+                                                                                                                                                      <input type="checkbox"
+                                                                                                                                                             class="form-check-input pilihan"
+                                                                                                                                                             name="bayar[]"
+                                                                                                                                                             value="tagihan"
+                                                                                                                                                             data-amount="${invoice.tagihan || 0}"
+                                                                                                                                                             data-id="${invoice.id}">
+                                                                                                                                                      <label class="form-check-label">
+                                                                                                                                                          Rp ${formatNumber(invoice.tagihan || 0)}
+                                                                                                                                                      </label>
+                                                                                                                                                  </div>
+                                                                                                                                              </div>
+
+                                                                                                                                              <div class="col mb-4 col-lg-4">
+                                                                                                                                                  <label class="form-label mb-2">Biaya Tambahan</label>
+                                                                                                                                                  <div class="form-check">
+                                                                                                                                                      <input type="checkbox"
+                                                                                                                                                             class="form-check-input pilihan"
+                                                                                                                                                             name="bayar[]"
+                                                                                                                                                             value="tambahan"
+                                                                                                                                                             data-amount="${invoice.tambahan || 0}"
+                                                                                                                                                             data-id="${invoice.id}">
+                                                                                                                                                      <label class="form-check-label">
+                                                                                                                                                          Rp ${formatNumber(invoice.tambahan || 0)}
+                                                                                                                                                      </label>
+                                                                                                                                                  </div>
+                                                                                                                                              </div>
+
+                                                                                                                                              <div class="col mb-4 col-lg-4">
+                                                                                                                                                  <label class="form-label mb-2">Tunggakan</label>
+                                                                                                                                                  <div class="form-check">
+                                                                                                                                                      <input type="checkbox"
+                                                                                                                                                             class="form-check-input pilihan"
+                                                                                                                                                             name="bayar[]"
+                                                                                                                                                             value="tunggakan"
+                                                                                                                                                             data-amount="${invoice.tunggakan || 0}"
+                                                                                                                                                             data-id="${invoice.id}">
+                                                                                                                                                      <label class="form-check-label">
+                                                                                                                                                          Rp ${formatNumber(invoice.tunggakan || 0)}
+                                                                                                                                                      </label>
+                                                                                                                                                  </div>
+                                                                                                                                              </div>
+                                                                                                                                              <div class="col mb-4 col-lg-4">
+                                                                                                                                                  <label class="form-label mb-2">Sisa Saldo</label>
+                                                                                                                                                  <div class="form-check">
+                                                                                                                                                      <input type="checkbox"
+                                                                                                                                                          class="form-check-input pilihan"
+                                                                                                                                                          name="saldo"
+                                                                                                                                                          value="${invoice.saldo || 0}"
+                                                                                                                                                          data-amount="${invoice.saldo || 0}"
+                                                                                                                                                          data-id="${invoice.id}"
+                                                                                                                                                          data-type="saldo">
+                                                                                                                                                      <label class="form-check-label">
+                                                                                                                                                          Rp ${formatNumber(invoice.saldo || 0)}
+                                                                                                                                                      </label>
+                                                                                                                                                  </div>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col-12 mb-4 col-lg-12">
+                                                                                                                                                  <label class="form-label">Total</label>
+                                                                                                                                                  <input type="text" id="total${invoice.id}" class="form-control" name="total" value="Rp 0" readonly>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+
+                                                                                                                                          <div class="row g-2">
+                                                                                                                                              <div class="col mb-4 col-lg-6">
+                                                                                                                                                  <label class="form-label">Jumlah Bayar</label>
+                                                                                                                                                  <input type="text" class="form-control" id="revenueAmount${invoice.id}" name="revenueAmount" oninput="formatRupiah(this, ${invoice.id})" placeholder="Masukkan jumlah bayar" required>
+                                                                                                                                                  <input type="hidden" id="raw${invoice.id}" name="jumlah_bayar">
+                                                                                                                                              </div>
+                                                                                                                                              <div class="col mb-4 col-lg-6">
+                                                                                                                                                  <label class="form-label">Metode Pembayaran</label>
+                                                                                                                                                  <select name="metode_id" class="form-select">
+                                                                                                                                                      <option value="" selected disabled>Pilih Metode Pembayaran</option>
+                                                                                                                                                      ${generateMetodeOptions()}
+                                                                                                                                                  </select>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col mb-4 col-lg-12">
+                                                                                                                                                  <label class="form-label">Bukti Pembayaran</label>
+                                                                                                                                                  <input type="file" class="form-control" name="bukti_pembayaran">
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+                                                                                                                                          <div class="row">
+                                                                                                                                              <div class="col mb-4 col-lg-12">
+                                                                                                                                                  <label for="keteranganPembayaran" class="form-label">
+                                                                                                                                                      Keterangan Pembayaran
+                                                                                                                                                      <span class="text-muted">(Opsional)</span>
+                                                                                                                                                  </label>
+                                                                                                                                                  <textarea
+                                                                                                                                                      class="form-control"
+                                                                                                                                                      id="keteranganPembayaran"
+                                                                                                                                                      name="keterangan"
+                                                                                                                                                      rows="4"
+                                                                                                                                                      placeholder="Masukkan keterangan pembayaran jika diperlukan"
+                                                                                                                                                      aria-describedby="keteranganHelp"
+                                                                                                                                                  ></textarea>
+                                                                                                                                                  <div id="keteranganHelp" class="form-text">
+                                                                                                                                                      Maksimal 500 karakter. Isi dengan informasi tambahan terkait pembayaran.
+                                                                                                                                                  </div>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+                                                                                                                                      </div>
+
+                                                                                                                                      <div class="modal-footer gap-2">
+                                                                                                                                          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                                                                                                                                          <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                                                                                                              <i class="bx bx-send me-1"></i>Confirm
+                                                                                                                                          </button>
+                                                                                                                                      </div>
+                                                                                                                                  </form>
                                                                                                                               </div>
-                                                                                                                              <form action="/request/pembayaran/${invoice.id}" method="POST" enctype="multipart/form-data">
-                                                                                                                                  @csrf
-                                                                                                                                  <div class="modal-body">
-                                                                                                                                      <input type="hidden" name="invoice_id" value="${invoice.id}">
-
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col mb-4">
-                                                                                                                                              <label class="form-label">Tanggal Jatuh Tempo</label>
-                                                                                                                                              <input type="date" class="form-control" value="${jatuhTempo}" readonly>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col mb-4">
-                                                                                                                                              <label class="form-label">Tipe Pembayaran</label>
-                                                                                                                                              <select name="tipe_pembayaran" class="form-select" required>
-                                                                                                                                                  <option value="">Pilih Tipe Pembayaran</option>
-                                                                                                                                                  <option value="reguler">Pembayaran Reguler</option>
-                                                                                                                                                  <option value="diskon">Pembayaran Diskon</option>
-                                                                                                                                              </select>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col mb-4 col-lg-4">
-                                                                                                                                              <label class="form-label mb-2">Tagihan</label>
-                                                                                                                                              <div class="form-check">
-                                                                                                                                                  <input type="checkbox"
-                                                                                                                                                         class="form-check-input pilihan"
-                                                                                                                                                         name="bayar[]"
-                                                                                                                                                         value="tagihan"
-                                                                                                                                                         data-amount="${invoice.tagihan || 0}"
-                                                                                                                                                         data-id="${invoice.id}">
-                                                                                                                                                  <label class="form-check-label">
-                                                                                                                                                      Rp ${formatNumber(invoice.tagihan || 0)}
-                                                                                                                                                  </label>
-                                                                                                                                              </div>
-                                                                                                                                          </div>
-
-                                                                                                                                          <div class="col mb-4 col-lg-4">
-                                                                                                                                              <label class="form-label mb-2">Biaya Tambahan</label>
-                                                                                                                                              <div class="form-check">
-                                                                                                                                                  <input type="checkbox"
-                                                                                                                                                         class="form-check-input pilihan"
-                                                                                                                                                         name="bayar[]"
-                                                                                                                                                         value="tambahan"
-                                                                                                                                                         data-amount="${invoice.tambahan || 0}"
-                                                                                                                                                         data-id="${invoice.id}">
-                                                                                                                                                  <label class="form-check-label">
-                                                                                                                                                      Rp ${formatNumber(invoice.tambahan || 0)}
-                                                                                                                                                  </label>
-                                                                                                                                              </div>
-                                                                                                                                          </div>
-
-                                                                                                                                          <div class="col mb-4 col-lg-4">
-                                                                                                                                              <label class="form-label mb-2">Tunggakan</label>
-                                                                                                                                              <div class="form-check">
-                                                                                                                                                  <input type="checkbox"
-                                                                                                                                                         class="form-check-input pilihan"
-                                                                                                                                                         name="bayar[]"
-                                                                                                                                                         value="tunggakan"
-                                                                                                                                                         data-amount="${invoice.tunggakan || 0}"
-                                                                                                                                                         data-id="${invoice.id}">
-                                                                                                                                                  <label class="form-check-label">
-                                                                                                                                                      Rp ${formatNumber(invoice.tunggakan || 0)}
-                                                                                                                                                  </label>
-                                                                                                                                              </div>
-                                                                                                                                          </div>
-                                                                                                                                          <div class="col mb-4 col-lg-4">
-                                                                                                                                              <label class="form-label mb-2">Sisa Saldo</label>
-                                                                                                                                              <div class="form-check">
-                                                                                                                                                  <input type="checkbox"
-                                                                                                                                                      class="form-check-input pilihan"
-                                                                                                                                                      name="saldo"
-                                                                                                                                                      value="${invoice.saldo || 0}"
-                                                                                                                                                      data-amount="${invoice.saldo || 0}"
-                                                                                                                                                      data-id="${invoice.id}"
-                                                                                                                                                      data-type="saldo">
-                                                                                                                                                  <label class="form-check-label">
-                                                                                                                                                      Rp ${formatNumber(invoice.saldo || 0)}
-                                                                                                                                                  </label>
-                                                                                                                                              </div>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col-12 mb-4 col-lg-12">
-                                                                                                                                              <label class="form-label">Total</label>
-                                                                                                                                              <input type="text" id="total${invoice.id}" class="form-control" name="total" value="Rp 0" readonly>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-
-                                                                                                                                      <div class="row g-2">
-                                                                                                                                          <div class="col mb-4 col-lg-6">
-                                                                                                                                              <label class="form-label">Jumlah Bayar</label>
-                                                                                                                                              <input type="text" class="form-control" id="revenueAmount${invoice.id}" name="revenueAmount" oninput="formatRupiah(this, ${invoice.id})" placeholder="Masukkan jumlah bayar" required>
-                                                                                                                                              <input type="hidden" id="raw${invoice.id}" name="jumlah_bayar">
-                                                                                                                                          </div>
-                                                                                                                                          <div class="col mb-4 col-lg-6">
-                                                                                                                                              <label class="form-label">Metode Pembayaran</label>
-                                                                                                                                              <select name="metode_id" class="form-select">
-                                                                                                                                                  <option value="" selected disabled>Pilih Metode Pembayaran</option>
-                                                                                                                                                  ${generateMetodeOptions()}
-                                                                                                                                              </select>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col mb-4 col-lg-12">
-                                                                                                                                              <label class="form-label">Bukti Pembayaran</label>
-                                                                                                                                              <input type="file" class="form-control" name="bukti_pembayaran">
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-                                                                                                                                      <div class="row">
-                                                                                                                                          <div class="col mb-4 col-lg-12">
-                                                                                                                                              <label for="keteranganPembayaran" class="form-label">
-                                                                                                                                                  Keterangan Pembayaran
-                                                                                                                                                  <span class="text-muted">(Opsional)</span>
-                                                                                                                                              </label>
-                                                                                                                                              <textarea
-                                                                                                                                                  class="form-control"
-                                                                                                                                                  id="keteranganPembayaran"
-                                                                                                                                                  name="keterangan"
-                                                                                                                                                  rows="4"
-                                                                                                                                                  placeholder="Masukkan keterangan pembayaran jika diperlukan"
-                                                                                                                                                  aria-describedby="keteranganHelp"
-                                                                                                                                              ></textarea>
-                                                                                                                                              <div id="keteranganHelp" class="form-text">
-                                                                                                                                                  Maksimal 500 karakter. Isi dengan informasi tambahan terkait pembayaran.
-                                                                                                                                              </div>
-                                                                                                                                          </div>
-                                                                                                                                      </div>
-                                                                                                                                  </div>
-
-                                                                                                                                  <div class="modal-footer gap-2">
-                                                                                                                                      <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                                                                                                                                      <button type="submit" class="btn btn-outline-danger btn-sm">
-                                                                                                                                          <i class="bx bx-send me-1"></i>Confirm
-                                                                                                                                      </button>
-                                                                                                                                  </div>
-                                                                                                                              </form>
                                                                                                                           </div>
                                                                                                                       </div>
-                                                                                                                  </div>
-                                                                                                                  `;
+                                                                                                                      `;
     }
 
     // GENERATE METODE OPTIONS (gunakan data dari PHP yang sudah ada di page)
@@ -1425,7 +1425,7 @@
       @foreach ($metode as $item)
         optionsHTML += `<option value="{{ $item->nama_metode }}">{{ $item->nama_metode }}</option>`;
       @endforeach
-                                                                                                                  return optionsHTML;
+                                                                                                                      return optionsHTML;
     }
 
     // INITIALIZE MODAL EVENT LISTENERS
@@ -1467,16 +1467,16 @@
 
       if (invoices.length === 0) {
         tableBody.innerHTML = `
-                                                                                                                          <tr>
-                                                                                                                              <td colspan="10" class="text-center py-5">
-                                                                                                                                  <div class="d-flex flex-column align-items-center">
-                                                                                                                                      <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                                                                                                                                      <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                                                                                                                                      <p class="text-muted mb-0">Belum ada data invoice yang tersedia</p>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                          </tr>
-                                                                                                                      `;
+                                                                                                                              <tr>
+                                                                                                                                  <td colspan="11" class="text-center py-5">
+                                                                                                                                      <div class="d-flex flex-column align-items-center">
+                                                                                                                                          <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
+                                                                                                                                          <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
+                                                                                                                                          <p class="text-muted mb-0">Belum ada data invoice yang tersedia</p>
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                              </tr>
+                                                                                                                          `;
         return;
       }
 
@@ -1502,109 +1502,109 @@
         const status = invoice.status || {};
 
         tableHTML += `
-                                                                                                                          <tr class="${isCustomerDeleted ? 'bg-danger bg-opacity-10' : ''}">
-                                                                                                                              <td>
-                                                                                                                                <button class="btn btn-sm btn-link p-0 me-2 collapse-toggle"
-                                                                                                                                        data-bs-toggle="collapse"
-                                                                                                                                        data-bs-target="#detail-${invoice.id}"
-                                                                                                                                        aria-expanded="false"
-                                                                                                                                        style="text-decoration: none;">
-                                                                                                                                    <i class="bx bx-plus-circle text-primary"></i>
-                                                                                                                                </button>
-                                                                                                                              </td>
-                                                                                                                              <td class="fw-medium">
-                                                                                                                                  <span>${rowNumber}</span>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div>
-                                                                                                                                      <div class="fw-medium text-dark">${customerName}</div>
-                                                                                                                                      <small class="text-muted">${customerAddress.substring(0, 30)}${customerAddress.length > 30 ? '...' : ''}</small>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <span class="badge bg-info bg-opacity-10 text-primary">
-                                                                                                                                      ${packageName}
-                                                                                                                                  </span>
-                                                                                                                                  ${isCustomerDeleted ? '<span class="badge bg-label-danger mt-2">Deaktivasi</span>' : ''}
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div class="d-flex align-items-center">
-                                                                                                                                      <i class="bx bx-money text-secondary me-2"></i>
-                                                                                                                                      <span class="fw-bold text-secondary">
-                                                                                                                                          Rp ${formatNumber(invoice.tagihan || 0)}
-                                                                                                                                      </span>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div class="d-flex align-items-center">
-                                                                                                                                      <i class="bx bx-plus-circle text-warning me-2"></i>
-                                                                                                                                      <span class="fw-semibold text-warning">
-                                                                                                                                          Rp ${formatNumber(invoice.tambahan || 0)}
-                                                                                                                                      </span>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div class="d-flex align-items-center">
-                                                                                                                                      <i class="bx bx-plus-circle text-warning me-2"></i>
-                                                                                                                                      <span class="fw-semibold text-warning">
-                                                                                                                                          Rp ${formatNumber(invoice.tunggakan || 0)}
-                                                                                                                                      </span>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div class="d-flex align-items-center">
-                                                                                                                                      <i class="bx bx-wallet text-success me-2"></i>
-                                                                                                                                      <span class="fw-semibold text-dark">
-                                                                                                                                          Rp ${formatNumber(invoice.saldo || 0)}
-                                                                                                                                      </span>
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td style="font-size: 14px;">
-                                                                                                                                  <div class="d-flex align-items-center">
-                                                                                                                                      <i class="bx bx-calendar text-danger me-2"></i>
-                                                                                                                                      ${formatDate(invoice.jatuh_tempo)}
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  ${getStatusBadge(status)}
-                                                                                                                              </td>
-                                                                                                                              <td>
-                                                                                                                                  <div class="d-flex gap-2">
-                                                                                                                                      ${getActionButtons(invoice, customer)}
-                                                                                                                                  </div>
-                                                                                                                              </td>
-                                                                                                                          </tr>
-                                                                                                                          <!-- Collapsible Detail Row -->
-                                                                                                                        <tr class="collapse" id="detail-${invoice.id}">
-                                                                                                                            <td colspan="11">
-                                                                                                                                <div class="p-3">
-                                                                                                                                    <div class="row g-3">
-                                                                                                                                      <div class="col-md-6">
-                                                                                                                                          <small class="text-muted d-block">Link Pembayaran</small>
-                                                                                                                                          <div class="d-flex align-items-center gap-2">
-                                                                                                                                              <input type="text" class="form-control form-control-sm"
-                                                                                                                                                     value="${window.location.origin}/payment/invoice/${invoice.encrypted_customer_id || invoice.customer_id}"
-                                                                                                                                                     id="paymentLink${invoice.id}"
-                                                                                                                                                     readonly>
-                                                                                                                                              <button class="btn btn-sm btn-primary"
-                                                                                                                                                      onclick="copyToClipboard('paymentLink${invoice.id}')"
-                                                                                                                                                      data-bs-toggle="tooltip"
-                                                                                                                                                      title="Copy Link">
-                                                                                                                                                  <i class="bx bx-copy"></i>
-                                                                                                                                              </button>
-                                                                                                                                          </div>
+                                                                                                                              <tr class="${isCustomerDeleted ? 'bg-danger bg-opacity-10' : ''}">
+                                                                                                                                  <td>
+                                                                                                                                    <button class="btn btn-sm btn-link p-0 me-2 collapse-toggle"
+                                                                                                                                            data-bs-toggle="collapse"
+                                                                                                                                            data-bs-target="#detail-${invoice.id}"
+                                                                                                                                            aria-expanded="false"
+                                                                                                                                            style="text-decoration: none;">
+                                                                                                                                        <i class="bx bx-plus-circle text-primary"></i>
+                                                                                                                                    </button>
+                                                                                                                                  </td>
+                                                                                                                                  <td class="fw-medium">
+                                                                                                                                      <span>${rowNumber}</span>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div>
+                                                                                                                                          <div class="fw-medium text-dark">${customerName}</div>
+                                                                                                                                          <small class="text-muted">${customerAddress.substring(0, 30)}${customerAddress.length > 30 ? '...' : ''}</small>
                                                                                                                                       </div>
-                                                                                                                                        ${invoice.keterangan ? `
-                                                                                                                                        <div class="col-md-12">
-                                                                                                                                            <small class="text-muted d-block">Keterangan</small>
-                                                                                                                                            <strong>${invoice.keterangan}</strong>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <span class="badge bg-info bg-opacity-10 text-primary">
+                                                                                                                                          ${packageName}
+                                                                                                                                      </span>
+                                                                                                                                      ${isCustomerDeleted ? '<span class="badge bg-label-danger mt-2">Deaktivasi</span>' : ''}
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div class="d-flex align-items-center">
+                                                                                                                                          <i class="bx bx-money text-secondary me-2"></i>
+                                                                                                                                          <span class="fw-bold text-secondary">
+                                                                                                                                              Rp ${formatNumber(invoice.tagihan || 0)}
+                                                                                                                                          </span>
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div class="d-flex align-items-center">
+                                                                                                                                          <i class="bx bx-plus-circle text-warning me-2"></i>
+                                                                                                                                          <span class="fw-semibold text-warning">
+                                                                                                                                              Rp ${formatNumber(invoice.tambahan || 0)}
+                                                                                                                                          </span>
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div class="d-flex align-items-center">
+                                                                                                                                          <i class="bx bx-plus-circle text-warning me-2"></i>
+                                                                                                                                          <span class="fw-semibold text-warning">
+                                                                                                                                              Rp ${formatNumber(invoice.tunggakan || 0)}
+                                                                                                                                          </span>
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div class="d-flex align-items-center">
+                                                                                                                                          <i class="bx bx-wallet text-success me-2"></i>
+                                                                                                                                          <span class="fw-semibold text-dark">
+                                                                                                                                              Rp ${formatNumber(invoice.saldo || 0)}
+                                                                                                                                          </span>
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                                  <td style="font-size: 14px;">
+                                                                                                                                      <div class="d-flex align-items-center">
+                                                                                                                                          <i class="bx bx-calendar text-danger me-2"></i>
+                                                                                                                                          ${formatDate(invoice.jatuh_tempo)}
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      ${getStatusBadge(status)}
+                                                                                                                                  </td>
+                                                                                                                                  <td>
+                                                                                                                                      <div class="d-flex gap-2">
+                                                                                                                                          ${getActionButtons(invoice, customer)}
+                                                                                                                                      </div>
+                                                                                                                                  </td>
+                                                                                                                              </tr>
+                                                                                                                              <!-- Collapsible Detail Row -->
+                                                                                                                            <tr class="collapse" id="detail-${invoice.id}">
+                                                                                                                                <td colspan="11">
+                                                                                                                                    <div class="p-3">
+                                                                                                                                        <div class="row g-3">
+                                                                                                                                          <div class="col-md-6">
+                                                                                                                                              <small class="text-muted d-block">Link Pembayaran</small>
+                                                                                                                                              <div class="d-flex align-items-center gap-2">
+                                                                                                                                                  <input type="text" class="form-control form-control-sm"
+                                                                                                                                                         value="${window.location.origin}/payment/invoice/${invoice.encrypted_customer_id || invoice.customer_id}"
+                                                                                                                                                         id="paymentLink${invoice.id}"
+                                                                                                                                                         readonly>
+                                                                                                                                                  <button class="btn btn-sm btn-primary"
+                                                                                                                                                          onclick="copyToClipboard('paymentLink${invoice.id}')"
+                                                                                                                                                          data-bs-toggle="tooltip"
+                                                                                                                                                          title="Copy Link">
+                                                                                                                                                      <i class="bx bx-copy"></i>
+                                                                                                                                                  </button>
+                                                                                                                                              </div>
+                                                                                                                                          </div>
+                                                                                                                                            ${invoice.keterangan ? `
+                                                                                                                                            <div class="col-md-12">
+                                                                                                                                                <small class="text-muted d-block">Keterangan</small>
+                                                                                                                                                <strong>${invoice.keterangan}</strong>
+                                                                                                                                            </div>
+                                                                                                                                            ` : ''}
                                                                                                                                         </div>
-                                                                                                                                        ` : ''}
                                                                                                                                     </div>
-                                                                                                                                </div>
-                                                                                                                            </td>
-                                                                                                                        </tr>
-                                                                                                                    `;
+                                                                                                                                </td>
+                                                                                                                            </tr>
+                                                                                                                        `;
       });
 
       tableBody.innerHTML = tableHTML;
@@ -1621,12 +1621,12 @@
         paginationContainer.style.display = 'block';
         const totalRecords = pagination ? pagination.total : 0;
         paginationContainer.innerHTML = `
-                                                                                                                          <div class="d-flex justify-content-center">
-                                                                                                                              <div class="text-muted small">
-                                                                                                                                  Menampilkan semua ${formatNumber(totalRecords)} data
+                                                                                                                              <div class="d-flex justify-content-center">
+                                                                                                                                  <div class="text-muted small">
+                                                                                                                                      Menampilkan semua ${formatNumber(totalRecords)} data
+                                                                                                                                  </div>
                                                                                                                               </div>
-                                                                                                                          </div>
-                                                                                                                      `;
+                                                                                                                          `;
         return;
       }
 
@@ -1642,23 +1642,23 @@
       const totalRecords = pagination.total || 0;
 
       let paginationHTML = `
-                                                                                                                      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
-                                                                                                                          <div class="text-muted small">
-                                                                                                                              Menampilkan data ${fromRecord} sampai ${toRecord} dari ${formatNumber(totalRecords)} data
-                                                                                                                          </div>
-                                                                                                                          <div>
-                                                                                                                              <nav aria-label="Page navigation">
-                                                                                                                                  <ul class="pagination pagination-sm justify-content-center mb-0">
-                                                                                                                  `;
+                                                                                                                          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+                                                                                                                              <div class="text-muted small">
+                                                                                                                                  Menampilkan data ${fromRecord} sampai ${toRecord} dari ${formatNumber(totalRecords)} data
+                                                                                                                              </div>
+                                                                                                                              <div>
+                                                                                                                                  <nav aria-label="Page navigation">
+                                                                                                                                      <ul class="pagination pagination-sm justify-content-center mb-0">
+                                                                                                                      `;
 
       if (pagination.current_page > 1) {
         paginationHTML += `<li class="page-item">
-                                                                                                                          <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
-                                                                                                                      </li>`;
+                                                                                                                              <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page - 1}">‹ Previous</a>
+                                                                                                                          </li>`;
       } else {
         paginationHTML += `<li class="page-item disabled">
-                                                                                                                          <span class="page-link">‹ Previous</span>
-                                                                                                                      </li>`;
+                                                                                                                              <span class="page-link">‹ Previous</span>
+                                                                                                                          </li>`;
       }
 
       const startPage = Math.max(1, pagination.current_page - 2);
@@ -1666,8 +1666,8 @@
 
       if (startPage > 1) {
         paginationHTML += `<li class="page-item">
-                                                                                                                          <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
-                                                                                                                      </li>`;
+                                                                                                                              <a class="page-link ajax-pagination" href="#" data-page="1">1</a>
+                                                                                                                          </li>`;
         if (startPage > 2) {
           paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
         }
@@ -1676,12 +1676,12 @@
       for (let i = startPage; i <= endPage; i++) {
         if (i === pagination.current_page) {
           paginationHTML += `<li class="page-item active">
-                                                                                                                              <span class="page-link">${i}</span>
-                                                                                                                          </li>`;
+                                                                                                                                  <span class="page-link">${i}</span>
+                                                                                                                              </li>`;
         } else {
           paginationHTML += `<li class="page-item">
-                                                                                                                              <a class="page-link ajax-pagination" href="#" data-page="${i}">${i}</a>
-                                                                                                                          </li>`;
+                                                                                                                                  <a class="page-link ajax-pagination" href="#" data-page="${i}">${i}</a>
+                                                                                                                              </li>`;
         }
       }
 
@@ -1690,26 +1690,26 @@
           paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
         }
         paginationHTML += `<li class="page-item">
-                                                                                                                          <a class="page-link ajax-pagination" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a>
-                                                                                                                      </li>`;
+                                                                                                                              <a class="page-link ajax-pagination" href="#" data-page="${pagination.last_page}">${pagination.last_page}</a>
+                                                                                                                          </li>`;
       }
 
       if (pagination.current_page < pagination.last_page) {
         paginationHTML += `<li class="page-item">
-                                                                                                                          <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
-                                                                                                                      </li>`;
+                                                                                                                              <a class="page-link ajax-pagination" href="#" data-page="${pagination.current_page + 1}">Next ›</a>
+                                                                                                                          </li>`;
       } else {
         paginationHTML += `<li class="page-item disabled">
-                                                                                                                          <span class="page-link">Next ›</span>
-                                                                                                                      </li>`;
+                                                                                                                              <span class="page-link">Next ›</span>
+                                                                                                                          </li>`;
       }
 
       paginationHTML += `
-                                                                                                                                  </ul>
-                                                                                                                              </nav>
+                                                                                                                                      </ul>
+                                                                                                                                  </nav>
+                                                                                                                              </div>
                                                                                                                           </div>
-                                                                                                                      </div>
-                                                                                                                  `;
+                                                                                                                      `;
 
       paginationContainer.innerHTML = paginationHTML;
 
@@ -1786,25 +1786,25 @@
 
       if (status.nama_status === 'Sudah Bayar') {
         return `
-                                                                                                                          <span class="status-badge bg-success bg-opacity-10 text-success">
-                                                                                                                              <i class="bx bx-check-circle"></i>
-                                                                                                                              ${status.nama_status}
-                                                                                                                          </span>
-                                                                                                                      `;
+                                                                                                                              <span class="status-badge bg-success bg-opacity-10 text-success">
+                                                                                                                                  <i class="bx bx-check-circle"></i>
+                                                                                                                                  ${status.nama_status}
+                                                                                                                              </span>
+                                                                                                                          `;
       } else if (status.nama_status === 'Belum Bayar') {
         return `
-                                                                                                                          <span class="status-badge bg-danger bg-opacity-10 text-danger">
-                                                                                                                              <i class="bx bx-x-circle"></i>
-                                                                                                                              ${status.nama_status}
-                                                                                                                          </span>
-                                                                                                                      `;
+                                                                                                                              <span class="status-badge bg-danger bg-opacity-10 text-danger">
+                                                                                                                                  <i class="bx bx-x-circle"></i>
+                                                                                                                                  ${status.nama_status}
+                                                                                                                              </span>
+                                                                                                                          `;
       } else if (status.nama_status === 'Menunggu') {
         return `
-                                                                                                                          <span class="status-badge bg-warning bg-opacity-10 text-warning">
-                                                                                                                              <i class="bx bx-time-five"></i>
-                                                                                                                              ${status.nama_status}
-                                                                                                                          </span>
-                                                                                                                      `;
+                                                                                                                              <span class="status-badge bg-warning bg-opacity-10 text-warning">
+                                                                                                                                  <i class="bx bx-time-five"></i>
+                                                                                                                                  ${status.nama_status}
+                                                                                                                              </span>
+                                                                                                                          `;
       }
 
       return `<span class="status-badge bg-secondary bg-opacity-10 text-secondary">${status.nama_status}</span>`;
@@ -1816,49 +1816,49 @@
 
       if (invoice.status && invoice.status.nama_status === 'Belum Bayar') {
         buttons += `
-                                                                                                                          <button class="action-btn bg-success bg-opacity-10 text-success btn-sm
-                                                                                                                              ${invoice.customer?.trashed ? 'disabled' : ''}"
-                                                                                                                              data-bs-target="#konfirmasiPembayaran${invoice.id}"
-                                                                                                                              data-bs-toggle="modal"
-                                                                                                                              ${invoice.customer?.trashed ? 'disabled' : ''}>
-                                                                                                                              <i class="bx bx-money"></i>
-                                                                                                                          </button>
-                                                                                                                          <a href="/riwayatPembayaran/${invoice.customer_id}"
-                                                                                                                             class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary
-                                                                                                                             ${invoice.customer?.trashed ? 'disabled' : ''}"
-                                                                                                                             data-bs-toggle="tooltip"
-                                                                                                                             data-bs-placement="bottom"
-                                                                                                                             title="History Pembayaran">
-                                                                                                                              <i class="bx bx-history"></i>
-                                                                                                                          </a>
-                                                                                                                      `;
+                                                                                                                              <button class="action-btn bg-success bg-opacity-10 text-success btn-sm
+                                                                                                                                  ${invoice.customer?.trashed ? 'disabled' : ''}"
+                                                                                                                                  data-bs-target="#konfirmasiPembayaran${invoice.id}"
+                                                                                                                                  data-bs-toggle="modal"
+                                                                                                                                  ${invoice.customer?.trashed ? 'disabled' : ''}>
+                                                                                                                                  <i class="bx bx-money"></i>
+                                                                                                                              </button>
+                                                                                                                              <a href="/riwayatPembayaran/${invoice.customer_id}"
+                                                                                                                                 class="action-btn btn-sm bg-secondary bg-opacity-10 text-secondary
+                                                                                                                                 ${invoice.customer?.trashed ? 'disabled' : ''}"
+                                                                                                                                 data-bs-toggle="tooltip"
+                                                                                                                                 data-bs-placement="bottom"
+                                                                                                                                 title="History Pembayaran">
+                                                                                                                                  <i class="bx bx-history"></i>
+                                                                                                                              </a>
+                                                                                                                          `;
       }
 
       const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
       buttons += `
-                                                                                                                      <a href="/kirim/invoice/${invoice.id}"
-                                                                                                                         class="action-btn bg-warning bg-opacity-10 text-warning btn-sm
-                                                                                                                         ${invoice.customer?.trashed ? 'disabled' : ''}"
-                                                                                                                         data-bs-toggle="tooltip"
-                                                                                                                         data-bs-placement="bottom"
-                                                                                                                         title="Kirim Invoice"
-                                                                                                                         ${invoice.customer?.trashed ? 'onclick="return false;"' : ''}>
-                                                                                                                          <i class="bx bx-message"></i>
-                                                                                                                      </a>
-                                                                                                                      <form action="/tripay/sync-payment/${invoice.id}" method="POST" style="display:inline">
-                                                                                                                          <input type="hidden" name="_token" value="${csrfToken}">
-                                                                                                                          <button type="submit"
-                                                                                                                              class="action-btn bg-danger bg-opacity-10 text-danger btn-sm
-                                                                                                                              ${invoice.customer?.trashed ? 'disabled' : ''}"
-                                                                                                                              data-bs-toggle="tooltip"
-                                                                                                                              data-bs-placement="bottom"
-                                                                                                                              title="Sync Payment"
-                                                                                                                              ${invoice.customer?.trashed ? 'disabled' : ''}>
-                                                                                                                              <i class="bx bx-cart"></i>
-                                                                                                                          </button>
-                                                                                                                      </form>
-                                                                                                                  `;
+                                                                                                                          <a href="/kirim/invoice/${invoice.id}"
+                                                                                                                             class="action-btn bg-warning bg-opacity-10 text-warning btn-sm
+                                                                                                                             ${invoice.customer?.trashed ? 'disabled' : ''}"
+                                                                                                                             data-bs-toggle="tooltip"
+                                                                                                                             data-bs-placement="bottom"
+                                                                                                                             title="Kirim Invoice"
+                                                                                                                             ${invoice.customer?.trashed ? 'onclick="return false;"' : ''}>
+                                                                                                                              <i class="bx bx-message"></i>
+                                                                                                                          </a>
+                                                                                                                          <form action="/tripay/sync-payment/${invoice.id}" method="POST" style="display:inline">
+                                                                                                                              <input type="hidden" name="_token" value="${csrfToken}">
+                                                                                                                              <button type="submit"
+                                                                                                                                  class="action-btn bg-danger bg-opacity-10 text-danger btn-sm
+                                                                                                                                  ${invoice.customer?.trashed ? 'disabled' : ''}"
+                                                                                                                                  data-bs-toggle="tooltip"
+                                                                                                                                  data-bs-placement="bottom"
+                                                                                                                                  title="Sync Payment"
+                                                                                                                                  ${invoice.customer?.trashed ? 'disabled' : ''}>
+                                                                                                                                  <i class="bx bx-cart"></i>
+                                                                                                                              </button>
+                                                                                                                          </form>
+                                                                                                                      `;
 
       return buttons;
     }
@@ -1901,15 +1901,15 @@
         type === 'success' ? 'alert-success' : 'alert-primary';
 
       notification.innerHTML = `
-                                                                                                                      <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                                                                                                                          <i class="bx ${type === 'error' ? 'bx-error' :
+                                                                                                                          <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                                                                                                                              <i class="bx ${type === 'error' ? 'bx-error' :
           type === 'success' ? 'bx-check' :
             'bx-info-circle'
         } me-2"></i>
-                                                                                                                          ${message}
-                                                                                                                          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                                                                                      </div>
-                                                                                                                  `;
+                                                                                                                              ${message}
+                                                                                                                              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                                                                          </div>
+                                                                                                                      `;
 
       document.body.appendChild(notification);
 
@@ -2016,12 +2016,12 @@
               Swal.fire({
                 title: 'Mengirim WhatsApp...',
                 html: `
-                              <div class="progress mb-3" style="height: 20px;">
-                                <div id="swal-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                              </div>
-                              <p id="swal-progress-text">Memproses: <b>0</b> dari <b>${total}</b> pelanggan</p>
-                              <small class="text-success">Berhasil: <span id="swal-sent-count">0</span></small> | <small class="text-danger">Gagal: <span id="swal-failed-count">0</span></small>
-                            `,
+                                  <div class="progress mb-3" style="height: 20px;">
+                                    <div id="swal-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                  </div>
+                                  <p id="swal-progress-text">Memproses: <b>0</b> dari <b>${total}</b> pelanggan</p>
+                                  <small class="text-success">Berhasil: <span id="swal-sent-count">0</span></small> | <small class="text-danger">Gagal: <span id="swal-failed-count">0</span></small>
+                                `,
                 topLayer: true,
                 allowOutsideClick: false,
                 showConfirmButton: false,
@@ -2054,7 +2054,10 @@
                   let newFailed = totalFailed + data.failed;
 
                   if (data.offset_next < total && data.processed > 0) {
-                    processBatch(bulan, tahun, data.offset_next, total, newSent, newFailed);
+                    // Menambahkan jeda 1 detik untuk melindungi kestabilan server (CPU Spikes)
+                    setTimeout(() => {
+                        processBatch(bulan, tahun, data.offset_next, total, newSent, newFailed);
+                    }, 1000);
                   } else {
                     // Selesai (Update 100% dulu baru tampilkan sukses)
                     const progressBar = document.getElementById('swal-progress-bar');
@@ -2149,19 +2152,19 @@
 
           // Konten konfirmasi
           const confirmationHtml = `
-                                                                                                                              <div class="text-start p-3">
-                                                                                                                                  <p><strong>Nama Pelanggan:</strong> ${customerName}</p>
-                                                                                                                                  <p><strong>Tipe Pembayaran:</strong> ${paymentType}</p>
-                                                                                                                                  <p><strong>Periode Bayar:</strong> ${paymentPeriod}</p>
-                                                                                                                                  <hr>
-                                                                                                                                  <p><strong>Tagihan:</strong> ${toRupiah(billAmount)}</p>
-                                                                                                                                  <p><strong>Tambahan:</strong> ${toRupiah(additionalAmount)}</p>
-                                                                                                                                  <p><strong>Tunggakan:</strong> ${toRupiah(arrearsAmount)}</p>
-                                                                                                                                  <p><strong>Saldo Digunakan:</strong> ${toRupiah(balanceUsed)}</p>
-                                                                                                                                  <hr>
-                                                                                                                                  <p class="fs-5 fw-bold"><strong>Jumlah Bayar:</strong> ${toRupiah(paymentAmount)}</p>
-                                                                                                                              </div>
-                                                                                                                          `;
+                                                                                                                                  <div class="text-start p-3">
+                                                                                                                                      <p><strong>Nama Pelanggan:</strong> ${customerName}</p>
+                                                                                                                                      <p><strong>Tipe Pembayaran:</strong> ${paymentType}</p>
+                                                                                                                                      <p><strong>Periode Bayar:</strong> ${paymentPeriod}</p>
+                                                                                                                                      <hr>
+                                                                                                                                      <p><strong>Tagihan:</strong> ${toRupiah(billAmount)}</p>
+                                                                                                                                      <p><strong>Tambahan:</strong> ${toRupiah(additionalAmount)}</p>
+                                                                                                                                      <p><strong>Tunggakan:</strong> ${toRupiah(arrearsAmount)}</p>
+                                                                                                                                      <p><strong>Saldo Digunakan:</strong> ${toRupiah(balanceUsed)}</p>
+                                                                                                                                      <hr>
+                                                                                                                                      <p class="fs-5 fw-bold"><strong>Jumlah Bayar:</strong> ${toRupiah(paymentAmount)}</p>
+                                                                                                                                  </div>
+                                                                                                                              `;
 
           // Tampilkan SweetAlert
           Swal.fire({
@@ -2251,7 +2254,7 @@
         });
       }
     }
-              }
+                  }
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>

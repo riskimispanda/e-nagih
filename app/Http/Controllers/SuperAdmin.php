@@ -341,6 +341,11 @@ class SuperAdmin extends Controller
         $dispatchedCount++;
       }
 
+      // Logika Update Otomatis Field Cek Tabel Invoice
+      $cekValue = ($status === 'failed') ? 0 : 1;
+      $invoiceIds = $invoiceGroup->pluck('id')->toArray();
+      Invoice::whereIn('id', $invoiceIds)->update(['cek' => $cekValue]);
+
       // Catat ke log
       DB::table('whats_log')->insert([
         'customer_id' => $customer->id,
@@ -353,6 +358,9 @@ class SuperAdmin extends Controller
         'created_at' => Carbon::now(),
         'updated_at' => Carbon::now()
       ]);
+
+      // Jeda 100 milidetik per request untuk menghindari Qontak API rate limiting (anti-spam)
+      usleep(100000);
     }
 
     // Catat aktivitas jika batch pertama
@@ -382,7 +390,18 @@ class SuperAdmin extends Controller
 
     $customerName = $invoice->customer->nama_customer;
     $chat = new QontakServices();
-    $chat->notifTagihan($invoice->customer->no_hp, $invoice);
+    $hasil = $chat->notifTagihan($invoice->customer->no_hp, $invoice);
+
+    // Logika Update Otomatis Field Cek Tabel Invoice
+    if (isset($hasil['success']) && $hasil['success'] === false) {
+        $invoice->cek = 0;
+    } else if (isset($hasil['status']) && ($hasil['status'] === 'failed' || $hasil['status'] === 'error')) {
+        $invoice->cek = 0;
+    } else {
+        $invoice->cek = 1;
+    }
+    $invoice->save();
+
     activity('Send Invoice')
       ->causedBy(auth()->user())
       ->log(auth()->user()->name . ' Mengirim invoice ke ' . $invoice->customer->nama_customer);
