@@ -124,7 +124,9 @@ class RabController extends Controller
             'total' => $totalAnggaran,
             'terealisasi' => $totalTerealisasi,
             'sisa' => $sisaAnggaran,
-            'saldo' => $totalSaldo
+            'saldo' => $totalSaldo,
+            'lastPage' => $data->lastPage(),
+            'currentPage' => $data->currentPage()
         ]);
     }
 

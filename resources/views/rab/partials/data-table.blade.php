@@ -80,25 +80,3 @@
 </tbody>
 </table>
 
-<script>
-    document.querySelectorAll('.btnDelete').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            let url = this.getAttribute('data-url');
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Data RAB akan dihapus permanen!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal',
-                topLayer: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = url;
-                }
-            });
-        });
-    });
-</script>

@@ -514,7 +514,8 @@
                 <div class="table-responsive" id="result-container">
                     @include('rab.partials.data-table', ['data' => $data])
                 </div>
-                <div class="d-flex justify-content-start mt-3 align-items-center gap-2">
+                <!-- Pagination Area -->
+                <div id="pagination-container" class="d-flex justify-content-start mt-3 align-items-center gap-2">
                     <span>Halaman:</span>
                     <select id="paginationDropdown" class="form-select form-select-sm" style="width: auto;">
                         @for ($i = 1; $i <= $data->lastPage(); $i++)
@@ -523,7 +524,7 @@
                             </option>
                         @endfor
                     </select>
-                    <span>dari {{ $data->lastPage() }} halaman</span>
+                    <span id="page-count-text">dari {{ $data->lastPage() }} halaman</span>
                 </div>
             </div>
         </div>
@@ -699,19 +700,47 @@
         }
     }
 
+    // Function to re-initialize Bootstrap tooltips
+    function initTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+
+    // Function to update pagination dropdown
+    function updatePagination(lastPage, currentPage) {
+        const select = document.getElementById('paginationDropdown');
+        const countText = document.getElementById('page-count-text');
+        
+        if (!select) return;
+
+        select.innerHTML = '';
+        for (let i = 1; i <= lastPage; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            if (i == currentPage) option.selected = true;
+            select.appendChild(option);
+        }
+        
+        if (countText) countText.textContent = `dari ${lastPage} halaman`;
+    }
+
     // Real-time filter function using fetch
-    async function performFilter() {
+    async function performFilter(page = 1) {
         const bulan = document.getElementById('filter-bulan').value;
         const tahun = document.getElementById('filter-tahun').value;
         const kegiatan = document.getElementById('filter-kegiatan').value;
 
-        console.log('Filter changed:', { bulan, tahun, kegiatan });
+        console.log('Filter changed:', { bulan, tahun, kegiatan, page });
 
         try {
             const params = new URLSearchParams();
             if (bulan) params.append('bulan', bulan);
             if (tahun) params.append('tahun', tahun);
             if (kegiatan) params.append('kegiatan', kegiatan);
+            params.append('page', page);
 
             const response = await fetch(`{{ route("rab-filter") }}?${params.toString()}`);
             const data = await response.json();
@@ -721,11 +750,22 @@
             // Update table
             document.getElementById('result-container').innerHTML = data.html;
 
+            // Update pagination (if backend provides pagination info)
+            // Note: RabController@search currently doesn't return lastPage, 
+            // but we can extract it or assume it's fixed if not provided.
+            // Let's assume we might need to update the controller too or just keep it for now.
+            if (data.lastPage) {
+                updatePagination(data.lastPage, data.currentPage);
+            }
+
             // Update ALL cards with formatted currency
             document.getElementById('saldo').textContent = formatCurrency(data.saldo);
             document.getElementById('pagu-tahun').textContent = formatCurrency(data.total);
             document.getElementById('anggaran-terealisasi').textContent = formatCurrency(data.terealisasi);
             document.getElementById('sisa-anggaran').textContent = formatCurrency(data.sisa);
+
+            // Re-init tooltips
+            initTooltips();
 
             console.log('All cards updated:', {
                 saldo: data.saldo,
@@ -741,6 +781,9 @@
 
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
+        // Init tooltips on first load
+        initTooltips();
+
         // Set initial values from server data
         document.getElementById('saldo').textContent = formatCurrency({{ $total }});
         document.getElementById('pagu-tahun').textContent = formatCurrency({{ $totalAnggaran ?? 0 }});
@@ -751,9 +794,14 @@
         loadKegiatanOptions();
 
         // Add event listeners for filters
-        document.getElementById('filter-bulan').addEventListener('change', performFilter);
-        document.getElementById('filter-tahun').addEventListener('change', performFilter);
-        document.getElementById('filter-kegiatan').addEventListener('change', performFilter);
+        document.getElementById('filter-bulan').addEventListener('change', () => performFilter(1));
+        document.getElementById('filter-tahun').addEventListener('change', () => performFilter(1));
+        document.getElementById('filter-kegiatan').addEventListener('change', () => performFilter(1));
+
+        // Add event listener for pagination dropdown
+        document.getElementById('paginationDropdown').addEventListener('change', function() {
+            performFilter(this.value);
+        });
 
         console.log('Initial data loaded:', {
             total: {{ $totalAnggaran ?? 0 }},
@@ -919,17 +967,32 @@
                 `;
             }
         }
+
+        // Handle delete button click using event delegation
+        if (e.target.closest('.btnDelete')) {
+            const button = e.target.closest('.btnDelete');
+            const url = button.getAttribute('data-url');
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data RAB akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                customClass: {
+                    container: 'my-swal-container'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        }
     });
 
-</script>
-{{-- Pagination dropdown --}}
-<script>
-    document.getElementById('paginationDropdown').addEventListener('change', function () {
-        let page = this.value;
-        let url = new URL(window.location.href);
-        url.searchParams.set('page', page);
-        window.location.href = url.toString();
-    });
 </script>
 
 @endsection
