@@ -182,6 +182,10 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/api/corporate/invoice/{id}/confirm-payment', [PerusahaanController::class, 'confirmPayment'])->name('api.corporate.confirm-payment');
   Route::get('/corporate/payment-history', [PerusahaanController::class, 'paymentPage'])->name('corporate.payment.history');
   Route::get('/api/corporate/payment-history', [PerusahaanController::class, 'dataPaymentCorporate'])->name('api.corporate.payment-history');
+  Route::get('/api/corporate/{id}/edit', [PerusahaanController::class, 'editCorporate'])->name('api.corporate.edit');
+  Route::post('/api/corporate/{id}/update', [PerusahaanController::class, 'updateCorporate'])->name('api.corporate.update');
+  Route::delete('/api/corporate/{id}/delete', [PerusahaanController::class, 'destroyCorporate'])->name('api.corporate.delete');
+  Route::get('/api/corporate/{id}/invoice-detail', [PerusahaanController::class, 'getInvoiceDetail'])->name('api.corporate.invoice-detail');
   // Export Excel
   Route::get('/semua', [ExportControllers::class, 'exportSemua'])->name('export.semua');
   Route::get('/unpaid', [ExportControllers::class, 'unpaid']);
@@ -269,6 +273,8 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/tiket-closed', [TiketController::class, 'closedTiket'])
     ->middleware('auth', 'roles:Super Admin,NOC,Teknisi,Helpdesk,Admin Logistik,Admin Keuangan')
     ->name('tiket-closed');
+  Route::get('/export-tiket-proses', [TiketController::class, 'exportTiketProses'])->name('export.tiket.proses');
+  Route::get('/export-tiket-selesai', [TiketController::class, 'exportTiketSelesai'])->name('export.tiket.selesai');
   Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
     $startDate = $request->start_date;
     $endDate = $request->end_date;
