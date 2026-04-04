@@ -2230,31 +2230,48 @@
     // Function to copy payment link to clipboard
     function copyToClipboard(elementId) {
       const input = document.getElementById(elementId);
-      if (input) {
-        input.select();
-        input.setSelectionRange(0, 99999); // For mobile devices
+      if (!input) return;
 
-        // Copy to clipboard
-        navigator.clipboard.writeText(input.value).then(() => {
-          // Show success feedback
-          const button = input.nextElementSibling;
-          const originalHTML = button.innerHTML;
-          button.innerHTML = '<i class="bx bx-check"></i>';
-          button.classList.remove('btn-primary');
-          button.classList.add('btn-success');
+      const textToCopy = input.value;
 
-          setTimeout(() => {
-            button.innerHTML = originalHTML;
-            button.classList.remove('btn-success');
-            button.classList.add('btn-primary');
-          }, 2000);
-        }).catch(err => {
-          console.error('Failed to copy:', err);
-          alert('Gagal menyalin link');
+      function showSuccess() {
+        const button = input.nextElementSibling;
+        if (!button) return;
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="bx bx-check"></i>';
+        button.classList.remove('btn-primary');
+        button.classList.add('btn-success');
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+          button.classList.remove('btn-success');
+          button.classList.add('btn-primary');
+        }, 2000);
+      }
+
+      // Try modern Clipboard API first (requires HTTPS)
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy).then(showSuccess).catch(() => {
+          fallbackCopy(input, showSuccess);
         });
+      } else {
+        // Fallback for HTTP / non-secure context
+        fallbackCopy(input, showSuccess);
       }
     }
-                  }
+
+    function fallbackCopy(input, onSuccess) {
+      input.select();
+      input.setSelectionRange(0, 99999);
+      try {
+        document.execCommand('copy');
+        onSuccess();
+      } catch (err) {
+        alert('Gagal menyalin link');
+      }
+      // Clear selection immediately to prevent paste lag
+      window.getSelection().removeAllRanges();
+      input.blur();
+    }
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
