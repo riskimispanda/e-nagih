@@ -32,7 +32,15 @@
     table.dataTable.no-footer {
       border-bottom: 1px solid #e5e7eb;
     }
+
+    /* Flatpickr Custom Style */
+    .flatpickr-calendar {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+      border: 1px solid #e5e7eb !important;
+    }
   </style>
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 @endsection
 
 @section('content')
@@ -104,6 +112,17 @@
           <option value="pending">Status: Pending</option>
         </select>
 
+        <!-- Filter Tanggal -->
+        <div class="flex items-center bg-gray-50 border border-gray-300 rounded-md px-2 relative group">
+          <i class="fas fa-calendar-alt text-gray-400 mr-2 text-xs"></i>
+          <input type="text" id="filterDate" placeholder="Rentang Waktu"
+            class="bg-transparent border-none text-gray-700 text-sm focus:ring-0 block p-2 w-48 font-medium outline-none cursor-pointer"
+            readonly>
+          <button id="btnClearDate" class="hidden group-hover:block absolute right-2 text-gray-400 hover:text-red-500">
+            <i class="fas fa-times-circle"></i>
+          </button>
+        </div>
+
         <button id="btn-sync"
           class="px-4 py-2 text-sm font-medium text-white transition-colors bg-emerald-600 border border-transparent rounded-md hover:bg-emerald-700 shadow-sm whitespace-nowrap">
           <i class="fas fa-cloud-download-alt mr-2"></i> Sync Status Qontak
@@ -140,6 +159,9 @@
 @section('vendor-script')
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 @endsection
 
 @section('page-script')
@@ -169,6 +191,22 @@
             type: 'GET',
             data: function (d) {
               d.status = $('#filterStatus').val(); // Bawa query status filter ke controller
+
+              // Handling Date Range Filter
+              const dateVal = $('#filterDate').val();
+              if (dateVal) {
+                // Flatpickr range separator typically uses ' to ' or locale-specific ' hingga '
+                const separator = dateVal.includes(' hingga ') ? ' hingga ' : ' to ';
+                if (dateVal.includes(separator)) {
+                  const dates = dateVal.split(separator);
+                  d.start_date = dates[0].trim();
+                  d.end_date = dates[1].trim();
+                } else {
+                  // Single date selected or invalid range format
+                  d.start_date = dateVal.trim();
+                  d.end_date = dateVal.trim();
+                }
+              }
             },
             error: function (xhr, error, thrown) {
               alert('Gagal mengambil data dari server. Error: ' + xhr.statusText);
@@ -282,6 +320,29 @@
           filterEl.addEventListener('change', function () {
             if (table) table.ajax.reload();
           });
+        }
+
+        // Initialize Flatpickr for Date Range Filter
+        if (typeof flatpickr !== 'undefined') {
+          const calendar = flatpickr("#filterDate", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            locale: "id",
+            onChange: function (selectedDates, dateStr, instance) {
+              if (selectedDates.length === 2 || dateStr === "") {
+                if (table) table.ajax.reload();
+              }
+            }
+          });
+
+          // Bind Clear Button
+          const btnClear = document.getElementById('btnClearDate');
+          if (btnClear) {
+            btnClear.addEventListener('click', function () {
+              calendar.clear();
+              if (table) table.ajax.reload();
+            });
+          }
         }
 
         // Fungsi Helper untuk Update Angka di Card Statistik

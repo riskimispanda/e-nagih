@@ -471,10 +471,23 @@ class QontakController extends Controller
   /**
    * Helper untuk menghitung statistik log
    */
-  private function calculateStats(): array
+  private function calculateStats($statusFilter = null, $startDate = null, $endDate = null): array
   {
-    $stats = DB::table('whats_log')
-      ->select('status_pengiriman', DB::raw('count(*) as total'))
+    $query = DB::table('whats_log');
+
+    if ($statusFilter && $statusFilter !== 'all') {
+      $query->where('status_pengiriman', $statusFilter);
+    }
+
+    if ($startDate) {
+      $query->whereDate('created_at', '>=', $startDate);
+    }
+
+    if ($endDate) {
+      $query->whereDate('created_at', '<=', $endDate);
+    }
+
+    $stats = $query->select('status_pengiriman', DB::raw('count(*) as total'))
       ->groupBy('status_pengiriman')
       ->get();
 
@@ -512,14 +525,23 @@ class QontakController extends Controller
   /**
    * View DataTables WhatsLog
    */
-  public function whatsLogView()
+  public function whatsLogView(Request $request)
   {
-    $counts = $this->calculateStats();
+    $statusFilter = $request->input('status');
+    $startDate = $request->input('start_date');
+    $endDate = $request->input('end_date');
+
+    $counts = $this->calculateStats($statusFilter, $startDate, $endDate);
 
     return view('qontak.whats_log', [
       'users' => auth()->user(),
       'roles' => auth()->user()->roles,
-      'counts' => $counts
+      'counts' => $counts,
+      'filters' => [
+        'status' => $statusFilter,
+        'start_date' => $startDate,
+        'end_date' => $endDate
+      ]
     ]);
   }
 
@@ -530,6 +552,8 @@ class QontakController extends Controller
   {
     try {
       $statusFilter = $request->input('status');
+      $startDate = $request->input('start_date');
+      $endDate = $request->input('end_date');
 
       // Memulai query builder logs dengan join ke tabel customer
       $query = DB::table('whats_log')
@@ -551,6 +575,14 @@ class QontakController extends Controller
         $query->where('whats_log.status_pengiriman', $statusFilter);
       }
 
+      if ($startDate) {
+        $query->whereDate('whats_log.created_at', '>=', $startDate);
+      }
+
+      if ($endDate) {
+        $query->whereDate('whats_log.created_at', '<=', $endDate);
+      }
+
       // Finalisasi query, order dan pelindung batas 5k agar ram tidak kepenuhan
       $logs = $query->orderBy('whats_log.created_at', 'desc')
         ->limit(5000)
@@ -558,7 +590,7 @@ class QontakController extends Controller
 
       return response()->json([
         'data' => $logs,
-        'stats' => $this->calculateStats()
+        'stats' => $this->calculateStats($statusFilter, $startDate, $endDate)
       ]);
     } catch (\Exception $e) {
       return response()->json([
