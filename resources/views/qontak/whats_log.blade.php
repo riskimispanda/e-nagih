@@ -374,13 +374,27 @@
             btnSync.disabled = true;
             btnSync.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Syncing...';
 
+            const dateVal = $('#filterDate').val();
+            let startDate = '', endDate = '';
+            if (dateVal) {
+              const separator = dateVal.includes(' hingga ') ? ' hingga ' : ' to ';
+              const dates = dateVal.split(separator);
+              startDate = dates[0] ? dates[0].trim() : '';
+              endDate = dates[1] ? dates[1].trim() : (dates[0] ? dates[0].trim() : '');
+            }
+
             fetch("{{ route('qontak.api.sync-logs') }}", {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
               },
-              body: JSON.stringify({ limit: 50 })
+              body: JSON.stringify({
+                limit: 100, // Sync up to 100 pending logs
+                status: $('#filterStatus').val(),
+                start_date: startDate,
+                end_date: endDate
+              })
             })
               .then(response => response.json())
               .then(data => {

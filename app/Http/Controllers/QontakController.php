@@ -606,14 +606,19 @@ class QontakController extends Controller
   public function syncLogs(Request $request): JsonResponse
   {
     try {
-      $limit = $request->input('limit', 20);
+      $limit = $request->input('limit', 50); // Default to 50 as used in Blade
       $updatedCount = $this->qontakService->syncAllPendingLogs($limit);
+
+      // Ambil filter agar statistik yang dikembalikan sesuai dengan filter aktif di UI
+      $statusFilter = $request->input('status');
+      $startDate = $request->input('start_date');
+      $endDate = $request->input('end_date');
 
       return response()->json([
         'success' => true,
         'message' => "Sinkronisasi selesai. {$updatedCount} status berhasil diperbarui.",
         'updated_count' => $updatedCount,
-        'stats' => $this->calculateStats()
+        'stats' => $this->calculateStats($statusFilter, $startDate, $endDate)
       ]);
     } catch (\Exception $e) {
       return response()->json([

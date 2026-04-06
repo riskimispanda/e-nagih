@@ -1225,7 +1225,7 @@ class QontakServices
    */
   public function syncAllPendingLogs($limit = 50)
   {
-    $pendingLogs = \App\Models\WhatsLog::whereIn('status_pengiriman', ['sent', 'pending', 'delivered'])
+    $pendingLogs = \App\Models\WhatsLog::whereIn('status_pengiriman', ['pending', 'todo'])
       ->whereNotNull('qontak_broadcast_id')
       ->orderBy('created_at', 'desc')
       ->limit($limit)
