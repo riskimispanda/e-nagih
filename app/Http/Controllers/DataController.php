@@ -741,14 +741,21 @@ class DataController extends Controller
       $pelanggan->update($data);
       $pelanggan->refresh();
 
-      // Update invoice jika perlu
-      if ($invoice && $paket->id != $invoice->paket_id) {
+      // Update invoice sesuai penyesuaian prorata
+      if ($invoice) {
         $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
         $hargaPaket = $paket->harga;
         $tanggalMulaiLangganan = $tanggalSelesai;
-        $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
-          ? $hargaPaket
-          : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
+        
+        $jenisPelanggan = $request->jenis_pelanggan ?? 'baru';
+        
+        if ($jenisPelanggan === 'lama') {
+          $tagihanProrate = $hargaPaket; // Pelanggan lama, tidak di prorata
+        } else {
+          $tagihanProrate = ($tanggalMulaiLangganan->day == 1)
+            ? $hargaPaket
+            : $this->calculateProrate($hargaPaket, $tanggalMulaiLangganan);
+        }
 
         $invoice->update([
           'paket_id' => $paket->id,

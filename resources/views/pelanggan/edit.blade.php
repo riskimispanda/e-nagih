@@ -8,7 +8,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
           <div>
             <h5 class="mb-0 fw-bold text-primary"><i class="bx bx-edit-alt me-2"></i>Edit Pelanggan</h5>
-            <small class="text-muted">Perbarui data pelanggan layanan internet.</small>
+            <small class="text-muted">Perbarui data pelanggan layanan internet</small>
           </div>
           <a href="{{ url()->previous() }}" class="btn btn-outline-secondary btn-sm">
             <i class="bx bx-arrow-back me-1"></i> Kembali
@@ -29,6 +29,19 @@
               </div>
               <div class="card-body pt-3">
                 <div class="row g-3">
+                  <!-- Jenis Pelanggan (Prorate Control) -->
+                  <div class="col-12 border-bottom pb-3">
+                    <label class="form-label d-block text-primary fw-bold">Status Pelanggan (Pengaturan Prorata)</label>
+                    <div class="form-check form-check-inline mt-1">
+                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_baru" value="baru" checked>
+                      <label class="form-check-label" for="pelanggan_baru">Pelanggan Baru (Berlaku Prorata)</label>
+                    </div>
+                    <div class="form-check form-check-inline mt-1">
+                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_lama" value="lama">
+                      <label class="form-check-label" for="pelanggan_lama">Pelanggan Lama (Tanpa Prorata)</label>
+                    </div>
+                  </div>
+
                   <div class="col-12">
                     <label class="form-label" for="nama_customer">Nama Lengkap</label>
                     <div class="input-group input-group-merge">
