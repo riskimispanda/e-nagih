@@ -966,13 +966,18 @@ Route::middleware(['auth'])->group(function () {
     'get-pengaduan-data'
   );
   Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])
-    ->middleware('auth', 'roles:Helpdesk,Agen,Super Admin')
+    ->middleware('auth', 'roles:Helpdesk,Agen,Super Admin,Teknisi')
     ->name('antrian-helpdesk');
   Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
   Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name(
     'update-antrian-helpdesk'
   );
   Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
+  // Preview queue (dummy data) for UI demonstration
+  Route::get('/helpdesk/preview-queue', [\App\Http\Controllers\HelpdeskPreviewController::class, 'show'])->name('helpdesk.preview.queue');
+  // CSV export for preview queue (dummy data)
+  Route::get('/helpdesk/preview-queue/csv', [\App\Http\Controllers\HelpdeskPreviewController::class, 'downloadCsv'])
+    ->name('helpdesk.preview.queue.csv');
   Route::get('/corp/detail/{id}', [HelpdeskController::class, 'corpDetail']);
   Route::get('/helpdesk/hapus-antrian/{id}', [HelpdeskController::class, 'hapusAntrian'])->name(
     'hapus-antrian-helpdesk'
@@ -1121,3 +1126,4 @@ Route::get('/form/layouts-horizontal', [HorizontalForm::class, 'index'])->name('
 
 // tables
 Route::get('/tables/basic', [TablesBasic::class, 'index'])->name('tables-basic');
+Route::get('/plans/preview', [\App\Http\Controllers\PlanPreviewController::class, 'show'])->name('plans.preview');

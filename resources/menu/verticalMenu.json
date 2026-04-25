@@ -149,7 +149,8 @@
           "icon": "menu-icon tf-icons bx bx-list-plus",
           "slug": "antrian-helpdesk",
           "roles": [
-            "Super Admin"
+            "Super Admin",
+            "Teknisi"
           ]
         },
         {

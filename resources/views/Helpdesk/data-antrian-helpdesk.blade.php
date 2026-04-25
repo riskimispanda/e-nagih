@@ -482,7 +482,7 @@
           </div>
         </div>
       </div>
-      @if(auth()->user()->roles_id == 7)
+      @if(auth()->user()->roles_id == 7 || auth()->user()->roles_id == 1)
         {{-- Perusahaan --}}
         <div class="card">
           <div class="card-header mb-5">
