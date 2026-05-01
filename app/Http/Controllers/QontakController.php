@@ -481,7 +481,7 @@ class QontakController extends Controller
   {
     try {
       // Get all customers from the customer table
-      $customers = Customer::where('status_id', [3, 4])->orderBy('nama_customer', 'asc')
+      $customers = Customer::where('status_id', [3, 4, 9])->orderBy('nama_customer', 'asc')
         ->get(['id', 'nama_customer', 'no_hp']);
 
       $list = [];
