@@ -166,6 +166,13 @@ Route::get('/test-router/{id}', function ($id) {
 
 Route::middleware(['auth'])->group(function () {
 
+  // Route Maintenance Broadcast
+  Route::get('/maintenance', [QontakController::class, 'maintenance']);
+  // Maintenance customers data for UI
+  Route::get('/maintenance-customers', [QontakController::class, 'getMaintenanceCustomers'])->name('maintenance.customers');
+  // Broadcast maintenance (UI action)
+  Route::post('/maintenance/broadcast', [QontakController::class, 'broadcastMaintenance'])->name('maintenance.broadcast');
+
   // Pelanggan Dismantle
   Route::get('/pelanggan-dismantle', [PelangganController::class, 'pelangganDismantle']);
 

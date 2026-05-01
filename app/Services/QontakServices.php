@@ -257,7 +257,7 @@ class QontakServices
     }
   }
 
-  private function getTemplateByName($name)
+  public function getTemplateByName($name)
   {
     $result = $this->makeRequest('GET', '/qontak/chat/v1/templates/whatsapp');
 
@@ -392,6 +392,71 @@ class QontakServices
     }
   }
 
+  public function maintenanceBroadcast($to, $customer)
+  {
+    try {
+      // 1. Cari template berdasarkan nama
+      $template = $this->getTemplateByName('maintenance'); 
+
+      if (!$template || !is_array($template) || !isset($template['id'])) {
+        throw new Exception('Template maintenance tidak ditemukan atau format tidak valid');
+      }
+
+      $time = now()->format('d-m-Y');
+
+      // 2. Siapkan parameter untuk template (hanya tanggal)
+      $templateParams = [
+        [
+          'key' => '1',
+          'value' => 'tanggal',
+          'value_text' => $time
+        ]
+      ];
+
+      $formattedPhone = $this->formatNomor($to);
+
+      // 3. Siapkan payload untuk mengirim pesan
+      $messageData = [
+        'to_number' => $formattedPhone,
+        'to_name' => $customer->nama_customer ?? 'Pelanggan',
+        'message_template_id' => $template['id'],
+        'channel_integration_id' => $this->channelId,
+        'language' => [
+          'code' => 'id'
+        ],
+        'parameters' => [
+          'body' => $templateParams
+        ]
+      ];
+
+      // 4. Kirim pesan
+      $result = $this->makeRequest(
+        'POST',
+        '/qontak/chat/v1/broadcasts/whatsapp/direct',
+        $messageData
+      );
+
+      if (!$result['success']) {
+        throw new Exception($result['message'] ?? 'Gagal mengirim maintenance informasi');
+      }
+
+      $responseData = is_array($result['data']) ? $result['data'] : [];
+
+      return [
+        'success' => true,
+        'message_id' => $responseData['id'] ?? null,
+        'status' => $responseData['execute_status'] ?? 'pending'
+      ];
+    } catch (Exception $e) {
+      Log::error('Error maintenance broadcast: ' . $e->getMessage());
+
+      return [
+        'success' => false,
+        'error' => $e->getMessage()
+      ];
+    }
+  }
+
   public function notifProrate($to, $invoice)
   {
     try {
@@ -477,7 +542,6 @@ class QontakServices
         'message_id' => $responseData['id'] ?? null,
         'status' => $responseData['execute_status'] ?? null
       ];
-
     } catch (Exception $e) {
       // Log error
       error_log('Error konfirmasi pembayaran: ' . $e->getMessage());
@@ -868,6 +932,61 @@ class QontakServices
   }
 
   /**
+   * Broadcast maintenance to all customers (no_hp) using template named 'maintenance'
+   * Data sourced exclusively from customer phone numbers in CRM.
+   */
+  public function broadcastMaintenanceAllCustomers(array $templateParams = [], ?string $channelId = null, string $templateName = 'maintenance', string $languageCode = 'id')
+  {
+    // Resolve template by name
+    $template = $this->getTemplateByName($templateName);
+    $templateId = $template['id'] ?? null;
+
+    if (!$templateId) {
+      // Try to find in list
+      $templates = $this->getListTemplates();
+      if (is_array($templates) && isset($templates['data']) && is_array($templates['data'])) {
+        foreach ($templates['data'] as $t) {
+          if (($t['name'] ?? '') === $templateName) {
+            $templateId = $t['id'] ?? null;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!$templateId) {
+      return ['success' => false, 'message' => 'Template not found: ' . $templateName];
+    }
+
+    $channel = $channelId ?? $this->channelId ?? '';
+
+    // Fetch customers with phones (no_hp)
+    $customers = \App\Models\Customer::whereNotNull('no_hp')->get(['id', 'no_hp', 'nama_customer', 'name']);
+
+    $results = [];
+    foreach ($customers as $c) {
+      $to = $c->no_hp;
+      if (!$to) continue;
+      $payloadParams = $templateParams;
+      try {
+        $result = $this->sendMessage($to, $templateId, $payloadParams, $channel);
+        $sent = $result['success'] ?? true;
+      } catch (\Throwable $e) {
+        $sent = false;
+        $result = ['error' => $e->getMessage()];
+      }
+      $results[] = [
+        'recipient' => $c->nama_customer ?? $c->name ?? 'Unknown',
+        'number' => $to,
+        'success' => (bool)$sent,
+        'data' => $result
+      ];
+    }
+
+    return $results;
+  }
+
+  /**
    * Get broadcast history
    */
   public function getBroadcastHistory($params = [])
@@ -1246,16 +1365,16 @@ class QontakServices
         if ($log->jenis_pesan === 'kirim_invoice' && preg_match('/Invoice Global \((.+) (\d{4})\)/', $log->pesan, $matches)) {
             $namaBulan = $matches[1];
             $tahun = $matches[2];
-            
-            $bulanMap = [
+
+          $bulanMap = [
                 'Januari' => 1, 'Februari' => 2, 'Maret' => 3, 'April' => 4,
                 'Mei' => 5, 'Juni' => 6, 'Juli' => 7, 'Agustus' => 8,
                 'September' => 9, 'Oktober' => 10, 'November' => 11, 'Desember' => 12
             ];
-            
-            $bulanAngka = $bulanMap[$namaBulan] ?? null;
-            
-            if ($bulanAngka) {
+
+          $bulanAngka = $bulanMap[$namaBulan] ?? null;
+
+          if ($bulanAngka) {
                 $cekValue = (strtolower($syncData['status']) === 'failed') ? 0 : 1;
                 \App\Models\Invoice::where('customer_id', $log->customer_id)
                     ->whereMonth('jatuh_tempo', $bulanAngka)

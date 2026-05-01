@@ -7,6 +7,7 @@ use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class QontakController extends Controller
@@ -16,6 +17,11 @@ class QontakController extends Controller
   public function __construct(QontakServices $qontakService)
   {
     $this->qontakService = $qontakService;
+  }
+
+  public function maintenance()
+  {
+    return view('qontak.maintenance', ['users' => auth()->user(), 'roles' => auth()->user()->roles]);
   }
 
   /**
@@ -38,7 +44,6 @@ class QontakController extends Controller
       ], 500);
     }
   }
-
   /**
    * Send message to customer
    */
@@ -465,6 +470,134 @@ class QontakController extends Controller
         'success' => false,
         'message' => 'Endpoint testing failed: ' . $e->getMessage()
       ], 500);
+    }
+  }
+
+  /**
+   * Get maintenance customers for UI
+   * Data sourced from the customer table
+   */
+  public function getMaintenanceCustomers(): JsonResponse
+  {
+    try {
+      // Get all customers from the customer table
+      $customers = Customer::where('status_id', [3, 4])->orderBy('nama_customer', 'asc')
+        ->get(['id', 'nama_customer', 'no_hp']);
+
+      $list = [];
+      foreach ($customers as $customer) {
+        // Get latest maintenance log status if exists
+        $log = DB::table('whats_log')
+          ->where('customer_id', $customer->id)
+          ->where('jenis_pesan', 'maintenance')
+          ->orderBy('created_at', 'desc')
+          ->first();
+
+        $list[] = [
+          'id' => $customer->id,
+          'name' => $customer->nama_customer,
+          'number' => $customer->no_hp,
+          'status' => $log->status_pengiriman ?? 'never_sent',
+        ];
+      }
+
+      return response()->json(['success' => true, 'data' => $list]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Broadcast maintenance to selected recipients (UI-trigger)
+   */
+  public function broadcastMaintenance(Request $request): JsonResponse
+  {
+    try {
+      $recipients = $request->input('recipients', []);
+
+      if (!is_array($recipients) || empty($recipients)) {
+        return response()->json(['success' => false, 'message' => 'Invalid recipients'], 400);
+      }
+
+      $results = [];
+      $time = now()->format('d-m-Y');
+
+      foreach ($recipients as $r) {
+        $toNumber = $r['number'] ?? '';
+        $name = $r['name'] ?? '';
+        if (!$toNumber)
+          continue;
+
+        // Resolusi data customer
+        $customer = Customer::where('no_hp', $toNumber)->first();
+        if (!$customer) {
+          $customer = new Customer(['nama_customer' => $name, 'no_hp' => $toNumber]);
+        }
+
+        // Cek apakah sudah pernah dikirim hari ini (mencegah duplikasi)
+        if ($customer->id) {
+          $alreadySent = DB::table('whats_log')
+            ->where('customer_id', $customer->id)
+            ->where('jenis_pesan', 'maintenance')
+            ->whereDate('created_at', now()->toDateString())
+            ->exists();
+
+          if ($alreadySent) {
+            $results[] = [
+              'name' => $name,
+              'number' => $toNumber,
+              'sent' => false,
+              'status' => 'already_sent'
+            ];
+            continue;
+          }
+        }
+
+        $sent = false;
+        $broadcastId = null;
+        $status = 'failed';
+        $errorMessage = null;
+
+        try {
+          // Memanggil fungsi maintenanceBroadcast yang sudah diperbaiki di Service
+          $result = $this->qontakService->maintenanceBroadcast($toNumber, $customer);
+          $sent = $result['success'] ?? false;
+          $broadcastId = $result['message_id'] ?? null;
+          $status = $sent ? ($result['status'] ?? 'pending') : 'failed';
+          $errorMessage = $result['error'] ?? null;
+        } catch (\Throwable $e) {
+          \Log::error('Maintenance Broadcast Loop Error: ' . $e->getMessage());
+          $errorMessage = $e->getMessage();
+        }
+
+        // Simpan ke log database
+        try {
+          DB::table('whats_log')->insert([
+            'customer_id' => $customer->id ?? null,
+            'no_tujuan' => $toNumber,
+            'jenis_pesan' => 'maintenance',
+            'pesan' => "Informasi Maintenance untuk {$name} pada {$time}",
+            'status_pengiriman' => $status,
+            'qontak_broadcast_id' => $broadcastId,
+            'error_message' => $errorMessage,
+            'created_at' => now(),
+            'updated_at' => now(),
+          ]);
+        } catch (\Exception $e) {
+          \Log::error('Failed to log maintenance broadcast: ' . $e->getMessage());
+        }
+
+        $results[] = [
+          'name' => $name,
+          'number' => $toNumber,
+          'sent' => $sent,
+          'status' => $status
+        ];
+      }
+
+      return response()->json(['success' => true, 'data' => $results]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
   }
 
