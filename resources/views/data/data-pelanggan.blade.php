@@ -253,18 +253,18 @@
     }
 
     /* .export-dropdown .dropdown-toggle {
-                                background-color: #2dce89;
-                                border: none;
-                                color: white;
-                                padding: 0.5rem 1rem;
-                                font-size: 0.875rem;
-                                border-radius: 4px;
-                                transition: all 0.2s ease;
-                                display: flex;
-                                align-items: center;
-                                gap: 0.5rem;
-                                cursor: pointer;
-                            } */
+                                                                  background-color: #2dce89;
+                                                                  border: none;
+                                                                  color: white;
+                                                                  padding: 0.5rem 1rem;
+                                                                  font-size: 0.875rem;
+                                                                  border-radius: 4px;
+                                                                  transition: all 0.2s ease;
+                                                                  display: flex;
+                                                                  align-items: center;
+                                                                  gap: 0.5rem;
+                                                                  cursor: pointer;
+                                                              } */
 
     .export-dropdown .dropdown-toggle:hover {
       background-color: #24a46d;
@@ -1041,8 +1041,8 @@
               <div class="sort-group col-sm-12">
                 <div class="sort-label">Pencarian</div>
                 <div class="input-group">
-                  <input type="text" class="form-control search-input" placeholder="Cari pelanggan..."
-                    id="searchCustomer">
+                  <input type="text" class="form-control search-input"
+                    placeholder="Cari pelanggan, alamat, hp, atau usersecret..." id="searchCustomer">
                   <button class="btn search-button" type="button" id="searchButton">
                     <i class="bx bx-search"></i>
                   </button>
@@ -1270,7 +1270,8 @@
                           $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
                           $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
                         @endphp
-                        <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }} class="badge bg-info bg-opacity-10 status-badge text-info">
+                        <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }}
+                          class="badge bg-info bg-opacity-10 status-badge text-info">
                           {{ $item->odp->nama_odp ?? '-' }}
                         </a>
                       @else

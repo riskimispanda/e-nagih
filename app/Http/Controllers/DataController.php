@@ -69,6 +69,7 @@ class DataController extends Controller
         $q->where('nama_customer', 'like', '%' . $search . '%')
           ->orWhere('alamat', 'like', '%' . $search . '%')
           ->orWhere('no_hp', 'like', '%' . $search . '%')
+          ->orWhere('usersecret', 'like', '%' . $search . '%')
           ->orWhereHas('paket', function ($p) use ($search) {
             $p->where('nama_paket', 'like', '%' . $search . '%');
           })
@@ -368,7 +369,8 @@ class DataController extends Controller
         $query->whereHas('customer', function ($q) use ($search) {
           $q->where('nama_customer', 'like', '%' . $search . '%')
             ->orWhere('no_hp', 'like', '%' . $search . '%')
-            ->orWhere('alamat', 'like', '%' . $search . '%');
+            ->orWhere('alamat', 'like', '%' . $search . '%')
+            ->orWhere('usersecret', 'like', '%' . $search . '%');
         })->orWhereHas('paket', function ($q) use ($search) {
           $q->where('nama_paket', 'like', '%' . $search . '%');
         });
@@ -746,9 +748,9 @@ class DataController extends Controller
         $tanggalSelesai = Carbon::parse($pelanggan->tanggal_selesai);
         $hargaPaket = $paket->harga;
         $tanggalMulaiLangganan = $tanggalSelesai;
-        
+
         $jenisPelanggan = $request->jenis_pelanggan ?? 'baru';
-        
+
         if ($jenisPelanggan === 'lama') {
           $tagihanProrate = $hargaPaket; // Pelanggan lama, tidak di prorata
         } else {
