@@ -477,11 +477,33 @@ class QontakController extends Controller
    * Get maintenance customers for UI
    * Data sourced from the customer table
    */
-  public function getMaintenanceCustomers(): JsonResponse
+  public function getMaintenanceCustomers(Request $request): JsonResponse
   {
     try {
-      // Get all customers from the customer table
-      $customers = Customer::whereNotIn('status_id', [1, 2, 5])->where('paket_id', '!=', 11)->orderBy('nama_customer', 'asc')
+      $oltId = $request->olt_id;
+      $odcId = $request->odc_id;
+      $odpId = $request->odp_id;
+
+      // Get customers from the customer table with filtering
+      $query = Customer::whereNotIn('status_id', [1, 2, 5])
+        ->where('paket_id', '!=', 11);
+
+      if ($odpId) {
+        $query->where('lokasi_id', $odpId);
+      } elseif ($odcId) {
+        $query->whereIn('lokasi_id', function ($q) use ($odcId) {
+          $q->select('id')->from('odp')->where('odc_id', $odcId);
+        });
+      } elseif ($oltId) {
+        $query->whereIn('lokasi_id', function ($q) use ($oltId) {
+          $q->select('id')->from('odp')
+            ->whereIn('odc_id', function ($sq) use ($oltId) {
+              $sq->select('id')->from('odc')->where('lokasi_id', $oltId);
+            });
+        });
+      }
+
+      $customers = $query->orderBy('nama_customer', 'asc')
         ->get(['id', 'nama_customer', 'no_hp']);
 
       $list = [];
@@ -525,11 +547,20 @@ class QontakController extends Controller
       foreach ($recipients as $r) {
         $toNumber = $r['number'] ?? '';
         $name = $r['name'] ?? '';
+        $requestId = $r['id'] ?? null;
         if (!$toNumber)
           continue;
 
         // Resolusi data customer
-        $customer = Customer::where('no_hp', $toNumber)->first();
+        $customer = null;
+        if ($requestId) {
+          $customer = Customer::find($requestId);
+        }
+
+        if (!$customer) {
+          $customer = Customer::where('no_hp', $toNumber)->first();
+        }
+
         if (!$customer) {
           $customer = new Customer(['nama_customer' => $name, 'no_hp' => $toNumber]);
         }
@@ -539,7 +570,7 @@ class QontakController extends Controller
           $alreadySent = DB::table('whats_log')
             ->where('customer_id', $customer->id)
             ->where('jenis_pesan', 'maintenance')
-            ->whereDate('created_at', now()->toDateString())
+            ->whereDate('created_at', '=', now()->toDateString())
             ->exists();
 
           if ($alreadySent) {
@@ -596,6 +627,55 @@ class QontakController extends Controller
       }
 
       return response()->json(['success' => true, 'data' => $results]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get OLT data for filters
+   */
+  public function getOlts(): JsonResponse
+  {
+    try {
+      $olts = DB::table('lokasi')->select('id', 'nama_lokasi as name')->orderBy('nama_lokasi')->get();
+      return response()->json(['success' => true, 'data' => $olts]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get ODC data for filters
+   */
+  public function getOdcs(Request $request): JsonResponse
+  {
+    try {
+      $oltId = $request->olt_id;
+      $query = DB::table('odc')->select('id', 'nama_odc as name');
+      if ($oltId) {
+        $query->where('lokasi_id', $oltId);
+      }
+      $odcs = $query->orderBy('nama_odc')->get();
+      return response()->json(['success' => true, 'data' => $odcs]);
+    } catch (\Exception $e) {
+      return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+  }
+
+  /**
+   * Get ODP data for filters
+   */
+  public function getOdps(Request $request): JsonResponse
+  {
+    try {
+      $odcId = $request->odc_id;
+      $query = DB::table('odp')->select('id', 'nama_odp as name');
+      if ($odcId) {
+        $query->where('odc_id', $odcId);
+      }
+      $odps = $query->orderBy('nama_odp')->get();
+      return response()->json(['success' => true, 'data' => $odps]);
     } catch (\Exception $e) {
       return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }

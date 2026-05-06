@@ -170,6 +170,10 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/maintenance', [QontakController::class, 'maintenance']);
   // Maintenance customers data for UI
   Route::get('/maintenance-customers', [QontakController::class, 'getMaintenanceCustomers'])->name('maintenance.customers');
+  // Maintenance filters data
+  Route::get('/maintenance/olts', [QontakController::class, 'getOlts'])->name('maintenance.olts');
+  Route::get('/maintenance/odcs', [QontakController::class, 'getOdcs'])->name('maintenance.odcs');
+  Route::get('/maintenance/odps', [QontakController::class, 'getOdps'])->name('maintenance.odps');
   // Broadcast maintenance (UI action)
   Route::post('/maintenance/broadcast', [QontakController::class, 'broadcastMaintenance'])->name('maintenance.broadcast');
 

@@ -101,31 +101,17 @@
 
   /* Enhanced status badge styles */
   .status-badge {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-weight: 500;
-    text-transform: capitalize;
-    letter-spacing: 0.025em;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .status-badge::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-    transition: left 0.5s;
-  }
-
-  .status-badge:hover::before {
-    left: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
   .status-badge:hover {
@@ -134,49 +120,43 @@
   }
 
   .status-sent {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: white;
-    border: 1px solid #2563eb;
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #dbeafe;
   }
 
   .status-delivered {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
-    border: 1px solid #16a34a;
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #dcfce7;
   }
 
   .status-read {
-    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-    color: white;
-    border: 1px solid #0891b2;
+    background-color: #f5f3ff;
+    color: #7c3aed;
+    border: 1px solid #ede9fe;
   }
 
   .status-failed {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: 1px solid #dc2626;
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fee2e2;
   }
 
   .status-pending {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    color: white;
-    border: 1px solid #d97706;
-  }
-
-  .status-done {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    border: 1px solid #059669;
+    background-color: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fef3c7;
   }
 
   /* Enhanced table styles */
   .table-row-hover {
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .table-row-hover:hover {
     background-color: #f8fafc;
-    transform: translateX(2px);
+    box-shadow: inset 4px 0 0 #3b82f6;
   }
 
   /* Custom scrollbar */
@@ -191,79 +171,43 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: #cbd5e1;
     border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: #94a3b8;
   }
 
-  /* Loading animation */
-  .loading-dots span {
-    animation: loading 1.4s infinite ease-in-out both;
+  /* Glassmorphism */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
-  .loading-dots span:nth-child(1) {
-    animation-delay: -0.32s;
-  }
-
-  .loading-dots span:nth-child(2) {
-    animation-delay: -0.16s;
-  }
-
-  @keyframes loading {
-
-    0%,
-    80%,
-    100% {
-      transform: scale(0);
-    }
-
-    40% {
-      transform: scale(1);
-    }
-  }
-
-  /* Card hover effects */
-  .card-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-
-  /* Button enhancements */
-  .btn-enhanced {
-    position: relative;
-    overflow: hidden;
+  /* Card enhancements */
+  .card-premium {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     transition: all 0.3s ease;
   }
 
-  .btn-enhanced::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
+  .card-premium:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
   }
 
-  .btn-enhanced:hover::before {
-    width: 300px;
-    height: 300px;
+  /* Animation */
+  @keyframes slideInRight {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
   }
 
-  /* Modal backdrop blur */
-  .modal-backdrop-blur {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+  .animate-slide-in {
+    animation: slideInRight 0.4s ease-out forwards;
   }
 </style>
 
@@ -272,43 +216,46 @@
   <div class="col-sm-12 min-h-screen">
     <!-- Enhanced Header -->
     <header
-      class="bg-white shadow-soft rounded-lg border-b border-gray-100/50 backdrop-blur-sm bg-opacity-90 sticky top-0 z-40 mb-5">
+      class="bg-white/90 shadow-soft rounded-2xl border border-gray-200/50 backdrop-blur-md sticky top-4 z-40 mb-6 p-1">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-20">
           <div class="flex items-center space-x-4">
-            <div class="relative">
-              <div class="absolute inset-0 bg-primary-500 rounded-full blur-xl opacity-20 animate-pulse-soft"></div>
-              <div class="relative bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-3 shadow-medium">
+            <div class="relative group">
+              <div class="absolute inset-0 bg-primary-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity animate-pulse-soft"></div>
+              <div class="relative bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-3.5 shadow-lg transform group-hover:scale-105 transition-transform duration-300">
                 <i class="fas fa-broadcast-tower text-white text-xl"></i>
               </div>
             </div>
             <div>
-              <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Qontak Broadcast Logs</h1>
-              <p class="text-sm text-gray-500">Monitor and manage your WhatsApp broadcasts</p>
+              <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight leading-tight">Broadcast Logs</h1>
+              <div class="flex items-center mt-0.5">
+                <span class="flex h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wider">Qontak Integration Dashboard</p>
+              </div>
             </div>
           </div>
-          <div class="flex items-center space-x-3">
-            <button onclick="testConnection()"
-              class="btn-enhanced inline-flex items-center px-4 py-2.5 border border-gray-200 shadow-soft text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
-              <i class="fas fa-plug mr-2"></i>
-              Test Connection
-            </button>
-            <button onclick="testEndpoints()"
-              class="btn-enhanced inline-flex items-center px-4 py-2.5 border border-gray-200 shadow-soft text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
-              <i class="fas fa-vial mr-2"></i>
-              Test Endpoints
-            </button>
+          <div class="flex items-center space-x-2">
+            <div class="hidden md:flex items-center space-x-2 bg-gray-50 p-1 rounded-xl border border-gray-100">
+              <button onclick="testConnection()"
+                class="inline-flex items-center px-3.5 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-primary-600 hover:bg-white hover:shadow-sm transition-all duration-200">
+                <i class="fas fa-plug mr-2 text-gray-400"></i>
+                Connection
+              </button>
+              <button onclick="testEndpoints()"
+                class="inline-flex items-center px-3.5 py-2 text-xs font-bold rounded-lg text-gray-600 hover:text-primary-600 hover:bg-white hover:shadow-sm transition-all duration-200">
+                <i class="fas fa-vial mr-2 text-gray-400"></i>
+                Endpoints
+              </button>
+            </div>
             <button onclick="refreshLogs()"
-              class="btn-enhanced inline-flex items-center px-4 py-2.5 border border-transparent shadow-soft text-sm font-medium rounded-lg text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
+              class="inline-flex items-center px-4 py-2.5 shadow-soft text-xs font-bold rounded-xl text-white bg-primary-600 hover:bg-primary-700 hover:shadow-lg focus:ring-2 focus:ring-primary-500 transition-all duration-300">
               <i class="fas fa-sync-alt mr-2"></i>
-              Refresh
+              REFRESH
             </button>
-            <!-- New: Send Maintenance Button -->
             <button onclick="openMaintenanceModal()"
-              class="btn-enhanced inline-flex items-center px-4 py-2.5 border border-transparent shadow-soft text-sm font-medium rounded-lg text-white bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200"
-              title="Send Maintenance">
-              <i class="fas fa-exclamation-triangle mr-2"></i>
-              Send Maintenance
+              class="inline-flex items-center px-4 py-2.5 shadow-soft text-xs font-bold rounded-xl text-white bg-yellow-500 hover:bg-yellow-600 hover:shadow-lg focus:ring-2 focus:ring-yellow-500 transition-all duration-300">
+              <i class="fas fa-tools mr-2"></i>
+              MAINTENANCE
             </button>
           </div>
         </div>
@@ -318,21 +265,20 @@
     <!-- Enhanced Main Content -->
     <main class="max-w-7xl mx-auto">
       <!-- Enhanced Filters Section -->
-      <div class="bg-white rounded-2xl shadow-soft p-6 mb-8 card-hover">
-        <div class="flex items-center mb-6">
-          <div class="bg-primary-100 rounded-lg p-2 mr-3">
-            <i class="fas fa-filter text-primary-600"></i>
+      <div class="card-premium p-6 mb-6">
+        <div class="flex items-center mb-5">
+          <div class="bg-primary-50 rounded-xl p-2 mr-3 border border-primary-100">
+            <i class="fas fa-sliders-h text-primary-600 text-sm"></i>
           </div>
-          <h2 class="text-lg font-semibold text-gray-900">Filter Broadcast Logs</h2>
+          <h2 class="text-sm font-bold text-gray-900 uppercase tracking-widest">Filter Logs</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div class="space-y-2">
-            <label for="statusFilter" class="block text-sm font-medium text-gray-700 flex items-center">
-              <i class="fas fa-chart-line text-gray-400 mr-2 text-xs"></i>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="space-y-1.5">
+            <label for="statusFilter" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
               Status
             </label>
             <select id="statusFilter"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+              class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 bg-gray-50/50">
               <option value="">All Status</option>
               <option value="sent">Sent</option>
               <option value="delivered">Delivered</option>
@@ -340,40 +286,38 @@
               <option value="failed">Failed</option>
             </select>
           </div>
-          <div class="space-y-2">
-            <label for="channelFilter" class="block text-sm font-medium text-gray-700 flex items-center">
-              <i class="fas fa-broadcast-tower text-gray-400 mr-2 text-xs"></i>
+          <div class="space-y-1.5">
+            <label for="channelFilter" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
               Channel
             </label>
             <select id="channelFilter"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
+              class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 bg-gray-50/50">
               <option value="">All Channels</option>
               <option value="whatsapp">WhatsApp</option>
             </select>
           </div>
-          <div class="space-y-2">
-            <label for="limitFilter" class="block text-sm font-medium text-gray-700 flex items-center">
-              <i class="fas fa-list-ol text-gray-400 mr-2 text-xs"></i>
-              Limit
+          <div class="space-y-1.5">
+            <label for="limitFilter" class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">
+              Rows
             </label>
             <select id="limitFilter"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+              class="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 bg-gray-50/50">
+              <option value="10">10 Rows</option>
+              <option value="25" selected>25 Rows</option>
+              <option value="50">50 Rows</option>
+              <option value="100">100 Rows</option>
             </select>
           </div>
-          <div class="flex items-end space-x-3">
+          <div class="flex items-end space-x-2">
             <button onclick="applyFilters()"
-              class="btn-enhanced flex-1 inline-flex justify-center items-center px-4 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-soft hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
-              <i class="fas fa-check mr-2"></i>
-              Apply
+              class="flex-1 inline-flex justify-center items-center px-4 py-2 text-xs font-bold rounded-xl text-white bg-gray-900 hover:bg-black shadow-sm transition-all duration-200">
+              <i class="fas fa-filter mr-2 text-[10px]"></i>
+              APPLY
             </button>
             <button onclick="clearFilters()"
-              class="btn-enhanced inline-flex justify-center items-center px-4 py-2.5 border border-gray-200 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 shadow-soft hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200">
-              <i class="fas fa-times mr-2"></i>
-              Clear
+              class="inline-flex justify-center items-center px-4 py-2 text-xs font-bold rounded-xl text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all duration-200">
+              <i class="fas fa-undo mr-2 text-[10px]"></i>
+              RESET
             </button>
           </div>
         </div>
@@ -473,39 +417,37 @@
       </div>
 
       <!-- Enhanced Broadcast Logs Table -->
-      <div class="bg-white rounded-2xl shadow-soft overflow-hidden card-hover">
-        <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-200">
+      <div class="card-premium overflow-hidden">
+        <div class="bg-gray-50/50 px-6 py-4 border-b border-gray-100">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
-              <div class="bg-primary-100 rounded-lg p-2 mr-3">
-                <i class="fas fa-history text-primary-600"></i>
+              <div class="bg-white rounded-lg p-2 mr-3 shadow-sm border border-gray-100">
+                <i class="fas fa-list-ul text-gray-600 text-xs"></i>
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">Broadcast History</h3>
-                <p class="text-sm text-gray-500">View and analyze your broadcast logs</p>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-widest">Logs History</h3>
               </div>
             </div>
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center">
               <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                <span class="w-2 h-2 bg-green-400 rounded-full mr-1.5 animate-pulse"></span>
-                Live
+                class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 uppercase tracking-tighter">
+                <span class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                Active
               </span>
             </div>
           </div>
         </div>
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50/50">
+          <table class="min-w-full divide-y divide-gray-100">
+            <thead class="bg-gray-50/30">
               <tr>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Broadcast ID
-                </th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Template</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Channel</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Messages</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sent At</th>
-                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">ID</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Template & Contact</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Channel</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Volume</th>
+                <th class="px-6 py-3 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Timestamp</th>
+                <th class="px-6 py-3 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody id="broadcastLogsBody" class="bg-white divide-y divide-gray-100">
@@ -517,15 +459,14 @@
 
       <!-- Enhanced Pagination -->
       <div id="paginationContainer"
-        class="mt-8 flex flex-col sm:flex-row justify-between items-center bg-white rounded-2xl shadow-soft p-6">
-        <div id="paginationInfo" class="text-sm text-gray-600 mb-4 sm:mb-0">
+        class="mt-8 flex flex-col sm:flex-row justify-between items-center card-premium p-4">
+        <div id="paginationInfo" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 sm:mb-0 ml-2">
           <div class="flex items-center">
-            <i class="fas fa-info-circle text-gray-400 mr-2"></i>
             <span id="paginationInfoText">Loading...</span>
           </div>
         </div>
-        <nav aria-label="Broadcast logs pagination" class="flex items-center space-x-1">
-          <ul class="inline-flex -space-x-px rounded-lg shadow-sm" id="pagination">
+        <nav aria-label="Pagination" class="flex items-center space-x-1">
+          <ul class="inline-flex space-x-1" id="pagination">
             <!-- Pagination will be loaded here -->
           </ul>
         </nav>
@@ -537,57 +478,51 @@
   <div id="broadcastDetailModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
       <!-- Backdrop -->
-      <div class="fixed inset-0 bg-gray-900 bg-opacity-75 modal-backdrop-blur transition-opacity" aria-hidden="true">
+      <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeModal()">
       </div>
 
       <!-- Modal Panel -->
       <div
         class="relative inline-flex items-center justify-center w-full max-w-4xl transform transition-all sm:my-8 sm:w-full sm:max-w-4xl lg:max-w-5xl">
-        <div class="bg-white rounded-2xl shadow-large text-left overflow-hidden animate-slide-up">
+        <div class="bg-white rounded-3xl shadow-2xl text-left overflow-hidden animate-slide-up border border-gray-100">
           <!-- Modal Header -->
-          <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 border-b border-gray-200">
+          <div class="bg-white px-8 py-6 border-b border-gray-100">
             <div class="flex items-center justify-between">
               <div class="flex items-center">
-                <div class="bg-white/20 rounded-lg p-2 mr-3">
-                  <i class="fas fa-info-circle text-white"></i>
+                <div class="bg-primary-50 rounded-2xl p-3 mr-4 border border-primary-100">
+                  <i class="fas fa-file-invoice text-primary-600 text-lg"></i>
                 </div>
-                <h3 class="text-xl font-semibold text-white">Broadcast Detail</h3>
+                <div>
+                  <h3 class="text-xl font-bold text-gray-900 leading-tight">Broadcast Details</h3>
+                  <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1" id="modalBroadcastId">N/A</p>
+                </div>
               </div>
-              <div class="ml-auto flex items-center">
-                <button onclick="closeModal()"
-                  class="bg-white/20 rounded-lg p-2 text-white hover:bg-white/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-colors">
-                  <i class="fas fa-times text-xl"></i>
-                </button>
-              </div>
+              <button onclick="closeModal()"
+                class="bg-gray-50 rounded-xl p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200">
+                <i class="fas fa-times text-lg"></i>
+              </button>
             </div>
           </div>
 
           <!-- Modal Body -->
-          <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+          <div class="px-8 py-8 max-h-[70vh] overflow-y-auto bg-gray-50/30">
             <div id="broadcastDetailContent">
               <!-- Detail will be loaded here -->
             </div>
           </div>
 
           <!-- Modal Footer -->
-          <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
-            <div class="flex justify-between items-center">
-              <div class="text-sm text-gray-500">
-                <i class="fas fa-info-circle mr-1"></i>
-                Broadcast ID: <span class="font-mono text-xs" id="modalBroadcastId">N/A</span>
-              </div>
-              <div class="flex space-x-3">
-                <button onclick="exportModalDetail()"
-                  class="btn-enhanced inline-flex justify-center items-center px-4 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200">
-                  <i class="fas fa-download mr-2"></i>
-                  Export
-                </button>
-                <button onclick="closeModal()"
-                  class="btn-enhanced inline-flex justify-center items-center px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-500 hover:bg-primary-600 hover:shadow-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
-                  <i class="fas fa-times mr-2"></i>
-                  Close
-                </button>
-              </div>
+          <div class="bg-white px-8 py-6 border-t border-gray-100">
+            <div class="flex justify-end items-center space-x-3">
+              <button onclick="exportModalDetail()"
+                class="inline-flex justify-center items-center px-5 py-2.5 text-xs font-bold rounded-xl text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all duration-200">
+                <i class="fas fa-download mr-2 text-[10px]"></i>
+                EXPORT JSON
+              </button>
+              <button onclick="closeModal()"
+                class="inline-flex justify-center items-center px-8 py-2.5 text-xs font-bold rounded-xl text-white bg-gray-900 hover:bg-black shadow-lg transition-all duration-200">
+                CLOSE
+              </button>
             </div>
           </div>
         </div>
@@ -793,69 +728,46 @@
         row.innerHTML = `
                   <td class="px-6 py-4 whitespace-nowrap">
                       <div class="flex items-center">
-                          <div class="bg-gray-100 rounded-lg p-1.5 mr-2">
-                              <i class="fas fa-hashtag text-gray-500 text-xs"></i>
-                          </div>
-                          <code class="text-xs font-mono text-gray-900 bg-gray-50 px-2 py-1 rounded">${broadcastId.substring(0, 8)}...</code>
+                          <code class="text-[10px] font-bold text-primary-600 bg-primary-50/50 px-2 py-1 rounded-md border border-primary-100">${broadcastId.substring(0, 8)}</code>
                       </div>
                   </td>
                   <td class="px-6 py-4">
                       <div class="flex flex-col">
-                          <div class="flex items-center mb-1">
-                              <div class="bg-purple-100 rounded-lg p-1.5 mr-2">
-                                  <i class="fas fa-file-alt text-purple-500 text-xs"></i>
-                              </div>
-                              <span class="text-sm font-medium text-gray-900">${broadcast.message_template.name}</span>
-                          </div>
-                          <div class="text-xs text-gray-500 ml-8">
-                              <i class="fas fa-user mr-1"></i>${contactName}
-                          </div>
+                          <span class="text-sm font-bold text-gray-900 leading-tight">${broadcast.message_template.name}</span>
+                          <span class="text-[10px] font-medium text-gray-400 mt-0.5 flex items-center italic">
+                            <i class="fas fa-user-circle mr-1 text-gray-300"></i> ${contactName}
+                          </span>
                       </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                       <div class="flex flex-col">
-                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-1">
-                              <i class="fas fa-whatsapp mr-1"></i>
-                              WhatsApp
+                          <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100 uppercase tracking-tighter w-fit">
+                              <i class="fab fa-whatsapp mr-1"></i>
+                              WA
                           </span>
-                          <code class="text-xs text-gray-500">${channel.substring(0, 8)}...</code>
+                          <span class="text-[9px] text-gray-400 mt-1 font-mono">${channel.substring(0, 8)}</span>
                       </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                       <span class="status-badge status-${status.toLowerCase()}">${broadcast.execute_status}</span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                          <div class="bg-blue-100 rounded-lg p-1.5 mr-2">
-                              <i class="fas fa-envelope text-blue-500 text-xs"></i>
-                          </div>
-                          <div class="flex flex-col">
-                              <span class="text-sm font-medium text-gray-900">${totalMessages || 1}</span>
-                              <span class="text-xs text-gray-500">messages</span>
-                          </div>
+                      <div class="flex flex-col">
+                          <span class="text-xs font-bold text-gray-700">${totalMessages || 1}</span>
+                          <span class="text-[9px] text-gray-400 uppercase font-bold tracking-tighter">Messages</span>
                       </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex flex-col text-sm text-gray-900">
-                          <div class="flex items-center mb-1">
-                              <div class="bg-gray-100 rounded-lg p-1.5 mr-2">
-                                  <i class="fas fa-clock text-gray-500 text-xs"></i>
-                              </div>
-                              <span>${createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</span>
-                          </div>
-                          <span class="text-xs text-gray-500 ml-8">${createdAt ? new Date(createdAt).toLocaleTimeString() : 'N/A'}</span>
+                      <div class="flex flex-col">
+                          <span class="text-xs font-bold text-gray-900">${createdAt ? new Date(createdAt).toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}) : 'N/A'}</span>
+                          <span class="text-[10px] text-gray-400 font-medium">${createdAt ? new Date(createdAt).toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'}) : 'N/A'}</span>
                       </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div class="flex flex-col space-y-1">
-                          <button onclick="viewBroadcastDetail('${broadcastId}')" class="btn-enhanced inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-lg text-primary-600 bg-primary-50 hover:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200">
-                              <i class="fas fa-eye mr-1"></i>
-                              View Detail
-                          </button>
-                          <div class="text-xs text-gray-500 text-center">
-                              ${phoneNumber}
-                          </div>
-                      </div>
+                  <td class="px-6 py-4 whitespace-nowrap text-right">
+                      <button onclick="viewBroadcastDetail('${broadcastId}')" class="inline-flex items-center px-3 py-1.5 text-[10px] font-bold rounded-lg text-white bg-gray-900 hover:bg-black transition-all duration-200">
+                          <i class="fas fa-expand-alt mr-1.5"></i>
+                          DETAIL
+                      </button>
                   </td>
               `;
         tbody.appendChild(row);
@@ -943,8 +855,8 @@
       // Previous button
       const prevLi = document.createElement('li');
       const prevDisabled = currentPage === 1;
-      prevLi.innerHTML = `<button onclick="loadBroadcastLogs(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''} class="relative inline-flex items-center px-3 py-2 rounded-l-lg text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 ${prevDisabled ? 'opacity-50 cursor-not-allowed' : ''}">
-              <i class="fas fa-chevron-left"></i>
+      prevLi.innerHTML = `<button onclick="loadBroadcastLogs(${currentPage - 1})" ${prevDisabled ? 'disabled' : ''} class="inline-flex items-center px-3 py-2 rounded-xl text-xs font-bold ${prevDisabled ? 'text-gray-300 cursor-not-allowed bg-gray-50' : 'text-gray-600 bg-white hover:bg-gray-100 border border-gray-200'} transition-all duration-200">
+              <i class="fas fa-chevron-left text-[10px]"></i>
           </button>`;
       pagination.appendChild(prevLi);
 
@@ -960,7 +872,7 @@
       for (let i = startPage; i <= endPage; i++) {
         const li = document.createElement('li');
         const isActive = i === currentPage;
-        li.innerHTML = `<button onclick="loadBroadcastLogs(${i})" class="relative inline-flex items-center px-4 py-2 text-sm font-medium transition-all duration-200 ${isActive ? 'z-10 bg-primary-500 border-primary-500 text-white shadow-sm' : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50 hover:shadow-sm'}">
+        li.innerHTML = `<button onclick="loadBroadcastLogs(${i})" class="inline-flex items-center px-4 py-2 text-xs font-bold rounded-xl transition-all duration-200 ${isActive ? 'bg-primary-600 text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}">
                   ${i}
               </button>`;
         pagination.appendChild(li);
@@ -969,8 +881,8 @@
       // Next button
       const nextLi = document.createElement('li');
       const nextDisabled = currentPage === totalPages;
-      nextLi.innerHTML = `<button onclick="loadBroadcastLogs(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''} class="relative inline-flex items-center px-3 py-2 rounded-r-lg text-sm font-medium text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 ${nextDisabled ? 'opacity-50 cursor-not-allowed' : ''}">
-              <i class="fas fa-chevron-right"></i>
+      nextLi.innerHTML = `<button onclick="loadBroadcastLogs(${currentPage + 1})" ${nextDisabled ? 'disabled' : ''} class="inline-flex items-center px-3 py-2 rounded-xl text-xs font-bold ${nextDisabled ? 'text-gray-300 cursor-not-allowed bg-gray-50' : 'text-gray-600 bg-white hover:bg-gray-100 border border-gray-200'} transition-all duration-200">
+              <i class="fas fa-chevron-right text-[10px]"></i>
           </button>`;
       pagination.appendChild(nextLi);
 
@@ -1005,6 +917,7 @@
 
     function displayBroadcastDetail(data) {
       const content = document.getElementById('broadcastDetailContent');
+      window.lastBroadcastDetail = data; // Save for copy functionality
 
       console.log('Broadcast detail data:', data);
 
@@ -1049,179 +962,116 @@
               <div class="space-y-6">
                   <!-- Message Information -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div class="bg-gray-50 rounded-lg p-4">
-                          <h4 class="text-sm font-medium text-gray-900 mb-3">Message Information</h4>
-                          <dl class="space-y-2">
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Message ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs">${broadcast.id || 'N/A'}</dd>
+                      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                            <i class="fas fa-info-circle mr-2 text-primary-500"></i> Basic Info
+                          </h4>
+                          <dl class="space-y-3">
+                              <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                                  <dt class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Contact</dt>
+                                  <dd class="text-xs font-bold text-gray-900">${contactName}</dd>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Broadcast ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs">${broadcast.messages_broadcast_id || 'N/A'}</dd>
+                              <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                                  <dt class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Phone</dt>
+                                  <dd class="text-xs font-bold text-gray-900">${broadcast.contact_phone_number || 'N/A'}</dd>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Contact Name:</dt>
-                                  <dd class="text-sm text-gray-900">${contactName}</dd>
-                              </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Phone Number:</dt>
-                                  <dd class="text-sm text-gray-900">${broadcast.contact_phone_number || 'N/A'}</dd>
-                              </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Status:</dt>
+                              <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                                  <dt class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Status</dt>
                                   <dd><span class="status-badge status-${(broadcast.status || 'pending').toLowerCase()}">${broadcast.status || 'pending'}</span></dd>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Channel Integration ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs">${broadcast.channel_integration_id || 'N/A'}</dd>
-                              </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Is Pacing:</dt>
-                                  <dd class="text-sm text-gray-900">${broadcast.is_pacing ? 'Yes' : 'No'}</dd>
-                              </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Created At:</dt>
-                                  <dd class="text-sm text-gray-900">${broadcast.created_at ? new Date(broadcast.created_at).toLocaleString() : 'N/A'}</dd>
+                              <div class="flex justify-between items-center border-b border-gray-50 pb-2">
+                                  <dt class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Timestamp</dt>
+                                  <dd class="text-[10px] font-bold text-gray-900">${broadcast.created_at ? new Date(broadcast.created_at).toLocaleString('id-ID') : 'N/A'}</dd>
                               </div>
                           </dl>
                       </div>
 
                       <!-- Message Status -->
-                      <div class="bg-gray-50 rounded-lg p-4">
-                          <h4 class="text-sm font-medium text-gray-900 mb-3">Message Status</h4>
-                          <dl class="space-y-2">
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Sent:</dt>
-                                  <dd class="text-sm text-gray-900">${sentCount}</dd>
+                      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                            <i class="fas fa-chart-pie mr-2 text-primary-500"></i> Metrics
+                          </h4>
+                          <div class="grid grid-cols-3 gap-3">
+                              <div class="bg-blue-50 rounded-xl p-3 text-center border border-blue-100">
+                                  <span class="block text-[10px] font-bold text-blue-400 uppercase tracking-tighter">Sent</span>
+                                  <span class="text-lg font-black text-blue-600">${sentCount}</span>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Delivered:</dt>
-                                  <dd class="text-sm text-gray-900">${deliveredCount}</dd>
+                              <div class="bg-green-50 rounded-xl p-3 text-center border border-green-100">
+                                  <span class="block text-[10px] font-bold text-green-400 uppercase tracking-tighter">Delivered</span>
+                                  <span class="text-lg font-black text-green-600">${deliveredCount}</span>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Read:</dt>
-                                  <dd class="text-sm text-gray-900">${readCount}</dd>
+                              <div class="bg-purple-50 rounded-xl p-3 text-center border border-purple-100">
+                                  <span class="block text-[10px] font-bold text-purple-400 uppercase tracking-tighter">Read</span>
+                                  <span class="text-lg font-black text-purple-600">${readCount}</span>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Total Statuses:</dt>
-                                  <dd class="text-sm text-gray-900">${sentCount + deliveredCount + readCount}</dd>
-                              </div>
-                          </dl>
+                          </div>
+                          <div class="mt-4 p-3 bg-gray-50 rounded-xl flex justify-between items-center">
+                             <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Interacted</span>
+                             <span class="text-xs font-bold text-gray-900">${sentCount + deliveredCount + readCount}</span>
+                          </div>
                       </div>
                   </div>
 
-                  <!-- Message Details -->
+                  <!-- Message Details & Content -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div class="bg-gray-50 rounded-lg p-4">
-                          <h4 class="text-sm font-medium text-gray-900 mb-3">Message Details</h4>
-                          <dl class="space-y-2">
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">WhatsApp Message ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs break-all">${broadcast.whatsapp_message_id || 'N/A'}</dd>
+                      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                            <i class="fas fa-fingerprint mr-2 text-primary-500"></i> Metadata
+                          </h4>
+                          <dl class="space-y-3">
+                              <div class="flex flex-col border-b border-gray-50 pb-2">
+                                  <dt class="text-[9px] font-bold text-gray-400 uppercase">Message ID</dt>
+                                  <dd class="text-[10px] font-mono text-gray-900 truncate mt-0.5">${broadcast.id || 'N/A'}</dd>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Organization ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs">${broadcast.organization_id || 'N/A'}</dd>
+                              <div class="flex flex-col border-b border-gray-50 pb-2">
+                                  <dt class="text-[9px] font-bold text-gray-400 uppercase">WhatsApp Message ID</dt>
+                                  <dd class="text-[10px] font-mono text-gray-900 break-all mt-0.5">${broadcast.whatsapp_message_id || 'N/A'}</dd>
                               </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Error Message:</dt>
-                                  <dd class="text-sm text-gray-900">${broadcast.whatsapp_error_message || 'N/A'}</dd>
-                              </div>
-                              <div class="flex justify-between">
-                                  <dt class="text-sm font-medium text-gray-500">Webhook ID:</dt>
-                                  <dd class="text-sm text-gray-900 font-mono text-xs">${statusCount.sent?.webhook || statusCount.delivered?.webhook || statusCount.read?.webhook || 'N/A'}</dd>
+                              <div class="flex flex-col">
+                                  <dt class="text-[9px] font-bold text-gray-400 uppercase">Error Trace</dt>
+                                  <dd class="text-[10px] font-medium text-red-500 mt-0.5">${broadcast.whatsapp_error_message || 'None'}</dd>
                               </div>
                           </dl>
                       </div>
 
-                      <div class="bg-gray-50 rounded-lg p-4">
-                          <h4 class="text-sm font-medium text-gray-900 mb-3">Message Content</h4>
-                          <div class="space-y-3">
+                      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center">
+                            <i class="fas fa-comment-alt mr-2 text-primary-500"></i> Content Preview
+                          </h4>
+                          <div class="space-y-4">
                               ${broadcast.messages ? `
                                   ${broadcast.messages.header && (broadcast.messages.header.text || broadcast.messages.header.template?.length > 0) ? `
                                       <div>
-                                          <dt class="text-sm font-medium text-gray-500 mb-1">Header:</dt>
-                                          <dd class="text-sm text-gray-900 bg-white p-2 rounded border">${broadcast.messages.header?.text || (broadcast.messages.header.template ? broadcast.messages.header.template.join(', ') : 'N/A')}</dd>
+                                          <dt class="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Header</dt>
+                                          <dd class="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl border border-gray-100 italic">${broadcast.messages.header?.text || (broadcast.messages.header.template ? broadcast.messages.header.template.join(', ') : 'N/A')}</dd>
                                       </div>
                                   ` : ''}
                                   <div>
-                                      <dt class="text-sm font-medium text-gray-500 mb-1">Body:</dt>
-                                      <dd class="text-sm text-gray-900 bg-white p-2 rounded border max-h-32 overflow-y-auto">${broadcast.messages.body?.text || JSON.stringify(broadcast.messages.body) || 'N/A'}</dd>
+                                      <dt class="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Body Message</dt>
+                                      <dd class="text-xs text-gray-800 bg-white p-4 rounded-xl border border-gray-100 shadow-inner max-h-40 overflow-y-auto leading-relaxed">${broadcast.messages.body?.text || JSON.stringify(broadcast.messages.body) || 'N/A'}</dd>
                                   </div>
                                   ${broadcast.messages.buttons && broadcast.messages.buttons.template ? `
                                       <div>
-                                          <dt class="text-sm font-medium text-gray-500 mb-1">Buttons:</dt>
-                                          <dd class="text-sm text-gray-900 bg-white p-2 rounded border">${broadcast.messages.buttons.template.join(', ') || 'N/A'}</dd>
+                                          <dt class="text-[10px] font-bold text-gray-400 uppercase mb-1.5">Buttons</dt>
+                                          <dd class="flex flex-wrap gap-2">
+                                            ${broadcast.messages.buttons.template.map(btn => `<span class="px-2.5 py-1 bg-gray-100 text-[10px] font-bold text-gray-600 rounded-lg border border-gray-200">${btn}</span>`).join('')}
+                                          </dd>
                                       </div>
                                   ` : ''}
-                              ` : '<div class="text-sm text-gray-500">No message content available</div>'}
+                              ` : '<div class="text-center py-6 bg-gray-50 rounded-2xl text-[10px] font-bold text-gray-400 uppercase">No Content Payload</div>'}
                           </div>
                       </div>
                   </div>
 
-                  <!-- Response Details -->
-                  <div class="bg-gray-50 rounded-lg p-4">
-                      <h4 class="text-sm font-medium text-gray-900 mb-3">Response Details</h4>
-                      <div class="overflow-x-auto">
-                          <table class="min-w-full divide-y divide-gray-200">
-                              <thead class="bg-gray-100">
-                                  <tr>
-                                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Response Type</th>
-                                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Statuses Count</th>
-                                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Webhook ID</th>
-                                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
-                                  </tr>
-                              </thead>
-                              <tbody class="bg-white divide-y divide-gray-200">
-                                  ${broadcast.messages_response ? Object.entries(broadcast.messages_response).map(([type, response]) => {
-        const statusesCount = response.statuses?.length || 0;
-        const webhookId = response.webhook || 'N/A';
-        const contactsCount = response.contacts?.length || 0;
-        const details = contactsCount > 0 ? `${contactsCount} contacts` : 'No contacts';
-        return `
-                                          <tr>
-                                              <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">${type}</td>
-                                              <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${statusesCount}</td>
-                                              <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 font-mono text-xs">${webhookId}</td>
-                                              <td class="px-4 py-2 text-sm text-gray-900">${details}</td>
-                                          </tr>
-                                      `;
-      }).join('') : '<tr><td colspan="4" class="px-4 py-2 text-sm text-center text-gray-500">No response details available</td></tr>'}
-                              </tbody>
-                          </table>
+                  <!-- Raw JSON (Collapsible/Code) -->
+                  <div class="bg-gray-900 rounded-2xl p-6 shadow-lg">
+                      <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+                          <i class="fas fa-code mr-2 text-green-500"></i> Raw Response
+                        </h4>
+                        <button onclick="navigator.clipboard.writeText(JSON.stringify(window.lastBroadcastDetail, null, 2))" class="text-[10px] font-bold text-gray-500 hover:text-white transition-colors">COPY</button>
                       </div>
-                  </div>
-
-                  <!-- Contact Information -->
-                  ${statusCount.contacts && statusCount.contacts.length > 0 ? `
-                      <div class="bg-gray-50 rounded-lg p-4">
-                          <h4 class="text-sm font-medium text-gray-900 mb-3">Contact Information</h4>
-                          <div class="overflow-x-auto">
-                              <table class="min-w-full divide-y divide-gray-200">
-                                  <thead class="bg-gray-100">
-                                      <tr>
-                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Input Number</th>
-                                          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">WhatsApp ID</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody class="bg-white divide-y divide-gray-200">
-                                      ${statusCount.contacts.map((contact, index) => `
-                                          <tr>
-                                              <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${contact.input || 'N/A'}</td>
-                                              <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${contact.wa_id || 'N/A'}</td>
-                                          </tr>
-                                      `).join('')}
-                                  </tbody>
-                              </table>
-                          </div>
-                      </div>
-                  ` : ''}
-
-                  <!-- Raw Response -->
-                  <div class="bg-gray-50 rounded-lg p-4">
-                      <h4 class="text-sm font-medium text-gray-900 mb-3">Raw Response Data</h4>
-                      <pre class="text-xs bg-gray-100 p-3 rounded overflow-x-auto max-h-64">${JSON.stringify(broadcast, null, 2)}</pre>
+                      <pre class="text-[10px] text-green-400 p-2 overflow-x-auto max-h-48 font-mono leading-tight">${JSON.stringify(broadcast, null, 2)}</pre>
                   </div>
               </div>
           `;
@@ -1751,21 +1601,48 @@
       </div>
 
       <!-- Filters & Actions -->
-      <div class="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
-        <div class="relative flex-1">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <i class="fas fa-search text-gray-400"></i>
-          </span>
-          <input type="text" id="maintenanceSearch" onkeyup="filterMaintenanceCustomers()"
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-            placeholder="Search customers by name or phone...">
+      <div class="mb-4 space-y-4 flex-shrink-0">
+        <!-- New OLT, ODC, ODP Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100">
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">OLT (Lokasi)</label>
+            <select id="filterMaintenanceOlt" onchange="loadMaintenanceOdcs()"
+              class="block w-full px-3 py-2 text-xs font-bold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all">
+              <option value="">ALL OLT</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">ODC</label>
+            <select id="filterMaintenanceOdc" onchange="loadMaintenanceOdps()"
+              class="block w-full px-3 py-2 text-xs font-bold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all">
+              <option value="">ALL ODC</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">ODP</label>
+            <select id="filterMaintenanceOdp" onchange="renderMaintenanceRecipientsV2()"
+              class="block w-full px-3 py-2 text-xs font-bold bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all">
+              <option value="">ALL ODP</option>
+            </select>
+          </div>
         </div>
-        <div class="flex items-center space-x-3">
-          <span id="maintenanceSelectedCount" class="text-sm text-gray-600 font-medium">0 selected</span>
-          <button id="btnBroadcastMaintenance" onclick="sendMaintenanceBroadcast()"
-            class="btn-enhanced inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-soft transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fas fa-paper-plane mr-2"></i> Send Broadcast
-          </button>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-search text-gray-400"></i>
+            </span>
+            <input type="text" id="maintenanceSearch" onkeyup="filterMaintenanceCustomers()"
+              class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 sm:text-xs font-medium"
+              placeholder="Search customers by name or phone...">
+          </div>
+          <div class="flex items-center space-x-3">
+            <span id="maintenanceSelectedCount" class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">0 selected</span>
+            <button id="btnBroadcastMaintenance" onclick="sendMaintenanceBroadcast()"
+              class="inline-flex items-center px-6 py-2 text-xs font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+              <i class="fas fa-paper-plane mr-2 text-[10px]"></i> SEND BROADCAST
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1836,10 +1713,74 @@
       if (m) m.classList.remove('hidden');
       // Clear search and selection
       document.getElementById('maintenanceSearch').value = '';
+      document.getElementById('filterMaintenanceOlt').value = '';
+      document.getElementById('filterMaintenanceOdc').value = '';
+      document.getElementById('filterMaintenanceOdp').value = '';
       document.getElementById('selectAllMaintenance').checked = false;
       selectedCustomerData.clear();
       maintenanceCurrentPage = 1;
+      
+      loadMaintenanceOlts();
       renderMaintenanceRecipientsV2();
+    }
+
+    function loadMaintenanceOlts() {
+      fetch('/maintenance/olts')
+        .then(res => res.json())
+        .then(data => {
+          const select = document.getElementById('filterMaintenanceOlt');
+          select.innerHTML = '<option value="">ALL OLT</option>';
+          if (data.success) {
+            data.data.forEach(it => {
+              select.innerHTML += `<option value="${it.id}">${it.name}</option>`;
+            });
+          }
+        });
+    }
+
+    function loadMaintenanceOdcs() {
+      const oltId = document.getElementById('filterMaintenanceOlt').value;
+      const select = document.getElementById('filterMaintenanceOdc');
+      select.innerHTML = '<option value="">ALL ODC</option>';
+      document.getElementById('filterMaintenanceOdp').innerHTML = '<option value="">ALL ODP</option>';
+      
+      if (!oltId) {
+        renderMaintenanceRecipientsV2();
+        return;
+      }
+
+      fetch(`/maintenance/odcs?olt_id=${oltId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            data.data.forEach(it => {
+              select.innerHTML += `<option value="${it.id}">${it.name}</option>`;
+            });
+          }
+          renderMaintenanceRecipientsV2();
+        });
+    }
+
+    function loadMaintenanceOdps() {
+      const odcId = document.getElementById('filterMaintenanceOdc').value;
+      const select = document.getElementById('filterMaintenanceOdp');
+      select.innerHTML = '<option value="">ALL ODP</option>';
+      
+      if (!odcId) {
+        renderMaintenanceRecipientsV2();
+        return;
+      }
+
+      fetch(`/maintenance/odps?odc_id=${odcId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            data.data.forEach(it => {
+              select.innerHTML += `<option value="${it.id}">${it.name}</option>`;
+            });
+          }
+          renderMaintenanceRecipientsV2();
+        });
     }
 
     function closeMaintenanceModal() {
@@ -1856,7 +1797,11 @@
         loadingOverlay.classList.remove('hidden');
       }
 
-      fetch('/maintenance-customers')
+      const oltId = document.getElementById('filterMaintenanceOlt')?.value || '';
+      const odcId = document.getElementById('filterMaintenanceOdc')?.value || '';
+      const odpId = document.getElementById('filterMaintenanceOdp')?.value || '';
+
+      fetch(`/maintenance-customers?olt_id=${oltId}&odc_id=${odcId}&odp_id=${odpId}`)
         .then(res => res.json())
         .then(data => {
           if (loadingOverlay) loadingOverlay.classList.add('hidden');
@@ -1962,7 +1907,7 @@
       const number = checkbox.getAttribute('data-number');
 
       if (checkbox.checked) {
-        selectedCustomerData.set(id, { name, number });
+        selectedCustomerData.set(id, { id, name, number });
         checkbox.closest('tr').classList.add('bg-primary-50');
       } else {
         selectedCustomerData.delete(id);
@@ -1987,6 +1932,7 @@
         // Select ALL customers from the currently filtered list (across all pages)
         filteredMaintenanceCustomers.forEach(it => {
           selectedCustomerData.set(String(it.id), {
+            id: String(it.id),
             name: it.name,
             number: it.number
           });
