@@ -457,6 +457,60 @@ class QontakServices
     }
   }
 
+  public function sendTemplateBroadcast($to, $customer, $templateName)
+  {
+    try {
+      // 1. Cari template berdasarkan nama yang diberikan user
+      $template = $this->getTemplateByName($templateName);
+
+      if (!$template || !is_array($template) || !isset($template['id'])) {
+        throw new Exception("Template '{$templateName}' tidak ditemukan atau format tidak valid");
+      }
+
+      $formattedPhone = $this->formatNomor($to);
+
+      // 2. Siapkan payload untuk mengirim pesan (Tanpa parameter body)
+      $messageData = [
+        'to_number' => $formattedPhone,
+        'to_name' => $customer->nama_customer ?? 'Pelanggan',
+        'message_template_id' => $template['id'],
+        'channel_integration_id' => $this->channelId,
+        'language' => [
+          'code' => 'id'
+        ],
+        'parameters' => [
+          'body' => [] // Kosong sesuai permintaan user (tanpa mengirim value)
+        ]
+      ];
+
+      // 3. Kirim pesan
+      $result = $this->makeRequest(
+        'POST',
+        '/qontak/chat/v1/broadcasts/whatsapp/direct',
+        $messageData
+      );
+
+      if (!$result['success']) {
+        throw new Exception($result['message'] ?? "Gagal mengirim broadcast template {$templateName}");
+      }
+
+      $responseData = is_array($result['data']) ? $result['data'] : [];
+
+      return [
+        'success' => true,
+        'message_id' => $responseData['id'] ?? null,
+        'status' => $responseData['execute_status'] ?? 'pending'
+      ];
+    } catch (Exception $e) {
+      Log::error("Error template broadcast ({$templateName}): " . $e->getMessage());
+
+      return [
+        'success' => false,
+        'error' => $e->getMessage()
+      ];
+    }
+  }
+
   public function notifProrate($to, $invoice)
   {
     try {

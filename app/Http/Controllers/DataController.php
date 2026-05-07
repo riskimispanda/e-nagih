@@ -82,6 +82,27 @@ class DataController extends Controller
       });
     }
 
+    $query->when($request->filled('paket_id'), function ($q) use ($request) {
+      $q->where('paket_id', $request->paket_id);
+    });
+
+    // Apply Infrastructure Filters
+    $query->when($request->filled('olt_id'), function ($q) use ($request) {
+      $q->whereHas('odp.odc', function ($sq) use ($request) {
+        $sq->where('lokasi_id', $request->olt_id);
+      });
+    });
+
+    $query->when($request->filled('odc_id'), function ($q) use ($request) {
+      $q->whereHas('odp', function ($sq) use ($request) {
+        $sq->where('odc_id', $request->odc_id);
+      });
+    });
+
+    $query->when($request->filled('odp_id'), function ($q) use ($request) {
+      $q->where('lokasi_id', $request->odp_id);
+    });
+
     // Apply sorting
     switch ($sort) {
       case 'name-asc':
@@ -309,7 +330,7 @@ class DataController extends Controller
       ->distinct('customer_id')
       ->count('customer_id');
 
-    $fasum = Customer::where('paket_id', 11)->where('status_id', 3)->whereNull('deleted_at')->count();
+    $fasum = Customer::where('paket_id', 11)->whereNull('deleted_at')->count();
 
     return view('data.data-pelanggan', [
       'users' => auth()->user(),

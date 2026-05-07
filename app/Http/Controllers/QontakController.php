@@ -19,6 +19,81 @@ class QontakController extends Controller
     $this->qontakService = $qontakService;
   }
 
+  public function broadcastTemplate(Request $request): JsonResponse
+  {
+    $request->validate([
+      'recipients' => 'required|array',
+      'template_name' => 'required|string'
+    ]);
+
+    $recipients = $request->recipients;
+    $templateName = $request->template_name;
+    $sentCount = 0;
+    $failedCount = 0;
+    $alreadySentCount = 0;
+
+    foreach ($recipients as $recipient) {
+      $customer = Customer::find($recipient['id']);
+      if (!$customer) {
+        $failedCount++;
+        continue;
+      }
+
+      // 1. Cek duplikasi (apakah sudah dikirim template ini hari ini)
+      $alreadySent = DB::table('whats_log')
+        ->where('customer_id', $customer->id)
+        ->where('jenis_pesan', "promosi")
+        ->whereDate('created_at', '=', now()->toDateString())
+        ->exists();
+
+      if ($alreadySent) {
+        $alreadySentCount++;
+        continue;
+      }
+
+      // 2. Kirim broadcast
+      $result = $this->qontakService->sendTemplateBroadcast(
+        $customer->no_hp,
+        $customer,
+        $templateName
+      );
+
+      if ($result['success']) {
+        $sentCount++;
+
+        // 3. Catat ke log
+        DB::table('whats_log')->insert([
+          'customer_id' => $customer->id,
+          'no_tujuan' => $customer->no_hp,
+          'jenis_pesan' => "promosi",
+          'pesan' => "Broadcast template: {$templateName}",
+          'qontak_broadcast_id' => $result['message_id'] ?? null,
+          'status_pengiriman' => $result['status'] ?? 'pending',
+          'created_at' => now(),
+          'updated_at' => now()
+        ]);
+      } else {
+        $failedCount++;
+      }
+    }
+
+    $message = "Broadcast selesai.";
+    if ($sentCount > 0)
+      $message .= " Berhasil: {$sentCount}.";
+    if ($alreadySentCount > 0)
+      $message .= " Lewati (Sudah dikirim hari ini): {$alreadySentCount}.";
+    if ($failedCount > 0)
+      $message .= " Gagal: {$failedCount}.";
+
+    return response()->json([
+      'success' => true,
+      'sent_count' => $sentCount,
+      'failed_count' => $failedCount,
+      'already_sent_count' => $alreadySentCount,
+      'message' => $message
+    ]);
+  }
+
   public function maintenance()
   {
     return view('qontak.maintenance', ['users' => auth()->user(), 'roles' => auth()->user()->roles]);

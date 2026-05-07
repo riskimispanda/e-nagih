@@ -167,8 +167,8 @@ Route::get('/test-router/{id}', function ($id) {
 Route::middleware(['auth'])->group(function () {
 
   // Route Maintenance Broadcast
-  Route::get('/maintenance', [QontakController::class, 'maintenance']);
-  // Maintenance customers data for UI
+  Route::post('/qontak/broadcast/maintenance', [QontakController::class, 'broadcastMaintenance']);
+  Route::post('/qontak/broadcast/template', [QontakController::class, 'broadcastTemplate']);
   Route::get('/maintenance-customers', [QontakController::class, 'getMaintenanceCustomers'])->name('maintenance.customers');
   // Maintenance filters data
   Route::get('/maintenance/olts', [QontakController::class, 'getOlts'])->name('maintenance.olts');
