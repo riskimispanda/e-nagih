@@ -1,6 +1,6 @@
 @extends('layouts/contentNavbarLayout')
 
-@section('title', 'Data Pelanggan')
+@section('title', 'Manajemen Broadcast')
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -176,8 +176,8 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">Data Pelanggan</h1>
-        <p class="text-xs font-medium text-slate-500 mt-1">Manajemen data pelanggan dan status layanan dari database</p>
+        <h1 class="text-2xl font-bold text-slate-900">Manajemem Broadcast</h1>
+        <p class="text-xs font-medium text-slate-500 mt-1">Manajemen broadcast pelanggan (Promosi,Info,Gangguan)</p>
       </div>
       <div class="flex items-center gap-3">
         <button onclick="openMaintenanceModal()"
@@ -351,11 +351,11 @@
 
       tbody.classList.add('opacity-40');
       states.innerHTML = `
-                  <div class="flex flex-col items-center py-20">
-                    <div class="w-8 h-8 border-4 border-slate-200 border-t-accent-600 rounded-full animate-spin mb-3"></div>
-                    <p class="text-sm font-medium text-slate-500">Memuat data pelanggan...</p>
-                  </div>
-                `;
+                                          <div class="flex flex-col items-center py-20">
+                                            <div class="w-8 h-8 border-4 border-slate-200 border-t-accent-600 rounded-full animate-spin mb-3"></div>
+                                            <p class="text-sm font-medium text-slate-500">Memuat data pelanggan...</p>
+                                          </div>
+                                        `;
 
       const params = {
         per_page: document.getElementById('limitFilter').value,
@@ -394,16 +394,16 @@
 
       if (!customers || customers.length === 0) {
         tbody.innerHTML = `
-                    <tr>
-                      <td colspan="6" class="px-6 py-20 text-center">
-                        <div class="flex flex-col items-center opacity-40">
-                          <i class="fas fa-users text-4xl mb-3 text-blue-600 text-bold"></i>
-                          <p class="font-semibold">Data tidak ditemukan</p>
-                          <p class="text-sm">Coba sesuaikan pencarian Anda</p>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
+                                            <tr>
+                                              <td colspan="6" class="px-6 py-20 text-center">
+                                                <div class="flex flex-col items-center opacity-40">
+                                                  <i class="fas fa-users text-4xl mb-3 text-blue-600 text-bold"></i>
+                                                  <p class="font-semibold">Data tidak ditemukan</p>
+                                                  <p class="text-sm">Coba sesuaikan pencarian Anda</p>
+                                                </div>
+                                              </td>
+                                            </tr>
+                                          `;
         return;
       }
 
@@ -417,23 +417,23 @@
         const row = document.createElement('tr');
         row.className = 'hover:bg-slate-50/50 transition-colors';
         row.innerHTML = `
-                    <td class="text-center"><input type="checkbox" class="customer-row-checkbox rounded border-slate-300" value="${customer.id}" onchange="updateSelectAllState()"></td>
-                    <td class="text-center"><code class="text-[11px] font-mono text-slate-400">#${customer.id}</code></td>
-                    <td>
-                      <div class="font-semibold text-slate-900">${customer.nama_customer || 'N/A'}</div>
-                      <div class="text-xs text-slate-500 mt-0.5"><i class="fas fa-phone mr-1 text-[10px]"></i> ${customer.no_hp || '-'}</div>
-                    </td>
-                    <td class="max-w-[250px] truncate text-xs text-slate-600">${customer.alamat || '-'}</td>
-                    <td>
-                      <div class="text-[11px] font-bold text-slate-700 uppercase">${customer.odp?.nama_odp || '-'}</div>
-                      <div class="text-[9px] text-slate-400 mt-0.5">${customer.odp?.odc?.nama_odc || '-'} / ${customer.odp?.odc?.olt?.nama_lokasi || '-'}</div>
-                    </td>
-                    <td>
-                      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                        <i class="fas fa-box"></i> ${customer.paket?.nama_paket || 'N/A'}
-                      </span>
-                    </td>
-                  `;
+                                            <td class="text-center"><input type="checkbox" class="customer-row-checkbox rounded border-slate-300" value="${customer.id}" onchange="updateSelectAllState()"></td>
+                                            <td class="text-center"><code class="text-[11px] font-mono text-slate-400">#${customer.id}</code></td>
+                                            <td>
+                                              <div class="font-semibold text-slate-900">${customer.nama_customer || 'N/A'}</div>
+                                              <div class="text-xs text-slate-500 mt-0.5"><i class="fas fa-phone mr-1 text-[10px]"></i> ${customer.no_hp || '-'}</div>
+                                            </td>
+                                            <td class="max-w-[250px] truncate text-xs text-slate-600">${customer.alamat || '-'}</td>
+                                            <td>
+                                              <div class="text-[11px] font-bold text-slate-700 uppercase">${customer.odp?.nama_odp || '-'}</div>
+                                              <div class="text-[9px] text-slate-400 mt-0.5">${customer.odp?.odc?.nama_odc || '-'} / ${customer.odp?.odc?.olt?.nama_lokasi || '-'}</div>
+                                            </td>
+                                            <td>
+                                              <span class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                                                <i class="fas fa-box"></i> ${customer.paket?.nama_paket || 'N/A'}
+                                              </span>
+                                            </td>
+                                          `;
         tbody.appendChild(row);
       });
     }
@@ -587,11 +587,11 @@
       ];
 
       summary.innerHTML = filters.map(f => `
-        <div class="flex flex-col">
-          <span class="text-[9px] text-indigo-400 font-bold uppercase tracking-tight">${f.label}</span>
-          <span class="text-[10px] text-indigo-700 font-semibold truncate">${f.value || 'All'}</span>
-        </div>
-      `).join('');
+                                <div class="flex flex-col">
+                                  <span class="text-[9px] text-indigo-400 font-bold uppercase tracking-tight">${f.label}</span>
+                                  <span class="text-[10px] text-indigo-700 font-semibold truncate">${f.value || 'All'}</span>
+                                </div>
+                              `).join('');
 
       document.getElementById('selectedCountText').innerText = `${selectedCheckboxes.length} Pelanggan Terpilih`;
       document.getElementById('broadcastTemplate').value = '';
@@ -611,7 +611,7 @@
 
       const selectedCheckboxes = document.querySelectorAll('.customer-row-checkbox:checked');
       const customers = [];
-      
+
       // We need to fetch the customer data for selected IDs
       // For now, we'll collect the IDs and then send them in chunks like maintenance
       selectedCheckboxes.forEach(cb => {
@@ -653,7 +653,7 @@
       for (let i = 0; i < chunks.length; i++) {
         const progress = Math.round(((i + 1) / chunks.length) * 100);
         const processedCount = Math.min((i + 1) * chunkSize, recipients.length);
-        
+
         // Update UI
         progressBar.style.width = `${progress}%`;
         progressCount.innerText = `${processedCount}/${recipients.length}`;
@@ -685,16 +685,16 @@
       // Reset and close
       statusText.innerText = 'Pengiriman selesai!';
       statusText.classList.remove('animate-pulse');
-      
+
       setTimeout(() => {
         closeBroadcastModal();
         progressContainer.classList.add('hidden');
         btnConfirm.disabled = false;
         btnConfirm.classList.remove('opacity-50', 'cursor-not-allowed');
         btnCancel.classList.remove('hidden');
-        
+
         showToast(result.message || `Selesai! Berhasil: ${totalSent}, Gagal: ${totalFailed}`, totalFailed > 0 ? 'warning' : 'success');
-        
+
         // Uncheck all
         document.getElementById('selectAllCustomers').checked = false;
         toggleSelectAllCustomers(document.getElementById('selectAllCustomers'));
@@ -828,16 +828,16 @@
         if (status.includes('fail')) badgeClass = 'bg-red-50 text-red-600 border border-red-100';
 
         return `
-                                                      <tr class="transition-colors ${isSelected ? 'bg-accent-50/30' : 'hover:bg-slate-50/50'}">
-                                                        <td class="px-6 py-3"><input type="checkbox" class="customer-checkbox rounded" data-id="${it.id}" data-name="${it.name}" data-number="${it.number}" ${isSelected ? 'checked' : ''} onchange="toggleCustomerSelection(this)"></td>
-                                                        <td class="px-6 py-3">
-                                                          <div class="text-xs font-semibold text-slate-900">${it.name}</div>
-                                                          <div class="text-[10px] text-slate-400">ID: ${it.id}</div>
-                                                        </td>
-                                                        <td class="px-6 py-3 text-xs font-mono text-slate-600">${it.number}</td>
-                                                        <td class="px-6 py-3"><span class="status-badge ${badgeClass}">${status}</span></td>
-                                                      </tr>
-                                                    `;
+                                                                              <tr class="transition-colors ${isSelected ? 'bg-accent-50/30' : 'hover:bg-slate-50/50'}">
+                                                                                <td class="px-6 py-3"><input type="checkbox" class="customer-checkbox rounded" data-id="${it.id}" data-name="${it.name}" data-number="${it.number}" ${isSelected ? 'checked' : ''} onchange="toggleCustomerSelection(this)"></td>
+                                                                                <td class="px-6 py-3">
+                                                                                  <div class="text-xs font-semibold text-slate-900">${it.name}</div>
+                                                                                  <div class="text-[10px] text-slate-400">ID: ${it.id}</div>
+                                                                                </td>
+                                                                                <td class="px-6 py-3 text-xs font-mono text-slate-600">${it.number}</td>
+                                                                                <td class="px-6 py-3"><span class="status-badge ${badgeClass}">${status}</span></td>
+                                                                              </tr>
+                                                                            `;
       }).join('');
 
       updateSelectedUI();
@@ -941,18 +941,18 @@
 
           if (loadingText) {
             loadingText.innerHTML = `
-                                                            <div class="w-64">
-                                                              <div class="text-center mb-2 font-bold text-slate-900">Sending Broadcast...</div>
-                                                              <div class="w-full bg-slate-200 rounded-full h-1.5 mb-1">
-                                                                <div class="bg-accent-600 h-1.5 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
-                                                              </div>
-                                                              <div class="flex justify-between text-xs text-gray-500">
-                                                                <span>Progress: ${progress}%</span>
-                                                                <span>Chunk ${i + 1}/${chunks.length}</span>
-                                                              </div>
-                                                              <div class="mt-2 text-xs text-center text-gray-400">Processing ${totalSent + totalSkipped + totalFailed}/${recipients.length} recipients</div>
-                                                            </div>
-                                                          `;
+                                                                                    <div class="w-64">
+                                                                                      <div class="text-center mb-2 font-bold text-slate-900">Sending Broadcast...</div>
+                                                                                      <div class="w-full bg-slate-200 rounded-full h-1.5 mb-1">
+                                                                                        <div class="bg-accent-600 h-1.5 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                                                                                      </div>
+                                                                                      <div class="flex justify-between text-xs text-gray-500">
+                                                                                        <span>Progress: ${progress}%</span>
+                                                                                        <span>Chunk ${i + 1}/${chunks.length}</span>
+                                                                                      </div>
+                                                                                      <div class="mt-2 text-xs text-center text-gray-400">Processing ${totalSent + totalSkipped + totalFailed}/${recipients.length} recipients</div>
+                                                                                    </div>
+                                                                                  `;
           }
 
           try {
@@ -1006,9 +1006,9 @@
 
       toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-2xl z-[100000] text-white animate-slide-up flex items-center ${bgClass}`;
       toast.innerHTML = `
-                                                      <i class="fas ${iconClass} mr-3 text-xl"></i>
-                                                      <span class="font-medium">${message}</span>
-                                                    `;
+                                                                              <i class="fas ${iconClass} mr-3 text-xl"></i>
+                                                                              <span class="font-medium">${message}</span>
+                                                                            `;
       document.body.appendChild(toast);
       setTimeout(() => {
         toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
@@ -1132,7 +1132,8 @@
   <div id="broadcastModal" class="hidden fixed inset-0 z-[9999] overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen p-4">
       <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeBroadcastModal()"></div>
-      <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div
+        class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
         <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
             <h3 class="font-bold text-slate-900">Send Template Broadcast</h3>
@@ -1142,7 +1143,7 @@
             <i class="fas fa-times text-lg"></i>
           </button>
         </div>
-        
+
         <div class="p-6 space-y-6">
           <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3">
             <div class="flex items-center gap-3">
@@ -1160,8 +1161,10 @@
           </div>
 
           <div class="space-y-2">
-            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Pilih Template Promosi</label>
-            <select id="broadcastTemplate" class="w-full h-11 px-4 text-sm border border-slate-200 rounded-xl focus:ring-4 focus:ring-accent-500/10 focus:border-accent-500 outline-none transition-all bg-slate-50/50 font-semibold">
+            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-wider ml-1">Pilih Template
+              Promosi</label>
+            <select id="broadcastTemplate"
+              class="w-full h-11 px-4 text-sm border border-slate-200 rounded-xl focus:ring-4 focus:ring-accent-500/10 focus:border-accent-500 outline-none transition-all bg-slate-50/50 font-semibold">
               <option value="">-- Pilih Template --</option>
               <option value="promosi_10mbps_120">promosi_10mbps_120</option>
               <option value="promosi_10mbps_115">promosi_10mbps_115</option>
@@ -1182,16 +1185,21 @@
               </div>
             </div>
             <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/50">
-              <div id="broadcastProgressBar" class="bg-accent-600 h-full rounded-full transition-all duration-500 w-0 shadow-[0_0_8px_rgba(99,102,241,0.4)]"></div>
+              <div id="broadcastProgressBar"
+                class="bg-accent-600 h-full rounded-full transition-all duration-500 w-0 shadow-[0_0_8px_rgba(99,102,241,0.4)]">
+              </div>
             </div>
-            <div id="broadcastStatusText" class="text-[10px] text-center text-slate-400 font-medium animate-pulse italic">Memulai pengiriman...</div>
+            <div id="broadcastStatusText" class="text-[10px] text-center text-slate-400 font-medium animate-pulse italic">
+              Memulai pengiriman...</div>
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button onclick="closeBroadcastModal()" class="flex-1 h-11 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all">
+            <button onclick="closeBroadcastModal()"
+              class="flex-1 h-11 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all">
               Batal
             </button>
-            <button onclick="confirmTemplateBroadcast()" class="flex-[2] h-11 bg-success text-white rounded-xl font-bold shadow-lg shadow-green-500/20 hover:bg-green-600 transition-all flex items-center justify-center gap-2">
+            <button onclick="confirmTemplateBroadcast()"
+              class="flex-[2] h-11 bg-success text-white rounded-xl font-bold shadow-lg shadow-green-500/20 hover:bg-green-600 transition-all flex items-center justify-center gap-2">
               <i class="fas fa-paper-plane"></i>
               Kirim Broadcast
             </button>
@@ -1202,7 +1210,8 @@
   </div>
 
   <div id="loadingToast" class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[10000]">
-    <div class="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white flex flex-col items-center min-w-[200px]">
+    <div
+      class="bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-2xl border border-white flex flex-col items-center min-w-[200px]">
       <div class="w-12 h-12 border-4 border-slate-100 border-t-accent-600 rounded-full animate-spin mb-4"></div>
       <div id="loadingToastText" class="text-sm font-bold text-slate-800">Memproses...</div>
     </div>
