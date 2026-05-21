@@ -287,25 +287,11 @@ class DataController extends Controller
     //     ->sum('paket.harga');
 
     // Hitung total pendapatan berdasarkan harga paket (bukan tagihan aktual)
-    // Ambil invoice terbaru per customer untuk bulan ini
-    $totalPendapatan = Invoice::select('invoice.*')
-      ->whereIn('status_id', [7, 8])
-      ->whereHas('customer', function ($q) {
-        $q->whereNull('deleted_at')
-          ->whereIn('status_id', [3, 4, 9]);
-      })
-      ->where('paket_id', '!=', 11)
-      ->whereMonth('jatuh_tempo', Carbon::now()->month)
-      ->whereYear('jatuh_tempo', Carbon::now()->year)  // ✅ Filter tahun untuk akurasi
-      ->with('paket')
-      ->get()
-      ->groupBy('customer_id')  // Group by customer
-      ->map(function ($invoices) {
-        return $invoices->sortByDesc('id')->first();  // Ambil invoice terbaru per customer
-      })
-      ->sum(function ($invoice) {
-        return $invoice->paket->harga ?? 0;  // ✅ Null safety
-      });
+    $totalPendapatan = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
+      ->whereIn('customer.status_id', [3, 4, 9])
+      ->where('customer.paket_id', '!=', 11)
+      ->whereNull('customer.deleted_at')
+      ->sum('paket.harga');
 
 
     // Hitung customer yang sudah bayar untuk invoice bulan ini
