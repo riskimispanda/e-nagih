@@ -335,19 +335,11 @@ class KeuanganController extends Controller
       ->distinct('customer_id')
       ->count('customer_id');
 
-    $totalHarga = Invoice::whereIn('status_id', [7, 8])
-      ->whereHas('customer', function ($q) {
-        $q->whereNull('deleted_at')
-          ->whereIn('status_id', [3, 4, 9]);
-      })
-      ->where('paket_id', '!=', 11)
-      ->whereMonth('jatuh_tempo', Carbon::now()->month)
-      ->with('paket')
-      ->get()
-      ->unique('customer_id')  // ✅ Ambil 1 invoice per customer
-      ->sum(function ($invoice) {
-        return $invoice->paket->harga;
-      });
+    $totalHarga = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
+      ->whereIn('customer.status_id', [3, 4, 9])
+      ->where('customer.paket_id', '!=', 11)
+      ->whereNull('customer.deleted_at')
+      ->sum('paket.harga');
 
     return view('keuangan.data-pendapatan', [
       'users' => auth()->user(),
