@@ -11,7 +11,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('perusahaan', function (Blueprint $table) {
-            $table->foreignId('router_id')->nullable()->after('perangkat_id')->constrained('router')->onDelete('set null');
+            $table->foreignId('router_id')->nullable()->after('perangkat')->constrained('router')->onDelete('set null');
         });
     }
 
