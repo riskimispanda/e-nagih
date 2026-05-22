@@ -28,6 +28,15 @@
       ]
     },
     {
+      "url": "/qontak/whats-log",
+      "name": "Maintenance Broadcast",
+      "icon": "menu-icon tf-icons bx bxs-home-smile",
+      "slug": "Maintenance",
+      "roles": [
+        "Super Admin"
+      ]
+    },
+    {
       "url": "/dashboard/keuangan",
       "_comment": "Dashboard Khusus Keuangan",
       "name": "Dashboard Keuangan",
@@ -137,9 +146,7 @@
           "slug": "corporate",
           "roles": [
             "Super Admin",
-            "Teknisi",
             "Admin Keuangan",
-            "Admin Logistik",
             "NOC"
           ]
         },
