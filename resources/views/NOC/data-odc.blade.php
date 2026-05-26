@@ -290,8 +290,8 @@
                     return [parseFloat(atMatch[1]), parseFloat(atMatch[2])];
                 }
 
-                // Format DMS: 7°58'42.7"S 110°24'31.8"E
-                const dmsMatch = gps.match(/(\d+)°(\d+)'([\d.]+)"([NS])\s*,?\s*(\d+)°(\d+)'([\d.]+)"([EW])/i);
+                // Format DMS: 7°58'42.7"S 110°24'31.8"E or 8° 5'32.33"S110°29'52.76"E
+                const dmsMatch = gps.match(/(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*[^NS]*([NS])[\s,]*(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*[^EW]*([EW])/i);
                 if (dmsMatch) {
                     const lat = (parseInt(dmsMatch[1]) + parseInt(dmsMatch[2]) / 60 + parseFloat(dmsMatch[3]) / 3600) * (dmsMatch[4].toUpperCase() === 'S' ? -1 : 1);
                     const lng = (parseInt(dmsMatch[5]) + parseInt(dmsMatch[6]) / 60 + parseFloat(dmsMatch[7]) / 3600) * (dmsMatch[8].toUpperCase() === 'W' ? -1 : 1);

@@ -23,6 +23,7 @@ class MapController extends Controller
     private function parseGps($gps)
     {
         if (!$gps) return ['lat' => null, 'lng' => null];
+        $gps = trim($gps);
 
         // Format: "-8.044889109411237, 110.4827779828878"
         if (preg_match('/^-?\d+\.\d+,\s*-?\d+\.\d+$/', $gps)) {
@@ -30,18 +31,26 @@ class MapController extends Controller
             return ['lat' => trim($lat), 'lng' => trim($lng)];
         }
 
-        // Format: "...?q=-8.04488,110.48277"
-        if (preg_match('/q=(-?\d+\.\d+),(-?\d+\.\d+)/', $gps, $matches)) {
+        // Format: "...?q=-8.04488,110.48277" or "q=loc:-8.04488+110.48277"
+        if (preg_match('/q=(-?\d+\.\d+)(?:,|[+])(-?\d+\.\d+)/', $gps, $matches)) {
+            return ['lat' => $matches[1], 'lng' => $matches[2]];
+        }
+        if (preg_match('/q=loc:(-?\d+\.\d+)(?:,|[+])(-?\d+\.\d+)/', $gps, $matches)) {
             return ['lat' => $matches[1], 'lng' => $matches[2]];
         }
 
-        // Format DMS: 7°58'42.7"S 110°24'31.8"E
-        if (preg_match('/(\d+)°(\d+)\'([\d.]+)"([NS]),\s*(\d+)°(\d+)\'([\d.]+)"([EW])/', $gps, $m)) {
+        // Format: "@-8.04488,110.48277"
+        if (preg_match('/@(-?\d+\.\d+),(-?\d+\.\d+)/', $gps, $matches)) {
+            return ['lat' => $matches[1], 'lng' => $matches[2]];
+        }
+
+        // Format DMS: 7°58'42.7"S 110°24'31.8"E or 8° 5'32.33"S110°29'52.76"E
+        if (preg_match('/(\d+)\s*°\s*(\d+)\s*\'\s*([\d.]+)\s*[^NS]*([NS])[\s,]*(\d+)\s*°\s*(\d+)\s*\'\s*([\d.]+)\s*[^EW]*([EW])/i', $gps, $m)) {
             $lat = $m[1] + $m[2] / 60 + $m[3] / 3600;
-            if ($m[4] === 'S') $lat *= -1;
+            if (strtoupper($m[4]) === 'S') $lat *= -1;
 
             $lng = $m[5] + $m[6] / 60 + $m[7] / 3600;
-            if ($m[8] === 'W') $lng *= -1;
+            if (strtoupper($m[8]) === 'W') $lng *= -1;
 
             return ['lat' => $lat, 'lng' => $lng];
         }
