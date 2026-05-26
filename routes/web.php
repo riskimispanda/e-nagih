@@ -277,6 +277,7 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
   Route::get('/peta', [MapController::class, 'index']);
   Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
+  Route::get('/peta/debug-gps', [MapController::class, 'debugGps'])->name('peta.debug-gps');
   Route::post('/add/tiket-open', [TiketController::class, 'addTiketOpen'])->middleware(
     'auth',
     'roles:Super Admin,NOC,Helpdesk,Admin Keuangan,Admin Logistik'

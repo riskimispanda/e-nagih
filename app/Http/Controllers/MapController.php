@@ -287,4 +287,23 @@ class MapController extends Controller
                 ->values()
         );
     }
+
+    public function debugGps()
+    {
+        $servers = Server::all()->map(fn($item) => ['jenis' => 'server', 'id' => $item->id, 'nama' => $item->lokasi_server, 'gps_raw' => $item->gps, 'parsed' => $this->parseGps($item->gps)]);
+        $olts = Lokasi::all()->map(fn($item) => ['jenis' => 'olt', 'id' => $item->id, 'nama' => $item->nama_lokasi, 'gps_raw' => $item->gps, 'parsed' => $this->parseGps($item->gps)]);
+        $odcs = ODC::all()->map(fn($item) => ['jenis' => 'odc', 'id' => $item->id, 'nama' => $item->nama_odc, 'gps_raw' => $item->gps, 'parsed' => $this->parseGps($item->gps)]);
+        $odps = ODP::all()->map(fn($item) => ['jenis' => 'odp', 'id' => $item->id, 'nama' => $item->nama_odp, 'gps_raw' => $item->gps, 'parsed' => $this->parseGps($item->gps)]);
+        
+        return response()->json([
+            'total_servers' => $servers->count(),
+            'total_olts' => $olts->count(),
+            'total_odcs' => $odcs->count(),
+            'total_odps' => $odps->count(),
+            'servers' => $servers,
+            'olts' => $olts,
+            'odcs' => $odcs,
+            'odps' => $odps
+        ]);
+    }
 }
