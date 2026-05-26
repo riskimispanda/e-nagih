@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     });
 
-    if (!bounds.isEmpty()) {
+    if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50] });
     }
 
