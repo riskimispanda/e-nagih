@@ -156,4 +156,124 @@ class MikrotikControllerApi extends Controller
         }
     }
 
+    public function checkVersion($id)
+    {
+        try {
+            $router = Router::findOrFail($id);
+            $client = MikrotikServices::connect($router);
+
+            $query = new \RouterOS\Query('/system/resource/print');
+            $response = $client->query($query)->read();
+
+            $version = $response[0]['version'] ?? 'Unknown';
+
+            return response()->json([
+                'success' => true,
+                'router_name' => $router->nama_router,
+                'ip_address' => $router->ip_address,
+                'version' => $version,
+                'details' => [
+                    'uptime' => $response[0]['uptime'] ?? null,
+                    'cpu_load' => $response[0]['cpu-load'] ?? null,
+                    'free_memory' => $response[0]['free-memory'] ?? null,
+                    'total_memory' => $response[0]['total-memory'] ?? null,
+                    'cpu' => $response[0]['cpu'] ?? null,
+                    'board_name' => $response[0]['board-name'] ?? null,
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Router not found',
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error in checkVersion: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve router version',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getNeighbors($id)
+    {
+        try {
+            $router = Router::findOrFail($id);
+            $client = MikrotikServices::connect($router);
+
+            $query = new \RouterOS\Query('/ip/neighbor/print');
+            $response = $client->query($query)->read();
+
+            // Map response to a clean structure and check for matching customer database info
+            $neighbors = array_map(function ($item) {
+                $localInterface = $item['interface'] ?? '';
+                $usersecret = null;
+
+                if (str_starts_with($localInterface, '<pppoe-') && str_ends_with($localInterface, '>')) {
+                    $usersecret = substr($localInterface, 7, -1);
+                } elseif (str_starts_with($localInterface, 'pppoe-')) {
+                    $usersecret = substr($localInterface, 6);
+                }
+
+                $customerInfo = null;
+                if ($usersecret) {
+                    $customer = Customer::with(['paket', 'odp.odc.olt.server'])
+                        ->whereRaw('LOWER(usersecret) = ?', [strtolower($usersecret)])
+                        ->first();
+
+                    if ($customer) {
+                        $customerInfo = [
+                            'id' => $customer->id,
+                            'name' => $customer->nama_customer,
+                            'phone' => $customer->no_hp,
+                            'address' => $customer->alamat,
+                            'package' => $customer->paket->paket_name ?? 'N/A',
+                            'redaman' => $customer->redaman ?? 'N/A',
+                            'olt' => $customer->odp?->odc?->olt?->nama_lokasi ?? 'N/A',
+                            'odc' => $customer->odp?->odc?->nama_odc ?? 'N/A',
+                            'odp' => $customer->odp?->nama_odp ?? 'N/A',
+                        ];
+                    }
+                }
+
+                return [
+                    'local_interface' => $localInterface,
+                    'neighbor_identity' => $item['identity'] ?? 'Unknown',
+                    'ip_address' => $item['address'] ?? 'N/A',
+                    'mac_address' => $item['mac-address'] ?? 'N/A',
+                    'platform' => $item['platform'] ?? 'Unknown',
+                    'board' => $item['board'] ?? null,
+                    'version' => $item['version'] ?? null,
+                    'uptime' => $item['uptime'] ?? null,
+                    'is_customer' => $customerInfo !== null,
+                    'customer_info' => $customerInfo
+                ];
+            }, $response);
+
+            return response()->json([
+                'success' => true,
+                'router_name' => $router->nama_router,
+                'ip_address' => $router->ip_address,
+                'total_neighbors' => count($neighbors),
+                'data' => $neighbors
+            ], 200);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Router not found',
+                'error' => $e->getMessage()
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error in getNeighbors: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve neighbors (LLDP/MNDP)',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

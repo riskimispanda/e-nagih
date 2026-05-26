@@ -28,6 +28,9 @@ Route::get('/dev', [DataControllerApi::class, 'debugging']);
   Route::get('/testInvoice', [CustomerControllerApi::class, 'testInvoice']);
   Route::get('/findMissing', [CustomerControllerApi::class, 'findMissingCustomers']);
   Route::get('/verified-fix', [DataControllerApi::class, 'verifyFixSimplified']);
+  Route::get('/router/{id}/version', [MikrotikControllerApi::class, 'checkVersion']);
+  Route::get('/router/{id}/neighbors', [MikrotikControllerApi::class, 'getNeighbors']);
+
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
