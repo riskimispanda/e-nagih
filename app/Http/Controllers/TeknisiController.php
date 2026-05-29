@@ -80,7 +80,7 @@ class TeknisiController extends Controller
     $customersWithTeknisi = Customer::whereNotNull('teknisi_id')->exists();
 
     // Ambil bulan dan tahun dari request dengan default values
-    $currentMonth = $request->get('month', Carbon::now()->month);
+    $currentMonth = $request->get('month', null);
     $currentYear = $request->get('year', Carbon::now()->year);
 
     // Get per page values from request with defaults
