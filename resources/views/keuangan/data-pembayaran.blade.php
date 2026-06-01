@@ -742,12 +742,25 @@
     <form id="filterForm">
       <div class="row g-3">
         <!-- Search Input -->
-        <div class="col-12 col-lg-5">
+        <div class="col-12 col-lg-3">
           <label class="form-label fw-medium text-dark">Pencarian</label>
           <div class="position-relative">
             <input type="text" id="searchInput" name="search" value="{{ $search ?? '' }}"
               placeholder="Cari nama customer, paket, atau metode pembayaran..." class="form-control">
           </div>
+        </div>
+
+        <!-- Agent Filter -->
+        <div class="col-12 col-lg-3">
+          <label class="form-label fw-medium text-dark">Agen</label>
+          <select name="agen_id" id="agen_id" class="form-select">
+            <option value="">Semua Agen</option>
+            @foreach ($agents as $agent)
+              <option value="{{ $agent->id }}" {{ (isset($agen_id) && $agen_id == $agent->id) ? 'selected' : '' }}>
+                {{ $agent->name }}
+              </option>
+            @endforeach
+          </select>
         </div>
 
         <!-- Payment Method Filter -->
@@ -764,7 +777,7 @@
         </div>
 
         <!-- Month Filter -->
-        <div class="col-12 col-md-6 col-lg-4">
+        <div class="col-12 col-md-6 col-lg-3">
           <label for="monthFilter" class="form-label fw-medium text-dark">Filter Bulan</label>
           <select id="monthFilter" name="month" class="form-select" title="Pilih Bulan">
             <option value="">Semua Bulan</option>
@@ -1242,12 +1255,27 @@
     function initializeFilters() {
       const metodeFilter = document.getElementById('metodeFilter');
       const monthFilter = document.getElementById('monthFilter');
+      const agenSelect = document.getElementById('agen_id');
 
       [metodeFilter, monthFilter].forEach(element => {
         if (element) {
           element.addEventListener('change', applyFiltersAutomatically);
         }
       });
+
+      if (agenSelect) {
+        if (typeof TomSelect !== 'undefined') {
+          new TomSelect('#agen_id', {
+            create: false,
+            allowEmptyOption: true,
+            onChange: function (value) {
+              applyFiltersAutomatically();
+            }
+          });
+        } else {
+          agenSelect.addEventListener('change', applyFiltersAutomatically);
+        }
+      }
     }
 
     // Initialize entries per page functionality
@@ -1991,6 +2019,11 @@
         url.searchParams.append('metode', metodeFilter.value);
       }
 
+      const agenFilter = document.getElementById('agen_id');
+      if (agenFilter && agenFilter.value) {
+        url.searchParams.append('agen_id', agenFilter.value);
+      }
+
       // Show loading notification
       showNotification('Mempersiapkan export data...', 'info');
 
@@ -2037,6 +2070,11 @@
       const metodeFilter = document.getElementById('metodeFilter');
       if (metodeFilter && metodeFilter.value) {
         url.searchParams.append('metode', metodeFilter.value);
+      }
+
+      const agenFilter = document.getElementById('agen_id');
+      if (agenFilter && agenFilter.value) {
+        url.searchParams.append('agen_id', agenFilter.value);
       }
 
       // Show loading notification

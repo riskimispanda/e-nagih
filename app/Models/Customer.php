@@ -89,15 +89,26 @@ class Customer extends Model
                 $perangkat = Perangkat::find($this->perangkat_id);
 
                 if ($perangkat) {
-                    // Tambah stok perangkat
-                    $perangkat->increment('jumlah_stok');
-
                     // Log activity
                     activity()
                         ->performedOn($this)
-                        ->log("Perangkat {$perangkat->nama_perangkat} dikembalikan ke stok - Customer {$this->nama_customer} dideaktivasi");
+                        ->log("Perangkat {$perangkat->nama_perangkat} dilepas dari customer - Customer {$this->nama_customer} dideaktivasi");
 
-                    Log::info("✅ Perangkat {$perangkat->nama_perangkat} (ID: {$perangkat->id}) dikembalikan ke stok. Stok sekarang: {$perangkat->jumlah_stok}");
+                    Log::info("✅ Perangkat {$perangkat->nama_perangkat} (ID: {$perangkat->id}) dilepas dari customer {$this->nama_customer}.");
+                    
+                    // Untuk perangkat yang diserialisasi (Modem/Tenda), update status ModemDetail
+                    $statusModem = request()->input('status_modem', 4);
+                    $modem = ModemDetail::where('customer_id', $this->id)
+                        ->where('status_id', 13) // Terpakai
+                        ->first();
+                        
+                    if ($modem) {
+                        $modem->update([
+                            'status_id' => $statusModem,
+                            'customer_id' => null
+                        ]);
+                        Log::info("✅ ModemDetail SN: {$modem->serial_number} diubah statusnya menjadi {$statusModem}.");
+                    }
                 } else {
                     Log::warning("⚠️ Perangkat dengan ID {$this->perangkat_id} tidak ditemukan untuk customer {$this->nama_customer}");
                 }
@@ -118,13 +129,28 @@ class Customer extends Model
             if ($this->perangkat_id) {
                 $perangkat = Perangkat::find($this->perangkat_id);
 
-                if ($perangkat && $perangkat->jumlah_stok > 0) {
-                    // Kurangi stok perangkat
-                    $perangkat->decrement('jumlah_stok');
-
-                    Log::info("📦 Stok perangkat {$perangkat->nama_perangkat} dikurangi. Stok sekarang: {$perangkat->jumlah_stok}");
+                if ($perangkat) {
+                    Log::info("📦 Pelanggan {$this->nama_customer} di-restore. Perangkat {$perangkat->nama_perangkat} dikaitkan kembali.");
+                    
+                    // Cari ModemDetail yang sebelumnya dilepas (jika ada dengan SN/MAC yang sama)
+                    if ($this->seri_perangkat || $this->mac_address) {
+                        $modem = ModemDetail::where(function($q) {
+                                if ($this->seri_perangkat) $q->where('serial_number', $this->seri_perangkat);
+                                if ($this->mac_address) $q->orWhere('mac_address', $this->mac_address);
+                            })
+                            ->whereIn('status_id', [4, 14]) // Sedang Maintenance atau Tersedia
+                            ->first();
+                            
+                        if ($modem) {
+                            $modem->update([
+                                'status_id' => 13, // Terpakai
+                                'customer_id' => $this->id
+                            ]);
+                            Log::info("✅ ModemDetail SN: {$modem->serial_number} dikaitkan kembali ke Customer {$this->nama_customer} dengan status Terpakai (13).");
+                        }
+                    }
                 } else {
-                    Log::warning("⚠️ Tidak bisa kurangi stok - perangkat tidak ditemukan atau stok habis");
+                    Log::warning("⚠️ Perangkat tidak ditemukan untuk customer {$this->nama_customer}");
                 }
             }
         } catch (\Exception $e) {

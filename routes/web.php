@@ -522,6 +522,23 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/tracking', [Logistik::class, 'tracking'])
     ->middleware('auth', 'roles:Super Admin,Admin Logistik')
     ->name('tracking');
+  Route::get('/logistik/perbaiki/{id}', [Logistik::class, 'perbaikiBarang'])->middleware(
+    'auth',
+    'roles:Super Admin,Admin Logistik'
+  );
+  Route::get('/logistik/maintenance/{id}', [Logistik::class, 'setMaintenanceBarang'])->middleware(
+    'auth',
+    'roles:Super Admin,Admin Logistik'
+  );
+  Route::get('/logistik/afkir/{id}', [Logistik::class, 'afkirBarang'])->middleware(
+    'auth',
+    'roles:Super Admin,Admin Logistik'
+  );
+  Route::get('/logistik/buang/{id}', [Logistik::class, 'buangBarang'])->middleware(
+    'auth',
+    'roles:Super Admin,Admin Logistik'
+  );
+
   Route::get('/dashboard-logistik', [Logistik::class, 'index'])
     ->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')
     ->name('dashboard-logistik');

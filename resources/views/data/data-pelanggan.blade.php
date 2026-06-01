@@ -236,6 +236,27 @@
       width: 100%;
     }
 
+    /* Custom Tom Select alignment styles */
+    .ts-wrapper.sort-select {
+      padding: 0 !important;
+      border: none !important;
+      background: transparent !important;
+    }
+    .ts-wrapper.sort-select .ts-control {
+      height: 38px !important;
+      padding: 0.5rem 0.75rem !important;
+      font-size: 0.85rem !important;
+      border: 1px solid #e9ecef !important;
+      border-radius: 4px !important;
+      display: flex;
+      align-items: center;
+      background-color: #ffffff !important;
+    }
+    .ts-wrapper.sort-select.focus .ts-control {
+      box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1) !important;
+      border-color: #5e72e4 !important;
+    }
+
     .sort-select:focus {
       box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1);
       border-color: #5e72e4;
@@ -999,13 +1020,24 @@
     <!-- Card with search and table -->
     <div class="col-sm-12">
       <div class="card">
-        <div class="card-header modern-card-header mb-5">
-          <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="card-header modern-card-header mb-3">
+          @php
+            $isFilterActive = request()->filled('search') || request()->filled('agen_id') || (request()->filled('sort') && request('sort') !== 'default') || (request()->filled('per_page') && request('per_page') !== '10');
+          @endphp
+          <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="header-title mb-0" style="padding-bottom: 0px !important;">Daftar Pelanggan</h4>
-            <button type="button" class="btn btn-sm btn-primary" id="btn-tutorial-sort" data-bs-toggle="tooltip"
-              data-bs-placement="top" title="Panduan Penggunaan">
-              <i class="bx bx-help-circle me-1"></i> Panduan
-            </button>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-sm {{ $isFilterActive ? 'btn-primary' : 'btn-outline-primary' }}" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="{{ $isFilterActive ? 'true' : 'false' }}" aria-controls="filterCollapse">
+                <i class="bx bx-filter-alt me-1"></i> Filter
+                @if($isFilterActive)
+                  <span class="badge bg-white text-primary ms-1">Aktif</span>
+                @endif
+              </button>
+              <button type="button" class="btn btn-sm btn-primary" id="btn-tutorial-sort" data-bs-toggle="tooltip"
+                data-bs-placement="top" title="Panduan Penggunaan">
+                <i class="bx bx-help-circle me-1"></i> Panduan
+              </button>
+            </div>
           </div>
 
           <!-- Success/Error Messages -->
@@ -1036,159 +1068,182 @@
               <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
           @endif
-          <div class="row">
-            <div class="col-12 col-md-3 mb-4">
-              <div class="sort-group col-sm-12">
-                <div class="sort-label">Pencarian</div>
-                <div class="input-group">
-                  <input type="text" class="form-control search-input"
-                    placeholder="Cari pelanggan, alamat, hp, atau usersecret..." id="searchCustomer">
-                  <button class="btn search-button" type="button" id="searchButton">
-                    <i class="bx bx-search"></i>
-                  </button>
+
+          <!-- Collapse Container for Filters -->
+          <div class="collapse {{ $isFilterActive ? 'show' : '' }} mt-3" id="filterCollapse">
+            <div class="p-3 border rounded bg-light bg-opacity-10">
+              <div class="row g-3 mb-4">
+                <!-- Pencarian -->
+                <div class="col-12 col-md-4">
+                  <div class="sort-group col-sm-12">
+                    <div class="sort-label">Pencarian</div>
+                    <div class="input-group">
+                      <input type="text" class="form-control search-input"
+                        placeholder="Cari pelanggan, alamat, hp, atau usersecret..." id="searchCustomer" style="height: 38px;">
+                      <button class="btn search-button" type="button" id="searchButton" style="height: 38px;">
+                        <i class="bx bx-search"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div class="col-12 col-md-3 mb-4" id="tutorial-sort-container">
-              <div class="sort-group col-sm-12">
-                <div class="sort-label">Urutkan Berdasarkan</div>
-                <select class="sort-select" id="sortSelect">
-                  <option value="default">Default</option>
-                  <option value="name-asc">Nama A-Z</option>
-                  <option value="name-desc">Nama Z-A</option>
-                  <option value="status-active">Status Aktif</option>
-                  <option value="status-inactive">Status Non-Aktif</option>
-                </select>
-              </div>
-            </div>
-            <div class="col-12 col-md-6 mb-4">
-              <div class="sort-group col-sm-12">
-                <div class="sort-label">Halaman</div>
-                <div class="pagination-info">
-                  <div class="page-size-selector">
-                    <label for="pageSize">Data per halaman:</label>
-                    <select id="pageSize" class="page-size-select">
-                      @foreach([10, 25, 50, 100, 250] as $size)
-                        <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
-                          {{ $size }}
+                <!-- Agen -->
+                <div class="col-12 col-md-4">
+                  <div class="sort-group col-sm-12">
+                    <div class="sort-label">Agen</div>
+                    <select class="sort-select" id="agenSelect" style="height: 38px;">
+                      <option value="">Semua Agen</option>
+                      @foreach ($agents as $agent)
+                        <option value="{{ $agent->id }}" {{ (isset($agen_id) && $agen_id == $agent->id) ? 'selected' : '' }}>
+                          {{ $agent->name }}
                         </option>
                       @endforeach
-                      <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>
-                        Semua</option>
                     </select>
                   </div>
-                  <div class="data-count-info">
-                    Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
-                    <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
-                    <span class="count-highlight">{{ $data->total() }}</span> data
+                </div>
+                <!-- Urutkan Berdasarkan -->
+                <div class="col-12 col-md-4" id="tutorial-sort-container">
+                  <div class="sort-group col-sm-12">
+                    <div class="sort-label">Urutkan Berdasarkan</div>
+                    <select class="sort-select" id="sortSelect" style="height: 38px;">
+                      <option value="default">Default</option>
+                      <option value="name-asc">Nama A-Z</option>
+                      <option value="name-desc">Nama Z-A</option>
+                      <option value="status-active">Status Aktif</option>
+                      <option value="status-inactive">Status Non-Aktif</option>
+                    </select>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="col-12 col-md-6">
-              <div class="d-flex justify-content-start">
+
+              <div class="row align-items-center g-3">
+                <!-- Halaman Selector & Info -->
+                <div class="col-12 col-md-6">
+                  <div class="sort-group col-sm-12">
+                    <div class="sort-label">Halaman</div>
+                    <div class="pagination-info">
+                      <div class="page-size-selector">
+                        <label for="pageSize">Data per halaman:</label>
+                        <select id="pageSize" class="page-size-select">
+                          @foreach([10, 25, 50, 100, 250] as $size)
+                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                              {{ $size }}
+                        </option>
+                          @endforeach
+                          <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>
+                            Semua</option>
+                        </select>
+                      </div>
+                      <div class="data-count-info">
+                        Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
+                        <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
+                        <span class="count-highlight">{{ $data->total() }}</span> data
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <!-- Export Dropdown -->
-                <div class="export-dropdown">
-                  <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bx bx-file me-1"></i>
-                    Export Excel
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-scrollable" style="max-height: 300px; overflow-y: auto;">
-                    <li>
-                      <h6 class="dropdown-header">Export Semua Data</h6>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/semua">
-                        <i class="bx bx-download"></i>
-                        Semua Pelanggan
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/aktif">
-                        <i class="bx bx-check-circle"></i>
-                        Pelanggan Aktif
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/nonaktif">
-                        <i class="bx bx-x-circle"></i>
-                        Pelanggan Non-Aktif
-                      </a>
-                    </li>
-                    <li>
-                      <hr class="dropdown-divider">
-                    </li>
-                    <li>
-                      <h6 class="dropdown-header">Export Berdasarkan Paket</h6>
-                    </li>
-                    @php
-                      $pakets = \App\Models\Paket::orderBy('nama_paket')->get();
-                    @endphp
-                    @forelse($pakets as $paket)
+                <div class="col-12 col-md-6 d-flex justify-content-start justify-content-md-end align-self-end mb-1">
+                  <div class="export-dropdown">
+                    <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
+                      <i class="bx bx-file me-1"></i>
+                      Export Excel
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-scrollable dropdown-menu-end" style="max-height: 300px; overflow-y: auto;">
                       <li>
-                        <a class="dropdown-item" href="/paket/{{ $paket->id }}">
-                          <i class="bx bx-package"></i>
-                          {{ $paket->nama_paket }}
+                        <h6 class="dropdown-header">Export Semua Data</h6>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/semua">
+                          <i class="bx bx-download"></i>
+                          Semua Pelanggan
                         </a>
                       </li>
-                    @empty
                       <li>
-                        <span class="dropdown-item text-muted">
-                          <i class="bx bx-info-circle"></i>
-                          Tidak ada paket tersedia
-                        </span>
+                        <a class="dropdown-item" href="/aktif">
+                          <i class="bx bx-check-circle"></i>
+                          Pelanggan Aktif
+                        </a>
                       </li>
-                    @endforelse
-                    @if($pakets->count() > 0)
+                      <li>
+                        <a class="dropdown-item" href="/nonaktif">
+                          <i class="bx bx-x-circle"></i>
+                          Pelanggan Non-Aktif
+                        </a>
+                      </li>
                       <li>
                         <hr class="dropdown-divider">
                       </li>
                       <li>
-                        <a class="dropdown-item" href="/ringkasan-per-paket">
-                          <i class="bx bx-chart"></i>
-                          Ringkasan Per Paket
-                        </a>
+                        <h6 class="dropdown-header">Export Berdasarkan Paket</h6>
                       </li>
-                    @endif
-                    <li>
-                      <hr class="dropdown-divider">
-                    </li>
-                    <li>
-                      <h6 class="dropdown-header">Export Berdasarkan Bulan</h6>
-                    </li>
-                    @php
-                      $months = [
-                        '01' => 'Januari',
-                        '02' => 'Februari',
-                        '03' => 'Maret',
-                        '04' => 'April',
-                        '05' => 'Mei',
-                        '06' => 'Juni',
-                        '07' => 'Juli',
-                        '08' => 'Agustus',
-                        '09' => 'September',
-                        '10' => 'Oktober',
-                        '11' => 'November',
-                        '12' => 'Desember'
-                      ];
-                      $currentYear = date('Y');
-                    @endphp
-
-                    @foreach($months as $num => $name)
+                      @php
+                        $pakets = \App\Models\Paket::orderBy('nama_paket')->get();
+                      @endphp
+                      @forelse($pakets as $paket)
+                        <li>
+                          <a class="dropdown-item" href="/paket/{{ $paket->id }}">
+                            <i class="bx bx-package"></i>
+                            {{ $paket->nama_paket }}
+                          </a>
+                        </li>
+                      @empty
+                        <li>
+                          <span class="dropdown-item text-muted">
+                            <i class="bx bx-info-circle"></i>
+                            Tidak ada paket tersedia
+                          </span>
+                        </li>
+                      @endforelse
+                      @if($pakets->count() > 0)
+                        <li>
+                          <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                          <a class="dropdown-item" href="/ringkasan-per-paket">
+                            <i class="bx bx-chart"></i>
+                            Ringkasan Per Paket
+                          </a>
+                        </li>
+                      @endif
                       <li>
-                        <a class="dropdown-item"
-                          href="{{ route('export.bulan', ['month' => $num, 'year' => $currentYear]) }}">
-                          <i class="bx bx-calendar"></i>
-                          {{ $name }} {{ $currentYear }}
-                        </a>
+                        <hr class="dropdown-divider">
                       </li>
-                    @endforeach
-                  </ul>
+                      <li>
+                        <h6 class="dropdown-header">Export Berdasarkan Bulan</h6>
+                      </li>
+                      @php
+                        $months = [
+                          '01' => 'Januari',
+                          '02' => 'Februari',
+                          '03' => 'Maret',
+                          '04' => 'April',
+                          '05' => 'Mei',
+                          '06' => 'Juni',
+                          '07' => 'Juli',
+                          '08' => 'Agustus',
+                          '09' => 'September',
+                          '10' => 'Oktober',
+                          '11' => 'November',
+                          '12' => 'Desember'
+                        ];
+                        $currentYear = date('Y');
+                      @endphp
+
+                      @foreach($months as $num => $name)
+                        <li>
+                          <a class="dropdown-item"
+                            href="{{ route('export.bulan', ['month' => $num, 'year' => $currentYear]) }}">
+                            <i class="bx bx-calendar"></i>
+                            {{ $name }} {{ $currentYear }}
+                          </a>
+                        </li>
+                      @endforeach
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
         <div class="card-body">
           <!-- WebSocket Connection Status -->
           <div class="row mb-3" style="display: none">
@@ -1751,12 +1806,16 @@
       const searchButton = document.getElementById('searchButton');
       const sortSelect = document.getElementById('sortSelect');
       const pageSizeSelect = document.getElementById('pageSize');
+      const agenSelect = document.getElementById('agenSelect');
 
       // Set current values from URL parameters
       const urlParams = new URLSearchParams(window.location.search);
       searchInput.value = urlParams.get('search') || '';
       sortSelect.value = urlParams.get('sort') || 'default';
       pageSizeSelect.value = urlParams.get('per_page') || '10';
+      if (agenSelect) {
+        agenSelect.value = urlParams.get('agen_id') || '';
+      }
 
       // Function to update URL and reload page
       function updatePage() {
@@ -1772,6 +1831,10 @@
 
         if (pageSizeSelect.value !== '10') {
           params.set('per_page', pageSizeSelect.value);
+        }
+
+        if (agenSelect && agenSelect.value) {
+          params.set('agen_id', agenSelect.value);
         }
 
         const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
@@ -1808,6 +1871,21 @@
 
       // Page size change
       pageSizeSelect.addEventListener('change', updatePage);
+
+      // Initialize Tom Select for Agent Filter
+      if (agenSelect) {
+        if (typeof TomSelect !== 'undefined') {
+          new TomSelect('#agenSelect', {
+            create: false,
+            allowEmptyOption: true,
+            onChange: function (value) {
+              updatePage();
+            }
+          });
+        } else {
+          agenSelect.addEventListener('change', updatePage);
+        }
+      }
 
       // Initialize tooltips
       const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

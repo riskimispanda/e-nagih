@@ -31,4 +31,24 @@ class ModemDetail extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
+    public function scopeTerpakai($query)
+    {
+        return $query->where('status_id', 13);
+    }
+
+    public function scopeTersedia($query)
+    {
+        return $query->where('status_id', 14);
+    }
+
+    public function scopeMaintenance($query)
+    {
+        return $query->where('status_id', 4);
+    }
+
+    public function scopeRusak($query)
+    {
+        return $query->where('status_id', 15);
+    }
+
 }

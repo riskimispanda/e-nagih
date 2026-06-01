@@ -388,114 +388,304 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-start align-items-center mb-4 gap-2">
-                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#perangkat">
-                        <i class="bx bx-plus me-1"></i>Tambah Stok
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#kategori">
-                        <i class="bx bx-plus me-1"></i>Tambah Kategori
-                    </button>
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 border-bottom pb-3">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#perangkat">
+                            <i class="bx bx-plus me-1"></i>Tambah Stok
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#kategori">
+                            <i class="bx bx-plus me-1"></i>Tambah Kategori
+                        </button>
+                    </div>
+
+                    {{-- Navigation Tabs --}}
+                    <ul class="nav nav-pills" id="logistikTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="global-tab" data-bs-toggle="tab" data-bs-target="#global-pane" type="button" role="tab" aria-selected="true">
+                                <i class="bx bx-package me-1"></i>Stok Global
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="available-tab" data-bs-toggle="tab" data-bs-target="#available-pane" type="button" role="tab" aria-selected="false">
+                                <i class="bx bx-check-shield me-1"></i>Tersedia ({{ count($availableDevices) }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance-pane" type="button" role="tab" aria-selected="false">
+                                <i class="bx bx-wrench me-1"></i>Maintenance ({{ count($maintenanceDevices) }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="damaged-tab" data-bs-toggle="tab" data-bs-target="#damaged-pane" type="button" role="tab" aria-selected="false">
+                                <i class="bx bx-x-circle me-1"></i>Rusak ({{ count($damagedDevices) }})
+                            </button>
+                        </li>
+                    </ul>
                 </div>
                 
-                <div class="table-responsive">
-                    <table id="dataTable" class="table table-hover">
-                        <thead class="table-dark text-center">
-                            <tr>
-                                <th width="5%">No.</th>
-                                <th width="35%">Nama Perangkat</th>
-                                <th width="20%">Kategori</th>
-                                <th width="20%">Stok Tersedia</th>
-                                <th width="20%">Terpakai</th>
-                                <th>Bulan</th>
-                                <th width="35%">Total Harga</th>
-                                <th width="15%" class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-center">
-                            @if (count($perangkat) > 0)
-                            @foreach ($perangkat as $p)
-                            <tr class="device-row">
-                                <td class="fw-semibold">{{ $loop->iteration }}</td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class='bx bx-chip text-muted me-1'></i>
-                                        <span class="fw-medium">{{ $p->nama_perangkat }}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <i class='bx bx-devices text-muted me-1'></i>
-                                        <span class="fw-medium">{{ $p->kategori->nama_logistik ?? '-'}}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    @if($p->kategori?->nama_logistik == 'Kabel')
-                                    <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
-                                        {{ $p->stok_tersedia }} Meter
-                                    </span>
+                <div class="tab-content p-0" id="logistikTabContent">
+                    {{-- 1. STOK GLOBAL PANE --}}
+                    <div class="tab-pane fade show active" id="global-pane" role="tabpanel" aria-labelledby="global-tab">
+                        <div class="table-responsive">
+                            <table id="dataTable" class="table table-hover">
+                                <thead class="table-dark text-center">
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th width="25%">Nama Perangkat</th>
+                                        <th width="15%">Kategori</th>
+                                        <th width="12%">Tersedia</th>
+                                        <th width="12%">Terpakai</th>
+                                        <th width="12%">Maintenance</th>
+                                        <th width="12%">Rusak</th>
+                                        <th>Bulan</th>
+                                        <th width="20%">Total Harga</th>
+                                        <th width="10%" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-center">
+                                    @if (count($perangkat) > 0)
+                                    @foreach ($perangkat as $p)
+                                    <tr class="device-row searchable-row">
+                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class='bx bx-chip text-muted me-1'></i>
+                                                <span class="fw-medium">{{ $p->nama_perangkat }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class='bx bx-devices text-muted me-1'></i>
+                                                <span class="fw-medium">{{ $p->kategori->nama_logistik ?? '-'}}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            @if($p->kategori?->nama_logistik == 'Kabel')
+                                            <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
+                                                {{ $p->stok_tersedia }} Meter
+                                            </span>
+                                            @else
+                                            <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
+                                                {{ $p->stok_tersedia }} Unit
+                                            </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($p->kategori?->nama_logistik == 'Kabel')
+                                            <span class="badge bg-warning bg-opacity-10 text-warning">
+                                                {{ $p->stok_terpakai }} Meter
+                                            </span>
+                                            @else
+                                            <span class="badge bg-warning bg-opacity-10 text-warning">
+                                                {{ $p->stok_terpakai }} Unit
+                                            </span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
+                                            <span class="badge bg-label-warning">
+                                                {{ $p->stok_maintenance }} Unit
+                                            </span>
+                                            @else
+                                            <span class="badge bg-label-secondary">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
+                                            <span class="badge bg-label-danger">
+                                                {{ $p->stok_rusak }} Unit
+                                            </span>
+                                            @else
+                                            <span class="badge bg-label-secondary">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-label-info">
+                                                {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('F-Y-d') }}
+                                            </span>
+                                        </td>
+                                        @php
+                                            $total_harga = $p->harga * $p->jumlah_stok;
+                                        @endphp
+                                        <td class="fw-bold">
+                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
+                                            Rp {{ number_format($total_harga, 0, ',', '.') }}
+                                            @elseif($p->kategori?->nama_logistik == 'Kabel')
+                                            Rp {{ number_format($p->harga, 0, ',', '.') }}
+                                            @else
+                                            Rp {{ number_format($total_harga, 0, ',', '.') }}
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="/edit-logistik/{{ $p->id }}" data-bs-toggle="tooltip" title="Edit Stok" data-bs-placement="bottom">
+                                                    <i class="bx bx-edit text-warning"></i>
+                                                </a>|
+                                                <a href="javascript:void(0);" 
+                                                    onclick="hapusLogistik({{ $p->id }})" 
+                                                    data-bs-toggle="tooltip" 
+                                                    title="Hapus Stok" 
+                                                    data-bs-placement="bottom">
+                                                    <i class="bx bx-trash text-danger"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
                                     @else
-                                    <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
-                                        {{ $p->stok_tersedia }} Unit
-                                    </span>
+                                    <tr id="noDataResults">
+                                        <td colspan="10" class="text-center py-4">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class='bx bx-package text-muted mb-2' style="font-size: 2rem;"></i>
+                                                <div>Tidak ada data perangkat ditemukan</div>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     @endif
-                                </td>
-                                <td>
-                                    @if($p->kategori?->nama_logistik == 'Kabel')
-                                    <span class="badge bg-warning bg-opacity-10 text-warning">
-                                        {{ $p->customer_count }} Meter
-                                    </span>
-                                    @else
-                                    <span class="badge bg-warning bg-opacity-10 text-warning">
-                                        {{ $p->customer_count }} Unit
-                                    </span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="badge bg-label-info">
-                                        {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('F-Y-d') }}
-                                    </span>
-                                </td>
-                                @php
-                                    $total_harga = $p->harga * $p->jumlah_stok;
-                                @endphp
-                                <td class="fw-bold">
-                                    {{-- <div class="fw-semibold">Rp {{ number_format($p->harga, 0, ',', '.') }}</div> --}}
-                                    @if($p->kategori?->nama_logistik == 'Modem' || $p->kategori?->nama_logistik == 'Tenda' || $p->kategori?->nama_logistik == 'SFP')
-                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori?->nama_logistik == 'ODP' || $p->kategori?->nama_logistik == 'OLT' || $p->kategori?->nama_logistik == 'ODC')
-                                    Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                    @elseif($p->kategori?->nama_logistik == 'Kabel')
-                                    Rp {{ number_format($p->harga, 0, ',', '.') }}
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <a href="/edit-logistik/{{ $p->id }}" data-bs-toggle="tooltip" title="Edit Stok" data-bs-placement="bottom">
-                                            <i class="bx bx-edit text-warning"></i>
-                                        </a>|
-                                        <a href="javascript:void(0);" 
-                                            onclick="hapusLogistik({{ $p->id }})" 
-                                            data-bs-toggle="tooltip" 
-                                            title="Hapus Stok" 
-                                            data-bs-placement="bottom">
-                                            <i class="bx bx-trash text-danger"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
-                            @else
-                            <tr id="noDataResults">
-                                <td colspan="7" class="text-center py-4">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class='bx bx-package text-muted mb-2' style="font-size: 2rem;"></i>
-                                        <div>Tidak ada data perangkat ditemukan</div>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endif
-                        </tbody>
-                    </table>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- 2. BARANG TERSEDIA PANE --}}
+                    <div class="tab-pane fade" id="available-pane" role="tabpanel" aria-labelledby="available-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th width="30%">Nama Perangkat</th>
+                                        <th width="15%">Kategori</th>
+                                        <th width="20%">MAC Address</th>
+                                        <th width="20%">Serial Number</th>
+                                        <th width="10%">Status</th>
+                                        <th width="10%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($availableDevices as $dev)
+                                    <tr class="searchable-row">
+                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
+                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-success">Tersedia</span></td>
+                                        <td>
+                                            <a href="javascript:void(0);" onclick="pindahkanKeMaintenance({{ $dev->id }})" data-bs-toggle="tooltip" title="Kirim ke Maintenance">
+                                                <i class="bx bx-wrench text-warning"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class='bx bx-check-shield text-muted mb-2' style="font-size: 2rem;"></i>
+                                                <div>Tidak ada barang siap pakai di gudang</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- 3. BARANG MAINTENANCE PANE --}}
+                    <div class="tab-pane fade" id="maintenance-pane" role="tabpanel" aria-labelledby="maintenance-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th width="30%">Nama Perangkat</th>
+                                        <th width="15%">Kategori</th>
+                                        <th width="20%">MAC Address</th>
+                                        <th width="20%">Serial Number</th>
+                                        <th width="10%">Status</th>
+                                        <th width="15%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($maintenanceDevices as $dev)
+                                    <tr class="searchable-row">
+                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
+                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-warning">Maintenance</span></td>
+                                        <td>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="javascript:void(0);" onclick="selesaiPerbaikan({{ $dev->id }})" class="btn btn-outline-success btn-xs py-1 px-2" data-bs-toggle="tooltip" title="Selesai Perbaikan">
+                                                    <i class="bx bx-check-circle me-1"></i>Selesai
+                                                </a>
+                                                <a href="javascript:void(0);" onclick="afkirBarang({{ $dev->id }})" class="btn btn-outline-danger btn-xs py-1 px-2" data-bs-toggle="tooltip" title="Afkir (Rusak)">
+                                                    <i class="bx bx-x-circle me-1"></i>Afkir
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class='bx bx-wrench text-muted mb-2' style="font-size: 2rem;"></i>
+                                                <div>Tidak ada perangkat dalam proses maintenance</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- 4. BARANG RUSAK PANE --}}
+                    <div class="tab-pane fade" id="damaged-pane" role="tabpanel" aria-labelledby="damaged-tab">
+                        <div class="table-responsive">
+                            <table class="table table-hover text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="5%">No.</th>
+                                        <th width="30%">Nama Perangkat</th>
+                                        <th width="15%">Kategori</th>
+                                        <th width="20%">MAC Address</th>
+                                        <th width="20%">Serial Number</th>
+                                        <th width="10%">Status</th>
+                                        <th width="10%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($damagedDevices as $dev)
+                                    <tr class="searchable-row">
+                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
+                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
+                                        <td><span class="badge bg-label-danger">Rusak</span></td>
+                                        <td>
+                                            <a href="javascript:void(0);" onclick="hapusBarangRusak({{ $dev->id }})" data-bs-toggle="tooltip" title="Hapus Permanen">
+                                                <i class="bx bx-trash text-danger"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class='bx bx-x-circle text-muted mb-2' style="font-size: 2rem;"></i>
+                                                <div>Tidak ada barang rusak</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -609,72 +799,25 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Search functionality
         const searchInput = document.getElementById('search');
-        const dataTable = document.getElementById('dataTable');
-        const tableRows = dataTable.querySelectorAll('tbody tr.device-row');
         
         function performSearch() {
             const searchTerm = searchInput.value.toLowerCase().trim();
-            let resultsFound = false;
+            const searchableRows = document.querySelectorAll('.searchable-row');
             
-            // If search is empty, show all rows
-            if (searchTerm === '') {
-                tableRows.forEach(row => {
-                    row.style.display = '';
-                });
-                
-                // Remove no results message if it exists
-                const noResultsRow = document.getElementById('noResults');
-                if (noResultsRow) {
-                    noResultsRow.remove();
-                }
-                return;
-            }
-            
-            // Filter rows based on search term
-            tableRows.forEach(row => {
+            searchableRows.forEach(row => {
                 const rowText = row.textContent.toLowerCase();
                 
-                if (rowText.includes(searchTerm)) {
+                if (searchTerm === '' || rowText.includes(searchTerm)) {
                     row.style.display = '';
-                    resultsFound = true;
                 } else {
                     row.style.display = 'none';
                 }
             });
-            
-            // Add no results message if needed
-            if (!resultsFound) {
-                if (!document.getElementById('noResults')) {
-                    const tbody = dataTable.querySelector('tbody');
-                    const noResultsRow = document.createElement('tr');
-                    noResultsRow.id = 'noResults';
-                    noResultsRow.innerHTML = `
-                            <td colspan="7" class="text-center py-4">
-                                <div class="d-flex flex-column align-items-center">
-                                    <i class='bx bx-search text-muted mb-2' style="font-size: 2rem;"></i>
-                                    <div>Tidak ada perangkat yang cocok dengan pencarian</div>
-                                    <small class="text-muted mt-1">Coba dengan kata kunci lain</small>
-                                </div>
-                            </td>
-                        `;
-                    tbody.appendChild(noResultsRow);
-                }
-            } else {
-                const noResultsRow = document.getElementById('noResults');
-                if (noResultsRow) {
-                    noResultsRow.remove();
-                }
-            }
         }
         
         // Event listeners for search
-        searchInput.addEventListener('keyup', function(e) {
-            performSearch();
-        });
-        
-        searchInput.addEventListener('input', function() {
-            performSearch();
-        });
+        searchInput.addEventListener('keyup', performSearch);
+        searchInput.addEventListener('input', performSearch);
         
         // Format Rupiah function
         window.formatRupiah = function(input) {
@@ -725,6 +868,74 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = "/hapus-logistik/" + id;
+            }
+        });
+    }
+
+    function selesaiPerbaikan(id) {
+        Swal.fire({
+            title: 'Selesai Perbaikan?',
+            text: "Perangkat akan dimasukkan kembali ke stok tersedia di gudang.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Selesai!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/logistik/perbaiki/" + id;
+            }
+        });
+    }
+
+    function pindahkanKeMaintenance(id) {
+        Swal.fire({
+            title: 'Kirim ke Maintenance?',
+            text: "Perangkat ini akan dipindahkan ke status perbaikan.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Kirim!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/logistik/maintenance/" + id;
+            }
+        });
+    }
+
+    function afkirBarang(id) {
+        Swal.fire({
+            title: 'Afkir Barang?',
+            text: "Perangkat ini akan dideklarasikan rusak total (afkir).",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Afkir!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/logistik/afkir/" + id;
+            }
+        });
+    }
+
+    function hapusBarangRusak(id) {
+        Swal.fire({
+            title: 'Hapus Permanen?',
+            text: "Barang rusak ini akan dihapus permanen dari pencatatan sistem.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "/logistik/buang/" + id;
             }
         });
     }

@@ -37,6 +37,7 @@ class TiketController extends Controller
         $q->where('nama_customer', 'like', "%{$search}%")
           ->orWhere('alamat', 'like', "%{$search}%")
           ->orWhere('no_hp', 'like', "%{$search}%")
+          ->orWhere('usersecret', 'like', "%{$search}%")
           ->orWhereHas('paket', function ($q) use ($search) {
             $q->where('nama_paket', 'like', "%{$search}%");
           })
@@ -201,7 +202,8 @@ class TiketController extends Controller
       $query->whereHas('customer', function ($q) use ($searchProses) {
         $q->where('nama_customer', 'like', "%{$searchProses}%")
           ->orWhere('alamat', 'like', "%{$searchProses}%")
-          ->orWhere('no_hp', 'like', "%{$searchProses}%");
+          ->orWhere('no_hp', 'like', "%{$searchProses}%")
+          ->orWhere('usersecret', 'like', "%{$searchProses}%");
       });
     }
 
@@ -210,7 +212,8 @@ class TiketController extends Controller
       $cloneQuery->whereHas('customer', function ($q) use ($searchSelesai) {
         $q->where('nama_customer', 'like', "%{$searchSelesai}%")
           ->orWhere('alamat', 'like', "%{$searchSelesai}%")
-          ->orWhere('no_hp', 'like', "%{$searchSelesai}%");
+          ->orWhere('no_hp', 'like', "%{$searchSelesai}%")
+          ->orWhere('usersecret', 'like', "%{$searchSelesai}%");
       });
     }
 
@@ -419,10 +422,21 @@ class TiketController extends Controller
         throw new \Exception("Customer tidak ditemukan");
       }
 
+      // Upload & Simpan Foto Modem
+      $foto = $tiket->foto;
+      if ($request->hasFile('foto')) {
+        $file = $request->file('foto');
+        $extension = $file->getClientOriginalExtension();
+        $fileName = time() . '.' . $extension;
+        $file->move(public_path('uploads/tiket'), $fileName);
+        $foto = 'uploads/tiket/' . $fileName;
+      }
+
       // 1. Update tiket status
       $tiket->update([
         'status_id' => 3,
         'keterangan' => $request->keterangan,
+        'foto' => $foto,
         'teknisi_id' => auth()->user()->id,
         'tanggal_selesai' => Carbon::now()->toDate()
       ]);
@@ -445,47 +459,73 @@ class TiketController extends Controller
   public function confirmGangguan(Request $request, $id)
   {
     $tiket = TiketOpen::findOrFail($id);
-    $tiket->update([
-      'keterangan' => $request->keterangan,
-      'status_id' => 3,
-      'tanggal_selesai' => $request->tanggal,
-      'teknisi_id' => auth()->user()->id
-    ]);
-    $tiket->refresh();
+    
+    DB::beginTransaction();
+    
+    try {
+      $customer = Customer::findOrFail($tiket->customer_id);
 
-    // Validasi
-    if ($request->modem_baru_id != null) {
-      $mac = $request->mac_address;
-      $sni = $request->sni;
-      $modemBaru = $request->modem_baru_id;
-    } else {
-      $mac = $tiket->customer->mac_address;
-      $sni = $tiket->customer->seri_perangkat;
-      $modemBaru = $tiket->customer->perangkat_id;
+      $tiket->update([
+        'keterangan' => $request->keterangan,
+        'status_id' => 3,
+        'tanggal_selesai' => $request->tanggal,
+        'teknisi_id' => auth()->user()->id
+      ]);
+      $tiket->refresh();
+
+      // Cek jika ada modem baru yang dipasang
+      if ($request->modem_baru_id != null) {
+        $mac = $request->mac_address;
+        $sni = $request->sni;
+        $modemBaru = $request->modem_baru_id;
+
+        // Update data modem di Customer
+        $customer->update([
+          'status_id' => 3,
+          'perangkat_id' => $modemBaru,
+          'mac_address' => $mac,
+          'seri_perangkat' => $sni
+        ]);
+
+        // Cari modem lama customer yang berstatus Terpakai (13)
+        $statusModemLama = $request->input('status_modem_lama', 4); // Default ke Maintenance (4)
+        
+        ModemDetail::where('customer_id', $customer->id)
+          ->where('status_id', 13)
+          ->update([
+            'status_id' => $statusModemLama,
+            'customer_id' => null
+          ]);
+
+        // Buat detail modem baru dengan status Terpakai (13)
+        ModemDetail::create([
+          'logistik_id' => $modemBaru,
+          'mac_address' => $mac,
+          'serial_number' => $sni,
+          'status_id' => 13, // Terpakai
+          'customer_id' => $customer->id
+        ]);
+      } else {
+        // Jika tidak ganti modem, cukup update status customer saja
+        $customer->update([
+          'status_id' => 3
+        ]);
+      }
+
+      DB::commit();
+
+      // Catat Log
+      activity('Closed Tiket')
+        ->causedBy(auth()->user()->id)
+        ->log(auth()->user()->name . ' Mengkonfirmasi tiket untuk pelanggan ' . $customer->nama_customer);
+
+      return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
+      
+    } catch (\Exception $e) {
+      DB::rollBack();
+      \Log::error("Gagal menutup tiket gangguan: " . $e->getMessage());
+      return back()->with('toast_error', 'Gagal menutup tiket: ' . $e->getMessage());
     }
-
-    $customer = Customer::where('id', $tiket->customer_id)->first();
-    $customer->update([
-      'status_id' => 3,
-      'perangkat_id' => $modemBaru,
-      'mac_address' => $mac,
-      'seri_perangkat' => $sni
-    ]);
-    $customer->refresh();
-
-    $modemDetail = ModemDetail::where('customer_id', $tiket->customer_id)->first();
-    $modemDetail->update([
-      'logistik_id' => $modemBaru,
-      'mac_address' => $mac,
-      'serial_number' => $sni
-    ]);
-
-    // Catat Log
-    activity('Closed Tiket')
-      ->causedBy(auth()->user()->id)
-      ->log(auth()->user()->name . ' Mengkonfirmasi tiket untuk pelanggan ' . $customer->nama_customer);
-
-    return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
   }
 
   public function historyTiket($id)

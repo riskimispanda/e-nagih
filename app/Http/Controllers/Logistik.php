@@ -8,6 +8,7 @@ use App\Models\KategoriLogistik;
 use App\Models\ModemDetail;
 use Illuminate\Support\Facades\Log;
 use App\Models\Customer;
+use Illuminate\Support\Facades\DB;
 
 class Logistik extends Controller
 {
@@ -92,14 +93,13 @@ class Logistik extends Controller
 
     public function updateLogistik(Request $request, $id)
     {
-        $perangkat = Perangkat::with('kategori')->findOrFail($id);
+        $perangkat = Perangkat::findOrFail($id);
         $perangkat->update([
             'nama_perangkat' => $request->nama_perangkat,
             'jumlah_stok' => $request->stok,
             'harga' => $request->harga,
             'kategori_id' => $request->kategori,
         ]);
-
         return redirect('/data/logistik')->with('toast_success', 'Data Berhasil diperbarui');
     }
 
@@ -158,7 +158,7 @@ class Logistik extends Controller
 
         $data = ModemDetail::with('perangkat.kategori', 'status', 'customer')
             ->whereHas('perangkat.kategori', function ($q) {
-                $q->whereIn('nama_logistik', ['modem', 'tenda']);
+                $q->whereIn(DB::raw('LOWER(nama_logistik)'), ['modem', 'tenda', 'sfp', 'olt', 'odp', 'odc', 'htb']);
             })
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -180,5 +180,74 @@ class Logistik extends Controller
             'data' => $data
         ]);
     }
+
+    public function perbaikiBarang($id)
+    {
+        try {
+            $device = ModemDetail::findOrFail($id);
+            $device->update([
+                'status_id' => 14, // Tersedia
+                'customer_id' => null
+            ]);
+            return redirect()->back()->with('toast_success', 'Barang berhasil diperbaiki dan dikembalikan ke stok Tersedia.');
+        } catch (\Exception $e) {
+            Log::error('Gagal memperbaiki barang: ' . $e->getMessage());
+            return redirect()->back()->with('toast_error', 'Gagal memperbaiki barang: ' . $e->getMessage());
+        }
+    }
+
+    public function setMaintenanceBarang($id)
+    {
+        try {
+            $device = ModemDetail::findOrFail($id);
+            $device->update([
+                'status_id' => 4, // Maintenance
+                'customer_id' => null
+            ]);
+            return redirect()->back()->with('toast_success', 'Barang berhasil dipindahkan ke status Maintenance.');
+        } catch (\Exception $e) {
+            Log::error('Gagal memindahkan ke maintenance: ' . $e->getMessage());
+            return redirect()->back()->with('toast_error', 'Gagal memindahkan ke maintenance: ' . $e->getMessage());
+        }
+    }
+
+    public function afkirBarang($id)
+    {
+        try {
+            $device = ModemDetail::findOrFail($id);
+            $device->update([
+                'status_id' => 15, // Rusak
+                'customer_id' => null
+            ]);
+            return redirect()->back()->with('toast_success', 'Barang berhasil di-afkir ke status Rusak.');
+        } catch (\Exception $e) {
+            Log::error('Gagal meng-afkir barang: ' . $e->getMessage());
+            return redirect()->back()->with('toast_error', 'Gagal meng-afkir barang: ' . $e->getMessage());
+        }
+    }
+
+    public function buangBarang($id)
+    {
+        try {
+            $device = ModemDetail::findOrFail($id);
+            
+            DB::beginTransaction();
+            
+            $perangkat = Perangkat::find($device->logistik_id);
+            if ($perangkat && $perangkat->jumlah_stok > 0) {
+                $perangkat->decrement('jumlah_stok');
+            }
+            
+            $device->delete();
+            
+            DB::commit();
+            return redirect()->back()->with('toast_success', 'Barang rusak berhasil dihapus permanen dari sistem.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal menghapus barang rusak: ' . $e->getMessage());
+            return redirect()->back()->with('toast_error', 'Gagal menghapus barang rusak: ' . $e->getMessage());
+        }
+    }
+
 
 }

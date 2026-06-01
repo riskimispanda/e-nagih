@@ -40,6 +40,7 @@ class DataController extends Controller
     $sort = $request->get('sort', 'default');
     $perPage = $request->get('per_page', 10);
     $perPage = $perPage > 500 ? 500 : $perPage;
+    $agen_id = $request->get('agen_id');
 
     // Build base query
     $query = Customer::with([
@@ -51,6 +52,10 @@ class DataController extends Controller
       'odp.odc.olt'
     ])->whereIn('status_id', [3, 4, 9, 16, 17])
       ->whereNull('deleted_at');
+
+    if ($agen_id) {
+      $query->where('agen_id', $agen_id);
+    }
 
     $import = Customer::where('cek', 'Imported')->count();
     $dismantle = Customer::onlyTrashed()
@@ -188,14 +193,28 @@ class DataController extends Controller
       ->orderBy('tanggal_selesai', 'desc')
       ->get();
 
-    $bulananInstallasi = Customer::whereIn('status_id', [3, 4, 9])
+    $bulananInstallasiQuery = Customer::whereIn('status_id', [3, 4, 9])
       ->whereMonth('tanggal_selesai', now()->month)
-      ->whereYear('tanggal_selesai', now()->year)
-      ->count();
+      ->whereYear('tanggal_selesai', now()->year);
 
-    $nonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->orderBy('updated_at', 'desc')->get();
-    $countPelangganAktif = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
-    $allData = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
+    if ($agen_id) {
+      $bulananInstallasiQuery->where('agen_id', $agen_id);
+    }
+    $bulananInstallasi = $bulananInstallasiQuery->count();
+
+    $nonAktifQuery = Customer::where('status_id', 9)->whereNull('deleted_at')->orderBy('updated_at', 'desc');
+    $countPelangganAktifQuery = Customer::whereIn('status_id', [3, 4])->whereNull('deleted_at');
+    $allDataQuery = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at');
+
+    if ($agen_id) {
+      $nonAktifQuery->where('agen_id', $agen_id);
+      $countPelangganAktifQuery->where('agen_id', $agen_id);
+      $allDataQuery->where('agen_id', $agen_id);
+    }
+
+    $nonAktif = $nonAktifQuery->get();
+    $countPelangganAktif = $countPelangganAktifQuery->count();
+    $allData = $allDataQuery->count();
     $dateBlokir = Invoice::with('customer')->first();
     // Handle AJAX requests
     if ($request->ajax()) {
@@ -287,36 +306,48 @@ class DataController extends Controller
     //     ->sum('paket.harga');
 
     // Hitung total pendapatan berdasarkan harga paket (bukan tagihan aktual)
-    $totalPendapatan = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
+    $totalPendapatanQuery = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
       ->whereIn('customer.status_id', [3, 4, 9])
       ->where('customer.paket_id', '!=', 11)
-      ->whereNull('customer.deleted_at')
-      ->sum('paket.harga');
+      ->whereNull('customer.deleted_at');
+
+    if ($agen_id) {
+      $totalPendapatanQuery->where('customer.agen_id', $agen_id);
+    }
+    $totalPendapatan = $totalPendapatanQuery->sum('paket.harga');
 
 
     // Hitung customer yang sudah bayar untuk invoice bulan ini
-    $sudahBayar = Invoice::where('status_id', 8)
+    $sudahBayarQuery = Invoice::where('status_id', 8)
       ->whereMonth('jatuh_tempo', Carbon::now()->month)
       ->whereYear('jatuh_tempo', Carbon::now()->year)
-      ->whereHas('customer', function ($q) {
+      ->whereHas('customer', function ($q) use ($agen_id) {
         $q->whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9]);
-      })
-      ->distinct('customer_id')
-      ->count('customer_id');
+        if ($agen_id) {
+          $q->where('agen_id', $agen_id);
+        }
+      });
+    $sudahBayar = $sudahBayarQuery->distinct('customer_id')->count('customer_id');
 
     // Hitung customer yang belum bayar untuk invoice bulan ini
-    $belumBayar = Invoice::where('status_id', 7)
+    $belumBayarQuery = Invoice::where('status_id', 7)
       ->whereMonth('jatuh_tempo', Carbon::now()->month)
       ->whereYear('jatuh_tempo', Carbon::now()->year)
-      ->whereHas('customer', function ($q) {
+      ->whereHas('customer', function ($q) use ($agen_id) {
         $q->whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9]);
-      })
-      ->distinct('customer_id')
-      ->count('customer_id');
+        if ($agen_id) {
+          $q->where('agen_id', $agen_id);
+        }
+      });
+    $belumBayar = $belumBayarQuery->distinct('customer_id')->count('customer_id');
 
-    $fasum = Customer::where('paket_id', 11)->whereNull('deleted_at')->count();
+    $fasumQuery = Customer::where('paket_id', 11)->whereNull('deleted_at');
+    if ($agen_id) {
+      $fasumQuery->where('agen_id', $agen_id);
+    }
+    $fasum = $fasumQuery->count();
 
     return view('data.data-pelanggan', [
       'users' => auth()->user(),
@@ -344,6 +375,8 @@ class DataController extends Controller
       'allData' => $allData,
       'dateBlokir' => $dateBlokir,
       'fasum' => $fasum,
+      'agents' => User::where('roles_id', 6)->get(),
+      'agen_id' => $agen_id,
     ]);
   }
 

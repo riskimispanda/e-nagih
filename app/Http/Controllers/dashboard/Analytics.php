@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use App\Models\Schedules;
 use App\Models\TiketOpen;
 use Illuminate\Support\Facades\Log;
+use App\Models\ModemDetail;
 
 class Analytics extends Controller
 {
@@ -265,12 +266,23 @@ class Analytics extends Controller
 
   public function logistik()
   {
-    $perangkat = Perangkat::withCount(['customer'])->get();
+    $perangkat = Perangkat::with(['kategori', 'modem'])->withCount(['customer'])->get();
     $kategori = KategoriLogistik::all();
 
     foreach ($perangkat as $item) {
-      $item->stok_terpakai = $item->customer_count ?? 0;
-      $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai;
+      $isSerialized = in_array(strtolower($item->kategori->nama_logistik ?? ''), ['modem', 'tenda', 'sfp', 'olt', 'odp', 'odc', 'htb']);
+
+      if ($isSerialized) {
+        $item->stok_terpakai = $item->modem->where('status_id', 13)->count();
+        $item->stok_maintenance = $item->modem->where('status_id', 4)->count();
+        $item->stok_rusak = $item->modem->where('status_id', 15)->count();
+        $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai - $item->stok_maintenance - $item->stok_rusak;
+      } else {
+        $item->stok_terpakai = $item->customer_count ?? 0;
+        $item->stok_maintenance = 0;
+        $item->stok_rusak = 0;
+        $item->stok_tersedia = $item->jumlah_stok - $item->stok_terpakai;
+      }
 
       // Hindari angka minus
       if ($item->stok_tersedia < 0) {
@@ -278,11 +290,27 @@ class Analytics extends Controller
       }
     }
 
+    // Load individual serialized devices
+    $availableDevices = ModemDetail::with('perangkat.kategori')
+        ->where('status_id', 14) // Tersedia
+        ->get();
+        
+    $maintenanceDevices = ModemDetail::with('perangkat.kategori')
+        ->where('status_id', 4) // Maintenance
+        ->get();
+        
+    $damagedDevices = ModemDetail::with('perangkat.kategori')
+        ->where('status_id', 15) // Rusak
+        ->get();
+
     return view("data.data-logistik", [
       "users" => auth()->user(),
       "roles" => auth()->user()->roles,
       "perangkat" => $perangkat,
-      'kategori' => $kategori
+      'kategori' => $kategori,
+      'availableDevices' => $availableDevices,
+      'maintenanceDevices' => $maintenanceDevices,
+      'damagedDevices' => $damagedDevices
     ]);
   }
 

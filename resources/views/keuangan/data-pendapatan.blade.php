@@ -344,12 +344,24 @@
     <form id="filterForm">
       <div class="row g-3">
         <!-- Search Input -->
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
           <label class="form-label fw-medium text-dark">Pencarian</label>
           <div class="position-relative">
             <input type="text" id="searchInput" name="search" value="{{ $search ?? '' }}"
               placeholder="Cari nama customer atau paket..." class="form-control">
           </div>
+        </div>
+
+        <div class="col-12 col-lg-3">
+          <label class="form-label">Agen</label>
+          <select name="agen_id" id="agen_id" class="form-select">
+            <option value="">Semua Agen</option>
+            @foreach ($agents as $agent)
+              <option value="{{ $agent->id }}" {{ (isset($agen_id) && $agen_id == $agent->id) ? 'selected' : '' }}>
+                {{ $agent->name }}
+              </option>
+            @endforeach
+          </select>
         </div>
 
         {{-- Set Carbon locale untuk translasi bulan ke bahasa Indonesia --}}
@@ -360,7 +372,7 @@
           }
         @endphp
 
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
           <label class="form-label">Bulan</label>
           <select name="bulan" id="bulan" class="form-select">
             <option value="">Semua Bulan</option>
@@ -375,7 +387,7 @@
           </select>
         </div>
 
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
           <label class="form-label">Tahun</label>
           <select name="tahun" id="tahun" class="form-select">
             <option value="">Semua Tahun</option>
@@ -1070,10 +1082,13 @@
       }
     }
 
+    let tsAgen;
+
     // Initialize filter functionality
     function initializeFilters() {
       const bulanSelect = document.getElementById('bulan');
       const tahunSelect = document.getElementById('tahun');
+      const agenSelect = document.getElementById('agen_id');
 
       if (bulanSelect) {
         bulanSelect.addEventListener('change', function () {
@@ -1087,6 +1102,24 @@
           // Reset ke page 1 saat filter berubah
           loadDataWithAjax(getCurrentPerPage(), 1);
         });
+      }
+
+      if (agenSelect) {
+        if (typeof TomSelect !== 'undefined') {
+          tsAgen = new TomSelect('#agen_id', {
+            create: false,
+            allowEmptyOption: true,
+            onChange: function (value) {
+              // Reset ke page 1 saat filter berubah
+              loadDataWithAjax(getCurrentPerPage(), 1);
+            }
+          });
+        } else {
+          agenSelect.addEventListener('change', function () {
+            // Reset ke page 1 saat filter berubah
+            loadDataWithAjax(getCurrentPerPage(), 1);
+          });
+        }
       }
     }
 

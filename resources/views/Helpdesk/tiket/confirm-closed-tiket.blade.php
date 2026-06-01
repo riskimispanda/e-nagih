@@ -512,6 +512,20 @@
                                 </div>
                                 <div class="col-12 mb-3">
                                     <div class="tech-info">
+                                        <i class="bx bx-chip text-info"></i>
+                                        <div>
+                                            <small class="text-muted">Modem Pelanggan</small>
+                                            <p class="mb-0 fw-semibold">{{ $tiket->customer->perangkat->nama_perangkat ?? 'Belum Ditentukan' }}</p>
+                                            @if($tiket->customer->seri_perangkat || $tiket->customer->mac_address)
+                                            <small class="text-muted d-block" style="font-size: 0.8rem;">
+                                                SN: {{ $tiket->customer->seri_perangkat ?? '-' }} | MAC: {{ $tiket->customer->mac_address ?? '-' }}
+                                            </small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <div class="tech-info">
                                         <i class="bx bx-package text-secondary"></i>
                                         <div>
                                             <small class="text-muted">Paket</small>
@@ -725,7 +739,7 @@
             </div>
             <div class="collapse show" id="formDeaktivasiCollapse">
                 <div class="card-body">
-                    <form action="/konfirmasi-tiket/{{ $tiket->id }}" method="POST">
+                    <form action="/konfirmasi-tiket/{{ $tiket->id }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="row">
                             <div class="col-sm-6 mb-3">
@@ -736,6 +750,18 @@
                                         <option value="{{ $tiket->customer->perangkat_id ?? '-'}}">{{$tiket->customer->perangkat->nama_perangkat ?? '-'}}</option>
                                     </select>
                                 </div>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <label class="form-label">Kondisi Modem yang Dikembalikan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-wrench"></i></span>
+                                    <select name="status_modem" class="form-select" required>
+                                        <option value="14">Masih Bagus (Tersedia)</option>
+                                        <option value="4" selected>Perlu Perbaikan (Maintenance)</option>
+                                        <option value="15">Rusak Total (Afkir)</option>
+                                    </select>
+                                </div>
+                                <small class="text-muted">Menentukan ke status mana modem pelanggan ini dikembalikan.</small>
                             </div>
                             <div class="col-sm-6 mb-3">
                                 <label class="form-label">Keterangan Kondisi Modem</label>
@@ -833,6 +859,18 @@
                                         <span class="input-group-text"><i class="bx bxs-barcode"></i></span>
                                         <input type="text" name="sni" id="sni" class="form-control" placeholder="Masukkan SNI">
                                     </div>
+                                </div>
+                                <div class="col-sm-6 mb-3">
+                                    <label class="form-label">Kondisi Modem Lama yang Ditarik</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-wrench"></i></span>
+                                        <select name="status_modem_lama" class="form-select">
+                                            <option value="14">Masih Bagus (Tersedia)</option>
+                                            <option value="4" selected>Perlu Perbaikan (Maintenance)</option>
+                                            <option value="15">Rusak Total (Afkir)</option>
+                                        </select>
+                                    </div>
+                                    <small class="text-muted">Menentukan apakah perangkat lama masuk ke tab Tersedia, Maintenance, atau Rusak.</small>
                                 </div>
                             </div>
 

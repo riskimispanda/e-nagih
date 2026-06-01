@@ -136,11 +136,19 @@ class KeuanganController extends Controller
     $endDate = $request->get('end_date');
     $bulan = $request->get('bulan');
     $tahun = $request->get('tahun');
+    $agen_id = $request->get('agen_id');
 
-    $sumData = Invoice::whereIn('status_id', [7, 8])
+    $sumDataQuery = Invoice::whereIn('status_id', [7, 8])
       ->whereMonth('jatuh_tempo', now()->month)
-      ->whereYear('jatuh_tempo', now()->year)
-      ->selectRaw('
+      ->whereYear('jatuh_tempo', now()->year);
+
+    if ($agen_id) {
+      $sumDataQuery->whereHas('customer', function($q) use ($agen_id) {
+        $q->where('agen_id', $agen_id);
+      });
+    }
+
+    $sumData = $sumDataQuery->selectRaw('
             SUM(tagihan) as total_tagihan,
             SUM(tunggakan) as total_tunggakan,
             SUM(tambahan) as total_tambahan,
@@ -170,16 +178,24 @@ class KeuanganController extends Controller
       ->orderBy('created_at', 'desc')
       ->where('status_id', 7);
 
+    if ($agen_id) {
+      $query->whereHas('customer', function ($q) use ($agen_id) {
+        $q->where('agen_id', $agen_id);
+      });
+    }
 
-    $countInvoiceAll = Invoice::with('customer')
+    $countInvoiceAllQuery = Invoice::with('customer')
       ->where('status_id', 7)
-      ->whereHas('customer', function ($q) {
+      ->whereHas('customer', function ($q) use ($agen_id) {
         $q->whereNull('deleted_at')->whereIn('status_id', [3, 4, 9]);
+        if ($agen_id) {
+          $q->where('agen_id', $agen_id);
+        }
       })
       ->whereYear('jatuh_tempo', Carbon::now()->year)
-      ->where('paket_id', '!=', 11)
-      ->distinct('customer_id')
-      ->count();
+      ->where('paket_id', '!=', 11);
+
+    $countInvoiceAll = $countInvoiceAllQuery->distinct('customer_id')->count();
     // dd($countInvoiceAll);
 
     // Apply search filter - INCLUDE SOFT DELETED CUSTOMERS IN SEARCH
@@ -216,6 +232,11 @@ class KeuanganController extends Controller
     }
 
     $perki = Invoice::whereIn('status_id', [7, 8]);
+    if ($agen_id) {
+      $perki->whereHas('customer', function ($q) use ($agen_id) {
+        $q->where('agen_id', $agen_id);
+      });
+    }
 
     // Clone query for statistics calculation
     $statisticsQuery = clone $query;
@@ -273,25 +294,37 @@ class KeuanganController extends Controller
 
       // ✅ Total Revenue - termasuk semua customer (aktif + soft delete)
       $totalRevenue = Invoice::where('status_id', 8)
-        ->whereHas('customer', function ($q) {
+        ->whereHas('customer', function ($q) use ($agen_id) {
           $q->withTrashed(); // Include semua customer untuk revenue
+          if ($agen_id) {
+            $q->where('agen_id', $agen_id);
+          }
         })
         ->sum('tagihan') +
         Invoice::where('status_id', 8)
-          ->whereHas('customer', function ($q) {
+          ->whereHas('customer', function ($q) use ($agen_id) {
             $q->withTrashed();
+            if ($agen_id) {
+              $q->where('agen_id', $agen_id);
+            }
           })
           ->sum('tambahan') -
         Invoice::where('status_id', 8)
-          ->whereHas('customer', function ($q) {
+          ->whereHas('customer', function ($q) use ($agen_id) {
             $q->withTrashed();
+            if ($agen_id) {
+              $q->where('agen_id', $agen_id);
+            }
           })
           ->sum('tunggakan');
 
       // ✅ Pending Revenue - HANYA untuk customer AKTIF (tidak soft delete)
       $pendingRevenue = Invoice::where('status_id', 7)
-        ->whereHas('customer', function ($q) {
+        ->whereHas('customer', function ($q) use ($agen_id) {
           $q->whereNull('deleted_at');
+          if ($agen_id) {
+            $q->where('agen_id', $agen_id);
+          }
         })
         ->selectRaw('SUM(tagihan + tambahan + tunggakan - saldo) as total')
         ->value('total');
@@ -299,20 +332,28 @@ class KeuanganController extends Controller
 
       // ✅ Total Invoices - HANYA untuk customer AKTIF yang belum bayar
       $totalInvoices = Invoice::where('status_id', 7)
-        ->whereHas('customer', function ($q) {
+        ->whereHas('customer', function ($q) use ($agen_id) {
           $q->whereNull('deleted_at'); // ❌ Hanya customer aktif
+          if ($agen_id) {
+            $q->where('agen_id', $agen_id);
+          }
         })
         ->count();
     }
 
     // Monthly revenue from payments (Pembayaran) - filtered by selected month or all if no month filter
     if ($bulan && $bulan !== '' && $bulan !== null) {
-      $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $bulan)
-        ->whereYear('tanggal_bayar', Carbon::now()->year)
-        ->sum('jumlah_bayar');
+      $monthlyRevenueQuery = Pembayaran::whereMonth('tanggal_bayar', $bulan)
+        ->whereYear('tanggal_bayar', Carbon::now()->year);
     } else {
-      $monthlyRevenue = Pembayaran::sum('jumlah_bayar');
+      $monthlyRevenueQuery = Pembayaran::query();
     }
+    if ($agen_id) {
+      $monthlyRevenueQuery->whereHas('invoice.customer', function ($q) use ($agen_id) {
+        $q->withTrashed()->where('agen_id', $agen_id);
+      });
+    }
+    $monthlyRevenue = $monthlyRevenueQuery->sum('jumlah_bayar');
 
     // Get all status options for filter dropdown
     $statusOptions = Status::whereIn('id', [7, 8])->get();
@@ -321,12 +362,19 @@ class KeuanganController extends Controller
     $pendapatan = Pendapatan::paginate(5);
     $agen = User::where('roles_id', 6)->count();
     $totalPembayaran = Pembayaran::where('status_id', 1)->count();
-    $pembayaran = Pembayaran::where('status_id', 8)
+    
+    $pembayaranQuery = Pembayaran::where('status_id', 8)
       ->whereHas('invoice.customer', function ($query) {
         $query->withTrashed(); // Include soft deleted customers
       })
-      ->whereYear('created_at', Carbon::now()->year)
-      ->sum('jumlah_bayar');
+      ->whereYear('created_at', Carbon::now()->year);
+
+    if ($agen_id) {
+      $pembayaranQuery->whereHas('invoice.customer', function ($q) use ($agen_id) {
+        $q->withTrashed()->where('agen_id', $agen_id);
+      });
+    }
+    $pembayaran = $pembayaranQuery->sum('jumlah_bayar');
 
     $customerCountQuery = clone $query;
 
@@ -335,11 +383,15 @@ class KeuanganController extends Controller
       ->distinct('customer_id')
       ->count('customer_id');
 
-    $totalHarga = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
+    $totalHargaQuery = Customer::join('paket', 'customer.paket_id', '=', 'paket.id')
       ->whereIn('customer.status_id', [3, 4, 9])
       ->where('customer.paket_id', '!=', 11)
-      ->whereNull('customer.deleted_at')
-      ->sum('paket.harga');
+      ->whereNull('customer.deleted_at');
+
+    if ($agen_id) {
+      $totalHargaQuery->where('customer.agen_id', $agen_id);
+    }
+    $totalHarga = $totalHargaQuery->sum('paket.harga');
 
     return view('keuangan.data-pendapatan', [
       'users' => auth()->user(),
@@ -359,6 +411,8 @@ class KeuanganController extends Controller
       'metode' => $metode,
       'pendapatan' => $pendapatan,
       'agen' => $agen,
+      'agents' => User::where('roles_id', 6)->get(),
+      'agen_id' => $agen_id,
       'totalPembayaran' => $totalPembayaran,
       'pembayaran' => $pembayaran,
       'perkiraanPendapatan' => $estimasi,
@@ -379,6 +433,7 @@ class KeuanganController extends Controller
       $endDate = $request->get('end_date', '');
       $bulan = $request->get('bulan', '');
       $tahun = $request->get('tahun', '');
+      $agen_id = $request->get('agen_id', '');
       $perPage = $request->get('per_page', 25);
       $page = $request->get('page', 1);
 
@@ -387,6 +442,7 @@ class KeuanganController extends Controller
         'status' => $status,
         'bulan' => $bulan,
         'tahun' => $tahun,
+        'agen_id' => $agen_id,
         'perPage' => $perPage,
         'page' => $page
       ]);
@@ -440,6 +496,13 @@ class KeuanganController extends Controller
         ]);
       }
 
+      // Apply agen filter
+      if (!empty($agen_id)) {
+        $query->whereHas('customer', function ($q) use ($agen_id) {
+          $q->where('agen_id', $agen_id);
+        });
+      }
+
       // Get paginated results
       $invoices = [];
       $paginationData = [];
@@ -474,18 +537,33 @@ class KeuanganController extends Controller
       // ===== STATISTICS CALCULATION =====
 
       // PERBAIKAN: Untuk statistics, gunakan withTrashed() secara konsisten
-      $totalRevenue = Pembayaran::sum('jumlah_bayar');
+      $totalRevenueQuery = Pembayaran::query();
+      $monthlyRevenueQuery = Pembayaran::query();
+
+      if (!empty($agen_id)) {
+        $totalRevenueQuery->whereHas('invoice.customer', function ($q) use ($agen_id) {
+          $q->withTrashed()->where('agen_id', $agen_id);
+        });
+        $monthlyRevenueQuery->whereHas('invoice.customer', function ($q) use ($agen_id) {
+          $q->withTrashed()->where('agen_id', $agen_id);
+        });
+      }
+
+      $totalRevenue = $totalRevenueQuery->sum('jumlah_bayar');
 
       // Monthly Revenue - Based on selected month or current month
       $currentMonthForRevenue = !empty($bulan) ? $bulan : date('n');
-      $monthlyRevenue = Pembayaran::whereMonth('tanggal_bayar', $currentMonthForRevenue)
+      $monthlyRevenue = $monthlyRevenueQuery->whereMonth('tanggal_bayar', $currentMonthForRevenue)
         ->whereYear('tanggal_bayar', Carbon::now()->year)
         ->sum('jumlah_bayar');
 
       // PERBAIKAN: Pending Revenue - Include soft deleted customers
       $pendingRevenueQuery = Invoice::where('status_id', 7)
-        ->whereHas('customer', function ($q) {
+        ->whereHas('customer', function ($q) use ($agen_id) {
           $q->withTrashed(); // ✅ Include soft deleted
+          if (!empty($agen_id)) {
+            $q->where('agen_id', $agen_id);
+          }
         });
 
       if (!empty($bulan)) {
@@ -500,8 +578,11 @@ class KeuanganController extends Controller
 
       // PERBAIKAN: Total Invoices - Include soft deleted customers
       $totalInvoicesQuery = Invoice::where('status_id', 7)
-        ->whereHas('customer', function ($q) {
+        ->whereHas('customer', function ($q) use ($agen_id) {
           $q->withTrashed(); // ✅ Include soft deleted
+          if (!empty($agen_id)) {
+            $q->where('agen_id', $agen_id);
+          }
         });
 
       if (!empty($bulan)) {
@@ -600,6 +681,7 @@ class KeuanganController extends Controller
     $month = $request->get('month');
     $startDate = $request->get('start_date');
     $endDate = $request->get('end_date');
+    $agen_id = $request->get('agen_id');
 
     // Default to current month if no month filter is set (first time load)
     if ($month === null && !$request->has('month')) {
@@ -617,6 +699,28 @@ class KeuanganController extends Controller
       'user'
     ])
       ->orderBy('created_at', 'desc');
+
+    // Helper closure to apply agen filter to queries
+    $applyAgenFilter = function ($q) use ($agen_id) {
+      if ($agen_id) {
+        $q->whereHas('invoice.customer', function ($sub) use ($agen_id) {
+          $sub->withTrashed()->where('agen_id', $agen_id);
+        });
+      }
+    };
+
+    $applyCustomerAgenFilter = function ($q) use ($agen_id) {
+      if ($agen_id) {
+        $q->where('agen_id', $agen_id);
+      }
+    };
+
+    // Apply agen filter
+    if ($agen_id) {
+      $query->whereHas('invoice.customer', function ($q) use ($agen_id) {
+        $q->withTrashed()->where('agen_id', $agen_id);
+      });
+    }
 
     // Apply search filter
     if ($search) {
@@ -655,23 +759,28 @@ class KeuanganController extends Controller
     $invoicePay = $query->paginate(10);
 
     // Calculate totals based on filtered data
-    $totalPayments = Pembayaran::sum('jumlah_bayar');
+    $totalPaymentsQuery = Pembayaran::query();
+    $applyAgenFilter($totalPaymentsQuery);
+    $totalPayments = $totalPaymentsQuery->sum('jumlah_bayar');
 
-    $todayPayments = Pembayaran::whereDate('tanggal_bayar', Carbon::today())
-      ->sum('jumlah_bayar');
+    $todayPaymentsQuery = Pembayaran::whereDate('tanggal_bayar', Carbon::today());
+    $applyAgenFilter($todayPaymentsQuery);
+    $todayPayments = $todayPaymentsQuery->sum('jumlah_bayar');
 
     // Monthly payments based on current filter
     if ($month && $month !== '' && $month !== null) {
-      $monthlyPayments = Pembayaran::whereMonth('tanggal_bayar', $month)
-        ->whereYear('tanggal_bayar', Carbon::now()->year)
-        ->sum('jumlah_bayar');
+      $monthlyPaymentsQuery = Pembayaran::whereMonth('tanggal_bayar', $month)
+        ->whereYear('tanggal_bayar', Carbon::now()->year);
     } else {
-      $monthlyPayments = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)
-        ->whereYear('tanggal_bayar', Carbon::now()->year)
-        ->sum('jumlah_bayar');
+      $monthlyPaymentsQuery = Pembayaran::whereMonth('tanggal_bayar', Carbon::now()->month)
+        ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
+    $applyAgenFilter($monthlyPaymentsQuery);
+    $monthlyPayments = $monthlyPaymentsQuery->sum('jumlah_bayar');
 
-    $totalTransactions = Pembayaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->count();
+    $totalTransactionsQuery = Pembayaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year);
+    $applyAgenFilter($totalTransactionsQuery);
+    $totalTransactions = $totalTransactionsQuery->count();
 
     // Get payment methods for filter dropdown
     $paymentMethods = Pembayaran::select('metode_bayar')
@@ -679,76 +788,76 @@ class KeuanganController extends Controller
       ->whereNotNull('metode_bayar')
       ->pluck('metode_bayar');
 
-    $cashPayments = Pembayaran::where(function ($q) {
+    $cashPaymentsQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%cash%')
         ->orWhere('metode_bayar', 'like', '%tunai%')
         ->orWhere('metode_bayar', 'like', '%Cash%'); // tambahan
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $cashPayments->whereMonth('tanggal_bayar', $month)
+      $cashPaymentsQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $cashPayments = $cashPayments->sum('jumlah_bayar');
+    $applyAgenFilter($cashPaymentsQuery);
+    $cashPayments = $cashPaymentsQuery->sum('jumlah_bayar');
 
     // Cash count with month filter - DIPERBAIKI
-    $CashCount = Pembayaran::where(function ($q) {
+    $CashCountQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%cash%')
         ->orWhere('metode_bayar', 'like', '%tunai%')
         ->orWhere('metode_bayar', 'like', '%Cash%'); // tambahan
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $CashCount->whereMonth('tanggal_bayar', $month)
+      $CashCountQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $CashCount = $CashCount->count();
+    $applyAgenFilter($CashCountQuery);
+    $CashCount = $CashCountQuery->count();
 
     // Transfer payments with month filter - DIPERBAIKI (GABUNGKAN SEMUA)
-    $transferPayments = Pembayaran::where(function ($q) {
+    $transferPaymentsQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%transfer%')
         ->orWhere('metode_bayar', 'like', '%transfer bank%')
         ->orWhere('metode_bayar', 'like', '%Transfer%');
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $transferPayments->whereMonth('tanggal_bayar', $month)
+      $transferPaymentsQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $transferPayments = $transferPayments->sum('jumlah_bayar');
+    $applyAgenFilter($transferPaymentsQuery);
+    $transferPayments = $transferPaymentsQuery->sum('jumlah_bayar');
 
     // Transfer count with month filter - DIPERBAIKI (GABUNGKAN SEMUA)
-    $transferCount = Pembayaran::where(function ($q) {
+    $transferCountQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%transfer%')
         ->orWhere('metode_bayar', 'like', '%transfer bank%')
         ->orWhere('metode_bayar', 'like', '%Transfer%');
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $transferCount->whereMonth('tanggal_bayar', $month)
+      $transferCountQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $transferCount = $transferCount->count();
+    $applyAgenFilter($transferCountQuery);
+    $transferCount = $transferCountQuery->count();
 
     // Tripay count with month filter - DIPERBAIKI (HAPUS DANA dari sini)
-    $tripay = Pembayaran::where(function ($q) {
+    $tripayQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%tripay%');
       // HAPUS: ->orWhere('metode_bayar', 'like', '%DANA%');
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $tripay->whereMonth('tanggal_bayar', $month)
+      $tripayQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $tripay = $tripay->count();
+    $applyAgenFilter($tripayQuery);
+    $tripay = $tripayQuery->count();
 
     // E-wallet payments with month filter - DIPERBAIKI (TAMBAH METODE)
-    $ewalletPayments = Pembayaran::where(function ($q) {
+    $ewalletPaymentsQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%ewallet%')
         ->orWhere('metode_bayar', 'like', '%e-wallet%')
         ->orWhere('metode_bayar', 'like', '%gopay%')
@@ -777,14 +886,14 @@ class KeuanganController extends Controller
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $ewalletPayments->whereMonth('tanggal_bayar', $month)
+      $ewalletPaymentsQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
-
-    $ewalletPayments = $ewalletPayments->sum('jumlah_bayar');
+    $applyAgenFilter($ewalletPaymentsQuery);
+    $ewalletPayments = $ewalletPaymentsQuery->sum('jumlah_bayar');
 
     // E-wallet count with month filter - DIPERBAIKI
-    $ewalletCount = Pembayaran::where(function ($q) {
+    $ewalletCountQuery = Pembayaran::where(function ($q) {
       $q->where('metode_bayar', 'like', '%ewallet%')
         ->orWhere('metode_bayar', 'like', '%e-wallet%')
         ->orWhere('metode_bayar', 'like', '%gopay%')
@@ -813,42 +922,50 @@ class KeuanganController extends Controller
     });
 
     if ($month && $month !== '' && $month !== null) {
-      $ewalletCount->whereMonth('tanggal_bayar', $month)
+      $ewalletCountQuery->whereMonth('tanggal_bayar', $month)
         ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
+    $applyAgenFilter($ewalletCountQuery);
+    $ewalletCount = $ewalletCountQuery->count();
 
-    $ewalletCount = $ewalletCount->count();
     // Use consistent customer status filtering
     $customerStatusFilter = [3, 4, 9]; // Include status 4
 
     // Paid customers
-    $withPayment = Invoice::where('status_id', 8)
-      ->whereHas('customer', function ($query) {
+    $withPaymentQuery = Invoice::where('status_id', 8)
+      ->whereHas('customer', function ($query) use ($agen_id) {
         $query->whereNull('deleted_at')
           ->whereIn('status_id', [3, 4, 9])
           ->whereNot('paket_id', 11);
+        if ($agen_id) {
+          $query->where('agen_id', $agen_id);
+        }
       })
       ->whereMonth('jatuh_tempo', Carbon::now()->month)
-      ->whereHas('pembayaran')
-      ->distinct('customer_id')
-      ->count('customer_id');
+      ->whereHas('pembayaran');
+    $withPayment = $withPaymentQuery->distinct('customer_id')->count('customer_id');
 
     // Tanpa pembayaran
-    $withoutPayment = Customer::whereIn('status_id', [3, 4])
+    $withoutPaymentQuery = Customer::whereIn('status_id', [3, 4])
       ->whereNot('paket_id', 11)
       ->whereNull('deleted_at')
       ->whereHas('invoice', function ($query) {
         $query->where('status_id', 8)
           ->whereMonth('jatuh_tempo', Carbon::now()->month);
-      })
-      ->count();
-    $pelangganAktif = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3, 4])->whereNull('deleted_at')->count();
+      });
+    $applyCustomerAgenFilter($withoutPaymentQuery);
+    $withoutPayment = $withoutPaymentQuery->count();
+
+    $pelangganAktifQuery = Customer::whereNot('paket_id', 11)->whereIn('status_id', [3, 4])->whereNull('deleted_at');
+    $applyCustomerAgenFilter($pelangganAktifQuery);
+    $pelangganAktif = $pelangganAktifQuery->count();
 
     $totalCustomer = $withPayment + $withoutPayment;
 
-    $paymentNow = Pembayaran::whereDate('tanggal_bayar', Carbon::today())
-      ->with('invoice')
-      ->get()
+    $paymentNowQuery = Pembayaran::whereDate('tanggal_bayar', Carbon::today())
+      ->with('invoice');
+    $applyAgenFilter($paymentNowQuery);
+    $paymentNow = $paymentNowQuery->get()
       ->pluck('invoice.customer_id')
       ->unique()
       ->count();
@@ -870,6 +987,8 @@ class KeuanganController extends Controller
       'month' => $month,
       'startDate' => $startDate,
       'endDate' => $endDate,
+      'agents' => User::where('roles_id', 6)->get(),
+      'agen_id' => $agen_id,
       'tripay' => $tripay,
       'invoicePay' => $invoicePay,
       'editPembayaran' => $editPembayaran,
@@ -933,6 +1052,7 @@ class KeuanganController extends Controller
       'end_date' => $request->get('end_date'),
       'month' => $request->get('month'),
       'year' => $request->get('year', date('Y')),
+      'agen_id' => $request->get('agen_id'),
       'per_page' => $request->get('per_page', 10),
       'page' => max(1, (int) $request->get('page', 1))
     ];
@@ -995,6 +1115,13 @@ class KeuanganController extends Controller
       if ($filters['end_date']) {
         $query->whereDate('tanggal_bayar', '<=', $filters['end_date']);
       }
+    }
+
+    // Apply agen filter
+    if (isset($filters['agen_id']) && !empty($filters['agen_id'])) {
+      $query->whereHas('invoice.customer', function ($q) use ($filters) {
+        $q->withTrashed()->where('agen_id', $filters['agen_id']);
+      });
     }
   }
 
