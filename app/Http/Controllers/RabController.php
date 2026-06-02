@@ -14,17 +14,27 @@ class RabController extends Controller
 {
     public function index()
     {
-        $data = Rab::with('pengeluaran')->latest()->paginate(10);
+        $query = Rab::with('pengeluaran');
 
-        // Calculate initial totals for all data
-        $totalAnggaran = Rab::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_anggaran');
-        $totalTerealisasi = Pengeluaran::where('status_id', 3)->whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_pengeluaran');
+        // Clone the builder before pagination to get full totals
+        $totalQuery = clone $query;
+
+        $data = $query->latest()->paginate(10);
+
+        // Calculate initial totals for all data (no filter applied initially)
+        $totalAnggaran = $totalQuery->sum('jumlah_anggaran');
+        $rabIds = $totalQuery->pluck('id');
+
+        $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
+            ->where('status_id', 3)
+            ->sum('jumlah_pengeluaran');
+
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
-        $pendapatanLangganan = Pembayaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_bayar');
-        $pendapatanNonLangganan = Pendapatan::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->sum('jumlah_pendapatan');
-        $pengeluaran = Pengeluaran::whereMonth('created_at', Carbon::now()->month)->whereYear('created_at', Carbon::now()->year)->where('status_id', 3)->sum('jumlah_pengeluaran');
+
+        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
+        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
+        $pengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
         $total = $pendapatanLangganan + $pendapatanNonLangganan - $pengeluaran;
-        // dd($total);
 
         return view('/rab/rab',[
             'users' => auth()->user(),
@@ -76,11 +86,14 @@ class RabController extends Controller
             $query->where('kegiatan', 'like', '%' . $request->kegiatan . '%');
         }
 
+        // Clone the builder before pagination to get full filtered totals
+        $totalQuery = clone $query;
+
         $data = $query->latest()->paginate(10);
 
         // Calculate totals for FILTERED data
-        $totalAnggaran = $query->sum('jumlah_anggaran');
-        $rabIds = $query->pluck('id');
+        $totalAnggaran = $totalQuery->sum('jumlah_anggaran');
+        $rabIds = $totalQuery->pluck('id');
 
         // Calculate total realized budget for filtered RABs
         $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
