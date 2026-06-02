@@ -24,8 +24,9 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
     protected $year;
     protected $search;
     protected $metode;
+    protected $agenId;
 
-    public function __construct($filter = 'harian', $startDate = null, $endDate = null, $month = null, $year = null, $search = null, $metode = null)
+    public function __construct($filter = 'harian', $startDate = null, $endDate = null, $month = null, $year = null, $search = null, $metode = null, $agenId = null)
     {
         $this->filter = $filter;
         $this->startDate = $startDate;
@@ -34,6 +35,7 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         $this->year = $year ?: date('Y');
         $this->search = $search;
         $this->metode = $metode;
+        $this->agenId = $agenId;
 
         // Log parameter untuk debugging
         logger('PembayaranExport Constructor Parameters:', [
@@ -43,7 +45,8 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
             'month' => $month,
             'year' => $year,
             'search' => $search,
-            'metode' => $metode
+            'metode' => $metode,
+            'agen_id' => $agenId
         ]);
     }
 
@@ -136,6 +139,14 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
         if ($this->metode) {
             $query->where('metode_bayar', $this->metode);
             logger('Applying METODE Filter', ['metode' => $this->metode]);
+        }
+
+        // Filter agen_id
+        if ($this->agenId) {
+            $query->whereHas('invoice.customer', function ($q) {
+                $q->withTrashed()->where('agen_id', $this->agenId);
+            });
+            logger('Applying AGEN Filter', ['agen_id' => $this->agenId]);
         }
 
         // Sort by tanggal_bayar descending untuk data terbaru di atas
@@ -386,6 +397,11 @@ class PembayaranExport implements FromCollection, WithHeadings, WithStyles, With
 
         if ($this->metode) {
             $filterInfo .= "Metode Bayar: " . $this->metode . "\n";
+        }
+
+        if ($this->agenId) {
+            $agent = \App\Models\User::find($this->agenId);
+            $filterInfo .= "Agen: " . ($agent ? $agent->name : $this->agenId) . "\n";
         }
 
         $filterInfo .= "Export dibuat: " . Carbon::now()->locale('id')->translatedFormat('d F Y H:i:s') . "\n";

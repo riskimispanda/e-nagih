@@ -290,10 +290,16 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
     $startDate = $request->start_date;
     $endDate = $request->end_date;
+    $month = $request->month;
+    $year = $request->year;
+    $search = $request->search;
+    $metode = $request->metode;
+    $agenId = $request->agen_id;
+
     activity('Export Pembayaran')
       ->causedBy(auth()->user()->id)
       ->log(auth()->user()->name . ' Export Data Pembayaran');
-    return Excel::download(new PembayaranExport($filter, $startDate, $endDate), "pembayaran_export_{$filter}.xlsx");
+    return Excel::download(new PembayaranExport($filter, $startDate, $endDate, $month, $year, $search, $metode, $agenId), "pembayaran_export_{$filter}.xlsx");
   })->name('pembayaran.export');
   Route::get('/berita-acara', [SuperAdmin::class, 'index'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan,NOC')
