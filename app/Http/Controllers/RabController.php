@@ -8,6 +8,7 @@ use App\Models\Pengeluaran;
 use Spatie\Activitylog\Models\Activity;
 use App\Models\Pembayaran;
 use App\Models\Pendapatan;
+use App\Models\Perusahaan;
 use Carbon\Carbon;
 
 class RabController extends Controller
@@ -31,10 +32,13 @@ class RabController extends Controller
 
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
 
-        $pendapatanLangganan = Pembayaran::sum('jumlah_bayar');
+        // Calculate initial global balance (unfiltered Pembayaran + Pendapatan + Perusahaan - Pengeluaran)
+        $pendapatanLangganan = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
+        $pendapatanCorporate = Perusahaan::where('status_id', 3)->sum('harga');
         $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
         $pengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
-        $total = $pendapatanLangganan + $pendapatanNonLangganan - $pengeluaran;
+        
+        $total = $pendapatanLangganan + $pendapatanCorporate + $pendapatanNonLangganan - $pengeluaran;
 
         return view('/rab/rab',[
             'users' => auth()->user(),
@@ -102,33 +106,43 @@ class RabController extends Controller
 
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
 
-        // Calculate FILTERED SALDO (based on filtered period)
-        $pembayaran = Pembayaran::when($request->filled('tahun'), function ($q) use ($request) {
-            $q->whereYear('created_at', $request->tahun);
-        })
+        // Calculate FILTERED SALDO (based on filtered period with corrected date fields and status_id)
+        $pembayaran = Pembayaran::where('status_id', 8)
+            ->when($request->filled('tahun'), function ($q) use ($request) {
+                $q->whereYear('tanggal_bayar', $request->tahun);
+            })
             ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('created_at', $request->bulan);
+                $q->whereMonth('tanggal_bayar', $request->bulan);
             })
             ->sum('jumlah_bayar');
 
-        $pendapatan = Pendapatan::when($request->filled('tahun'), function ($q) use ($request) {
-            $q->whereYear('created_at', $request->tahun);
-        })
+        $pendapatanCorporate = Perusahaan::where('status_id', 3)
+            ->when($request->filled('tahun'), function ($q) use ($request) {
+                $q->whereYear('tanggal', $request->tahun);
+            })
             ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('created_at', $request->bulan);
+                $q->whereMonth('tanggal', $request->bulan);
+            })
+            ->sum('harga');
+
+        $pendapatan = Pendapatan::when($request->filled('tahun'), function ($q) use ($request) {
+                $q->whereYear('tanggal', $request->tahun);
+            })
+            ->when($request->filled('bulan'), function ($q) use ($request) {
+                $q->whereMonth('tanggal', $request->bulan);
             })
             ->sum('jumlah_pendapatan');
 
         $pengeluaran = Pengeluaran::where('status_id', 3)
             ->when($request->filled('tahun'), function ($q) use ($request) {
-                $q->whereYear('created_at', $request->tahun);
+                $q->whereYear('tanggal_pengeluaran', $request->tahun);
             })
             ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('created_at', $request->bulan);
+                $q->whereMonth('tanggal_pengeluaran', $request->bulan);
             })
             ->sum('jumlah_pengeluaran');
 
-        $totalSaldo = $pembayaran + $pendapatan - $pengeluaran;
+        $totalSaldo = $pembayaran + $pendapatanCorporate + $pendapatan - $pengeluaran;
 
         $html = view('rab.partials.data-table', compact('data'))->render();
 
