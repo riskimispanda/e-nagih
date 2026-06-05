@@ -679,6 +679,10 @@ class DataController extends Controller
     try {
       $pelanggan = Customer::findOrFail($id);
 
+      // Sanitize phone number (digits only, replace leading 0 with 62)
+      $noHp = preg_replace('/[^0-9]/', '', $request->no_hp);
+      $noHp = preg_replace('/^0/', '62', $noHp);
+
       // Handle File Upload for Identitas
       $identitasPath = $pelanggan->identitas;
       if ($request->hasFile('identitas_file')) {
@@ -699,6 +703,29 @@ class DataController extends Controller
 
         if ($pelanggan->identitas && file_exists(public_path($pelanggan->identitas))) {
           @unlink(public_path($pelanggan->identitas));
+        }
+      }
+
+      // Handle File Upload for Foto Rumah
+      $fotoRumahPath = $pelanggan->foto_rumah;
+      if ($request->hasFile('foto_rumah')) {
+        $file = $request->file('foto_rumah');
+        $fileName = uniqid() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+        $savePath = public_path('uploads/foto_rumah/' . $fileName);
+
+        if (!file_exists(public_path('uploads/foto_rumah'))) {
+          mkdir(public_path('uploads/foto_rumah'), 0755, true);
+        }
+
+        $manager = new ImageManager(Driver::class);
+        $image = $manager->read($file->getRealPath());
+        $image->scale(width: 1024);
+        $image->toJpeg(75)->save($savePath);
+
+        $fotoRumahPath = 'uploads/foto_rumah/' . $fileName;
+
+        if ($pelanggan->foto_rumah && file_exists(public_path($pelanggan->foto_rumah))) {
+          @unlink(public_path($pelanggan->foto_rumah));
         }
       }
 
@@ -758,7 +785,7 @@ class DataController extends Controller
       // 🔥 BARU UPDATE DATABASE (setelah Mikrotik sukses)
       $data = [
         'nama_customer' => $request->nama,
-        'no_hp' => $request->no_hp,
+        'no_hp' => $noHp,
         'alamat' => $request->alamat,
         'gps' => $request->gps,
         'no_identitas' => $request->no_identitas,
@@ -778,6 +805,7 @@ class DataController extends Controller
         'pass_secret' => $passSecret,
         'agen_id' => $request->agen_id,
         'identitas' => $identitasPath,
+        'foto_rumah' => $fotoRumahPath,
       ];
 
       $pelanggan->update($data);

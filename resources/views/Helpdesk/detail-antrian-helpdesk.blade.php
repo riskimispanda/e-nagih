@@ -925,3 +925,47 @@
     </div>
 </div>
 @endsection
+
+@section('page-script')
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Formatter untuk Nomor HP/WA agar berformat 62 tanpa karakter/spasi
+      const noHpInput = document.getElementById('edit_no_hp');
+      if (noHpInput) {
+        const formatNoHp = function () {
+          let val = this.value.replace(/\D/g, ''); // Hanya simpan angka
+          if (val.startsWith('0')) {
+            val = '62' + val.substring(1);
+          }
+          this.value = val;
+        };
+        noHpInput.addEventListener('input', formatNoHp);
+        noHpInput.addEventListener('blur', formatNoHp);
+      }
+
+      // Auto-append @niscala.net untuk Email
+      const emailInput = document.getElementById('edit_email');
+      if (emailInput) {
+        const formatEmail = function () {
+          let val = this.value.trim();
+          if (val) {
+            const atIndex = val.indexOf('@');
+            if (atIndex > -1) {
+              val = val.substring(0, atIndex);
+            }
+            this.value = val + '@niscala.net';
+          }
+        };
+        emailInput.addEventListener('blur', formatEmail);
+        
+        // Format sebelum submit agar terisi dengan benar
+        const form = emailInput.closest('form');
+        if (form) {
+          form.addEventListener('submit', function () {
+            formatEmail.call(emailInput);
+          });
+        }
+      }
+    });
+  </script>
+@endsection

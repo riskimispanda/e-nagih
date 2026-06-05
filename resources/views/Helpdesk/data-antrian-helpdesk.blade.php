@@ -197,9 +197,9 @@
     }
 
     /* .modal-header .btn-close:hover {
-                background-color: rgba(0, 0, 0, 0.05);
-                opacity: 1;
-            } */
+                  background-color: rgba(0, 0, 0, 0.05);
+                  opacity: 1;
+              } */
 
     .modal-title {
       font-weight: 600;
@@ -737,14 +737,14 @@
                 <label class="form-label" for="add_no_hp">No. HP <span class="text-danger">*</span></label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bx bx-phone"></i></span>
-                  <input type="text" name="no_hp" class="form-control" id="add_no_hp" placeholder="08xxxxxxxxxx" required>
+                  <input type="text" name="no_hp" class="form-control" id="add_no_hp" placeholder="628..." required>
                 </div>
               </div>
               <div class="col-md-6 form-group">
                 <label class="form-label" for="add_email">Email <span class="text-danger">*</span></label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bx bx-envelope"></i></span>
-                  <input type="email" name="email" class="form-control" id="add_email" placeholder="contoh@email.com">
+                  <input type="email" name="email" class="form-control" id="add_email" placeholder="contoh@niscala.net" required>
                 </div>
               </div>
               <div class="col-md-6 form-group">
@@ -767,7 +767,7 @@
                 <label class="form-label" for="add_gps">Titik Lokasi <span class="text-danger">*</span></label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bx bx-map"></i></span>
-                  <input type="text" name="gps" class="form-control" id="add_gps"
+                  <input type="text" name="gps" required class="form-control" id="add_gps"
                     placeholder="https://maps.google.com/...">
                 </div>
                 <small class="form-text">Masukkan link Google Maps lokasi pelanggan</small>
@@ -831,7 +831,7 @@
               </div>
               <div class="col-sm-6 form-group">
                 <label class="form-label">Nomor Hp<strong class="text-danger"> *</strong></label>
-                <input type="text" class="form-control" name="no_hp" placeholder="08123456789" required>
+                <input type="text" class="form-control" name="no_hp" id="add_no_hp_perusahaan" placeholder="628..." required>
               </div>
               <div class="col-sm-6 form-group">
                 <label class="form-label">Titik Lokasi / Google Maps<strong class="text-danger"> *</strong></label>
@@ -1089,6 +1089,47 @@
       modalAdd.addEventListener('hidden.bs.modal', function () {
         batalForm();
       });
+
+      // Formatter untuk Nomor HP/WA modal tambah antrian agar berformat 62 tanpa karakter/spasi
+      const formatNoHp = function (inputEl) {
+        if (!inputEl) return;
+        const handler = function () {
+          let val = this.value.replace(/\D/g, ''); // Hanya simpan angka
+          if (val.startsWith('0')) {
+            val = '62' + val.substring(1);
+          }
+          this.value = val;
+        };
+        inputEl.addEventListener('input', handler);
+        inputEl.addEventListener('blur', handler);
+      };
+
+      formatNoHp(document.getElementById('add_no_hp'));
+      formatNoHp(document.getElementById('add_no_hp_perusahaan'));
+
+      // Auto-append @niscala.net untuk Email
+      const emailInput = document.getElementById('add_email');
+      if (emailInput) {
+        const formatEmail = function () {
+          let val = emailInput.value.trim();
+          if (val) {
+            const atIndex = val.indexOf('@');
+            if (atIndex > -1) {
+              val = val.substring(0, atIndex);
+            }
+            emailInput.value = val + '@niscala.net';
+          }
+        };
+        emailInput.addEventListener('blur', formatEmail);
+        
+        // Format sebelum submit agar terisi dengan benar
+        const form = emailInput.closest('form');
+        if (form) {
+          form.addEventListener('submit', function () {
+            formatEmail();
+          });
+        }
+      }
     });
 
     // Format Rupiah

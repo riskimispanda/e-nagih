@@ -33,11 +33,11 @@
                   <div class="col-12 border-bottom pb-3">
                     <label class="form-label d-block text-primary fw-bold">Status Pelanggan (Pengaturan Prorata)</label>
                     <div class="form-check form-check-inline mt-1">
-                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_baru" value="baru" checked>
+                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_baru" value="baru" {{ old('jenis_pelanggan', 'lama') == 'baru' ? 'checked' : '' }}>
                       <label class="form-check-label" for="pelanggan_baru">Pelanggan Baru (Berlaku Prorata)</label>
                     </div>
                     <div class="form-check form-check-inline mt-1">
-                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_lama" value="lama">
+                      <input class="form-check-input" type="radio" name="jenis_pelanggan" id="pelanggan_lama" value="lama" {{ old('jenis_pelanggan', 'lama') == 'lama' ? 'checked' : '' }}>
                       <label class="form-check-label" for="pelanggan_lama">Pelanggan Lama (Tanpa Prorata)</label>
                     </div>
                   </div>
@@ -60,7 +60,7 @@
                     <div class="input-group input-group-merge">
                       <span class="input-group-text"><i class="bx bx-phone"></i></span>
                       <input type="text" class="form-control @error('no_hp') is-invalid @enderror" id="no_hp" name="no_hp"
-                        value="{{ old('no_hp', $pelanggan->no_hp) }}" placeholder="08..." required>
+                        value="{{ old('no_hp', $pelanggan->no_hp) }}" placeholder="628..." required>
                       @error('no_hp')
                         <div class="invalid-feedback">{{ $message }}</div>
                       @enderror
@@ -94,6 +94,25 @@
                         <small class="text-muted d-block mb-1">Foto saat ini:</small>
                         <a href="{{ asset($pelanggan->identitas) }}" target="_blank">
                           <img src="{{ asset($pelanggan->identitas) }}" alt="Identitas Pelanggan" class="img-thumbnail" style="max-height: 100px;">
+                        </a>
+                      </div>
+                    @endif
+                  </div>
+
+                  {{-- Foto Rumah --}}
+                  <div class="col-12">
+                    <label class="form-label" for="foto_rumah">Upload Foto Rumah (Opsional)</label>
+                    <div class="input-group">
+                       <input type="file" class="form-control @error('foto_rumah') is-invalid @enderror" id="foto_rumah" name="foto_rumah" accept="image/*">
+                       @error('foto_rumah')
+                         <div class="invalid-feedback">{{ $message }}</div>
+                       @enderror
+                    </div>
+                    @if($pelanggan->foto_rumah)
+                      <div class="mt-2">
+                        <small class="text-muted d-block mb-1">Foto saat ini:</small>
+                        <a href="{{ asset($pelanggan->foto_rumah) }}" target="_blank">
+                          <img src="{{ asset($pelanggan->foto_rumah) }}" alt="Foto Rumah Pelanggan" class="img-thumbnail" style="max-height: 100px;">
                         </a>
                       </div>
                     @endif
@@ -332,6 +351,21 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
+      // Formatter untuk Nomor HP/WA agar berformat 62 tanpa karakter/spasi
+      const noHpInput = document.getElementById('no_hp');
+      if (noHpInput) {
+        const formatNoHp = function () {
+          let val = noHpInput.value.replace(/\D/g, ''); // Hanya simpan angka
+          if (val.startsWith('0')) {
+            val = '62' + val.substring(1);
+          }
+          noHpInput.value = val;
+        };
+
+        noHpInput.addEventListener('input', formatNoHp);
+        noHpInput.addEventListener('blur', formatNoHp);
+      }
+
       // Initialize TomSelect for all selects that should be searchable
       const selectConfigs = [
         '#paket', '#router', '#olt', '#odc', '#odp', '#bts', '#perangkat', '#pic', '#media', '#koneksi'

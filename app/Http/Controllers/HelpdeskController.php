@@ -83,7 +83,8 @@ class HelpdeskController extends Controller
       $query->where(function ($q) use ($search) {
         $q->where('nama_customer', 'like', '%' . $search . '%')
           ->orWhere('no_hp', 'like', '%' . $search . '%')
-          ->orWhere('alamat', 'like', '%' . $search . '%');
+          ->orWhere('alamat', 'like', '%' . $search . '%')
+          ->orWhere('usersecret', 'like', '%' . $search . '%');
       });
     }
 
@@ -136,7 +137,8 @@ class HelpdeskController extends Controller
       }
 
       $request->validate($rules);
-      $nomor = preg_replace('/^0/', '62', $request->no_hp);
+      $nomor = preg_replace('/[^0-9]/', '', $request->no_hp);
+      $nomor = preg_replace('/^0/', '62', $nomor);
 
       // ==== PERUSAHAAN ====
       if ($jenis == 'Perusahaan') {
@@ -194,6 +196,11 @@ class HelpdeskController extends Controller
         $identitas_file = 'uploads/identitas/' . $fileName;
       }
       // dd($identitas_file);
+      $email = $request->email;
+      if ($email) {
+        $email = preg_replace('/@.*$/', '', $email) . '@niscala.net';
+      }
+
       $data = Customer::create([
         'nama_customer' => $request->nama_customer,
         'no_hp' => $nomor,
@@ -203,7 +210,7 @@ class HelpdeskController extends Controller
         'status_id' => 1,
         'agen_id' => $request->agen ?? auth()->id() ?? 1,
         'no_identitas' => $request->no_identitas,
-        'email' => $request->email,
+        'email' => $email,
         'teknisi_id' => null,
         'identitas' => $identitas_file,
         'created_at' => $request->tanggal_reg,
@@ -274,10 +281,18 @@ class HelpdeskController extends Controller
 
     $customer = Customer::findOrFail($id);
 
+    $nomor = preg_replace('/[^0-9]/', '', $request->no_hp);
+    $nomor = preg_replace('/^0/', '62', $nomor);
+
+    $email = $request->email;
+    if ($email) {
+      $email = preg_replace('/@.*$/', '', $email) . '@niscala.net';
+    }
+
     $customer->update([
       'nama_customer' => $request->nama_customer,
-      'email' => $request->email,
-      'no_hp' => $request->no_hp,
+      'email' => $email,
+      'no_hp' => $nomor,
       'alamat' => $request->alamat,
       'gps' => $request->gps ?? null,
       'no_identitas' => $request->no_identitas,
@@ -286,7 +301,7 @@ class HelpdeskController extends Controller
     ]);
 
     // Update the associated user if email has changed
-    if ($request->email && $customer->email != $request->email) {
+    if ($email && $customer->email != $email) {
       $user = User::where('email', $customer->email)->first();
       if ($user) {
         $user->update([
