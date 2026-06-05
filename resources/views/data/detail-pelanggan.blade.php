@@ -142,21 +142,10 @@
         <div class="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
           @if($customer->gps)
             @php
-              // Check if GPS field is a URL or coordinates
+              // Check if GPS field is a URL or coordinates/query
               $gpsValue = $customer->gps;
-              $gpsUrl = $gpsValue;
-
-              // If it's not a URL (doesn't start with http/https), assume it's coordinates
-              if (!preg_match('/^https?:\/\//i', $gpsValue)) {
-                // Remove any spaces and check if it's in coordinate format (lat,lng)
-                $cleanCoords = trim($gpsValue);
-
-                // Check if it matches coordinate pattern (e.g., "-7.123,110.456" or "-7.123, 110.456")
-                if (preg_match('/^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/', $cleanCoords)) {
-                  // Convert to Google Maps URL
-                  $gpsUrl = 'https://www.google.com/maps?q=' . str_replace(' ', '', $cleanCoords);
-                }
-              }
+              $isLink = preg_match('/^https?:\/\//i', $gpsValue);
+              $gpsUrl = $isLink ? $gpsValue : 'https://www.google.com/maps?q=' . urlencode(trim($gpsValue));
             @endphp
             <a href="{{ $gpsUrl }}" target="_blank"
               class="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl text-white font-medium transition-all duration-200 border border-white/20 group">
