@@ -269,6 +269,19 @@ class DataControllerApi extends Controller
       }
       $allData = $allDataQuery->count();
 
+      // Analisis ketidakcocokan (Paket Fasum dengan status_id di luar [3, 4, 9])
+      $fasumDiluarStatusQuery = Customer::where('paket_id', 11)
+          ->whereNotIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at');
+      $fasumDiluarStatusCount = $fasumDiluarStatusQuery->count();
+      $fasumDiluarStatusList = $fasumDiluarStatusQuery->get(['id', 'nama_customer', 'status_id'])->map(function($c) {
+          return [
+              'id' => $c->id,
+              'nama' => $c->nama_customer,
+              'status_id' => $c->status_id
+          ];
+      });
+
       return response()->json([
           'success' => true,
           'filter' => [
@@ -298,6 +311,11 @@ class DataControllerApi extends Controller
               'non_aktif' => $pelangganNonAktif,
               'paket_fasum' => $pelangganFasum,
               'total_aktif_dan_non_aktif' => $allData
+          ],
+          'analisis_discrepancy' => [
+              'jumlah_fasum_status_diluar_3_4_9' => $fasumDiluarStatusCount,
+              'pelanggan' => $fasumDiluarStatusList,
+              'penjelasan' => 'Pelanggan Fasum ini dihitung di paket_fasum karena paket_id=11, tetapi TIDAK dihitung di total_aktif_dan_non_aktif karena status_id-nya di luar [3, 4, 9] (misal status 1, 2, atau 5).'
           ]
       ]);
   }
