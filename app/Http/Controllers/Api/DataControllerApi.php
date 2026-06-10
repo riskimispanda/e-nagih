@@ -212,7 +212,7 @@ class DataControllerApi extends Controller
       // Pelanggan belum lunas karena INVOICE-NYA BELUM TERBIT bulan ini (atau invoice terakhir masih bulan Mei atau lebih lama)
       // Kita hitung secara komplemen: Total Aktif Wajib Bayar - (Sudah Bayar + Belum Bayar yang Terbit)
       $unpaidInvoiceBelumTerbit = $totalCustomerAktif - ($paidOptionA + $unpaidInvoiceTerbit);
-      
+
       // Total Belum Bayar (Gabungan Terbit & Belum Terbit)
       $totalUnpaidOptionA = $unpaidInvoiceTerbit + $unpaidInvoiceBelumTerbit;
 
@@ -228,7 +228,7 @@ class DataControllerApi extends Controller
                   $query->where('agen_id', $agen_id);
               }
           });
-      
+
       // Salin query sebelum melakukan join
       $paidOptionB = clone $paidOptionBQuery;
       $paidOptionBCount = $paidOptionB->join('invoice', 'pembayaran.invoice_id', '=', 'invoice.id')
@@ -248,7 +248,7 @@ class DataControllerApi extends Controller
       // Pelanggan Non-Aktif (Status 9 = Isolir, excluding Paket 11 Fasum)
       $pelangganNonAktifQuery = Customer::where('status_id', 9)
           ->whereNot('paket_id', 11)
-          ->whereNull('deleted_at');
+          ->whereNull('deleted_at')->orderBy('updated_at','desc');
       if ($agen_id) {
           $pelangganNonAktifQuery->where('agen_id', $agen_id);
       }
