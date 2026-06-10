@@ -180,24 +180,21 @@ class DataControllerApi extends Controller
       }
       $totalCustomerAktif = $customerAktifQuery->count();
 
-      // 1. Cek customer isolir dari invoice bulan ini
+      // 1. Cek customer isolir dari invoice (Global / All Time)
       $customerIsolirInvoiceQuery = Customer::where('status_id', 9)
           ->whereNull('deleted_at')
           ->whereNot('paket_id', 11)
-          ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
-              $query->where('status_id', 7)
-                  ->whereMonth('jatuh_tempo', $bulan)
-                  ->whereYear('jatuh_tempo', $tahun);
+          ->whereHas('invoice', function ($query) {
+              $query->where('status_id', 7);
           });
       if ($agen_id) {
           $customerIsolirInvoiceQuery->where('agen_id', $agen_id);
       }
       $totalCustomerIsolirInvoice = $customerIsolirInvoiceQuery->count();
 
-      $customerIsolirInvoiceList = $customerIsolirInvoiceQuery->with(['paket', 'invoice' => function ($query) use ($bulan, $tahun) {
+      $customerIsolirInvoiceList = $customerIsolirInvoiceQuery->with(['paket', 'invoice' => function ($query) {
           $query->where('status_id', 7)
-              ->whereMonth('jatuh_tempo', $bulan)
-              ->whereYear('jatuh_tempo', $tahun);
+              ->orderBy('jatuh_tempo', 'asc');
       }])->get()->map(function($c) {
           $invoice = $c->invoice->first();
           return [
