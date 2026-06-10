@@ -343,7 +343,7 @@ class DataController extends Controller
       });
     $belumBayar = $belumBayarQuery->distinct('customer_id')->count('customer_id');
 
-    $fasumQuery = Customer::where('paket_id', 11)->where('status_id', 3)->whereNull('deleted_at');
+    $fasumQuery = Customer::where('paket_id', 11)->whereIn('status_id', [3,4,9])->whereNull('deleted_at');
     if ($agen_id) {
       $fasumQuery->where('agen_id', $agen_id);
     }
