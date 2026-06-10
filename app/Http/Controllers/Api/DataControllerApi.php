@@ -238,6 +238,7 @@ class DataControllerApi extends Controller
       // 4. Statistik tambahan dari tabel customer
       // Pelanggan Aktif (Status 3 = Aktif, 4 = Maintenance, excluding Paket 11 Fasum)
       $pelangganAktifQuery = Customer::whereIn('status_id', [3, 4])
+          ->whereNot('paket_id', 11)
           ->whereNull('deleted_at');
       if ($agen_id) {
           $pelangganAktifQuery->where('agen_id', $agen_id);
