@@ -941,20 +941,62 @@ class KeuanganController extends Controller
     if ($agen_id) {
         $customersQueryForStats->where('agen_id', $agen_id);
     }
-    $allCustomersForStats = $customersQueryForStats->with(['paket', 'invoice' => function ($query) use ($targetMonth, $targetYear) {
-        $query->whereMonth('jatuh_tempo', $targetMonth)
-            ->whereYear('jatuh_tempo', $targetYear);
+    if ($search) {
+        $customersQueryForStats->where(function($q) use ($search) {
+            $q->where('nama_customer', 'like', '%' . $search . '%')
+              ->orWhereHas('paket', function($sub) use ($search) {
+                  $sub->where('nama_paket', 'like', '%' . $search . '%');
+              });
+        });
+    }
+
+    $allCustomersForStats = $customersQueryForStats->with(['paket', 'invoice' => function ($query) use ($month, $startDate, $endDate, $metode) {
+        if ($month && $month !== '' && $month !== null) {
+            $query->whereMonth('jatuh_tempo', $month)
+                ->whereYear('jatuh_tempo', Carbon::now()->year);
+        } elseif (($startDate && $startDate !== '') || ($endDate && $endDate !== '')) {
+            if ($startDate) {
+                $query->whereDate('jatuh_tempo', '>=', $startDate);
+            }
+            if ($endDate) {
+                $query->whereDate('jatuh_tempo', '<=', $endDate);
+            }
+        } else {
+            $query->whereMonth('jatuh_tempo', Carbon::now()->month)
+                ->whereYear('jatuh_tempo', Carbon::now()->year);
+        }
+
+        if ($metode) {
+            $query->whereHas('pembayaran', function($sub) use ($metode) {
+                $sub->where('metode_bayar', $metode);
+            });
+        }
     }])->get();
 
-    $totalSudahBayar = $allCustomersForStats->filter(function ($c) {
+    $totalSudahBayar = $allCustomersForStats->filter(function ($c) use ($metode) {
         $invoice = $c->invoice->first();
-        return $invoice && ($invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0));
+        if (!$invoice) {
+            return false;
+        }
+
+        if ($metode) {
+            $hasMatchingPayment = $invoice->pembayaran()->where('metode_bayar', $metode)->exists();
+            if (!$hasMatchingPayment) {
+                return false;
+            }
+        }
+
+        return $invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0);
     })->count();
 
-    $totalBelumBayarAktif = $allCustomersForStats->filter(function ($c) {
-        $invoice = $c->invoice->first();
-        return in_array($c->status_id, [3, 4]) && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
-    })->count();
+    if ($metode) {
+        $totalBelumBayarAktif = 0;
+    } else {
+        $totalBelumBayarAktif = $allCustomersForStats->filter(function ($c) {
+            $invoice = $c->invoice->first();
+            return in_array($c->status_id, [3, 4]) && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
+        })->count();
+    }
 
     $totalCustomer = $totalSudahBayar + $totalBelumBayarAktif;
 
