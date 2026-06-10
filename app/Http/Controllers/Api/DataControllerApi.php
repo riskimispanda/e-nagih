@@ -208,53 +208,40 @@ class DataControllerApi extends Controller
           ];
       });
 
+      $customersQuery = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNot('paket_id', 11)
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $customersQuery->where('agen_id', $agen_id);
+      }
+      $allCustomers = $customersQuery->with(['paket', 'invoice' => function ($query) use ($bulan, $tahun) {
+          $query->whereMonth('jatuh_tempo', $bulan)
+              ->whereYear('jatuh_tempo', $tahun);
+      }])->get();
+
       // 2. OPSI A: Berdasarkan Bulan Tagihan (Jatuh Tempo)
-      // Pelanggan lunas (Sudah Bayar) untuk tagihan bulan ini
-      $paidOptionAQuery = Invoice::where('status_id', 8)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->whereIn('status_id', [3, 4, 9])
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          });
-      $totalSudahBayar = $paidOptionAQuery->distinct('customer_id')->count('customer_id');
+      // Sudah Bayar (Lunas status 8 ATAU prorate)
+      $totalSudahBayar = $allCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return $invoice && ($invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0));
+      })->count();
 
       // Belum Bayar - Aktif (status 3, 4)
-      $unpaidAktifQuery = Invoice::where('status_id', 7)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->whereIn('status_id', [3, 4])
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          });
-      $totalBelumBayarAktif = $unpaidAktifQuery->distinct('customer_id')->count('customer_id');
+      $totalBelumBayarAktif = $allCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return in_array($c->status_id, [3, 4]) && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
+      })->count();
 
       // Belum Bayar - Isolir (status 9)
-      $unpaidIsolirQuery = Invoice::where('status_id', 7)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->where('status_id', 9)
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          });
-      $totalBelumBayarIsolir = $unpaidIsolirQuery->distinct('customer_id')->count('customer_id');
+      $totalBelumBayarIsolir = $allCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return $c->status_id == 9 && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
+      })->count();
 
-      // Belum Terbit (Komplemen)
-      $totalBelumTerbit = $totalCustomerAktif - ($totalSudahBayar + $totalBelumBayarAktif + $totalBelumBayarIsolir);
+      // Belum Terbit (Sejak tidak ada invoice terhitung belum bayar, diset ke 0 agar total_terdata sinkron)
+      $totalBelumTerbit = 0;
 
-      // Gabungan total Belum Bayar (untuk kompatibilitas visual jika diperlukan)
+      // Gabungan total Belum Bayar
       $totalUnpaidOptionA = $totalBelumBayarAktif + $totalBelumBayarIsolir + $totalBelumTerbit;
 
       // 3. OPSI B: Berdasarkan Bulan Transaksi (Tanggal Bayar)
@@ -385,86 +372,43 @@ class DataControllerApi extends Controller
       };
 
       // 1. Total customer aktif wajib bayar
-      $customerAktifQuery = Customer::with('status', 'paket')
-          ->whereIn('status_id', [3, 4, 9])
+      $customersQuery = Customer::whereIn('status_id', [3, 4, 9])
           ->whereNot('paket_id', 11)
           ->whereNull('deleted_at');
       if ($agen_id) {
-          $customerAktifQuery->where('agen_id', $agen_id);
+          $customersQuery->where('agen_id', $agen_id);
       }
-      $allActiveCustomers = $customerAktifQuery->get();
+      $allActiveCustomers = $customersQuery->with(['paket', 'status', 'invoice' => function ($query) use ($bulan, $tahun) {
+          $query->whereMonth('jatuh_tempo', $bulan)
+              ->whereYear('jatuh_tempo', $tahun);
+      }])->get();
 
-      // 2. Sudah Bayar (Opsi A)
-      $paidInvoices = Invoice::where('status_id', 8)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->whereIn('status_id', [3, 4, 9])
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          })
-          ->with(['customer.status', 'customer.paket'])
-          ->get();
-
-      $sudahBayarList = $paidInvoices->map(function ($invoice) use ($formatCustomer) {
-          return $formatCustomer($invoice->customer, $invoice);
+      // 2. Sudah Bayar (Lunas status 8 ATAU prorate)
+      $sudahBayarList = $allActiveCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return $invoice && ($invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0));
+      })->values()->map(function ($c) use ($formatCustomer) {
+          return $formatCustomer($c, $c->invoice->first());
       });
 
-      $sudahBayarCustomerIds = $paidInvoices->pluck('customer_id')->toArray();
-
-      // 3. Belum Bayar - Invoice Terbit (Aktif: status 3, 4)
-      $unpaidInvoicesAktif = Invoice::where('status_id', 7)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->whereIn('status_id', [3, 4])
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          })
-          ->with(['customer.status', 'customer.paket'])
-          ->get();
-
-      $belumBayarAktifList = $unpaidInvoicesAktif->map(function ($invoice) use ($formatCustomer) {
-          return $formatCustomer($invoice->customer, $invoice);
+      // 3. Belum Bayar - Aktif (status 3, 4)
+      $belumBayarAktifList = $allActiveCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return in_array($c->status_id, [3, 4]) && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
+      })->values()->map(function ($c) use ($formatCustomer) {
+          return $formatCustomer($c, $c->invoice->first());
       });
 
-      $belumBayarAktifCustomerIds = $unpaidInvoicesAktif->pluck('customer_id')->toArray();
-
-      // 3b. Belum Bayar - Invoice Terbit (Isolir: status 9)
-      $unpaidInvoicesIsolir = Invoice::where('status_id', 7)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->where('status_id', 9)
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          })
-          ->with(['customer.status', 'customer.paket'])
-          ->get();
-
-      $belumBayarIsolirList = $unpaidInvoicesIsolir->map(function ($invoice) use ($formatCustomer) {
-          return $formatCustomer($invoice->customer, $invoice);
+      // 3b. Belum Bayar - Isolir (status 9)
+      $belumBayarIsolirList = $allActiveCustomers->filter(function ($c) {
+          $invoice = $c->invoice->first();
+          return $c->status_id == 9 && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
+      })->values()->map(function ($c) use ($formatCustomer) {
+          return $formatCustomer($c, $c->invoice->first());
       });
 
-      $belumBayarIsolirCustomerIds = $unpaidInvoicesIsolir->pluck('customer_id')->toArray();
-
-      // 4. Belum Terbit (Komplemen)
-      $excludeIds = array_merge($sudahBayarCustomerIds, $belumBayarAktifCustomerIds, $belumBayarIsolirCustomerIds);
-      
-      $belumTerbitList = $allActiveCustomers->filter(function ($customer) use ($excludeIds) {
-          return !in_array($customer->id, $excludeIds);
-      })->values()->map(function ($customer) use ($formatCustomer) {
-          return $formatCustomer($customer);
-      });
+      // 4. Belum Terbit (Sejak tidak ada invoice terhitung belum bayar, diset ke empty array agar summary_counts sinkron)
+      $belumTerbitList = collect([]);
 
       return response()->json([
           'success' => true,
@@ -485,8 +429,8 @@ class DataControllerApi extends Controller
               'belum_bayar_aktif' => $belumBayarAktifList,
               'belum_bayar_isolir' => $belumBayarIsolirList,
               'belum_terbit' => $belumTerbitList,
-              'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->map(function ($customer) use ($formatCustomer) {
-                  return $formatCustomer($customer);
+              'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->map(function ($c) use ($formatCustomer) {
+                  return $formatCustomer($c, $c->invoice->first());
               })
           ]
       ]);
