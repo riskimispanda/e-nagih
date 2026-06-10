@@ -261,7 +261,7 @@ class DataControllerApi extends Controller
       $pelangganFasum = $pelangganFasumQuery->count();
 
       // Total data pelanggan (Status 3, 4, 9)
-      $allDataQuery = Customer::whereIn('status_id', [3, 4, 9])
+      $allDataQuery = Customer::whereIn('status_id', [3, 4, 9])->whereNot('paket_id', 11)
           ->whereNull('deleted_at');
       if ($agen_id) {
           $allDataQuery->where('agen_id', $agen_id);
