@@ -309,6 +309,26 @@ class DataControllerApi extends Controller
           ];
       });
 
+      $globalIsolirIds = $customerIsolirInvoiceQuery->pluck('id')->toArray();
+      $customerIsolirSudahBayarList = $allCustomers->filter(function ($c) use ($globalIsolirIds) {
+          if (!in_array($c->id, $globalIsolirIds)) {
+              return false;
+          }
+          $invoice = $c->invoice->first();
+          return $invoice && ($invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0));
+      })->values()->map(function($c) {
+          $invoice = $c->invoice->first();
+          return [
+              'id' => $c->id,
+              'nama' => $c->nama_customer,
+              'status_id' => $c->status_id,
+              'paket' => $c->paket->nama_paket ?? 'N/A',
+              'harga_paket' => $c->paket->harga ?? 0,
+              'tagihan_invoice_bulan_ini' => $invoice ? $invoice->tagihan : 0,
+              'status_invoice_bulan_ini' => $invoice ? $invoice->status_id : null,
+          ];
+      });
+
       return response()->json([
           'success' => true,
           'filter' => [
@@ -341,6 +361,10 @@ class DataControllerApi extends Controller
           'customer_isolir_dari_invoice' => [
               'count' => $totalCustomerIsolirInvoice,
               'pelanggan' => $customerIsolirInvoiceList
+          ],
+          'customer_isolir_sudah_bayar_bulan_ini' => [
+              'count' => $customerIsolirSudahBayarList->count(),
+              'pelanggan' => $customerIsolirSudahBayarList
           ],
           'analisis_discrepancy' => [
               'jumlah_fasum_status_diluar_3_4_9' => $fasumDiluarStatusCount,
