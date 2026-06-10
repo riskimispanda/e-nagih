@@ -355,6 +355,112 @@ class DataControllerApi extends Controller
       ]);
   }
 
+  public function detailCounting(Request $request)
+  {
+      $bulan = $request->input('month', Carbon::now()->month);
+      $tahun = $request->input('year', Carbon::now()->year);
+      $agen_id = $request->input('agen_id');
+
+      // Helper function to format customer details
+      $formatCustomer = function ($customer, $invoice = null) {
+          return [
+              'id' => $customer->id,
+              'nama' => $customer->nama_customer,
+              'no_hp' => $customer->no_hp,
+              'status_id' => $customer->status_id,
+              'status_name' => $customer->status->nama_status ?? 'N/A',
+              'paket' => $customer->paket->nama_paket ?? 'N/A',
+              'harga_paket' => $customer->paket->harga ?? 0,
+              'tagihan_invoice' => $invoice ? $invoice->tagihan : null,
+              'jatuh_tempo' => $invoice ? Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') : null,
+          ];
+      };
+
+      // 1. Total customer aktif wajib bayar
+      $customerAktifQuery = Customer::with('status', 'paket')
+          ->whereIn('status_id', [3, 4, 9])
+          ->whereNot('paket_id', 11)
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $customerAktifQuery->where('agen_id', $agen_id);
+      }
+      $allActiveCustomers = $customerAktifQuery->get();
+
+      // 2. Sudah Bayar (Opsi A)
+      $paidInvoices = Invoice::where('status_id', 8)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->whereHas('customer', function ($query) use ($agen_id) {
+              $query->whereNull('deleted_at')
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          })
+          ->with(['customer.status', 'customer.paket'])
+          ->get();
+
+      $sudahBayarList = $paidInvoices->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      });
+
+      $sudahBayarCustomerIds = $paidInvoices->pluck('customer_id')->toArray();
+
+      // 3. Belum Bayar - Invoice Terbit
+      $unpaidInvoices = Invoice::where('status_id', 7)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->whereHas('customer', function ($query) use ($agen_id) {
+              $query->whereNull('deleted_at')
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          })
+          ->with(['customer.status', 'customer.paket'])
+          ->get();
+
+      $belumBayarInvoiceTerbitList = $unpaidInvoices->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      });
+
+      $belumBayarInvoiceTerbitCustomerIds = $unpaidInvoices->pluck('customer_id')->toArray();
+
+      // 4. Belum Bayar - Invoice Belum Terbit (Komplemen)
+      $excludeIds = array_merge($sudahBayarCustomerIds, $belumBayarInvoiceTerbitCustomerIds);
+      
+      $belumTerbitList = $allActiveCustomers->filter(function ($customer) use ($excludeIds) {
+          return !in_array($customer->id, $excludeIds);
+      })->values()->map(function ($customer) use ($formatCustomer) {
+          return $formatCustomer($customer);
+      });
+
+      return response()->json([
+          'success' => true,
+          'filter' => [
+              'bulan' => (int)$bulan,
+              'tahun' => (int)$tahun,
+              'agen_id' => $agen_id ? (int)$agen_id : null
+          ],
+          'summary_counts' => [
+              'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->count(),
+              'sudah_bayar' => $sudahBayarList->count(),
+              'belum_bayar_invoice_terbit' => $belumBayarInvoiceTerbitList->count(),
+              'belum_bayar_invoice_belum_terbit' => $belumTerbitList->count(),
+          ],
+          'details' => [
+              'sudah_bayar' => $sudahBayarList,
+              'belum_bayar_invoice_terbit' => $belumBayarInvoiceTerbitList,
+              'belum_bayar_invoice_belum_terbit' => $belumTerbitList,
+              'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->map(function ($customer) use ($formatCustomer) {
+                  return $formatCustomer($customer);
+              })
+          ]
+      ]);
+  }
+
   public function generateFasumInvoices()
   {
       try {
