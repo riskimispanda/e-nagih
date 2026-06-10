@@ -165,327 +165,104 @@ class DataControllerApi extends Controller
   }
 
 
-  public function debugging()
+  public function debugging(Request $request)
   {
-      $totalCustomer = Customer::whereIn('status_id', [3, 4, 9])->whereNull('deleted_at')->count();
-      $totalNonAktif = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
-      $totalAktif = Customer::whereIn('status_id',[3,4])->whereNot('paket_id', 11)->whereNull('deleted_at')->count();
+      $bulan = $request->input('month', Carbon::now()->month);
+      $tahun = $request->input('year', Carbon::now()->year);
+      $agen_id = $request->input('agen_id');
 
-      // Customer yang memiliki invoice (sudah ada di kode sebelumnya)
-      $customersWithInvoice = Invoice::select('invoice.customer_id')
-          ->join('customer', 'invoice.customer_id', '=', 'customer.id')
-          ->whereIn('customer.status_id', [3, 4, 9])
-          ->whereNull('customer.deleted_at')
-          ->distinct()
-          ->count('invoice.customer_id');
-
-      // Customer yang TIDAK memiliki invoice
-      $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
-          ->whereNull('deleted_at')
-          ->whereNotExists(function ($query) {
-              $query->select(DB::raw(1))
-                    ->from('invoice')
-                    ->whereColumn('invoice.customer_id', 'customer.id');
-          })
-          ->count();
-
-      // Customer yang memiliki invoice
-      $customersWithInvoice = Invoice::select('invoice.customer_id')
-          ->join('customer', 'invoice.customer_id', '=', 'customer.id')
-          ->whereIn('customer.status_id', [3, 4, 9])
-          ->whereNull('customer.deleted_at')
-          ->distinct()
-          ->count('invoice.customer_id');
-
-      // Customer yang TIDAK memiliki invoice
-      $customersWithoutInvoice = Customer::whereIn('status_id', [3, 4, 9])
-          ->whereNull('deleted_at')
-          ->whereNotExists(function ($query) {
-              $query->select(DB::raw(1))
-                    ->from('invoice')
-                    ->whereColumn('invoice.customer_id', 'customer.id');
-          })
-          ->count();
-
-      // FINAL SOLUTION: Gunakan AGGREGATE dari semua customer aktif
-      // Total customer yang sudah bayar bulan ini
-      $customersPaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
-          ->whereNull('deleted_at')
-          ->whereHas('invoice', function ($query) {
-              $query->where('status_id', 8)
-                    ->whereMonth('created_at', Carbon::now()->month)
-                    ->whereYear('created_at', Carbon::now()->year);
-          })
-          ->count();
-
-      // Total customer yang belum bayar bulan ini
-      $customersUnpaidThisMonth = Customer::whereIn('status_id', [3, 4, 9])
-          ->whereNull('deleted_at')
-          ->whereDoesntHave('invoice', function ($query) {
-              $query->where('status_id', 8)
-                    ->whereMonth('created_at', Carbon::now()->month)
-                    ->whereYear('created_at', Carbon::now()->year);
-          })
-          ->count();
-
-
-
-      // DARI CUSTOMER - Semua customer yang punya invoice belum bayar (status_id=7)
-      $invoiceUnpaidAll = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereHas('invoice', function ($query) {
-                          $query->where('status_id', 7);
-                      })
-                      ->count();
-
-      // DARI CUSTOMER - Customer yang punya invoice belum bayar bulan ini
-      $invoiceUnpaid = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereHas('invoice', function ($query) {
-                          $query->where('status_id', 7)
-                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
-                      })
-                      ->count();
-
-      // DARI CUSTOMER - Semua customer yang punya invoice sudah bayar (status_id=8)
-      $invoicePaidAll = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereHas('invoice', function ($query) {
-                          $query->where('status_id', 8);
-                      })
-                      ->count();
-
-      // DARI CUSTOMER - Customer yang punya invoice sudah bayar bulan ini
-      $invoicePaid = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereHas('invoice', function ($query) {
-                          $query->where('status_id', 8)
-                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
-                      })
-                      ->count();
-
-      // Customer dengan invoice jatuh tempo bulan ini status=7
-      $invoiceUnpaid = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereHas('invoice', function ($query) {
-                          $query->where('status_id', 7)
-                                ->whereMonth('jatuh_tempo', Carbon::now()->month);
-                      })
-                      ->count();
-
-      // Customer tanpa invoice jatuh tempo bulan ini
-      $customersWithoutDueDateInvoice = Customer::withTrashed()
-                      ->whereIn('status_id',[3,4,9])
-                      ->whereDoesntHave('invoice', function ($query) {
-                          $query->whereMonth('jatuh_tempo', Carbon::now()->month);
-                      })
-                      ->count();
-
-      $fasumWithoutInvoice = Customer::whereIn('status_id', [3,4,9])->whereDoesntHave('invoice')->whereNull('deleted_at')->count();
-      $fasumWithInvoice = Customer::whereIn('status_id', [3,4,9])->where('paket_id', 11)->whereHas('invoice')->whereNull('deleted_at')->count();
-      $fasumAktif = Customer::where('status_id', 3)->whereNull('deleted_at')->count();
-
-      $bulan = 12;
-      $tahun = 2025;
-      $coba = Customer::whereIn('status_id', [3,4,9])
-          ->whereNull('deleted_at')
+      // 1. Total customer aktif wajib bayar (status 3, 4, 9, paket != 11, deleted_at is null)
+      $customerAktifQuery = Customer::whereIn('status_id', [3, 4, 9])
           ->whereNot('paket_id', 11)
-          ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
-              $query->whereMonth('jatuh_tempo', $bulan)
-              ->whereYear('jatuh_tempo', $tahun)->whereIn('status_id', [7,8]);
-          })
-          ->count();
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $customerAktifQuery->where('agen_id', $agen_id);
+      }
+      $totalCustomerAktif = $customerAktifQuery->count();
 
-      $blokir = Customer::where('status_id', 9)->whereNull('deleted_at')->count();
-
-
-      $customerStatusFilter = [3, 4, 9]; // Include status 4
-
-      $invoiceWithRefPembayaran = Invoice::where('status_id', 8)
-          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+      // 2. OPSI A: Berdasarkan Bulan Tagihan (Jatuh Tempo)
+      // Pelanggan lunas (Sudah Bayar) untuk tagihan bulan ini
+      $paidOptionAQuery = Invoice::where('status_id', 8)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->whereHas('customer', function ($query) use ($agen_id) {
               $query->whereNull('deleted_at')
-                    ->whereIn('status_id', $customerStatusFilter)
-                    ->whereNot('paket_id', 11);
-          })
-          ->whereHas('pembayaran', function ($query) use ($bulan) {
-              $currentMonth = $bulan ?? Carbon::now()->month;
-              $query->whereMonth('tanggal_bayar', $currentMonth)
-                    ->whereYear('tanggal_bayar', Carbon::now()->year);
-          })
-          ->distinct('customer_id')
-          ->count('customer_id');
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          });
+      $paidOptionA = $paidOptionAQuery->distinct('customer_id')->count('customer_id');
 
-      $customerStatusFilter = [3, 4, 9]; // Include status 4
-
-      $invoicePaids = Invoice::where('status_id', 8)
-          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+      // Pelanggan belum lunas (Belum Bayar) untuk tagihan bulan ini
+      $unpaidOptionAQuery = Invoice::where('status_id', 7)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->whereHas('customer', function ($query) use ($agen_id) {
               $query->whereNull('deleted_at')
-                    ->whereIn('status_id', $customerStatusFilter)
-                    ->whereNot('paket_id', 11);
-          })
-          ->whereHas('pembayaran', function ($query) use ($bulan) {
-            $query->whereMonth('tanggal_bayar', $bulan)
-                  ->whereYear('tanggal_bayar', Carbon::now()->year);
-          })
-          ->distinct('customer_id')
-          ->count('customer_id');
-      $invoiceUnpaids = Invoice::where('status_id', 7)
-          ->whereHas('customer', function ($query) use ($customerStatusFilter) {
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          });
+      $unpaidOptionA = $unpaidOptionAQuery->distinct('customer_id')->count('customer_id');
+
+      // 3. OPSI B: Berdasarkan Bulan Transaksi (Tanggal Bayar)
+      // Pelanggan lunas berdasarkan transaksi di bulan ini
+      $paidOptionBQuery = Pembayaran::whereMonth('tanggal_bayar', $bulan)
+          ->whereYear('tanggal_bayar', $tahun)
+          ->whereHas('invoice.customer', function ($query) use ($agen_id) {
               $query->whereNull('deleted_at')
-                    ->whereIn('status_id', $customerStatusFilter)
-                    ->whereNot('paket_id', 11);
-          })->whereYear('jatuh_tempo', Carbon::now()->year)
-          ->distinct('customer_id')
-          ->count('customer_id');
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          });
+      
+      // Salin query sebelum melakukan join
+      $paidOptionB = clone $paidOptionBQuery;
+      $paidOptionBCount = $paidOptionB->join('invoice', 'pembayaran.invoice_id', '=', 'invoice.id')
+          ->distinct('invoice.customer_id')
+          ->count('invoice.customer_id');
 
-
-      // FIX: Gunakan query yang paling akurat - validasi pembayaran aktual
-      $customerWithoutFasum = Invoice::where('status_id', 8)
-        ->whereHas('customer', function ($query) {
-          $query->whereNull('deleted_at')
-            ->whereIn('status_id', [3,4,9])
-            ->whereNot('paket_id', 11);
-        })
-        ->whereHas('pembayaran', function ($query) use ($bulan) {
-          $query->whereMonth('tanggal_bayar', $bulan)
-            ->whereYear('tanggal_bayar', Carbon::now()->year);
-        })
-        ->distinct('customer_id')
-        ->count('customer_id');
-
-      // Detail debugging untuk customerTanpaFasum
-      $debugCustomerTanpaFasum = [
-        'filter_used' => 'status_id = 3 AND paket_id != 11 AND deleted_at IS NULL',
-        'result' => $customerWithoutFasum,
-        'includes_deleted' => 'NO (whereNull deleted_at)',
-        'includes_status_4_9' => 'NO (hanya status 3)',
-        'fixed' => '✅ Logic diperbaiki - hanya customer yang sudah bayar'
-      ];
-
-      // Detail debugging untuk invoicePaids
-      $debugInvoicePaids = [
-        'filter_used' => 'status_id IN [3,4,9] AND paket_id != 11 AND deleted_at IS NULL',
-        'result' => $invoicePaids,
-        'includes_deleted' => 'NO (whereNull deleted_at)',
-        'includes_status_4_9' => 'YES (status 3,4,9)',
-        'additional_filter' => 'jatuh_tempo bulan Desember'
-      ];
-
-      // Analisis gap yang sebenarnya
-      $customerAktifAllStatus = Customer::whereIn('status_id', [3,4,9])
-        ->whereNot('paket_id', 11)
-        ->whereNull('deleted_at')
-        ->count();
-
-      // Customer aktif yang punya invoice paid bulan ini
-      $customerAktifWithPaidInvoice = Customer::whereIn('status_id', [3,4,9])
-        ->whereNot('paket_id', 11)
-        ->whereNull('deleted_at')
-        ->whereHas('invoice', function ($query) use ($bulan) {
-          $query->where('status_id', 8)
-            ->whereMonth('jatuh_tempo', $bulan);
-        })
-        ->count();
-
-      // Customer status 3 saja yang punya invoice paid bulan ini
-      $customerStatus3WithPaidInvoice = Customer::where('status_id', 3)
-        ->whereNot('paket_id', 11)
-        ->whereNull('deleted_at')
-        ->whereHas('invoice', function ($query) use ($bulan) {
-          $query->where('status_id', 8)
-            ->whereMonth('jatuh_tempo', $bulan);
-        })
-        ->count();
-
-      // Customer status 3 saja (termasuk yang dihapus)
-      $customerStatus3All = Customer::where('status_id', 3)
-        ->whereNot('paket_id', 11)
-        ->count();
-
-      $gapAnalysis = [
-        'customerTanpaFasum_vs_customerStatus3All' => [
-          'customerTanpaFasum' => $customerWithoutFasum,
-          'customerStatus3All' => $customerStatus3All,
-          'difference' => $customerWithoutFasum - $customerStatus3All,
-          'note' => 'Harusnya sama, filter sama'
-        ],
-        'customerTanpaFasum_vs_customerStatus3WithPaidInvoice' => [
-          'customerTanpaFasum' => $customerWithoutFasum,
-          'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
-          'difference' => $customerWithoutFasum - $customerStatus3WithPaidInvoice,
-          'note' => 'Gap yang wajar: customer yang belum bayar'
-        ],
-        'invoicePaids_vs_customerStatus3WithPaidInvoice' => [
-          'invoicePaids' => $invoicePaids,
-          'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
-          'difference' => $invoicePaids - $customerStatus3WithPaidInvoice,
-          'note' => 'Gap karena invoicePaids include status 4,9'
-        ],
-        'gap_42_analysis' => [
-          'customerAktif' => $fasumAktif,
-          'customerTanpaFasum' => $customerWithoutFasum,
-          'fasumDenganInvoice' => $fasumWithInvoice,
-          'gap_42' => $fasumAktif - $customerWithoutFasum - $fasumWithInvoice,
-          'description' => '42 customer aktif tapi tidak punya invoice paid bulan ini'
-        ],
-        'gap_42_analysis' => [
-          'customerAktif' => $fasumAktif,
-          'customerTanpaFasum' => $customerWithoutFasum,
-          'fasumDenganInvoice' => $fasumWithInvoice,
-          'gap_42' => $fasumAktif - $customerWithoutFasum - $fasumWithInvoice,
-          'description' => '42 customer aktif tapi tidak punya invoice paid bulan ini'
-        ],
-        'recommended_fix' => [
-          'use_customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
-          'description' => 'Ini adalah angka yang benar untuk customer aktif yang sudah bayar'
-        ]
-      ];
+      // Detail data pelanggan lunas Option A untuk pencocokan nama
+      $paidOptionADetails = $paidOptionAQuery->with('customer:id,nama_customer,no_hp,alamat')
+          ->get()
+          ->map(function ($inv) {
+              return [
+                  'customer_id' => $inv->customer_id,
+                  'nama' => $inv->customer->nama_customer ?? 'N/A',
+                  'no_hp' => $inv->customer->no_hp ?? 'N/A',
+                  'alamat' => $inv->customer->alamat ?? 'N/A',
+                  'tagihan' => $inv->tagihan
+              ];
+          })
+          ->values();
 
       return response()->json([
-        'success' => true,
-        'totalCustomer' => $totalCustomer,
-        'fasumDenganInvoice' => $fasumWithInvoice,
-        'customerTanpaFasum' => $customerWithoutFasum,
-        'customerAktifdanNonAktif' => $coba,
-        'customerAktif' => $fasumAktif,
-        'blokir' => $blokir,
-        'invoicePaids' => $invoicePaids,
-        'invoiceUnpaids' => $invoiceUnpaids,
-        // Debugging detail
-        'debug_analysis' => [
-          'customerTanpaFasum_debug' => [
-            'filter' => 'Invoice status 8 + Customer aktif + Pembayaran aktual bulan ini',
-            'result' => $customerWithoutFasum,
-            'includes_deleted' => 'NO',
-            'includes_status_4_9' => 'YES (3,4,9)',
-            'includes_only_paid' => 'YES (status 8 + pembayaran aktual)',
-            'validates_payment' => 'YES (whereHas pembayaran tanggal_bayar)',
-            'fixed' => '✅ Query paling akurat - validasi pembayaran aktual'
+          'success' => true,
+          'filter' => [
+              'bulan' => (int)$bulan,
+              'tahun' => (int)$tahun,
+              'agen_id' => $agen_id ? (int)$agen_id : null
           ],
-          'invoicePaids_debug' => [
-            'filter' => 'Invoice status 8 + Customer aktif + Pembayaran aktual bulan ini',
-            'result' => $invoicePaids,
-            'includes_deleted' => 'NO',
-            'includes_status_4_9' => 'YES',
-            'time_filter' => 'tanggal_bayar bulan Desember (sama dengan customerTanpaFasum)',
-            'fixed' => '✅ Standardized ke tanggal_bayar'
+          'summary' => [
+              'total_pelanggan_aktif_wajib_bayar' => $totalCustomerAktif,
+              'opsi_a_jatuh_tempo' => [
+                  'sudah_bayar_bulan_ini' => $paidOptionA,
+                  'belum_bayar_bulan_ini' => $unpaidOptionA,
+                  'total_terdata' => $paidOptionA + $unpaidOptionA,
+                  'selisih_dari_total_aktif' => $totalCustomerAktif - ($paidOptionA + $unpaidOptionA)
+              ],
+              'opsi_b_tanggal_bayar' => [
+                  'sudah_bayar_bulan_ini' => $paidOptionBCount,
+                  'keterangan' => 'Jumlah unik customer yang bayar riil di bulan ini'
+              ]
           ],
-          'gap_analysis' => [
-            'customerAktifAllStatus' => $customerAktifAllStatus,
-            'customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
-            'customerStatus3WithPaidInvoice' => $customerStatus3WithPaidInvoice,
-            'customerStatus3All' => $customerStatus3All,
-            'differences' => [
-              'customerTanpaFasum_vs_customerStatus3All' => $customerWithoutFasum - $customerStatus3All,
-              'customerTanpaFasum_vs_customerStatus3WithPaidInvoice' => $customerWithoutFasum - $customerStatus3WithPaidInvoice,
-              'invoicePaids_vs_customerStatus3WithPaidInvoice' => $invoicePaids - $customerStatus3WithPaidInvoice
-            ],
-            'recommended_fix' => [
-              'use_customerAktifWithPaidInvoice' => $customerAktifWithPaidInvoice,
-              'description' => 'Ini adalah angka yang benar untuk customer aktif yang sudah bayar'
-            ]
-          ]
-        ],
+          'detail_pelanggan_lunas_opsi_a' => $paidOptionADetails
       ]);
   }
 
