@@ -202,7 +202,7 @@ class DataController extends Controller
     }
     $bulananInstallasi = $bulananInstallasiQuery->count();
 
-    $nonAktifQuery = Customer::where('status_id', 9)->whereNull('deleted_at')->orderBy('updated_at', 'desc');
+    $nonAktifQuery = Customer::where('status_id', 9)->whereNot('paket_id', 11)->whereNull('deleted_at')->orderBy('updated_at', 'desc');
     $countPelangganAktifQuery = Customer::whereIn('status_id', [3, 4])->whereNot('paket_id', 11)->whereNull('deleted_at');
     $allDataQuery = Customer::whereIn('status_id', [3, 4, 9])->whereNot('paket_id', 11)->whereNull('deleted_at');
 
