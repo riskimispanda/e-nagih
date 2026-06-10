@@ -226,20 +226,6 @@ class DataControllerApi extends Controller
           });
       $paidOptionA = $paidOptionAQuery->distinct('customer_id')->count('customer_id');
 
-      // Pelanggan belum lunas (Belum Bayar) yang INVOICE-NYA SUDAH TERBIT (status_id = 7) untuk tagihan bulan ini
-      $unpaidInvoiceTerbitQuery = Invoice::where('status_id', 7)
-          ->whereMonth('jatuh_tempo', $bulan)
-          ->whereYear('jatuh_tempo', $tahun)
-          ->whereHas('customer', function ($query) use ($agen_id) {
-              $query->whereNull('deleted_at')
-                  ->whereIn('status_id', [3, 4, 9])
-                  ->whereNot('paket_id', 11);
-              if ($agen_id) {
-                  $query->where('agen_id', $agen_id);
-              }
-          });
-      $unpaidInvoiceTerbit = $unpaidInvoiceTerbitQuery->distinct('customer_id')->count('customer_id');
-
       // Hitung khusus invoice prorate yang belum bayar
       $unpaidProrateCountQuery = Invoice::where('status_id', 7)
           ->whereMonth('jatuh_tempo', $bulan)
@@ -256,16 +242,45 @@ class DataControllerApi extends Controller
           ->whereColumn('invoice.tagihan', '!=', 'paket.harga');
       $unpaidProrateCount = $unpaidProrateCountQuery->distinct('invoice.customer_id')->count('invoice.customer_id');
 
-      // Penyesuaian: Masukkan prorate belum bayar ke "Sudah Bayar" dan keluarkan dari "Belum Bayar - Invoice Terbit"
-      $paidOptionA = $paidOptionA + $unpaidProrateCount;
-      $unpaidInvoiceTerbit = $unpaidInvoiceTerbit - $unpaidProrateCount;
+      // Total Sudah Bayar (Lunas + Prorate Belum Bayar)
+      $totalSudahBayar = $paidOptionA + $unpaidProrateCount;
 
-      // Pelanggan belum lunas karena INVOICE-NYA BELUM TERBIT bulan ini (atau invoice terakhir masih bulan Mei atau lebih lama)
-      // Kita hitung secara komplemen: Total Aktif Wajib Bayar - (Sudah Bayar + Belum Bayar yang Terbit)
-      $unpaidInvoiceBelumTerbit = $totalCustomerAktif - ($paidOptionA + $unpaidInvoiceTerbit);
+      // Base query untuk invoice belum lunas (status 7) yang NON-PRORATE
+      $unpaidNonProrateQuery = Invoice::where('invoice.status_id', 7)
+          ->whereMonth('invoice.jatuh_tempo', $bulan)
+          ->whereYear('invoice.jatuh_tempo', $tahun)
+          ->join('paket', 'invoice.paket_id', '=', 'paket.id')
+          ->whereColumn('invoice.tagihan', '=', 'paket.harga');
 
-      // Total Belum Bayar (Gabungan Terbit & Belum Terbit)
-      $totalUnpaidOptionA = $unpaidInvoiceTerbit + $unpaidInvoiceBelumTerbit;
+      // Belum Bayar - Aktif (status 3, 4)
+      $unpaidAktifQuery = clone $unpaidNonProrateQuery;
+      $unpaidAktifQuery->whereHas('customer', function ($query) use ($agen_id) {
+          $query->whereNull('deleted_at')
+              ->whereIn('status_id', [3, 4])
+              ->whereNot('paket_id', 11);
+          if ($agen_id) {
+              $query->where('agen_id', $agen_id);
+          }
+      });
+      $totalBelumBayarAktif = $unpaidAktifQuery->distinct('invoice.customer_id')->count('invoice.customer_id');
+
+      // Belum Bayar - Isolir (status 9)
+      $unpaidIsolirQuery = clone $unpaidNonProrateQuery;
+      $unpaidIsolirQuery->whereHas('customer', function ($query) use ($agen_id) {
+          $query->whereNull('deleted_at')
+              ->where('status_id', 9)
+              ->whereNot('paket_id', 11);
+          if ($agen_id) {
+              $query->where('agen_id', $agen_id);
+          }
+      });
+      $totalBelumBayarIsolir = $unpaidIsolirQuery->distinct('invoice.customer_id')->count('invoice.customer_id');
+
+      // Belum Terbit (Komplemen)
+      $totalBelumTerbit = $totalCustomerAktif - ($totalSudahBayar + $totalBelumBayarAktif + $totalBelumBayarIsolir);
+
+      // Gabungan total Belum Bayar (untuk kompatibilitas visual jika diperlukan)
+      $totalUnpaidOptionA = $totalBelumBayarAktif + $totalBelumBayarIsolir + $totalBelumTerbit;
 
       // 3. OPSI B: Berdasarkan Bulan Transaksi (Tanggal Bayar)
       // Pelanggan lunas berdasarkan transaksi di bulan ini
@@ -343,14 +358,12 @@ class DataControllerApi extends Controller
               'total_pelanggan_aktif_wajib_bayar' => $totalCustomerAktif,
               'total_customer_prorate_aktif' => $totalCustomerProrate,
               'opsi_a_jatuh_tempo' => [
-                  'sudah_bayar_bulan_ini' => $paidOptionA,
-                  'belum_bayar_bulan_ini' => $totalUnpaidOptionA,
-                  'detail_belum_bayar' => [
-                      'invoice_terbit_belum_bayar' => $unpaidInvoiceTerbit,
-                      'invoice_belum_terbit_atau_mei' => $unpaidInvoiceBelumTerbit
-                  ],
-                  'total_terdata' => $paidOptionA + $totalUnpaidOptionA,
-                  'selisih_dari_total_aktif' => $totalCustomerAktif - ($paidOptionA + $totalUnpaidOptionA)
+                  'sudah_bayar_bulan_ini' => $totalSudahBayar,
+                  'belum_bayar_aktif' => $totalBelumBayarAktif,
+                  'belum_bayar_isolir' => $totalBelumBayarIsolir,
+                  'belum_terbit' => $totalBelumTerbit,
+                  'total_terdata' => $totalSudahBayar + $totalBelumBayarAktif + $totalBelumBayarIsolir + $totalBelumTerbit,
+                  'selisih_dari_total_aktif' => $totalCustomerAktif - ($totalSudahBayar + $totalBelumBayarAktif + $totalBelumBayarIsolir + $totalBelumTerbit)
               ],
               'opsi_b_tanggal_bayar' => [
                   'sudah_bayar_bulan_ini' => $paidOptionBCount,
@@ -459,15 +472,27 @@ class DataControllerApi extends Controller
           $unpaidProrateInvoices->pluck('customer_id')->toArray()
       );
 
-      // Hanya masukkan unpaid non-prorate invoices ke list "Belum Bayar - Invoice Terbit"
-      $belumBayarInvoiceTerbitList = $unpaidNonProrateInvoices->map(function ($invoice) use ($formatCustomer) {
-          return $formatCustomer($invoice->customer, $invoice);
+      // Bagi unpaid non-prorate invoices menjadi Aktif (status 3, 4) dan Isolir (status 9)
+      $unpaidNonProrateAktif = $unpaidNonProrateInvoices->filter(function ($invoice) {
+          return in_array($invoice->customer->status_id, [3, 4]);
       });
 
-      $belumBayarInvoiceTerbitCustomerIds = $unpaidNonProrateInvoices->pluck('customer_id')->toArray();
+      $unpaidNonProrateIsolir = $unpaidNonProrateInvoices->filter(function ($invoice) {
+          return $invoice->customer->status_id == 9;
+      });
 
-      // 4. Belum Bayar - Invoice Belum Terbit (Komplemen)
-      $excludeIds = array_merge($sudahBayarCustomerIds, $belumBayarInvoiceTerbitCustomerIds);
+      $belumBayarAktifList = $unpaidNonProrateAktif->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      })->values();
+
+      $belumBayarIsolirList = $unpaidNonProrateIsolir->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      })->values();
+
+      $unpaidNonProrateCustomerIds = $unpaidNonProrateInvoices->pluck('customer_id')->toArray();
+
+      // 4. Belum Terbit (Komplemen)
+      $excludeIds = array_merge($sudahBayarCustomerIds, $unpaidNonProrateCustomerIds);
       
       $belumTerbitList = $allActiveCustomers->filter(function ($customer) use ($excludeIds) {
           return !in_array($customer->id, $excludeIds);
@@ -485,13 +510,15 @@ class DataControllerApi extends Controller
           'summary_counts' => [
               'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->count(),
               'sudah_bayar' => $sudahBayarList->count(),
-              'belum_bayar_invoice_terbit' => $belumBayarInvoiceTerbitList->count(),
-              'belum_bayar_invoice_belum_terbit' => $belumTerbitList->count(),
+              'belum_bayar_aktif' => $belumBayarAktifList->count(),
+              'belum_bayar_isolir' => $belumBayarIsolirList->count(),
+              'belum_terbit' => $belumTerbitList->count(),
           ],
           'details' => [
               'sudah_bayar' => $sudahBayarList,
-              'belum_bayar_invoice_terbit' => $belumBayarInvoiceTerbitList,
-              'belum_bayar_invoice_belum_terbit' => $belumTerbitList,
+              'belum_bayar_aktif' => $belumBayarAktifList,
+              'belum_bayar_isolir' => $belumBayarIsolirList,
+              'belum_terbit' => $belumTerbitList,
               'total_pelanggan_aktif_wajib_bayar' => $allActiveCustomers->map(function ($customer) use ($formatCustomer) {
                   return $formatCustomer($customer);
               })
