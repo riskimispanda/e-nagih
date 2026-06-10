@@ -180,6 +180,37 @@ class DataControllerApi extends Controller
       }
       $totalCustomerAktif = $customerAktifQuery->count();
 
+      // Prorate customer yang aktif
+      $customerProrateQuery = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNot('paket_id', 11)
+          ->whereNull('deleted_at')
+          ->whereHas('invoice', function ($query) use ($bulan, $tahun) {
+              $query->whereMonth('jatuh_tempo', $bulan)
+                  ->whereYear('jatuh_tempo', $tahun)
+                  ->join('paket', 'invoice.paket_id', '=', 'paket.id')
+                  ->whereColumn('invoice.tagihan', '!=', 'paket.harga');
+          });
+      if ($agen_id) {
+          $customerProrateQuery->where('agen_id', $agen_id);
+      }
+      $totalCustomerProrate = $customerProrateQuery->count();
+
+      $customerProrateList = $customerProrateQuery->with(['paket', 'invoice' => function ($query) use ($bulan, $tahun) {
+          $query->whereMonth('jatuh_tempo', $bulan)
+              ->whereYear('jatuh_tempo', $tahun);
+      }])->get()->map(function($c) {
+          $invoice = $c->invoice->first();
+          return [
+              'id' => $c->id,
+              'nama' => $c->nama_customer,
+              'status_id' => $c->status_id,
+              'paket' => $c->paket->nama_paket ?? 'N/A',
+              'harga_paket' => $c->paket->harga ?? 0,
+              'tagihan_invoice' => $invoice ? $invoice->tagihan : 0,
+              'jatuh_tempo' => $invoice ? Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') : null,
+          ];
+      });
+
       // 2. OPSI A: Berdasarkan Bulan Tagihan (Jatuh Tempo)
       // Pelanggan lunas (Sudah Bayar) untuk tagihan bulan ini
       $paidOptionAQuery = Invoice::where('status_id', 8)
@@ -290,6 +321,7 @@ class DataControllerApi extends Controller
           ],
           'summary' => [
               'total_pelanggan_aktif_wajib_bayar' => $totalCustomerAktif,
+              'total_customer_prorate_aktif' => $totalCustomerProrate,
               'opsi_a_jatuh_tempo' => [
                   'sudah_bayar_bulan_ini' => $paidOptionA,
                   'belum_bayar_bulan_ini' => $totalUnpaidOptionA,
@@ -310,6 +342,10 @@ class DataControllerApi extends Controller
               'non_aktif' => $pelangganNonAktif,
               'paket_fasum' => $pelangganFasum,
               'total_aktif_dan_non_aktif' => $allData
+          ],
+          'customer_prorate_aktif' => [
+              'count' => $totalCustomerProrate,
+              'pelanggan' => $customerProrateList
           ],
           'analisis_discrepancy' => [
               'jumlah_fasum_status_diluar_3_4_9' => $fasumDiluarStatusCount,
