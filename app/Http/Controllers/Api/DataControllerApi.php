@@ -237,15 +237,14 @@ class DataControllerApi extends Controller
 
       // 4. Statistik tambahan dari tabel customer (sama persis dengan DataController.php)
       // Pelanggan Aktif (Status 3 = Aktif, 4 = Maintenance, termasuk Paket 11 Fasum)
-      $pelangganAktifQuery = Customer::whereIn('status_id', [3, 4])
-          ->whereNull('deleted_at');
+      $pelangganAktifQuery = Customer::whereIn('status_id', [3, 4])->whereNot('paket_id', 11)->whereNull('deleted_at');
       if ($agen_id) {
           $pelangganAktifQuery->where('agen_id', $agen_id);
       }
       $pelangganAktif = $pelangganAktifQuery->count();
 
       // Pelanggan Non-Aktif (Status 9 = Isolir, termasuk Paket 11 Fasum)
-      $pelangganNonAktifQuery = Customer::where('status_id', 9)
+      $pelangganNonAktifQuery = Customer::where('status_id', 9)->whereNot('paket_id', 11)
           ->whereNull('deleted_at')
           ->orderBy('updated_at', 'desc');
       if ($agen_id) {
