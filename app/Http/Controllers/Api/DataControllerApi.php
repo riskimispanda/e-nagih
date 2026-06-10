@@ -235,20 +235,19 @@ class DataControllerApi extends Controller
           ->distinct('invoice.customer_id')
           ->count('invoice.customer_id');
 
-      // 4. Statistik tambahan dari tabel customer
-      // Pelanggan Aktif (Status 3 = Aktif, 4 = Maintenance, excluding Paket 11 Fasum)
+      // 4. Statistik tambahan dari tabel customer (sama persis dengan DataController.php)
+      // Pelanggan Aktif (Status 3 = Aktif, 4 = Maintenance, termasuk Paket 11 Fasum)
       $pelangganAktifQuery = Customer::whereIn('status_id', [3, 4])
-          ->whereNot('paket_id', 11)
           ->whereNull('deleted_at');
       if ($agen_id) {
           $pelangganAktifQuery->where('agen_id', $agen_id);
       }
       $pelangganAktif = $pelangganAktifQuery->count();
 
-      // Pelanggan Non-Aktif (Status 9 = Isolir, excluding Paket 11 Fasum)
+      // Pelanggan Non-Aktif (Status 9 = Isolir, termasuk Paket 11 Fasum)
       $pelangganNonAktifQuery = Customer::where('status_id', 9)
-          ->whereNot('paket_id', 11)
-          ->whereNull('deleted_at')->orderBy('updated_at','desc');
+          ->whereNull('deleted_at')
+          ->orderBy('updated_at', 'desc');
       if ($agen_id) {
           $pelangganNonAktifQuery->where('agen_id', $agen_id);
       }
@@ -261,6 +260,14 @@ class DataControllerApi extends Controller
           $pelangganFasumQuery->where('agen_id', $agen_id);
       }
       $pelangganFasum = $pelangganFasumQuery->count();
+
+      // Total data pelanggan (Status 3, 4, 9)
+      $allDataQuery = Customer::whereIn('status_id', [3, 4, 9])
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $allDataQuery->where('agen_id', $agen_id);
+      }
+      $allData = $allDataQuery->count();
 
       return response()->json([
           'success' => true,
@@ -287,10 +294,10 @@ class DataControllerApi extends Controller
               ]
           ],
           'customer_status_stats' => [
-              'aktif_wajib_bayar' => $pelangganAktif,
-              'non_aktif_wajib_bayar' => $pelangganNonAktif,
+              'aktif' => $pelangganAktif,
+              'non_aktif' => $pelangganNonAktif,
               'paket_fasum' => $pelangganFasum,
-              'total_aktif_dan_non_aktif' => $pelangganAktif + $pelangganNonAktif + $pelangganFasum
+              'total_aktif_dan_non_aktif' => $allData
           ]
       ]);
   }
