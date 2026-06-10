@@ -240,6 +240,26 @@ class DataControllerApi extends Controller
           });
       $unpaidInvoiceTerbit = $unpaidInvoiceTerbitQuery->distinct('customer_id')->count('customer_id');
 
+      // Hitung khusus invoice prorate yang belum bayar
+      $unpaidProrateCountQuery = Invoice::where('status_id', 7)
+          ->whereMonth('jatuh_tempo', $bulan)
+          ->whereYear('jatuh_tempo', $tahun)
+          ->whereHas('customer', function ($query) use ($agen_id) {
+              $query->whereNull('deleted_at')
+                  ->whereIn('status_id', [3, 4, 9])
+                  ->whereNot('paket_id', 11);
+              if ($agen_id) {
+                  $query->where('agen_id', $agen_id);
+              }
+          })
+          ->join('paket', 'invoice.paket_id', '=', 'paket.id')
+          ->whereColumn('invoice.tagihan', '!=', 'paket.harga');
+      $unpaidProrateCount = $unpaidProrateCountQuery->distinct('invoice.customer_id')->count('invoice.customer_id');
+
+      // Penyesuaian: Masukkan prorate belum bayar ke "Sudah Bayar" dan keluarkan dari "Belum Bayar - Invoice Terbit"
+      $paidOptionA = $paidOptionA + $unpaidProrateCount;
+      $unpaidInvoiceTerbit = $unpaidInvoiceTerbit - $unpaidProrateCount;
+
       // Pelanggan belum lunas karena INVOICE-NYA BELUM TERBIT bulan ini (atau invoice terakhir masih bulan Mei atau lebih lama)
       // Kita hitung secara komplemen: Total Aktif Wajib Bayar - (Sudah Bayar + Belum Bayar yang Terbit)
       $unpaidInvoiceBelumTerbit = $totalCustomerAktif - ($paidOptionA + $unpaidInvoiceTerbit);
@@ -401,12 +421,6 @@ class DataControllerApi extends Controller
           ->with(['customer.status', 'customer.paket'])
           ->get();
 
-      $sudahBayarList = $paidInvoices->map(function ($invoice) use ($formatCustomer) {
-          return $formatCustomer($invoice->customer, $invoice);
-      });
-
-      $sudahBayarCustomerIds = $paidInvoices->pluck('customer_id')->toArray();
-
       // 3. Belum Bayar - Invoice Terbit
       $unpaidInvoices = Invoice::where('status_id', 7)
           ->whereMonth('jatuh_tempo', $bulan)
@@ -419,14 +433,38 @@ class DataControllerApi extends Controller
                   $query->where('agen_id', $agen_id);
               }
           })
-          ->with(['customer.status', 'customer.paket'])
+          ->with(['customer.status', 'customer.paket', 'paket'])
           ->get();
 
-      $belumBayarInvoiceTerbitList = $unpaidInvoices->map(function ($invoice) use ($formatCustomer) {
+      // Pisahkan unpaid invoices menjadi prorate dan non-prorate
+      $unpaidProrateInvoices = $unpaidInvoices->filter(function ($invoice) {
+          $hargaPaket = $invoice->paket->harga ?? 0;
+          return $invoice->tagihan != $hargaPaket;
+      });
+
+      $unpaidNonProrateInvoices = $unpaidInvoices->filter(function ($invoice) {
+          $hargaPaket = $invoice->paket->harga ?? 0;
+          return $invoice->tagihan == $hargaPaket;
+      });
+
+      // Gabungkan paid invoices dan unpaid prorate invoices ke list "Sudah Bayar"
+      $sudahBayarList = $paidInvoices->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      })->concat($unpaidProrateInvoices->map(function ($invoice) use ($formatCustomer) {
+          return $formatCustomer($invoice->customer, $invoice);
+      }));
+
+      $sudahBayarCustomerIds = array_merge(
+          $paidInvoices->pluck('customer_id')->toArray(),
+          $unpaidProrateInvoices->pluck('customer_id')->toArray()
+      );
+
+      // Hanya masukkan unpaid non-prorate invoices ke list "Belum Bayar - Invoice Terbit"
+      $belumBayarInvoiceTerbitList = $unpaidNonProrateInvoices->map(function ($invoice) use ($formatCustomer) {
           return $formatCustomer($invoice->customer, $invoice);
       });
 
-      $belumBayarInvoiceTerbitCustomerIds = $unpaidInvoices->pluck('customer_id')->toArray();
+      $belumBayarInvoiceTerbitCustomerIds = $unpaidNonProrateInvoices->pluck('customer_id')->toArray();
 
       // 4. Belum Bayar - Invoice Belum Terbit (Komplemen)
       $excludeIds = array_merge($sudahBayarCustomerIds, $belumBayarInvoiceTerbitCustomerIds);
