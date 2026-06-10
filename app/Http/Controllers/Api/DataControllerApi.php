@@ -228,19 +228,32 @@ class DataControllerApi extends Controller
           ->distinct('invoice.customer_id')
           ->count('invoice.customer_id');
 
-      // Detail data pelanggan lunas Option A untuk pencocokan nama
-      $paidOptionADetails = $paidOptionAQuery->with('customer:id,nama_customer,no_hp,alamat')
-          ->get()
-          ->map(function ($inv) {
-              return [
-                  'customer_id' => $inv->customer_id,
-                  'nama' => $inv->customer->nama_customer ?? 'N/A',
-                  'no_hp' => $inv->customer->no_hp ?? 'N/A',
-                  'alamat' => $inv->customer->alamat ?? 'N/A',
-                  'tagihan' => $inv->tagihan
-              ];
-          })
-          ->values();
+      // 4. Statistik tambahan dari tabel customer
+      // Pelanggan Aktif (Status 3 = Aktif, 4 = Maintenance, excluding Paket 11 Fasum)
+      $pelangganAktifQuery = Customer::whereIn('status_id', [3, 4])
+          ->whereNot('paket_id', 11)
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $pelangganAktifQuery->where('agen_id', $agen_id);
+      }
+      $pelangganAktif = $pelangganAktifQuery->count();
+
+      // Pelanggan Non-Aktif (Status 9 = Isolir, excluding Paket 11 Fasum)
+      $pelangganNonAktifQuery = Customer::where('status_id', 9)
+          ->whereNot('paket_id', 11)
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $pelangganNonAktifQuery->where('agen_id', $agen_id);
+      }
+      $pelangganNonAktif = $pelangganNonAktifQuery->count();
+
+      // Pelanggan Paket Fasum (Paket 11)
+      $pelangganFasumQuery = Customer::where('paket_id', 11)
+          ->whereNull('deleted_at');
+      if ($agen_id) {
+          $pelangganFasumQuery->where('agen_id', $agen_id);
+      }
+      $pelangganFasum = $pelangganFasumQuery->count();
 
       return response()->json([
           'success' => true,
@@ -262,7 +275,12 @@ class DataControllerApi extends Controller
                   'keterangan' => 'Jumlah unik customer yang bayar riil di bulan ini'
               ]
           ],
-          'detail_pelanggan_lunas_opsi_a' => $paidOptionADetails
+          'customer_status_stats' => [
+              'aktif_wajib_bayar' => $pelangganAktif,
+              'non_aktif_wajib_bayar' => $pelangganNonAktif,
+              'paket_fasum' => $pelangganFasum,
+              'total_aktif_dan_non_aktif' => $pelangganAktif + $pelangganNonAktif + $pelangganFasum
+          ]
       ]);
   }
 
