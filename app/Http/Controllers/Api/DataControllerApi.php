@@ -254,7 +254,7 @@ class DataControllerApi extends Controller
       $pelangganNonAktif = $pelangganNonAktifQuery->count();
 
       // Pelanggan Paket Fasum (Paket 11)
-      $pelangganFasumQuery = Customer::where('paket_id', 11)
+      $pelangganFasumQuery = Customer::where('paket_id', 11)->whereIn('status_id', [3,4,9])
           ->whereNull('deleted_at');
       if ($agen_id) {
           $pelangganFasumQuery->where('agen_id', $agen_id);
