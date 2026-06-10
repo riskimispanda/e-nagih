@@ -195,8 +195,8 @@ class DataControllerApi extends Controller
           });
       $paidOptionA = $paidOptionAQuery->distinct('customer_id')->count('customer_id');
 
-      // Pelanggan belum lunas (Belum Bayar) untuk tagihan bulan ini
-      $unpaidOptionAQuery = Invoice::where('status_id', 7)
+      // Pelanggan belum lunas (Belum Bayar) yang INVOICE-NYA SUDAH TERBIT (status_id = 7) untuk tagihan bulan ini
+      $unpaidInvoiceTerbitQuery = Invoice::where('status_id', 7)
           ->whereMonth('jatuh_tempo', $bulan)
           ->whereYear('jatuh_tempo', $tahun)
           ->whereHas('customer', function ($query) use ($agen_id) {
@@ -207,7 +207,14 @@ class DataControllerApi extends Controller
                   $query->where('agen_id', $agen_id);
               }
           });
-      $unpaidOptionA = $unpaidOptionAQuery->distinct('customer_id')->count('customer_id');
+      $unpaidInvoiceTerbit = $unpaidInvoiceTerbitQuery->distinct('customer_id')->count('customer_id');
+
+      // Pelanggan belum lunas karena INVOICE-NYA BELUM TERBIT bulan ini (atau invoice terakhir masih bulan Mei atau lebih lama)
+      // Kita hitung secara komplemen: Total Aktif Wajib Bayar - (Sudah Bayar + Belum Bayar yang Terbit)
+      $unpaidInvoiceBelumTerbit = $totalCustomerAktif - ($paidOptionA + $unpaidInvoiceTerbit);
+      
+      // Total Belum Bayar (Gabungan Terbit & Belum Terbit)
+      $totalUnpaidOptionA = $unpaidInvoiceTerbit + $unpaidInvoiceBelumTerbit;
 
       // 3. OPSI B: Berdasarkan Bulan Transaksi (Tanggal Bayar)
       // Pelanggan lunas berdasarkan transaksi di bulan ini
@@ -266,9 +273,13 @@ class DataControllerApi extends Controller
               'total_pelanggan_aktif_wajib_bayar' => $totalCustomerAktif,
               'opsi_a_jatuh_tempo' => [
                   'sudah_bayar_bulan_ini' => $paidOptionA,
-                  'belum_bayar_bulan_ini' => $unpaidOptionA,
-                  'total_terdata' => $paidOptionA + $unpaidOptionA,
-                  'selisih_dari_total_aktif' => $totalCustomerAktif - ($paidOptionA + $unpaidOptionA)
+                  'belum_bayar_bulan_ini' => $totalUnpaidOptionA,
+                  'detail_belum_bayar' => [
+                      'invoice_terbit_belum_bayar' => $unpaidInvoiceTerbit,
+                      'invoice_belum_terbit_atau_mei' => $unpaidInvoiceBelumTerbit
+                  ],
+                  'total_terdata' => $paidOptionA + $totalUnpaidOptionA,
+                  'selisih_dari_total_aktif' => $totalCustomerAktif - ($paidOptionA + $totalUnpaidOptionA)
               ],
               'opsi_b_tanggal_bayar' => [
                   'sudah_bayar_bulan_ini' => $paidOptionBCount,
