@@ -759,7 +759,7 @@ class QontakController extends Controller
   /**
    * Helper untuk menghitung statistik log
    */
-  private function calculateStats($statusFilter = null, $startDate = null, $endDate = null): array
+  private function calculateStats($statusFilter = null, $month = null, $year = null): array
   {
     $query = DB::table('whats_log');
 
@@ -767,12 +767,12 @@ class QontakController extends Controller
       $query->where('status_pengiriman', $statusFilter);
     }
 
-    if ($startDate) {
-      $query->whereDate('created_at', '>=', $startDate);
+    if ($year && $year !== 'all') {
+      $query->whereYear('created_at', $year);
     }
 
-    if ($endDate) {
-      $query->whereDate('created_at', '<=', $endDate);
+    if ($month && $month !== 'all') {
+      $query->whereMonth('created_at', $month);
     }
 
     $stats = $query->select('status_pengiriman', DB::raw('count(*) as total'))
@@ -816,10 +816,10 @@ class QontakController extends Controller
   public function whatsLogView(Request $request)
   {
     $statusFilter = $request->input('status');
-    $startDate = $request->input('start_date');
-    $endDate = $request->input('end_date');
+    $month = $request->input('month', 'all');
+    $year = $request->input('year', 'all');
 
-    $counts = $this->calculateStats($statusFilter, $startDate, $endDate);
+    $counts = $this->calculateStats($statusFilter, $month, $year);
 
     return view('qontak.whats_log', [
       'users' => auth()->user(),
@@ -827,8 +827,8 @@ class QontakController extends Controller
       'counts' => $counts,
       'filters' => [
         'status' => $statusFilter,
-        'start_date' => $startDate,
-        'end_date' => $endDate
+        'month' => $month,
+        'year' => $year
       ]
     ]);
   }
@@ -840,8 +840,8 @@ class QontakController extends Controller
   {
     try {
       $statusFilter = $request->input('status');
-      $startDate = $request->input('start_date');
-      $endDate = $request->input('end_date');
+      $month = $request->input('month', 'all');
+      $year = $request->input('year', 'all');
 
       // Memulai query builder logs dengan join ke tabel customer
       $query = DB::table('whats_log')
@@ -863,12 +863,12 @@ class QontakController extends Controller
         $query->where('whats_log.status_pengiriman', $statusFilter);
       }
 
-      if ($startDate) {
-        $query->whereDate('whats_log.created_at', '>=', $startDate);
+      if ($year && $year !== 'all') {
+        $query->whereYear('whats_log.created_at', $year);
       }
 
-      if ($endDate) {
-        $query->whereDate('whats_log.created_at', '<=', $endDate);
+      if ($month && $month !== 'all') {
+        $query->whereMonth('whats_log.created_at', $month);
       }
 
       // Finalisasi query, order dan pelindung batas 5k agar ram tidak kepenuhan
@@ -878,7 +878,7 @@ class QontakController extends Controller
 
       return response()->json([
         'data' => $logs,
-        'stats' => $this->calculateStats($statusFilter, $startDate, $endDate)
+        'stats' => $this->calculateStats($statusFilter, $month, $year)
       ]);
     } catch (\Exception $e) {
       return response()->json([
@@ -899,14 +899,14 @@ class QontakController extends Controller
 
       // Ambil filter agar statistik yang dikembalikan sesuai dengan filter aktif di UI
       $statusFilter = $request->input('status');
-      $startDate = $request->input('start_date');
-      $endDate = $request->input('end_date');
+      $month = $request->input('month', 'all');
+      $year = $request->input('year', 'all');
 
       return response()->json([
         'success' => true,
         'message' => "Sinkronisasi selesai. {$updatedCount} status berhasil diperbarui.",
         'updated_count' => $updatedCount,
-        'stats' => $this->calculateStats($statusFilter, $startDate, $endDate)
+        'stats' => $this->calculateStats($statusFilter, $month, $year)
       ]);
     } catch (\Exception $e) {
       return response()->json([
