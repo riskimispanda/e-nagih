@@ -15,7 +15,7 @@
     </thead>
     <tbody>
         @php
-        $no = 1;
+        $no = ($data->currentPage() - 1) * $data->perPage() + 1;
         @endphp
         @forelse ($data as $item)
         <tr class="text-center">
@@ -31,10 +31,10 @@
                 Rp. {{ number_format($item->jumlah_anggaran, 0, ',', '.') }}
             </td>
             <td>
-                Rp. {{ number_format($item->pengeluaran->sum('jumlah_pengeluaran'), 0, ',', '.') }}
+                Rp. {{ number_format($item->pengeluaran_sum_jumlah_pengeluaran ?? 0, 0, ',', '.') }}
             </td>
             <td>
-                Rp. {{ number_format($item->jumlah_anggaran - $item->pengeluaran->sum('jumlah_pengeluaran'), 0, ',', '.') }}
+                Rp. {{ number_format($item->jumlah_anggaran - ($item->pengeluaran_sum_jumlah_pengeluaran ?? 0), 0, ',', '.') }}
             </td>
             <td>
                 @if($item->status_id == 11)

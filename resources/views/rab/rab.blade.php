@@ -412,6 +412,107 @@
             margin-top: 1rem;
         }
     }
+
+    /* DataTables Responsive & Theme Styling */
+    .dataTables_wrapper {
+        padding: 1rem 0;
+    }
+
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        margin-bottom: 1.5rem;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #d9dee3;
+        border-radius: 6px;
+        padding: 0.375rem 1.5rem 0.375rem 0.75rem;
+        background-color: #fff;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #d9dee3;
+        border-radius: 6px;
+        padding: 0.375rem 0.75rem;
+        margin-left: 0.5rem;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.2s ease;
+    }
+
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .dataTables_wrapper .dataTables_info {
+        padding-top: 1rem;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate {
+        padding-top: 1rem;
+    }
+
+    .dataTables_wrapper .paginate_button {
+        padding: 0.375rem 0.75rem !important;
+        border-radius: 6px !important;
+        border: 1px solid #d1d5db !important;
+        background: #f3f4f6 !important;
+        color: #000000 !important;
+        margin: 0 2px;
+        transition: all 0.2s ease;
+    }
+
+    .dataTables_wrapper .paginate_button.current,
+    .dataTables_wrapper .paginate_button.current:hover {
+        background: #d1d5db !important;
+        color: #000000 !important;
+        border-color: #9ca3af !important;
+        font-weight: 600;
+    }
+
+    .dataTables_wrapper .paginate_button:hover {
+        background: #e5e7eb !important;
+        color: #000000 !important;
+        border-color: #9ca3af !important;
+    }
+
+    .dataTables_wrapper .paginate_button.disabled,
+    .dataTables_wrapper .paginate_button.disabled:hover {
+        background: #f9fafb !important;
+        color: #9ca3af !important;
+        border-color: #e5e7eb !important;
+        cursor: not-allowed;
+    }
+
+    /* Mobile Responsive for DataTables Controls */
+    @media (max-width: 767.98px) {
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            text-align: center !important;
+            float: none !important;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter label {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            width: 100%;
+            max-width: 250px;
+        }
+    }
 </style>
 @section('content')
 <div class="row">
@@ -427,7 +528,7 @@
                     <select id="filter-tahun" class="form-select">
                         <option value="">-- Semua Tahun --</option>
                         @for ($i = date('Y') - 5; $i <= date('Y') + 5; $i++)
-                        <option value="{{ $i }}">{{ $i }}</option>
+                        <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
                         @endfor
                     </select>
                 </div>
@@ -440,7 +541,7 @@
                         '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
                         '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
                         ] as $key => $value)
-                        <option value="{{ $key }}">{{ $value }}</option>
+                        <option value="{{ $key }}" {{ $key == date('m') ? 'selected' : '' }}>{{ $value }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -511,21 +612,23 @@
                 <div class="card-title border-bottom mb-5">
                     <h6 class="text-muted">RAB Record Table</h6>
                 </div>
-                <div class="table-responsive" id="result-container">
-                    @include('rab.partials.data-table', ['data' => $data])
-                </div>
-                <!-- Pagination Area -->
-                <div id="pagination-container" class="d-flex justify-content-start mt-3 align-items-center gap-2">
-                    <span>Halaman:</span>
-                    <select id="paginationDropdown" class="form-select form-select-sm" style="width: auto;">
-                        @for ($i = 1; $i <= $data->lastPage(); $i++)
-                            <option value="{{ $i }}" {{ $i == $data->currentPage() ? 'selected' : '' }}>
-                                {{ $i }}
-                            </option>
-                        @endfor
-                    </select>
-                    <span id="page-count-text">dari {{ $data->lastPage() }} halaman</span>
-                </div>
+                <table class="table table-hover" id="rabTable" style="font-size: 14px; width: 100%;">
+                    <thead class="table-dark">
+                        <tr class="text-center">
+                            <th>No</th>
+                            <th>Bulan & Tahun</th>
+                            <th>Keterangan</th>
+                            <th>Kegiatan</th>
+                            <th>Jumlah Anggaran</th>
+                            <th>Anggaran Terealisasi</th>
+                            <th>Sisa Anggaran</th>
+                            <th>Status</th>
+                            <th>Admin</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -637,7 +740,6 @@
 </div>
 
 {{-- Filter Ajax --}}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     function formatRupiah(angka) {
         var number_string = angka.replace(/[^,\d]/g, '').toString(),
@@ -666,6 +768,8 @@
     }
 </script>
 <script>
+    let dataTable;
+
     // Function to format currency
     function formatCurrency(amount) {
         return new Intl.NumberFormat('id-ID', {
@@ -708,107 +812,144 @@
         });
     }
 
-    // Function to update pagination dropdown
-    function updatePagination(lastPage, currentPage) {
-        const select = document.getElementById('paginationDropdown');
-        const countText = document.getElementById('page-count-text');
-        
-        if (!select) return;
-
-        select.innerHTML = '';
-        for (let i = 1; i <= lastPage; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = i;
-            if (i == currentPage) option.selected = true;
-            select.appendChild(option);
-        }
-        
-        if (countText) countText.textContent = `dari ${lastPage} halaman`;
-    }
-
-    // Real-time filter function using fetch
-    async function performFilter(page = 1) {
-        const bulan = document.getElementById('filter-bulan').value;
-        const tahun = document.getElementById('filter-tahun').value;
-        const kegiatan = document.getElementById('filter-kegiatan').value;
-
-        console.log('Filter changed:', { bulan, tahun, kegiatan, page });
-
-        try {
-            const params = new URLSearchParams();
-            if (bulan) params.append('bulan', bulan);
-            if (tahun) params.append('tahun', tahun);
-            if (kegiatan) params.append('kegiatan', kegiatan);
-            params.append('page', page);
-
-            const response = await fetch(`{{ route("rab-filter") }}?${params.toString()}`);
-            const data = await response.json();
-
-            console.log('Response received:', data);
-
-            // Update table
-            document.getElementById('result-container').innerHTML = data.html;
-
-            // Update pagination (if backend provides pagination info)
-            // Note: RabController@search currently doesn't return lastPage, 
-            // but we can extract it or assume it's fixed if not provided.
-            // Let's assume we might need to update the controller too or just keep it for now.
-            if (data.lastPage) {
-                updatePagination(data.lastPage, data.currentPage);
-            }
-
-            // Update ALL cards with formatted currency
-            document.getElementById('saldo').textContent = formatCurrency(data.saldo);
-            document.getElementById('pagu-tahun').textContent = formatCurrency(data.total);
-            document.getElementById('anggaran-terealisasi').textContent = formatCurrency(data.terealisasi);
-            document.getElementById('sisa-anggaran').textContent = formatCurrency(data.sisa);
-
-            // Re-init tooltips
-            initTooltips();
-
-            console.log('All cards updated:', {
-                saldo: data.saldo,
-                total: data.total,
-                terealisasi: data.terealisasi,
-                sisa: data.sisa
-            });
-        } catch (error) {
-            console.error('Filter Error:', error);
-            alert('Gagal mengambil data');
-        }
-    }
-
     // Initialize page
-    document.addEventListener('DOMContentLoaded', function() {
-        // Init tooltips on first load
-        initTooltips();
+    loadKegiatanOptions();
 
-        // Set initial values from server data
-        document.getElementById('saldo').textContent = formatCurrency({{ $total }});
-        document.getElementById('pagu-tahun').textContent = formatCurrency({{ $totalAnggaran ?? 0 }});
-        document.getElementById('anggaran-terealisasi').textContent = formatCurrency({{ $totalTerealisasi ?? 0 }});
-        document.getElementById('sisa-anggaran').textContent = formatCurrency({{ $sisaAnggaran ?? 0 }});
-
-        // Load kegiatan options
-        loadKegiatanOptions();
-
-        // Add event listeners for filters
-        document.getElementById('filter-bulan').addEventListener('change', () => performFilter(1));
-        document.getElementById('filter-tahun').addEventListener('change', () => performFilter(1));
-        document.getElementById('filter-kegiatan').addEventListener('change', () => performFilter(1));
-
-        // Add event listener for pagination dropdown
-        document.getElementById('paginationDropdown').addEventListener('change', function() {
-            performFilter(this.value);
+        // Initialize DataTable with server-side processing
+        dataTable = $('#rabTable').DataTable({
+            dom: '<"row mb-3"<"col-md-6"l><"col-md-6"f>><"table-responsive"t><"row mt-3"<"col-md-6"i><"col-md-6"p>>',
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("rab-filter") }}',
+                type: 'GET',
+                data: function(d) {
+                    d.bulan = $('#filter-bulan').val();
+                    d.tahun = $('#filter-tahun').val();
+                    d.kegiatan = $('#filter-kegiatan').val();
+                },
+                dataSrc: function(json) {
+                    // Update stats cards dynamically
+                    $('#saldo').text(formatCurrency(json.saldo));
+                    $('#pagu-tahun').text(formatCurrency(json.total));
+                    $('#anggaran-terealisasi').text(formatCurrency(json.terealisasi));
+                    $('#sisa-anggaran').text(formatCurrency(json.sisa));
+                    
+                    return json.data;
+                },
+                error: function(xhr, error, code) {
+                    console.error('Error loading data:', error);
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { 
+                    data: 'bulan_tahun', 
+                    name: 'bulan_tahun',
+                    className: 'text-center',
+                    render: function(data) {
+                        return `<span class="badge bg-danger bg-opacity-10 text-danger">${data}</span>`;
+                    }
+                },
+                { data: 'keterangan', name: 'keterangan' },
+                { data: 'kegiatan', name: 'kegiatan' },
+                { 
+                    data: 'jumlah_anggaran', 
+                    name: 'jumlah_anggaran',
+                    className: 'amount-cell',
+                    render: function(data) {
+                        return formatCurrency(data);
+                    }
+                },
+                { 
+                    data: 'terealisasi', 
+                    name: 'terealisasi',
+                    className: 'amount-cell',
+                    render: function(data) {
+                        return formatCurrency(data);
+                    }
+                },
+                { 
+                    data: 'sisa', 
+                    name: 'sisa',
+                    className: 'amount-cell',
+                    render: function(data) {
+                        return formatCurrency(data);
+                    }
+                },
+                { 
+                    data: 'status_nama', 
+                    name: 'status_nama',
+                    className: 'text-center',
+                    render: function(data, type, row) {
+                        let badgeClass = 'bg-warning';
+                        if (row.status_id == 11) badgeClass = 'bg-success';
+                        else if (row.status_id == 12) badgeClass = 'bg-danger';
+                        
+                        return `<span class="badge ${badgeClass} bg-opacity-10 text-${badgeClass.replace('bg-', '')}">${data}</span>`;
+                    }
+                },
+                { 
+                    data: 'admin_nama', 
+                    name: 'admin_nama',
+                    className: 'text-center',
+                    render: function(data) {
+                        return `<span class="badge bg-danger bg-opacity-10 text-danger">${data}</span>`;
+                    }
+                },
+                { 
+                    data: 'id', 
+                    name: 'action', 
+                    orderable: false, 
+                    searchable: false,
+                    className: 'text-center',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex justify-content-center gap-2">
+                                <button type="button" class="btn btn-info btn-sm btn-detail" 
+                                    data-id="${data}" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="bottom" 
+                                    title="Detail RAB">
+                                    <i class="bx bx-show"></i>
+                                </button>
+                                <a href="/edit-rab/${data}" data-bs-toggle="tooltip" title="Edit RAB" data-bs-placement="bottom">
+                                    <button class="btn btn-warning btn-sm">
+                                        <i class="bx bx-pencil"></i>
+                                    </button>
+                                </a>
+                                <button type="button" class="btn btn-danger btn-sm btnDelete" 
+                                    data-url="/delete-rab/${data}" 
+                                    data-bs-toggle="tooltip" title="Hapus RAB" data-bs-placement="bottom">
+                                    <i class="bx bx-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            drawCallback: function() {
+                initTooltips();
+            },
+            language: {
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ entri",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
+                infoFiltered: "(disaring dari _MAX_ total entri)",
+                paginate: {
+                    first: "Pertama",
+                    last: "Terakhir",
+                    next: "Berikutnya",
+                    previous: "Sebelumnya"
+                }
+            }
         });
 
-        console.log('Initial data loaded:', {
-            total: {{ $totalAnggaran ?? 0 }},
-            terealisasi: {{ $totalTerealisasi ?? 0 }},
-            sisa: {{ $sisaAnggaran ?? 0 }}
+        // Add event listeners for custom filters
+        $('#filter-bulan, #filter-tahun, #filter-kegiatan').on('change', function() {
+            dataTable.ajax.reload();
         });
-    });
 
     // Handle detail button click using event delegation
     document.addEventListener('click', async function(e) {

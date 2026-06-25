@@ -15,39 +15,9 @@ class RabController extends Controller
 {
     public function index()
     {
-        $query = Rab::with('pengeluaran');
-
-        // Clone the builder before pagination to get full totals
-        $totalQuery = clone $query;
-
-        $data = $query->latest()->paginate(10);
-
-        // Calculate initial totals for all data (no filter applied initially)
-        $totalAnggaran = $totalQuery->sum('jumlah_anggaran');
-        $rabIds = $totalQuery->pluck('id');
-
-        $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
-            ->where('status_id', 3)
-            ->sum('jumlah_pengeluaran');
-
-        $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
-
-        // Calculate initial global balance (unfiltered Pembayaran + Pendapatan + Perusahaan - Pengeluaran)
-        $pendapatanLangganan = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
-        $pendapatanCorporate = Perusahaan::where('status_id', 3)->sum('harga');
-        $pendapatanNonLangganan = Pendapatan::sum('jumlah_pendapatan');
-        $pengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
-        
-        $total = $pendapatanLangganan + $pendapatanCorporate + $pendapatanNonLangganan - $pengeluaran;
-
         return view('/rab/rab',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
-            'data' => $data,
-            'totalAnggaran' => $totalAnggaran,
-            'totalTerealisasi' => $totalTerealisasi,
-            'sisaAnggaran' => $sisaAnggaran,
-            'total' => $total,
         ]);
     }
 
@@ -76,36 +46,81 @@ class RabController extends Controller
 
     public function search(Request $request)
     {
-        $query = Rab::with('pengeluaran');
-
+        $query = Rab::with(['usr', 'status'])->withSum('pengeluaran', 'jumlah_pengeluaran');
+ 
         if ($request->filled('bulan')) {
             $query->where('bulan', $request->bulan);
         }
-
+ 
         if ($request->filled('tahun')) {
             $query->where('tahun_anggaran', $request->tahun);
         }
-
+ 
         if ($request->filled('kegiatan')) {
             $query->where('kegiatan', 'like', '%' . $request->kegiatan . '%');
         }
 
+        // Global search from DataTable
+        if ($request->has('search') && $request->search['value'] != '') {
+            $searchValue = $request->search['value'];
+            $query->where(function ($q) use ($searchValue) {
+                $q->where('kegiatan', 'like', "%{$searchValue}%")
+                  ->orWhere('keterangan', 'like', "%{$searchValue}%")
+                  ->orWhere('tahun_anggaran', 'like', "%{$searchValue}%");
+            });
+        }
+ 
         // Clone the builder before pagination to get full filtered totals
         $totalQuery = clone $query;
 
-        $data = $query->latest()->paginate(10);
+        // Total records
+        $totalRecords = Rab::count();
+        $filteredRecords = $query->count();
+ 
+        // Ordering
+        if ($request->has('order')) {
+            $orderColumn = $request->order[0]['column'];
+            $orderDir = $request->order[0]['dir'];
+ 
+            $columns = [
+                0 => 'id',
+                1 => 'bulan',
+                2 => 'keterangan',
+                3 => 'kegiatan',
+                4 => 'jumlah_anggaran',
+                5 => 'pengeluaran_sum_jumlah_pengeluaran',
+                7 => 'status_id',
+                8 => 'user_id'
+            ];
+ 
+            if (isset($columns[$orderColumn])) {
+                $colName = $columns[$orderColumn];
+                if ($colName === 'pengeluaran_sum_jumlah_pengeluaran') {
+                    $query->orderBy('pengeluaran_sum_jumlah_pengeluaran', $orderDir);
+                } else {
+                    $query->orderBy($colName, $orderDir);
+                }
+            }
+        } else {
+            $query->latest();
+        }
 
+        $start = $request->start ?? 0;
+        $length = $request->length ?? 10;
+ 
+        $data = $query->skip($start)->take($length)->get();
+ 
         // Calculate totals for FILTERED data
         $totalAnggaran = $totalQuery->sum('jumlah_anggaran');
         $rabIds = $totalQuery->pluck('id');
-
+ 
         // Calculate total realized budget for filtered RABs
         $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
             ->where('status_id', 3)
             ->sum('jumlah_pengeluaran');
-
+ 
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
-
+ 
         // Calculate FILTERED SALDO (based on filtered period with corrected date fields and status_id)
         $pembayaran = Pembayaran::where('status_id', 8)
             ->when($request->filled('tahun'), function ($q) use ($request) {
@@ -115,7 +130,7 @@ class RabController extends Controller
                 $q->whereMonth('tanggal_bayar', $request->bulan);
             })
             ->sum('jumlah_bayar');
-
+ 
         $pendapatanCorporate = Perusahaan::where('status_id', 3)
             ->when($request->filled('tahun'), function ($q) use ($request) {
                 $q->whereYear('tanggal', $request->tahun);
@@ -124,7 +139,7 @@ class RabController extends Controller
                 $q->whereMonth('tanggal', $request->bulan);
             })
             ->sum('harga');
-
+ 
         $pendapatan = Pendapatan::when($request->filled('tahun'), function ($q) use ($request) {
                 $q->whereYear('tanggal', $request->tahun);
             })
@@ -132,7 +147,7 @@ class RabController extends Controller
                 $q->whereMonth('tanggal', $request->bulan);
             })
             ->sum('jumlah_pendapatan');
-
+ 
         $pengeluaran = Pengeluaran::where('status_id', 3)
             ->when($request->filled('tahun'), function ($q) use ($request) {
                 $q->whereYear('tanggal_pengeluaran', $request->tahun);
@@ -141,19 +156,47 @@ class RabController extends Controller
                 $q->whereMonth('tanggal_pengeluaran', $request->bulan);
             })
             ->sum('jumlah_pengeluaran');
-
+ 
         $totalSaldo = $pembayaran + $pendapatanCorporate + $pendapatan - $pengeluaran;
+ 
+        $namaBulan = [
+            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
+            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
+            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+            '1' => 'Januari', '2' => 'Februari', '3' => 'Maret', '4' => 'April',
+            '5' => 'Mei', '6' => 'Juni', '7' => 'Juli', '8' => 'Agustus',
+            '9' => 'September'
+        ];
 
-        $html = view('rab.partials.data-table', compact('data'))->render();
+        $formattedData = $data->map(function ($item, $index) use ($start, $namaBulan) {
+            $bulanName = $namaBulan[$item->bulan] ?? $item->bulan;
+            $terealisasi = $item->pengeluaran_sum_jumlah_pengeluaran ?? 0;
+            $sisa = $item->jumlah_anggaran - $terealisasi;
+
+            return [
+                'DT_RowIndex' => $start + $index + 1,
+                'id' => $item->id,
+                'bulan_tahun' => "$bulanName / $item->tahun_anggaran",
+                'keterangan' => $item->keterangan ?? '',
+                'kegiatan' => $item->kegiatan,
+                'jumlah_anggaran' => $item->jumlah_anggaran,
+                'terealisasi' => $terealisasi,
+                'sisa' => $sisa,
+                'status_id' => $item->status_id,
+                'status_nama' => $item->status ? $item->status->nama_status : '-',
+                'admin_nama' => $item->usr ? $item->usr->name : '-',
+            ];
+        });
 
         return response()->json([
-            'html' => $html,
+            'draw' => intval($request->draw),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $formattedData,
             'total' => $totalAnggaran,
             'terealisasi' => $totalTerealisasi,
             'sisa' => $sisaAnggaran,
             'saldo' => $totalSaldo,
-            'lastPage' => $data->lastPage(),
-            'currentPage' => $data->currentPage()
         ]);
     }
 

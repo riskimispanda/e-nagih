@@ -172,21 +172,23 @@
           <div class="row mb-4 g-3">
             <div class="col-sm-3">
               <label class="form-label">Filter Bulan</label>
+              @php
+                $selectedMonth = request('month', date('n'));
+              @endphp
               <select name="month" id="monthFilter" class="form-select">
-                <option value="all" {{ request('month') == 'all' || !request('month') ? 'selected' : '' }}>Semua Bulan
-                </option>
-                <option value="1" {{ request('month') == '1' ? 'selected' : '' }}>Januari</option>
-                <option value="2" {{ request('month') == '2' ? 'selected' : '' }}>Februari</option>
-                <option value="3" {{ request('month') == '3' ? 'selected' : '' }}>Maret</option>
-                <option value="4" {{ request('month') == '4' ? 'selected' : '' }}>April</option>
-                <option value="5" {{ request('month') == '5' ? 'selected' : '' }}>Mei</option>
-                <option value="6" {{ request('month') == '6' ? 'selected' : '' }}>Juni</option>
-                <option value="7" {{ request('month') == '7' ? 'selected' : '' }}>Juli</option>
-                <option value="8" {{ request('month') == '8' ? 'selected' : '' }}>Agustus</option>
-                <option value="9" {{ request('month') == '9' ? 'selected' : '' }}>September</option>
-                <option value="10" {{ request('month') == '10' ? 'selected' : '' }}>Oktober</option>
-                <option value="11" {{ request('month') == '11' ? 'selected' : '' }}>November</option>
-                <option value="12" {{ request('month') == '12' ? 'selected' : '' }}>Desember</option>
+                <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>Semua Bulan</option>
+                <option value="1" {{ $selectedMonth == '1' ? 'selected' : '' }}>Januari</option>
+                <option value="2" {{ $selectedMonth == '2' ? 'selected' : '' }}>Februari</option>
+                <option value="3" {{ $selectedMonth == '3' ? 'selected' : '' }}>Maret</option>
+                <option value="4" {{ $selectedMonth == '4' ? 'selected' : '' }}>April</option>
+                <option value="5" {{ $selectedMonth == '5' ? 'selected' : '' }}>Mei</option>
+                <option value="6" {{ $selectedMonth == '6' ? 'selected' : '' }}>Juni</option>
+                <option value="7" {{ $selectedMonth == '7' ? 'selected' : '' }}>Juli</option>
+                <option value="8" {{ $selectedMonth == '8' ? 'selected' : '' }}>Agustus</option>
+                <option value="9" {{ $selectedMonth == '9' ? 'selected' : '' }}>September</option>
+                <option value="10" {{ $selectedMonth == '10' ? 'selected' : '' }}>Oktober</option>
+                <option value="11" {{ $selectedMonth == '11' ? 'selected' : '' }}>November</option>
+                <option value="12" {{ $selectedMonth == '12' ? 'selected' : '' }}>Desember</option>
               </select>
             </div>
             <div class="col-sm-3">
@@ -236,10 +238,10 @@
                     </div>
                     <h6 class="card-title mb-0 text-white fw-bold ms-2">Total Saldo</h6>
                   </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaran">
+                  <h3 class="mb-1 text-white fw-bold" id="totalSaldo">
                     Rp {{ number_format($total, 0, ',', '.') }}
                   </h3>
-                  <small class="text-white text-opacity-85">Seluruh saldo Pendapatan</small>
+                  <small class="text-white text-opacity-85">Total saldo bersih (Pemasukan - Pengeluaran)</small>
                 </div>
               </div>
             </div>
@@ -250,12 +252,12 @@
                     <div class="avatar avatar-md bg-secondary bg-opacity-25 rounded-2 p-2">
                       <i class="bx bx-calendar fs-3 text-white"></i>
                     </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Saldo Bulan Ini</h6>
+                    <h6 class="card-title mb-0 text-white fw-bold ms-2" id="saldoBulanIniLabel">{{ $saldoLabel }}</h6>
                   </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaran">
+                  <h3 class="mb-1 text-white fw-bold" id="saldoBulanIni">
                     Rp {{ number_format($saldoBulanIni, 0, ',', '.') }}
                   </h3>
-                  <small class="text-white text-opacity-85">Saldo Pendapatan Bulan {{date('m')}}</small>
+                  <small class="text-white text-opacity-85" id="saldoBulanIniSub">{{ $saldoSub }}</small>
                 </div>
               </div>
             </div>
@@ -269,10 +271,10 @@
                     </div>
                     <h6 class="card-title mb-0 text-white fw-bold ms-2">Total Pengeluaran</h6>
                   </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaran">
+                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaranAll">
                     Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}
                   </h3>
-                  <small class="text-white text-opacity-85">Seluruh pengeluaran</small>
+                  <small class="text-white text-opacity-85">Seluruh pengeluaran terkonfirmasi</small>
                 </div>
               </div>
             </div>
@@ -286,7 +288,7 @@
                     </div>
                     <h6 class="card-title mb-0 text-white fw-bold ms-2">Hari Ini</h6>
                   </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalMasuk">
+                  <h3 class="mb-1 text-white fw-bold" id="pengeluaranHariIni">
                     Rp {{ number_format($dailyPengeluaran, 0, ',', '.') }}
                   </h3>
                   <small class="text-white text-opacity-85">Pengeluaran hari ini</small>
@@ -301,12 +303,12 @@
                     <div class="avatar avatar-md bg-warning bg-opacity-25 rounded-2 p-2">
                       <i class="bx bx-line-chart fs-3 text-white"></i>
                     </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Bulan Ini</h6>
+                    <h6 class="card-title mb-0 text-white fw-bold ms-2" id="pengeluaranBulanIniLabel">{{ $pengeluaranLabel }}</h6>
                   </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaranBersih">
-                    Rp {{ number_format($mounthlyPengeluaran, 0, ',', '.') }}
+                  <h3 class="mb-1 text-white fw-bold" id="pengeluaranBulanIni">
+                    Rp {{ number_format($monthlyPengeluaran, 0, ',', '.') }}
                   </h3>
-                  <small class="text-white text-opacity-85">Pengeluaran bulan ini</small>
+                  <small class="text-white text-opacity-85" id="pengeluaranBulanIniSub">{{ $pengeluaranSub }}</small>
                 </div>
               </div>
             </div>
@@ -321,7 +323,7 @@
                       </div>
                       <h6 class="card-title mb-0 text-white fw-bold ms-2">Request Konfirmasi</h6>
                     </div>
-                    <h3 class="mb-1 text-white fw-bold" id="totalPengeluaranBersih">
+                    <h3 class="mb-1 text-white fw-bold" id="totalRequest">
                       {{ $totalRequest }}
                     </h3>
                     <small class="text-white text-opacity-85">Total Request Hapus Pengeluaran</small>
@@ -663,6 +665,19 @@
             $('#pengeluaranTable tbody').html(response.table);
             $('.pagination-container').html(response.pagination);
             $('#customPaginationInfo').text(`Menampilkan ${response.count} dari ${response.total} records`);
+
+            // Update cards
+            if (response.totalPengeluaran) $('#totalPengeluaranAll').text('Rp ' + response.totalPengeluaran);
+            if (response.dailyPengeluaran) $('#pengeluaranHariIni').text('Rp ' + response.dailyPengeluaran);
+            if (response.monthlyPengeluaran) $('#pengeluaranBulanIni').text('Rp ' + response.monthlyPengeluaran);
+            if (response.totalSaldo) $('#totalSaldo').text('Rp ' + response.totalSaldo);
+            if (response.saldoBulanIni) $('#saldoBulanIni').text('Rp ' + response.saldoBulanIni);
+
+            // Update labels and subtitles dynamically
+            if (response.saldoLabel) $('#saldoBulanIniLabel').text(response.saldoLabel);
+            if (response.saldoSub) $('#saldoBulanIniSub').text(response.saldoSub);
+            if (response.pengeluaranLabel) $('#pengeluaranBulanIniLabel').text(response.pengeluaranLabel);
+            if (response.pengeluaranSub) $('#pengeluaranBulanIniSub').text(response.pengeluaranSub);
           },
           error: function (xhr) {
             console.error('Error:', xhr);

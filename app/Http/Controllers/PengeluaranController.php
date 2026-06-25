@@ -19,34 +19,59 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PengeluaranController extends Controller
 {
-  public function index()
+  public function index(Request $request)
   {
     $tahunSekarang = Carbon::now()->year;
     $bulanSekarang = Carbon::now()->month;
-    $rab = Rab::all();
+    
+    // Get filter values from request, defaulting to current month and year
+    $month = $request->input('month', $bulanSekarang);
+    $year = $request->input('year', $tahunSekarang);
 
+    $rab = Rab::all();
     $kas = JenisKas::all();
     $metodes = Metode::all();
-    $pengeluarans = Pengeluaran::with('user')
-      ->orderBy('created_at', 'desc')
-      ->orderBy('tanggal_pengeluaran', 'desc')
-      ->where('status_id', 3)
-      ->whereMonth('created_at', Carbon::now()->month)
-      ->whereYear('created_at', Carbon::now()->year)
-      ->paginate(10);
 
-    $totalPengeluaran = Pengeluaran::sum('jumlah_pengeluaran');
-    $dailyPengeluaran = Pengeluaran::where('status_id', 3)->whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran');
-    $mounthlyPengeluaran = Pengeluaran::where('status_id', 3)->whereMonth('tanggal_pengeluaran', now()->month)->sum('jumlah_pengeluaran');
+    $pengeluaransQuery = Pengeluaran::with('user')
+      ->orderBy('tanggal_pengeluaran', 'desc')
+      ->orderBy('created_at', 'desc')
+      ->where('status_id', 3)
+      ->whereYear('tanggal_pengeluaran', $year);
+
+    if ($month !== 'all') {
+      $pengeluaransQuery->whereMonth('tanggal_pengeluaran', $month);
+    }
+
+    $pengeluarans = $pengeluaransQuery->paginate(10);
+
+    $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+    $dailyPengeluaran = Pengeluaran::where('status_id', 3)
+      ->whereDate('tanggal_pengeluaran', Carbon::today())
+      ->sum('jumlah_pengeluaran');
+
+    $monthlyPengeluaranQuery = Pengeluaran::where('status_id', 3)->whereYear('tanggal_pengeluaran', $year);
+    if ($month !== 'all') {
+      $monthlyPengeluaranQuery->whereMonth('tanggal_pengeluaran', $month);
+    }
+    $monthlyPengeluaran = $monthlyPengeluaranQuery->sum('jumlah_pengeluaran');
 
     $totalRequest = Pengeluaran::where('status_id', 1)->count();
 
-    $pendapatanLanggananPerBulan = Pembayaran::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_bayar');
-    $pendapatanNonLanggananPerBulan = Pendapatan::whereMonth('created_at', $bulanSekarang)->whereYear('created_at', $tahunSekarang)->sum('jumlah_pendapatan');
+    $pembayaranQuery = Pembayaran::where('status_id', 8)->whereYear('tanggal_bayar', $year);
+    if ($month !== 'all') {
+      $pembayaranQuery->whereMonth('tanggal_bayar', $month);
+    }
+    $pendapatanLanggananPerBulan = $pembayaranQuery->sum('jumlah_bayar');
 
-    $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $mounthlyPengeluaran;
+    $pendapatanQuery = Pendapatan::whereYear('tanggal', $year);
+    if ($month !== 'all') {
+      $pendapatanQuery->whereMonth('tanggal', $month);
+    }
+    $pendapatanNonLanggananPerBulan = $pendapatanQuery->sum('jumlah_pendapatan');
 
-    $totalPembayaran = Pembayaran::sum('jumlah_bayar');
+    $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $monthlyPengeluaran;
+
+    $totalPembayaran = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
     $totalPendapatan = Pendapatan::sum('jumlah_pendapatan');
     $totalSaldo = $totalPembayaran + $totalPendapatan - $totalPengeluaran;
 
@@ -56,6 +81,34 @@ class PengeluaranController extends Controller
       ->where('jenis_pengeluaran', '!=', '')
       ->distinct()->pluck('jenis_pengeluaran');
 
+    $namaBulan = [
+      '1' => 'Januari',
+      '2' => 'Februari',
+      '3' => 'Maret',
+      '4' => 'April',
+      '5' => 'Mei',
+      '6' => 'Juni',
+      '7' => 'Juli',
+      '8' => 'Agustus',
+      '9' => 'September',
+      '10' => 'Oktober',
+      '11' => 'November',
+      '12' => 'Desember'
+    ];
+
+    if ($month !== 'all') {
+      $bulanText = $namaBulan[$month] ?? '';
+      $saldoLabel = 'Saldo Bulan Ini';
+      $saldoSub = "Saldo bersih bulan $bulanText $year";
+      $pengeluaranLabel = 'Bulan Ini';
+      $pengeluaranSub = "Pengeluaran bulan $bulanText $year";
+    } else {
+      $saldoLabel = 'Saldo Tahun Ini';
+      $saldoSub = "Saldo bersih tahun $year";
+      $pengeluaranLabel = 'Tahun Ini';
+      $pengeluaranSub = "Pengeluaran tahun $year";
+    }
+
     return view('keuangan.pengeluaran', [
       'users' => auth()->user(),
       'roles' => auth()->user()->roles,
@@ -63,13 +116,17 @@ class PengeluaranController extends Controller
       'pengeluarans' => $pengeluarans,
       'totalPengeluaran' => $totalPengeluaran,
       'dailyPengeluaran' => $dailyPengeluaran,
-      'mounthlyPengeluaran' => $mounthlyPengeluaran,
+      'monthlyPengeluaran' => $monthlyPengeluaran,
       'kas' => $kas,
       'rab' => $rab,
       'totalRequest' => $totalRequest,
       'saldoBulanIni' => $totalSaldoBulanIni,
       'total' => $totalSaldo,
-      'kategoriPengeluaran' => $kategoriPengeluaran
+      'kategoriPengeluaran' => $kategoriPengeluaran,
+      'saldoLabel' => $saldoLabel,
+      'saldoSub' => $saldoSub,
+      'pengeluaranLabel' => $pengeluaranLabel,
+      'pengeluaranSub' => $pengeluaranSub
     ]);
   }
 
@@ -92,10 +149,6 @@ class PengeluaranController extends Controller
 
       $totalRealisasi = $rab->pengeluaran->sum('jumlah_pengeluaran');
       $sisa = $rab->jumlah_anggaran - $totalRealisasi;
-
-      if ($jumlah > $sisa) {
-        return back()->with('error', 'Jumlah pengeluaran melebihi sisa anggaran RAB.');
-      }
     }
 
     // ✅ Upload bukti pengeluaran
@@ -281,6 +334,9 @@ class PengeluaranController extends Controller
       ->orderBy('tanggal_pengeluaran', 'desc')
       ->where('status_id', 3);
 
+    $year = $request->year ?? date('Y');
+    $query->whereYear('tanggal_pengeluaran', $year);
+
     if ($request->month != 'all') {
       $query->whereMonth('tanggal_pengeluaran', $request->month);
     }
@@ -301,16 +357,26 @@ class PengeluaranController extends Controller
       $view = view('keuangan.partials.pengeluaran-table', compact('pengeluarans'))->render();
       $pagination = view('pagination.bootstrap-5', ['paginator' => $pengeluarans])->render();
 
+      $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+      $dailyPengeluaran = Pengeluaran::where('status_id', 3)
+        ->whereDate('tanggal_pengeluaran', Carbon::today())->sum('jumlah_pengeluaran');
+
+      $month = $request->month ?? date('n');
+
+      $monthlyPengeluaranQuery = Pengeluaran::where('status_id', 3)->whereYear('tanggal_pengeluaran', $year);
+      if ($month !== 'all') {
+        $monthlyPengeluaranQuery->whereMonth('tanggal_pengeluaran', $month);
+      }
+      $monthlyPengeluaran = $monthlyPengeluaranQuery->sum('jumlah_pengeluaran');
+
       return response()->json([
         'table' => $view,
         'pagination' => $pagination,
         'count' => $pengeluarans->count(),
         'total' => $pengeluarans->total(),
-        'totalPengeluaran' => number_format(Pengeluaran::sum('jumlah_pengeluaran'), 0, ',', '.'),
-        'dailyPengeluaran' => number_format(Pengeluaran::where('status_id', 3)
-          ->whereDate('tanggal_pengeluaran', now())->sum('jumlah_pengeluaran'), 0, ',', '.'),
-        'mounthlyPengeluaran' => number_format(Pengeluaran::where('status_id', 3)
-          ->whereMonth('tanggal_pengeluaran', now()->month)->sum('jumlah_pengeluaran'), 0, ',', '.')
+        'totalPengeluaran' => number_format($totalPengeluaran, 0, ',', '.'),
+        'dailyPengeluaran' => number_format($dailyPengeluaran, 0, ',', '.'),
+        'monthlyPengeluaran' => number_format($monthlyPengeluaran, 0, ',', '.')
       ]);
     }
 
@@ -347,12 +413,79 @@ class PengeluaranController extends Controller
 
     $pengeluarans = $query->paginate(10)->appends($request->except('page'));
 
-    // Update data untuk tampilan
+    $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
+    $dailyPengeluaran = Pengeluaran::where('status_id', 3)
+      ->whereDate('tanggal_pengeluaran', Carbon::today())
+      ->sum('jumlah_pengeluaran');
+
+    $month = $request->month ?? date('n');
+
+    $monthlyPengeluaranQuery = Pengeluaran::where('status_id', 3)->whereYear('tanggal_pengeluaran', $year);
+    if ($month !== 'all') {
+      $monthlyPengeluaranQuery->whereMonth('tanggal_pengeluaran', $month);
+    }
+    $monthlyPengeluaran = $monthlyPengeluaranQuery->sum('jumlah_pengeluaran');
+
+    $pembayaranQuery = Pembayaran::where('status_id', 8)->whereYear('tanggal_bayar', $year);
+    if ($month !== 'all') {
+      $pembayaranQuery->whereMonth('tanggal_bayar', $month);
+    }
+    $pendapatanLanggananPerBulan = $pembayaranQuery->sum('jumlah_bayar');
+
+    $pendapatanQuery = Pendapatan::whereYear('tanggal', $year);
+    if ($month !== 'all') {
+      $pendapatanQuery->whereMonth('tanggal', $month);
+    }
+    $pendapatanNonLanggananPerBulan = $pendapatanQuery->sum('jumlah_pendapatan');
+
+    $totalSaldoBulanIni = $pendapatanLanggananPerBulan + $pendapatanNonLanggananPerBulan - $monthlyPengeluaran;
+
+    $totalPembayaran = Pembayaran::where('status_id', 8)->sum('jumlah_bayar');
+    $totalPendapatan = Pendapatan::sum('jumlah_pendapatan');
+    $totalSaldo = $totalPembayaran + $totalPendapatan - $totalPengeluaran;
+
+    $namaBulan = [
+      '1' => 'Januari',
+      '2' => 'Februari',
+      '3' => 'Maret',
+      '4' => 'April',
+      '5' => 'Mei',
+      '6' => 'Juni',
+      '7' => 'Juli',
+      '8' => 'Agustus',
+      '9' => 'September',
+      '10' => 'Oktober',
+      '11' => 'November',
+      '12' => 'Desember'
+    ];
+
+    if ($month !== 'all') {
+      $bulanText = $namaBulan[$month] ?? '';
+      $saldoLabel = 'Saldo Bulan Ini';
+      $saldoSub = "Saldo bersih bulan $bulanText $year";
+      $pengeluaranLabel = 'Bulan Ini';
+      $pengeluaranSub = "Pengeluaran bulan $bulanText $year";
+    } else {
+      $saldoLabel = 'Saldo Tahun Ini';
+      $saldoSub = "Saldo bersih tahun $year";
+      $pengeluaranLabel = 'Tahun Ini';
+      $pengeluaranSub = "Pengeluaran tahun $year";
+    }
+
     $data = [
       'table' => view('keuangan.partials.pengeluaran-table', compact('pengeluarans'))->render(),
       'pagination' => $pengeluarans->links('pagination::bootstrap-5')->toHtml(),
       'total' => $pengeluarans->total(),
       'count' => $pengeluarans->count(),
+      'totalPengeluaran' => number_format($totalPengeluaran, 0, ',', '.'),
+      'dailyPengeluaran' => number_format($dailyPengeluaran, 0, ',', '.'),
+      'monthlyPengeluaran' => number_format($monthlyPengeluaran, 0, ',', '.'),
+      'totalSaldo' => number_format($totalSaldo, 0, ',', '.'),
+      'saldoBulanIni' => number_format($totalSaldoBulanIni, 0, ',', '.'),
+      'saldoLabel' => $saldoLabel,
+      'saldoSub' => $saldoSub,
+      'pengeluaranLabel' => $pengeluaranLabel,
+      'pengeluaranSub' => $pengeluaranSub
     ];
 
     return response()->json($data);
