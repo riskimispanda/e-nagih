@@ -928,77 +928,46 @@ class KeuanganController extends Controller
     $applyAgenFilter($ewalletCountQuery);
     $ewalletCount = $ewalletCountQuery->count();
 
-    // Use consistent customer status filtering
-    $customerStatusFilter = [3, 4, 9]; // Include status 4
+    // Calculate totalCustomer dynamically based on all current active filters
+    $monthlyCustomerQuery = Pembayaran::query()->with('invoice');
 
-    // Calculate totalCustomer based on: sudah_bayar_bulan_ini + belum_bayar_aktif
-    $targetMonth = $month ?: Carbon::now()->month;
-    $targetYear = Carbon::now()->year;
-
-    $customersQueryForStats = Customer::whereIn('status_id', [3, 4, 9])
-        ->whereNot('paket_id', 11)
-        ->whereNull('deleted_at');
-    if ($agen_id) {
-        $customersQueryForStats->where('agen_id', $agen_id);
-    }
-    if ($search) {
-        $customersQueryForStats->where(function($q) use ($search) {
-            $q->where('nama_customer', 'like', '%' . $search . '%')
-              ->orWhereHas('paket', function($sub) use ($search) {
-                  $sub->where('nama_paket', 'like', '%' . $search . '%');
-              });
-        });
-    }
-
-    $allCustomersForStats = $customersQueryForStats->with(['paket', 'invoice' => function ($query) use ($month, $startDate, $endDate, $metode) {
-        if ($month && $month !== '' && $month !== null) {
-            $query->whereMonth('jatuh_tempo', $month)
-                ->whereYear('jatuh_tempo', Carbon::now()->year);
-        } elseif (($startDate && $startDate !== '') || ($endDate && $endDate !== '')) {
-            if ($startDate) {
-                $query->whereDate('jatuh_tempo', '>=', $startDate);
-            }
-            if ($endDate) {
-                $query->whereDate('jatuh_tempo', '<=', $endDate);
-            }
-        } else {
-            $query->whereMonth('jatuh_tempo', Carbon::now()->month)
-                ->whereYear('jatuh_tempo', Carbon::now()->year);
-        }
-
-        if ($metode) {
-            $query->whereHas('pembayaran', function($sub) use ($metode) {
-                $sub->where('metode_bayar', $metode);
-            });
-        }
-    }])->get();
-
-    $totalSudahBayar = $allCustomersForStats->filter(function ($c) use ($metode) {
-        $invoice = $c->invoice->first();
-        if (!$invoice) {
-            return false;
-        }
-
-        if ($metode) {
-            $hasMatchingPayment = $invoice->pembayaran()->where('metode_bayar', $metode)->exists();
-            if (!$hasMatchingPayment) {
-                return false;
-            }
-        }
-
-        return $invoice->status_id == 8 || $invoice->tagihan != ($c->paket->harga ?? 0);
-    })->count();
-
-    if ($metode) {
-        $totalBelumBayarAktif = 0;
+    // 1. Date filter (Month or Custom Date Range)
+    if ($month && $month !== '' && $month !== null) {
+      $monthlyCustomerQuery->whereMonth('tanggal_bayar', $month)
+        ->whereYear('tanggal_bayar', Carbon::now()->year);
+    } elseif ($startDate || $endDate) {
+      if ($startDate) {
+        $monthlyCustomerQuery->whereDate('tanggal_bayar', '>=', $startDate);
+      }
+      if ($endDate) {
+        $monthlyCustomerQuery->whereDate('tanggal_bayar', '<=', $endDate);
+      }
     } else {
-        $totalBelumBayarAktif = $allCustomersForStats->filter(function ($c) {
-            $invoice = $c->invoice->first();
-            return in_array($c->status_id, [3, 4]) && (!$invoice || ($invoice->status_id == 7 && $invoice->tagihan == ($c->paket->harga ?? 0)));
-        })->count();
+      $monthlyCustomerQuery->whereMonth('tanggal_bayar', Carbon::now()->month)
+        ->whereYear('tanggal_bayar', Carbon::now()->year);
     }
 
-    $totalCustomer = $totalSudahBayar + $totalBelumBayarAktif;
+    // 2. Agen filter
+    $applyAgenFilter($monthlyCustomerQuery);
+
+    // 3. Search & Method filters
+    if ($search) {
+      $monthlyCustomerQuery->where(function ($q) use ($search) {
+        $q->whereHas('invoice.customer', function ($sub) use ($search) {
+          $sub->withTrashed()->where('nama_customer', 'like', '%' . $search . '%');
+        })->orWhereHas('invoice.paket', function ($sub) use ($search) {
+          $sub->where('nama_paket', 'like', '%' . $search . '%');
+        })->orWhere('metode_bayar', 'like', '%' . $search . '%');
+      });
+    }
+    if ($metode) {
+      $monthlyCustomerQuery->where('metode_bayar', $metode);
+    }
+
+    $totalCustomer = $monthlyCustomerQuery->get()
+      ->pluck('invoice.customer_id')
+      ->unique()
+      ->count();
 
     $paymentNowQuery = Pembayaran::whereDate('tanggal_bayar', Carbon::today())
       ->with('invoice');
