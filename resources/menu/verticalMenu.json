@@ -561,6 +561,16 @@
       ]
     },
     {
+      "url": "/log/blokir-gagal",
+      "name": "Log Block Gagal",
+      "icon": "menu-icon tf-icons bx bx-history",
+      "slug": "profile-paket",
+      "roles": [
+        "NOC",
+        "Admin Keuangan"
+      ]
+    },
+    {
       "_comment": "Menu untuk helpdesk",
       "menuHeader": "Data",
       "roles": [
