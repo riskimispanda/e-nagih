@@ -399,6 +399,14 @@
           ]
         },
         {
+          "url": "/log/blokir-gagal",
+          "name": "Log Blokir Gagal",
+          "slug": "log-blokir-gagal",
+          "roles": [
+            "Super Admin"
+          ]
+        },
+        {
           "url": "/setting",
           "name": "Pengaturan",
           "slug": "setting",

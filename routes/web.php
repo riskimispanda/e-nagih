@@ -265,6 +265,9 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/log/aktivitas', [SuperAdmin::class, 'logAktivitas'])
     ->middleware('auth', 'roles:Super Admin')
     ->name('log-aktivitas');
+  Route::get('/log/blokir-gagal', [SuperAdmin::class, 'logBlokirGagal'])
+    ->middleware('auth', 'roles:Super Admin')
+    ->name('log-blokir-gagal');
   Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail'])
     ->middleware('auth', 'roles:Super Admin')
     ->name('logs-detail');

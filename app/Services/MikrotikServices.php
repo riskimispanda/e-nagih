@@ -1202,7 +1202,7 @@ class MikrotikServices
     }
   }
 
-  public static function changeUserProfileSingle(Client $client, $usersecret, $profileName = 'ISOLIREBILLING')
+  public static function changeUserProfileSingle(Client $client, $usersecret, $profileName = 'ISOLIREBILLING', &$errorInfo = null)
   {
     try {
       // ✅ VALIDASI INPUT
@@ -1211,6 +1211,7 @@ class MikrotikServices
           'usersecret' => $usersecret,
           'profile' => $profileName
         ]);
+        if (is_array($errorInfo)) $errorInfo = ['type' => 'secret_empty', 'message' => 'Usersecret kosong atau invalid'];
         return false;
       }
 
@@ -1225,6 +1226,7 @@ class MikrotikServices
           'usersecret' => $usersecret,
           'profile' => $profileName
         ]);
+        if (is_array($errorInfo)) $errorInfo = ['type' => 'user_not_found', 'message' => "User '$usersecret' tidak ditemukan di MikroTik"];
         return false;
       }
 
@@ -1235,6 +1237,7 @@ class MikrotikServices
           'count' => count($users),
           'profile' => $profileName
         ]);
+        if (is_array($errorInfo)) $errorInfo = ['type' => 'multiple_users', 'message' => "Ditemukan " . count($users) . " user duplikat dengan username '$usersecret'"];
         return false;
       }
 
@@ -1246,6 +1249,7 @@ class MikrotikServices
           'got' => $user['name'] ?? 'null',
           'profile' => $profileName
         ]);
+        if (is_array($errorInfo)) $errorInfo = ['type' => 'name_mismatch', 'message' => "Nama tidak exact match: expected '$usersecret', got '" . ($user['name'] ?? 'null') . "'"];
         return false;
       }
 
@@ -1268,6 +1272,7 @@ class MikrotikServices
         'profile' => $profileName,
         'error' => $e->getMessage()
       ]);
+      if (is_array($errorInfo)) $errorInfo = ['type' => 'api_exception', 'message' => $e->getMessage()];
       return false;
     }
   }

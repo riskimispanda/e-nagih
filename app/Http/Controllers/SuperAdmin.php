@@ -18,6 +18,7 @@ use App\Services\MikrotikServices;
 use App\Models\User;
 use App\Models\Roles;
 use App\Models\BeritaAcara;
+use App\Models\FailedBlockLog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
@@ -226,6 +227,47 @@ class SuperAdmin extends Controller
       'roles' => auth()->user()->roles,
       'logs' => $logs,
       'role' => $role,
+    ]);
+  }
+
+  public function logBlokirGagal(Request $request)
+  {
+    $perPage = min((int) $request->get('per_page', 10), 500);
+    $filterErrorType = $request->get('error_type');
+    $filterSource = $request->get('source');
+    $filterDate = $request->get('date');
+    $search = $request->get('search');
+
+    $logs = FailedBlockLog::with('customer', 'invoice', 'router')
+      ->when($filterErrorType, function ($query) use ($filterErrorType) {
+        $query->where('error_type', $filterErrorType);
+      })
+      ->when($filterSource, function ($query) use ($filterSource) {
+        $query->where('source', $filterSource);
+      })
+      ->when($filterDate, function ($query) use ($filterDate) {
+        $query->whereDate('created_at', $filterDate);
+      })
+      ->when($search, function ($query) use ($search) {
+        $query->where(function ($qq) use ($search) {
+          $qq->where('error_message', 'like', "%{$search}%")
+            ->orWhere('usersecret', 'like', "%{$search}%")
+            ->orWhereHas('customer', function ($c) use ($search) {
+              $c->where('nama_customer', 'like', "%{$search}%");
+            });
+        });
+      })
+      ->latest('created_at')
+      ->paginate($perPage)
+      ->appends($request->query());
+
+    $errorTypes = FailedBlockLog::select('error_type')->distinct()->pluck('error_type');
+
+    return view('log.blokir-gagal', [
+      'users' => auth()->user(),
+      'roles' => auth()->user()->roles,
+      'logs' => $logs,
+      'errorTypes' => $errorTypes,
     ]);
   }
 

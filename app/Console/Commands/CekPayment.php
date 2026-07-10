@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Invoice;
 use App\Models\BeritaAcara;
 use App\Models\Customer;
+use App\Models\FailedBlockLog;
 use Carbon\Carbon;
 use App\Services\MikrotikServices;
 use Illuminate\Support\Facades\Log;
@@ -208,6 +209,7 @@ class CekPayment extends Command
           'router_name' => $customer->router->nama_router,
           'error' => $e->getMessage()
         ]);
+        $this->saveFailedBlockLog($customer, $invoice, 'connection_failed', 'Gagal konek ke router ' . $customer->router->nama_router, $e->getMessage());
         $this->stats['errors']++;
         return;
       }
@@ -429,45 +431,76 @@ class CekPayment extends Command
       return;
     }
 
-    try {
-      // Block user in MikroTik
-      $blok = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret);
+      try {
+        // Block user in MikroTik
+        $errorInfo = [];
+        $blok = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret, 'ISOLIREBILLING', $errorInfo);
 
-      if ($blok) {
-        // Update customer status in transaction
-        DB::transaction(function () use ($customer, $invoice, $beritaAcara) {
-          $customer->status_id = 9;
-          $customer->save();
+        if ($blok) {
+          // Update customer status in transaction
+          DB::transaction(function () use ($customer, $invoice, $beritaAcara) {
+            $customer->status_id = 9;
+            $customer->save();
 
-          activity('Sistem')
-            ->log($customer->nama_customer . ' Di blokir oleh sistem karena belum melakukan pembayaran bulanan');
-        });
+            activity('Sistem')
+              ->log($customer->nama_customer . ' Di blokir oleh sistem karena belum melakukan pembayaran bulanan');
+          });
 
-        // Send blocking notification - DIKOMENTARKAN
-        // $this->sendBlockingNotification($customer, $invoice, $chatService, $beritaAcara);
+          // Send blocking notification - DIKOMENTARKAN
+          // $this->sendBlockingNotification($customer, $invoice, $chatService, $beritaAcara);
 
-        // Remove active connections
-        $this->removeActiveConnections($customer, $client, $beritaAcara);
+          // Remove active connections
+          $this->removeActiveConnections($customer, $client, $beritaAcara);
 
-        $this->stats['blocked']++;
-        $this->info("🔒 Blokir sukses: {$customer->nama_customer}");
-      } else {
-        $this->error("❌ Gagal memblokir: {$customer->nama_customer}");
-        Log::error("❌ Gagal memblokir customer", [
+          $this->stats['blocked']++;
+          $this->info("🔒 Blokir sukses: {$customer->nama_customer}");
+        } else {
+          $errorType = $errorInfo['type'] ?? 'unknown_error';
+          $errorMsg = $errorInfo['message'] ?? 'Gagal memblokir di MikroTik';
+          $this->error("❌ Gagal memblokir: {$customer->nama_customer} - {$errorMsg}");
+          Log::error("❌ Gagal memblokir customer", [
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->nama_customer,
+            'usersecret' => $customer->usersecret,
+            'error_type' => $errorType,
+            'error_msg' => $errorMsg
+          ]);
+          $this->saveFailedBlockLog($customer, $invoice, $errorType, $errorMsg, null);
+          $this->stats['errors']++;
+        }
+      } catch (\Exception $e) {
+        $this->error("❌ Exception saat memblokir {$customer->nama_customer}: " . $e->getMessage());
+        Log::error("❌ Exception blocking customer", [
           'customer_id' => $customer->id,
-          'customer_name' => $customer->nama_customer,
-          'usersecret' => $customer->usersecret
+          'error' => $e->getMessage(),
+          'trace' => $e->getTraceAsString()
         ]);
+        $this->saveFailedBlockLog($customer, $invoice, 'api_exception', 'Exception saat memblokir: ' . $e->getMessage(), $e->getTraceAsString());
         $this->stats['errors']++;
       }
-    } catch (\Exception $e) {
-      $this->error("❌ Exception saat memblokir {$customer->nama_customer}: " . $e->getMessage());
-      Log::error("❌ Exception blocking customer", [
+  }
+
+  /**
+   * Save failed block attempt to database
+   */
+  private function saveFailedBlockLog($customer, $invoice, $errorType, $errorMessage, $errorDetail = null)
+  {
+    try {
+      FailedBlockLog::create([
         'customer_id' => $customer->id,
-        'error' => $e->getMessage(),
-        'trace' => $e->getTraceAsString()
+        'invoice_id' => $invoice->id ?? null,
+        'router_id' => $customer->router_id ?? null,
+        'error_type' => $errorType,
+        'error_message' => $errorMessage,
+        'error_detail' => $errorDetail,
+        'source' => 'auto',
+        'usersecret' => $customer->usersecret ?? null,
       ]);
-      $this->stats['errors']++;
+    } catch (\Exception $e) {
+      Log::error("❌ Gagal menyimpan FailedBlockLog", [
+        'customer_id' => $customer->id,
+        'error' => $e->getMessage()
+      ]);
     }
   }
 

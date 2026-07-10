@@ -28,6 +28,7 @@ use App\Models\Schedules;
 use App\Models\TiketOpen;
 use Illuminate\Support\Facades\Log;
 use App\Models\ModemDetail;
+use App\Models\FailedBlockLog;
 
 class Analytics extends Controller
 {
@@ -369,26 +370,39 @@ class Analytics extends Controller
       $client = MikrotikServices::connect($router);
 
       // Ganti profile jadi ISOLIREBILLING
-      $profileResult = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret, 'ISOLIREBILLING');
+      $errorInfo = [];
+      $profileResult = MikrotikServices::changeUserProfileSingle($client, $customer->usersecret, 'ISOLIREBILLING', $errorInfo);
 
-      // Cek jika ditemukan multiple users
-      if ($profileResult === 'multiple_users') {
-        Log::warning("❌ Multiple users ditemukan - blokir dihentikan", [
-          "customer_id" => $id,
-          "usersecret" => $customer->usersecret,
-        ]);
-
-        return redirect()->back()->with("toast_error", "Gagal memblokir: ditemukan multiple users dengan username '" . $customer->usersecret . "'. Harap bersihkan data duplikat di Mikrotik terlebih dahulu.");
-      }
-
-      // Jika profile change gagal (bukan karena multiple users)
       if ($profileResult === false) {
+        $errorType = $errorInfo['type'] ?? 'unknown_error';
+        $errorMsg = $errorInfo['message'] ?? 'Gagal mengubah profile di MikroTik';
+
         Log::error("❌ Gagal mengubah profile", [
           "customer_id" => $id,
           "usersecret" => $customer->usersecret,
+          "error_type" => $errorType,
+          "error_msg" => $errorMsg,
         ]);
 
-        return redirect()->back()->with("toast_error", "Gagal mengubah profile di Mikrotik.");
+        FailedBlockLog::create([
+          'customer_id' => $customer->id,
+          'invoice_id' => $invoice->id ?? null,
+          'router_id' => $customer->router_id ?? null,
+          'error_type' => $errorType,
+          'error_message' => $errorMsg,
+          'source' => 'manual',
+          'usersecret' => $customer->usersecret,
+        ]);
+
+        $toastMsg = match ($errorType) {
+          'multiple_users' => "Gagal memblokir: ditemukan multiple users dengan username '" . $customer->usersecret . "'. Harap bersihkan data duplikat di Mikrotik terlebih dahulu.",
+          'user_not_found' => "Gagal memblokir: user '$customer->usersecret' tidak ditemukan di MikroTik.",
+          'secret_empty' => "Gagal memblokir: usersecret kosong untuk pelanggan ini.",
+          'name_mismatch' => "Gagal memblokir: nama tidak cocok di MikroTik.",
+          default => "Gagal memblokir: $errorMsg"
+        };
+
+        return redirect()->back()->with("toast_error", $toastMsg);
       }
 
       // Disconnect koneksi aktif
@@ -413,6 +427,19 @@ class Analytics extends Controller
         "customer_id" => $id,
         "trace" => $e->getTraceAsString(),
       ]);
+
+      if (isset($customer) && isset($invoice)) {
+        FailedBlockLog::create([
+          'customer_id' => $customer->id,
+          'invoice_id' => $invoice->id ?? null,
+          'router_id' => $customer->router_id ?? null,
+          'error_type' => str_contains($e->getMessage(), 'konek') ? 'connection_failed' : 'api_exception',
+          'error_message' => "Exception: " . $e->getMessage(),
+          'error_detail' => $e->getTraceAsString(),
+          'source' => 'manual',
+          'usersecret' => $customer->usersecret ?? null,
+        ]);
+      }
 
       return redirect()->back()->with("toast_error", "Gagal memblokir pelanggan: " . $e->getMessage());
     }
