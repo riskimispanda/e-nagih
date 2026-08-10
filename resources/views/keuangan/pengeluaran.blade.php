@@ -335,16 +335,22 @@
 
           <hr>
           <!-- Table -->
-          <div class="d-flex justify-content-between mb-4 gap-4">
-            <div class="row">
-              <div class="col-sm-12">
-                <div class="col-sm-4 mb-2">
-                  <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
-                    data-bs-target="#modalScrollable">
-                    <i class="bx bx-plus"></i>Tambah
-                  </button>
-                </div>
-              </div>
+          <div class="d-flex justify-content-between mb-4 gap-4 flex-wrap">
+            <div>
+              <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
+                data-bs-target="#modalScrollable">
+                <i class="bx bx-plus"></i>Tambah
+              </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label mb-0 text-muted small">Tampilkan:</label>
+              <select id="entriesPerPage" class="form-select form-select-sm" style="width: auto;">
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+              <span class="text-muted small">Entri</span>
             </div>
           </div>
           <div class="table-responsive">
@@ -658,6 +664,7 @@
             year: $('#yearFilter').val(),
             kategori: $('#kategoriFilter').val(),
             search: $('#searchInput').val(),
+            per_page: $('#entriesPerPage').val(),
             page: page
           },
           success: function (response) {
@@ -687,6 +694,10 @@
 
       // Event listener untuk semua filter
       $('#monthFilter, #yearFilter, #kategoriFilter').on('change', function () {
+        loadPengeluaran(1);
+      });
+
+      $('#entriesPerPage').on('change', function () {
         loadPengeluaran(1);
       });
 

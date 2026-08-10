@@ -411,7 +411,8 @@ class PengeluaranController extends Controller
       });
     }
 
-    $pengeluarans = $query->paginate(10)->appends($request->except('page'));
+    $perPage = (int) $request->input('per_page', 10);
+    $pengeluarans = $query->paginate($perPage)->appends($request->except('page'));
 
     $totalPengeluaran = Pengeluaran::where('status_id', 3)->sum('jumlah_pengeluaran');
     $dailyPengeluaran = Pengeluaran::where('status_id', 3)
