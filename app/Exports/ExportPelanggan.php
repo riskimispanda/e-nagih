@@ -3,13 +3,13 @@ namespace App\Exports;
 
 use App\Models\Customer;
 use App\Models\Paket;
-use App\Models\Pembayaran;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -18,7 +18,7 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use Carbon\Carbon;
 
-class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents, WithTitle
+class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyles, WithEvents, WithTitle, WithChunkReading
 {
     protected $type;
     protected $paketId;
@@ -56,40 +56,54 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
         }
     }
 
-    public function collection()
+    public function chunkSize(): int
     {
-        // Eager load semua relasi dengan INCLUDE SOFT DELETED
-        $query = Customer::with([
-            'paket',
-            'odp.odc.olt.server',
-            'router',
-            'agen',
-            'teknisi',
-            'koneksi',
-            'perangkat',
-            'media',
-            'invoice' // Load invoice untuk mengambil pembayaran
-        ])->whereNull('deleted_at');
+        return 500;
+    }
+
+    public function query()
+    {
+        if ($this->type === 'ringkasan') {
+            return Paket::withCount(['customer' => function ($q) {
+                $q->withTrashed();
+            }]);
+        }
+
+        $query = Customer::query()
+            ->with([
+                'paket',
+                'odp.odc.olt.server',
+                'router',
+                'agen',
+                'teknisi',
+                'koneksi',
+                'perangkat',
+                'media',
+                'invoice.pembayaran',
+            ])
+            ->select('customer.*')
+            ->selectRaw('(
+                SELECT MAX(pembayaran.tanggal_bayar)
+                FROM pembayaran
+                INNER JOIN invoice ON pembayaran.invoice_id = invoice.id
+                WHERE invoice.customer_id = customer.id
+            ) as last_pembayaran_date')
+            ->whereNull('customer.deleted_at');
 
         switch ($this->type) {
             case 'aktif':
-                return $query->where('status_id', 3)->get();
+                return $query->where('status_id', 3);
             case 'nonaktif':
-                return $query->where('status_id', 9)->get();
+                return $query->where('status_id', 9);
             case 'paket':
-                return $query->where('paket_id', $this->paketId)->get();
-            case 'ringkasan':
-                return Paket::withCount(['customer' => function ($q) {
-                    $q->withTrashed();
-                }])->get();
+                return $query->where('paket_id', $this->paketId);
             case 'bulan':
                 $month = $this->paketId['month'] ?? date('m');
                 $year = $this->paketId['year'] ?? date('Y');
                 return $query->whereYear('tanggal_selesai', $year)
-                    ->whereMonth('tanggal_selesai', $month)
-                    ->get();
+                    ->whereMonth('tanggal_selesai', $month);
             default:
-                return $query->get();
+                return $query;
         }
     }
 
@@ -123,20 +137,13 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             $statusCustomer = 'Deaktivasi';
         }
 
-        // **TAMBAHAN: Pembayaran Terakhir - SAMA SEPERTI DI CONTROLLER**
+        // **TAMBAHAN: Pembayaran Terakhir - dari subquery**
         $pembayaranTerakhir = '-';
-        if ($customer->invoice && $customer->invoice->count() > 0) {
-            $invoiceIds = $customer->invoice->pluck('id');
-            $lastPembayaran = Pembayaran::whereIn('invoice_id', $invoiceIds)
-                ->latest('tanggal_bayar')
-                ->first();
-
-            if ($lastPembayaran && $lastPembayaran->tanggal_bayar) {
-                try {
-                    $pembayaranTerakhir = Carbon::parse($lastPembayaran->tanggal_bayar)->format('d-M-y');
-                } catch (\Exception $e) {
-                    $pembayaranTerakhir = '-';
-                }
+        if (!empty($customer->last_pembayaran_date)) {
+            try {
+                $pembayaranTerakhir = Carbon::parse($customer->last_pembayaran_date)->format('d-M-y');
+            } catch (\Exception $e) {
+                $pembayaranTerakhir = '-';
             }
         }
 
@@ -149,9 +156,9 @@ class ExportPelanggan implements FromCollection, WithHeadings, WithMapping, With
             $status,
             $statusCustomer,
             $customer->paket?->nama_paket ?? '-',
-            $customer->odp->odc->olt->server->lokasi_server ?? '-',
-            $customer->odp->odc->olt->nama_lokasi ?? '-',
-            $customer->odp->odc->nama_odc ?? '-',
+            $customer->odp?->odc?->olt?->server?->lokasi_server ?? '-',
+            $customer->odp?->odc?->olt?->nama_lokasi ?? '-',
+            $customer->odp?->odc?->nama_odc ?? '-',
             $customer->odp?->nama_odp ?? '-',
             $customer->router?->nama_router ?? '-',
             $customer->agen?->name ?? '-',
