@@ -67,7 +67,8 @@
                         <tbody>
                             @php $no = 1; @endphp
                             @forelse ($data as $item)
-                            <tr class="text-center" data-search="{{ strtolower($item->customer->nama_customer . ' ' . $item->customer->alamat . ' ' . $item->customer->paket->nama_paket) }}">
+                            @if($item->customer)
+                            <tr class="text-center" data-search="{{ strtolower($item->customer->nama_customer . ' ' . $item->customer->alamat . ' ' . ($item->customer->paket->nama_paket ?? '')) }}">
                                 <td>{{ $no++ }}</td>
                                 <td>
                                     <div class="fw-bold text-dark">{{ $item->customer->nama_customer }}</div>
@@ -78,7 +79,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-label-info">
-                                        {{ $item->customer->paket->nama_paket }}
+                                        {{ $item->customer->paket->nama_paket ?? '-' }}
                                     </span>
                                 </td>
                                 <td>
@@ -89,9 +90,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($item->invoice->status_id == 7)
+                                    @if($item->invoice && $item->invoice->status_id == 7)
                                     <span class="badge bg-label-danger fw-bold">Belum Bayar</span>
-                                    @elseif($item->invoice->status_id == 8)
+                                    @elseif($item->invoice && $item->invoice->status_id == 8)
                                     <span class="badge bg-label-success fw-bold">Sudah Bayar</span>
                                     @endif
                                 </td>
@@ -116,6 +117,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            @endif
                             @empty
                             <tr>
                                 <td colspan="8" class="text-center">

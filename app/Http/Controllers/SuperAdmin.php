@@ -29,7 +29,11 @@ class SuperAdmin extends Controller
 {
   public function index()
   {
-    $data = BeritaAcara::with('invoice', 'customer', 'tiket')->orderBy('updated_at', 'desc')->get();
+    $data = BeritaAcara::with([
+      'invoice',
+      'customer' => fn ($q) => $q->withTrashed(),
+      'tiket',
+    ])->orderBy('updated_at', 'desc')->get();
     $countCustomer = Customer::whereIn('status_id', [3, 9])->count();
     $countBeritaAcara = BeritaAcara::with('customer', 'invoice')->count();
     return view('SuperAdmin.payment.berita-acara', [
