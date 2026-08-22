@@ -52,23 +52,33 @@
     }
 
     /* Data Card Styles */
+    .stats-grid {
+      margin-top: 0.25rem;
+    }
+
     .data-card {
       background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      padding: 0.85rem;
-      margin-bottom: 1rem;
-      transition: all 0.2s ease;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-left: 3px solid transparent;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      padding: 0.9rem 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
       display: flex;
       align-items: center;
       position: relative;
       overflow: hidden;
-      border-left: 3px solid transparent;
+      height: 100%;
+    }
+
+    .data-card[data-bs-toggle="modal"],
+    a>.data-card {
+      cursor: pointer;
     }
 
     .data-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.09);
     }
 
     .data-card.primary-card {
@@ -92,20 +102,21 @@
     }
 
     .data-card-icon {
-      font-size: 1.25rem;
-      margin-right: 0.75rem;
+      font-size: 1.35rem;
+      margin-right: 0.85rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border-radius: 10px;
       position: relative;
-      transition: all 0.2s ease;
+      transition: transform 0.2s ease;
     }
 
     .data-card:hover .data-card-icon {
-      transform: scale(1.05);
+      transform: scale(1.08);
     }
 
     .data-card-icon.primary {
@@ -135,27 +146,76 @@
 
     .data-card-content {
       flex: 1;
+      min-width: 0;
     }
 
     .data-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       color: #8898aa;
-      margin-bottom: 0.2rem;
-      font-weight: 500;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
+      line-height: 1.35;
     }
 
     .data-value {
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 1.05rem;
+      font-weight: 700;
       line-height: 1.2;
     }
 
     .data-value .badge {
       font-size: 0.75rem;
-      padding: 0.3rem 0.6rem;
-      border-radius: 4px;
+      padding: 0.32rem 0.65rem;
+      border-radius: 50rem;
+    }
+
+    .data-card-note {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding-top: 0.45rem;
+      border-top: 1px dashed #e9ecef;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .data-card-note small {
+      font-size: 0.68rem;
+      color: #8898aa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    @media (max-width: 575.98px) {
+      .data-card {
+        padding: 0.7rem 0.75rem;
+        border-radius: 8px;
+      }
+
+      .data-card-icon {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        margin-right: 0.6rem;
+        font-size: 1.1rem;
+        border-radius: 8px;
+      }
+
+      .data-label {
+        font-size: 0.62rem;
+      }
+
+      .data-value {
+        font-size: 0.95rem;
+      }
+
+      .data-value .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.55rem;
+      }
     }
 
     /* Search & Sort Container Styles */
@@ -839,8 +899,8 @@
       <div class="card">
         <div class="card-header modern-card-header">
           <h4 class="header-title">Data Global</h4>
-          <div class="row">
-            <div class="col-md-6 col-lg-3 mb-3">
+          <div class="row g-3 stats-grid">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <div class="data-card bg-white primary-card">
                 <div class="data-card-icon primary">
                   <i class="bx bx-user"></i>
@@ -855,7 +915,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <div class="data-card bg-white success-card">
                 <div class="data-card-icon success">
                   <i class="bx bx-check-circle"></i>
@@ -870,25 +930,26 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <div class="data-card bg-white danger-card" data-bs-toggle="modal" data-bs-target="#blokir">
                 <div class="data-card-icon danger">
                   <i class="bx bx-x-circle"></i>
                 </div>
                 <div class="data-card-content">
                   <div class="data-label">Pelanggan Non-Aktif</div>
-                  <div class="data-value mb-3">
+                  <div class="data-value">
                     <span class="badge bg-danger rounded-pill">
                       {{ $nonAktif->count() }}
                     </span>
                   </div>
-                  <small class="text-muted">Tanggal Isolir : {{ $dateBlokir->tanggal_blokir }}</small>
-                  <br>
-                  <small class="text-muted">Jam Isolir : 00:01:00 WIB</small>
+                  <div class="data-card-note">
+                    <small>Tanggal Isolir : {{ $dateBlokir->tanggal_blokir }}</small>
+                    <small>Jam Isolir : 00:01:00 WIB</small>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <a href="/pelanggan-dismantle" data-bs-toggle="tooltip" title="Pelanggan Dismantle">
                 <div class="data-card bg-white danger-card">
                   <div class="data-card-icon danger">
@@ -905,7 +966,7 @@
                 </div>
               </a>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#maintenance">
+            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#maintenance">
               <div class="data-card bg-white danger-card">
                 <div class="data-card-icon danger">
                   <i class="bx bx-loader"></i>
@@ -920,7 +981,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#selesai">
+            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#selesai">
               <div class="data-card bg-white success-card">
                 <div class="data-card-icon success">
                   <i class="bx bx-check-circle"></i>
@@ -935,7 +996,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#antrian">
+            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#antrian">
               <div class="data-card bg-white warning-card">
                 <div class="data-card-icon warning">
                   <i class="bx bx-hourglass"></i>
@@ -950,7 +1011,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6 col-lg-3 mb-3" data-bs-toggle="modal" data-bs-target="#bulanan">
+            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#bulanan">
               <div class="data-card bg-white success-card">
                 <div class="data-card-icon success">
                   <i class="bx bx-calendar"></i>
@@ -965,7 +1026,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
                 <div class="data-card-icon secondary">
                   <i class="bx bx-package"></i>
@@ -980,7 +1041,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Data Agen">
                 <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
                   <div class="data-card-icon secondary">
@@ -997,7 +1058,7 @@
                 </div>
               </a>
             </div>
-            <div class="col-sm-6 col-lg-3 mb-3">
+            <div class="col-6 col-lg-4 col-xxl-3">
               <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
                 <div class="data-card-icon secondary">
                   <i class="bx bx-error-circle"></i>

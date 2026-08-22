@@ -88,6 +88,14 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                 INNER JOIN invoice ON pembayaran.invoice_id = invoice.id
                 WHERE invoice.customer_id = customer.id
             ) as last_pembayaran_date')
+            ->selectRaw('(
+                SELECT invoice.jatuh_tempo
+                FROM pembayaran
+                INNER JOIN invoice ON pembayaran.invoice_id = invoice.id
+                WHERE invoice.customer_id = customer.id
+                ORDER BY pembayaran.tanggal_bayar DESC
+                LIMIT 1
+            ) as periode_pembayaran')
             ->whereNull('customer.deleted_at');
 
         switch ($this->type) {
@@ -103,7 +111,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                 return $query->whereYear('tanggal_selesai', $year)
                     ->whereMonth('tanggal_selesai', $month);
             default:
-                return $query;
+                return $query->whereNotIn('customer.status_id', [1, 2, 5]);
         }
     }
 
@@ -147,6 +155,16 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
             }
         }
 
+        // **TAMBAHAN: Periode Terakhir Bayar - bulan tagihan dari invoice yang terakhir dibayar**
+        $periodePembayaran = '-';
+        if (!empty($customer->periode_pembayaran)) {
+            try {
+                $periodePembayaran = Carbon::parse($customer->periode_pembayaran)->locale('id')->isoFormat('MMMM Y');
+            } catch (\Exception $e) {
+                $periodePembayaran = '-';
+            }
+        }
+
         return [
             $customer->id,
             $customer->nama_customer,
@@ -178,6 +196,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
             $customer->created_at?->format('d-m-Y H:i:s') ?? '-',
             $tanggalSelesai,
             $pembayaranTerakhir, // **KOLOM BARU: Pembayaran Terakhir**
+            $periodePembayaran, // **KOLOM BARU: Periode Terakhir Bayar**
         ];
     }
 
@@ -235,6 +254,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
             'Tanggal Registrasi',
             'Tanggal Installasi',
             'Pembayaran Terakhir', // **KOLOM BARU**
+            'Periode Terakhir Bayar',
         ];
     }
 
@@ -268,7 +288,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                     $headings = ['Nama Paket', 'Jumlah Pelanggan'];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
                 } else {
-                    $totalColumns = 30; // 29 kolom (A sampai AC) - DITAMBAH 1 KOLOM
+                    $totalColumns = 31; // 31 kolom (A sampai AD)
                     $headings = [
                         'ID',
                         'Nama Pelanggan',
@@ -300,6 +320,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                         'Tanggal Registrasi',
                         'Tanggal Installasi',
                         'Pembayaran Terakhir', // **KOLOM BARU**
+                        'Periode Terakhir Bayar',
                     ];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // AC
                 }
@@ -414,7 +435,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
 
                     if ($this->type !== 'ringkasan') {
                         // Center alignment untuk kolom tertentu
-                        $centerColumns = [0, 4, 5, 6, 7, 27, 28]; // ID, Status, Status Customer, Paket, Pembayaran Terakhir, Tanggal
+                        $centerColumns = [0, 4, 5, 6, 7, 27, 28, 29, 30]; // ID, Status, Status Customer, Paket, Pembayaran Terakhir, Tanggal, Periode Terakhir Bayar
                         foreach ($centerColumns as $colIndex) {
                             $columnLetter = $this->getColumnLetter($colIndex);
                             $sheet->getStyle("{$columnLetter}5:{$columnLetter}{$lastRow}")
