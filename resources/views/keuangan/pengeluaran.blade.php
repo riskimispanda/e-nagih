@@ -156,26 +156,26 @@
   }
 </style>
 @section('content')
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
+  <!-- Tailwind CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+      <h4 class="text-lg font-bold text-gray-800 m-0">Data Pengeluaran</h4>
+      <p class="text-sm text-gray-500 m-0 mt-1">Kelola dan pantau data pengeluaran perusahaan</p>
+    </div>
 
-        <!-- Card Header -->
-        <div class="card-header border-bottom mb-4">
-          <h4 class="card-title fw-bold">Data Pengeluaran</h4>
-          <small class="card-subtitle text-muted">Kelola dan pantau data pengeluaran perusahaan</small>
-        </div>
-
-        <div class="card-body">
+    <!-- Filter Card -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
 
           <!-- Filter -->
-          <div class="row mb-4 g-3">
-            <div class="col-sm-3">
-              <label class="form-label">Filter Bulan</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1.5">Filter Bulan</label>
               @php
                 $selectedMonth = request('month', date('n'));
               @endphp
-              <select name="month" id="monthFilter" class="form-select">
+              <select name="month" id="monthFilter" class="form-select w-full">
                 <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>Semua Bulan</option>
                 <option value="1" {{ $selectedMonth == '1' ? 'selected' : '' }}>Januari</option>
                 <option value="2" {{ $selectedMonth == '2' ? 'selected' : '' }}>Februari</option>
@@ -191,9 +191,9 @@
                 <option value="12" {{ $selectedMonth == '12' ? 'selected' : '' }}>Desember</option>
               </select>
             </div>
-            <div class="col-sm-3">
-              <label class="form-label">Filter Tahun</label>
-              <select name="year" id="yearFilter" class="form-select">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1.5">Filter Tahun</label>
+              <select name="year" id="yearFilter" class="form-select w-full">
                 @php
                   $currentYear = date('Y');
                   $selectedYear = request('year', $currentYear);
@@ -203,9 +203,9 @@
                 @endfor
               </select>
             </div>
-            <div class="col-md-3">
-              <label for="kategoriFilter" class="form-label">Kategori</label>
-              <select class="form-select" id="kategoriFilter">
+            <div>
+              <label for="kategoriFilter" class="block text-sm font-medium text-gray-600 mb-1.5">Kategori</label>
+              <select class="form-select w-full" id="kategoriFilter">
                 <option value="" selected>Semua Kategori</option>
                 @foreach ($kategoriPengeluaran as $kategori)
                   <option value="{{ $kategori }}" {{ request('kategori') == $kategori ? 'selected' : '' }}>
@@ -214,253 +214,224 @@
                 @endforeach
               </select>
             </div>
-            <div class="col-md-3">
-              <label for="searchInput" class="form-label">Search</label>
-              <input type="text" class="form-control" id="searchInput" placeholder="Cari...">
+            <div>
+              <label for="searchInput" class="block text-sm font-medium text-gray-600 mb-1.5">Search</label>
+              <input type="text" class="form-control w-full" id="searchInput" placeholder="Cari...">
             </div>
-            <div class="col-sm-12">
-              <!-- Export Button -->
-              <a href="#" id="exportFilterBtn" class="btn btn-danger btn-sm">
-                <i class="bx bx-export me-1"></i> Export Sesuai Filter
+            <div class="sm:col-span-2 lg:col-span-4">
+              <a href="#" id="exportFilterBtn" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white transition">
+                <i class="bx bx-export"></i> Export Sesuai Filter
               </a>
             </div>
           </div>
+        </div>
 
           <!-- Summary Cards -->
-          <div class="row mb-5 g-3">
-
-            <div class="col-lg-6 col-md-6">
-              <div class="card shadow-sm border-0 bg-info hover-shadow" style="transition: all 0.3s ease;">
-                <div class="card-body p-3 p-sm-4">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="avatar avatar-md bg-info bg-opacity-25 rounded-2 p-2">
-                      <i class="bx bx-money fs-3 text-white"></i>
-                    </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Total Saldo</h6>
-                  </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalSaldo">
-                    Rp {{ number_format($total, 0, ',', '.') }}
-                  </h3>
-                  <small class="text-white text-opacity-85">Total saldo bersih (Pemasukan - Pengeluaran)</small>
-                </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 text-2xl shrink-0">
+                <i class="bx bx-money"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-500 m-0">Total Saldo</p>
+                <h3 id="totalSaldo" class="text-xl font-bold text-gray-900 m-0 truncate">Rp {{ number_format($total, 0, ',', '.') }}</h3>
+                <p class="text-xs text-gray-400 m-0 mt-0.5">Total saldo bersih (Pemasukan - Pengeluaran)</p>
               </div>
             </div>
-            <div class="col-lg-6 col-md-6">
-              <div class="card shadow-sm border-0 bg-secondary hover-shadow" style="transition: all 0.3s ease;">
-                <div class="card-body p-3 p-sm-4">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="avatar avatar-md bg-secondary bg-opacity-25 rounded-2 p-2">
-                      <i class="bx bx-calendar fs-3 text-white"></i>
-                    </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2" id="saldoBulanIniLabel">{{ $saldoLabel }}</h6>
-                  </div>
-                  <h3 class="mb-1 text-white fw-bold" id="saldoBulanIni">
-                    Rp {{ number_format($saldoBulanIni, 0, ',', '.') }}
-                  </h3>
-                  <small class="text-white text-opacity-85" id="saldoBulanIniSub">{{ $saldoSub }}</small>
-                </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 text-2xl shrink-0">
+                <i class="bx bx-calendar"></i>
               </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-              <div class="card shadow-sm border-0 bg-primary hover-shadow" style="transition: all 0.3s ease;">
-                <div class="card-body p-3 p-sm-4">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="avatar avatar-md bg-primary bg-opacity-25 rounded-2 p-2">
-                      <i class="bx bx-wallet fs-3 text-white"></i>
-                    </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Total Pengeluaran</h6>
-                  </div>
-                  <h3 class="mb-1 text-white fw-bold" id="totalPengeluaranAll">
-                    Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}
-                  </h3>
-                  <small class="text-white text-opacity-85">Seluruh pengeluaran terkonfirmasi</small>
-                </div>
+              <div class="min-w-0">
+                <p id="saldoBulanIniLabel" class="text-sm text-gray-500 m-0">{{ $saldoLabel }}</p>
+                <h3 id="saldoBulanIni" class="text-xl font-bold text-gray-900 m-0 truncate">Rp {{ number_format($saldoBulanIni, 0, ',', '.') }}</h3>
+                <p id="saldoBulanIniSub" class="text-xs text-gray-400 m-0 mt-0.5">{{ $saldoSub }}</p>
               </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-              <div class="card shadow-sm border-0 bg-success hover-shadow" style="transition: all 0.3s ease;">
-                <div class="card-body p-3 p-sm-4">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="avatar avatar-md bg-success bg-opacity-25 rounded-2 p-2">
-                      <i class="bx bx-calendar fs-3 text-white"></i>
-                    </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2">Hari Ini</h6>
-                  </div>
-                  <h3 class="mb-1 text-white fw-bold" id="pengeluaranHariIni">
-                    Rp {{ number_format($dailyPengeluaran, 0, ',', '.') }}
-                  </h3>
-                  <small class="text-white text-opacity-85">Pengeluaran hari ini</small>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-lg-3 col-md-6">
-              <div class="card shadow-sm border-0 bg-warning hover-shadow" style="transition: all 0.3s ease;">
-                <div class="card-body p-3 p-sm-4">
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="avatar avatar-md bg-warning bg-opacity-25 rounded-2 p-2">
-                      <i class="bx bx-line-chart fs-3 text-white"></i>
-                    </div>
-                    <h6 class="card-title mb-0 text-white fw-bold ms-2" id="pengeluaranBulanIniLabel">{{ $pengeluaranLabel }}</h6>
-                  </div>
-                  <h3 class="mb-1 text-white fw-bold" id="pengeluaranBulanIni">
-                    Rp {{ number_format($monthlyPengeluaran, 0, ',', '.') }}
-                  </h3>
-                  <small class="text-white text-opacity-85" id="pengeluaranBulanIniSub">{{ $pengeluaranSub }}</small>
-                </div>
-              </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-              <a href="/request/hapus/pengeluaran" data-bs-toggle="tooltip" title="Request Konfirmasi"
-                data-bs-placement="bottom">
-                <div class="card shadow-sm border-0 bg-danger hover-shadow" style="transition: all 0.3s ease;">
-                  <div class="card-body p-3 p-sm-4">
-                    <div class="d-flex align-items-center mb-2">
-                      <div class="avatar avatar-md bg-danger bg-opacity-25 rounded-2 p-2">
-                        <i class="bx bx-line-chart fs-3 text-white"></i>
-                      </div>
-                      <h6 class="card-title mb-0 text-white fw-bold ms-2">Request Konfirmasi</h6>
-                    </div>
-                    <h3 class="mb-1 text-white fw-bold" id="totalRequest">
-                      {{ $totalRequest }}
-                    </h3>
-                    <small class="text-white text-opacity-85">Total Request Hapus Pengeluaran</small>
-                  </div>
-                </div>
-              </a>
             </div>
           </div>
 
-          <hr>
-          <!-- Table -->
-          <div class="d-flex justify-content-between mb-4 gap-4 flex-wrap">
-            <div>
-              <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
-                data-bs-target="#modalScrollable">
-                <i class="bx bx-plus"></i>Tambah
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 text-2xl shrink-0">
+                <i class="bx bx-wallet"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-500 m-0">Total Pengeluaran</p>
+                <h3 id="totalPengeluaranAll" class="text-xl font-bold text-gray-900 m-0 truncate">Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}</h3>
+                <p class="text-xs text-gray-400 m-0 mt-0.5">Seluruh pengeluaran terkonfirmasi</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-50 text-green-600 text-2xl shrink-0">
+                <i class="bx bx-calendar"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-500 m-0">Hari Ini</p>
+                <h3 id="pengeluaranHariIni" class="text-xl font-bold text-gray-900 m-0 truncate">Rp {{ number_format($dailyPengeluaran, 0, ',', '.') }}</h3>
+                <p class="text-xs text-gray-400 m-0 mt-0.5">Pengeluaran hari ini</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-amber-50 text-amber-600 text-2xl shrink-0">
+                <i class="bx bx-line-chart"></i>
+              </div>
+              <div class="min-w-0">
+                <p id="pengeluaranBulanIniLabel" class="text-sm text-gray-500 m-0">{{ $pengeluaranLabel }}</p>
+                <h3 id="pengeluaranBulanIni" class="text-xl font-bold text-gray-900 m-0 truncate">Rp {{ number_format($monthlyPengeluaran, 0, ',', '.') }}</h3>
+                <p id="pengeluaranBulanIniSub" class="text-xs text-gray-400 m-0 mt-0.5">{{ $pengeluaranSub }}</p>
+              </div>
+            </div>
+            <a href="/request/hapus/pengeluaran" data-bs-toggle="tooltip" title="Request Konfirmasi" data-bs-placement="bottom"
+              class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:border-red-200 transition">
+              <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-red-50 text-red-600 text-2xl shrink-0">
+                <i class="bx bx-line-chart"></i>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm text-gray-500 m-0">Request Konfirmasi</p>
+                <h3 id="totalRequest" class="text-xl font-bold text-gray-900 m-0 truncate">{{ $totalRequest }}</h3>
+                <p class="text-xs text-gray-400 m-0 mt-0.5">Total Request Hapus Pengeluaran</p>
+              </div>
+            </a>
+          </div>
+
+          <!-- Table Card -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100">
+              <button type="button" class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition" data-bs-toggle="modal" data-bs-target="#modalScrollable">
+                <i class="bx bx-plus"></i> Tambah
               </button>
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-500 m-0">Tampilkan:</label>
+                <select id="entriesPerPage" class="form-select form-select-sm w-auto">
+                  <option value="10" selected>10</option>
+                  <option value="25">25</option>
+                  <option value="50">50</option>
+                  <option value="100">100</option>
+                </select>
+                <span class="text-sm text-gray-500">Entri</span>
+              </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-              <label class="form-label mb-0 text-muted small">Tampilkan:</label>
-              <select id="entriesPerPage" class="form-select form-select-sm" style="width: auto;">
-                <option value="10" selected>10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-              <span class="text-muted small">Entri</span>
-            </div>
-          </div>
-          <div class="table-responsive">
-            <table class="table table-hover" id="pengeluaranTable">
-              <thead class="table-dark">
-                <tr class="text-center">
-                  <th>No</th>
-                  <th>Tanggal</th>
-                  <th>Jenis Pengeluaran</th>
-                  <th>Keterangan</th>
-                  <th>Jumlah</th>
-                  <th>Jenis Kas</th>
-                  <th>Status</th>
-                  <th>Admin</th>
-                  <th>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                @forelse ($pengeluarans as $key => $pengeluaran)
-                  <tr class="text-center">
-                    <td>{{ $key + 1 }}</td>
-                    <td>
-                      <span class="badge bg-label-info">
-                        {{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}
-                      </span>
-                    </td>
-                    <td>{{ $pengeluaran->jenis_pengeluaran }}</td>
-                    <td>{{ $pengeluaran->keterangan }}</td>
-                    <td data-amount="{{ $pengeluaran->jumlah_pengeluaran }}">
-                      <span class="badge bg-label-warning">
-                        Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge bg-label-primary">
-                        {{ $pengeluaran->kas->jenis_kas ?? '-'}}
-                      </span>
-                    </td>
-                    <td>
-                      @if ($pengeluaran->status_id == 1)
-                        <span class="badge bg-warning bg-opacity-10 text-warning">Menunggu Konfirmasi Penghapusan</span>
-                      @elseif ($pengeluaran->status_id == 2)
-                        <span class="badge bg-success bg-opacity-10 text-success">Approved</span>
-                      @elseif ($pengeluaran->status_id == 3)
-                        <span class="badge bg-success bg-opacity-10 text-success">Berhasil</span>
-                      @endif
-                    </td>
-                    <td>
-                      <span class="badge bg-danger bg-opacity-10 text-danger">
-                        {{ $pengeluaran->user->name }}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="d-flex gap-2">
-                        <a href="/edit-pengeluaran/{{ $pengeluaran->id }}">
-                          <button class="btn btn-outline-warning btn-sm mb-1" title="Edit" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom">
-                            <i class="bx bx-edit"></i>
-                          </button>
-                        </a>
-                        <button class="btn btn-outline-danger btn-sm mb-1" data-bs-toggle="modal"
-                          data-bs-target="#deletePengeluaranModal" data-id="{{ $pengeluaran->id }}" title="Hapus"
-                          data-bs-placement="bottom">
-                          <i class="bx bx-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                @empty
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm" id="pengeluaranTable">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                   <tr>
-                    <td colspan="9" class="text-center py-5">
-                      <div class="d-flex flex-column align-items-center">
-                        <i class="bx bx-receipt text-muted" style="font-size: 3rem;"></i>
-                        <h5 class="text-dark mt-3 mb-2">Tidak ada data</h5>
-                        <p class="text-muted mb-0">Belum ada Transaksi</p>
-                      </div>
-                    </td>
+                    <th class="px-4 py-3 text-center font-semibold">No</th>
+                    <th class="px-4 py-3 text-center font-semibold">Tanggal</th>
+                    <th class="px-4 py-3 text-center font-semibold">Jenis Pengeluaran</th>
+                    <th class="px-4 py-3 text-center font-semibold">Keterangan</th>
+                    <th class="px-4 py-3 text-center font-semibold">Jumlah</th>
+                    <th class="px-4 py-3 text-center font-semibold">Jenis Kas</th>
+                    <th class="px-4 py-3 text-center font-semibold">Status</th>
+                    <th class="px-4 py-3 text-center font-semibold">Admin</th>
+                    <th class="px-4 py-3 text-center font-semibold">Aksi</th>
                   </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-          <!-- Menjadi ini: -->
-          <div class="d-flex justify-content-between align-items-center mt-4">
-            <div id="customPaginationInfo" class="text-muted small">
-              Menampilkan {{ $pengeluarans->count() }} dari {{ $pengeluarans->total() }} records
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  @forelse ($pengeluarans as $key => $pengeluaran)
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-3 text-center text-gray-600">{{ $key + 1 }}</td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
+                          {{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-center text-gray-700">{{ $pengeluaran->jenis_pengeluaran }}</td>
+                      <td class="px-4 py-3 text-center text-gray-700">{{ $pengeluaran->keterangan }}</td>
+                      <td class="px-4 py-3 text-center" data-amount="{{ $pengeluaran->jumlah_pengeluaran }}">
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
+                          Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium">
+                          {{ $pengeluaran->kas->jenis_kas ?? '-'}}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        @if ($pengeluaran->status_id == 1)
+                          <span class="inline-block px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">Menunggu Konfirmasi Penghapusan</span>
+                        @elseif ($pengeluaran->status_id == 2)
+                          <span class="inline-block px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">Approved</span>
+                        @elseif ($pengeluaran->status_id == 3)
+                          <span class="inline-block px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">Berhasil</span>
+                        @endif
+                      </td>
+                      <td class="px-4 py-3 text-center">
+                        <span class="inline-block px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-medium">
+                          {{ $pengeluaran->user->name }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="flex items-center justify-center gap-2">
+                          <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-sky-600 hover:bg-sky-50 transition" data-bs-toggle="modal"
+                            data-bs-target="#detailPengeluaranModal" title="Detail" data-bs-placement="bottom"
+                            data-tanggal="{{ \Carbon\Carbon::parse($pengeluaran->tanggal_pengeluaran)->format('d-M-Y') }}"
+                            data-jenis="{{ $pengeluaran->jenis_pengeluaran }}"
+                            data-keterangan="{{ $pengeluaran->keterangan }}"
+                            data-jumlah="Rp {{ number_format($pengeluaran->jumlah_pengeluaran, 0, ',', '.') }}"
+                            data-kas="{{ $pengeluaran->kas->jenis_kas ?? '-' }}"
+                            data-metode="{{ $pengeluaran->metode_bayar }}"
+                            data-status="{{ $pengeluaran->status_id == 1 ? 'Menunggu Konfirmasi Penghapusan' : ($pengeluaran->status_id == 2 ? 'Approved' : 'Berhasil') }}"
+                            data-admin="{{ $pengeluaran->user->name }}"
+                            data-rab="{{ $pengeluaran->rab->kegiatan ?? '-' }}"
+                            data-bukti="{{ $pengeluaran->bukti_pengeluaran ? asset('uploads/'.basename($pengeluaran->bukti_pengeluaran)) : '' }}"
+                            data-bukti-ext="{{ $pengeluaran->bukti_pengeluaran ? strtolower(pathinfo($pengeluaran->bukti_pengeluaran, PATHINFO_EXTENSION)) : '' }}">
+                            <i class="bx bx-show"></i>
+                          </button>
+                          <a href="/edit-pengeluaran/{{ $pengeluaran->id }}">
+                            <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 transition" title="Edit" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                              <i class="bx bx-edit"></i>
+                            </button>
+                          </a>
+                          <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 transition" data-bs-toggle="modal"
+                            data-bs-target="#deletePengeluaranModal" data-id="{{ $pengeluaran->id }}" title="Hapus"
+                            data-bs-placement="bottom">
+                            <i class="bx bx-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  @empty
+                    <tr>
+                      <td colspan="9" class="px-4 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <i class="bx bx-receipt text-gray-300" style="font-size: 3rem;"></i>
+                          <h5 class="text-gray-700 mt-3 mb-2 m-0">Tidak ada data</h5>
+                          <p class="text-gray-400 m-0">Belum ada Transaksi</p>
+                        </div>
+                      </td>
+                    </tr>
+                  @endforelse
+                </tbody>
+              </table>
             </div>
-            <div class="pagination-container">
-              {{ $pengeluarans->links('pagination::bootstrap-5') }}
+            <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-gray-100">
+              <div id="customPaginationInfo" class="text-sm text-gray-500">
+                Menampilkan {{ $pengeluarans->count() }} dari {{ $pengeluarans->total() }} records
+              </div>
+              <div class="pagination-container">
+                {{ $pengeluarans->links('pagination::bootstrap-5') }}
+              </div>
             </div>
           </div>
-        </div> <!-- card-body -->
-      </div> <!-- card -->
-    </div> <!-- col -->
-  </div> <!-- row -->
+  </div>
 
   {{-- Modal Add Pengeluaran --}}
   <div class="modal fade" id="modalScrollable" tabindex="-1" aria-modal="true" role="dialog">
     <div class="modal-dialog modal-dialog-scrollable" role="document">
-      <div class="modal-content">
-        <div class="modal-header bg-white">
-          <h5 class="modal-title" id="modalScrollableTitle">Tambah Pengeluaran</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-content border-0 bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h5 class="text-lg font-semibold text-gray-800" id="modalScrollableTitle">Tambah Pengeluaran</h5>
+          <button type="button" class="flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition" data-bs-dismiss="modal" aria-label="Close">
+            <i class="bx bx-x text-2xl leading-none"></i>
+          </button>
         </div>
         <form action="/pengeluaran/tambah" method="POST" enctype="multipart/form-data">
           @csrf
-          <div class="modal-body border-bottom border-top mt-2 mb-2">
-            <div class="row mb-3">
-              <div class="col-sm-6">
-                <label class="form-label">Rencana Anggaran Biaya</label>
+          <div class="p-6 space-y-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1.5">Rencana Anggaran Biaya</label>
                 <select name="rab_id" id="select-rab" class="form-select">
                   <option value="">Pilih RAB</option>
                   @foreach ($rab as $item)
@@ -479,8 +450,8 @@
                   @endforeach
                 </select>
               </div>
-              <div class="col-sm-6">
-                <label for="kasSelect" class="form-label fw-medium">Jenis Kas</label>
+              <div>
+                <label for="kasSelect" class="block text-sm font-medium text-gray-600 mb-1.5">Jenis Kas</label>
                 <select name="kas_id" id="kasSelect" class="form-select">
                   <option value="" selected disabled>Pilih Jenis Kas</option>
                   @foreach ($kas as $item)
@@ -490,45 +461,39 @@
               </div>
             </div>
 
-            <div class="row">
-              <div class="col-sm-6">
-                <div class="mb-4" id="jumlah-item-group" style="display: none;">
-                  <label class="form-label fw-medium mb-2">
-                    <i class="bx bx-cart me-1"></i>Jumlah Item
-                  </label>
-                  <input type="number" name="item" class="form-control" placeholder="100">
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="mb-4" id="jumlah-item-group" style="display: none;">
+                <label class="block text-sm font-medium text-gray-600 mb-1.5">
+                  <i class="bx bx-cart me-1"></i>Jumlah Item
+                </label>
+                <input type="number" name="item" class="form-control" placeholder="100">
               </div>
-              <div class="col-sm-6">
-                <div class="mb-4" id="anggaran-info" style="display: none;">
-                  <label class="form-label fw-medium mb-2">
-                    <i class="bx bx-money me-1"></i>Anggaran RAB
-                  </label>
-                  <input type="text" id="anggaran-amount" class="form-control" value="Rp 0" readonly>
-                </div>
+              <div class="mb-4" id="anggaran-info" style="display: none;">
+                <label class="block text-sm font-medium text-gray-600 mb-1.5">
+                  <i class="bx bx-money me-1"></i>Anggaran RAB
+                </label>
+                <input type="text" id="anggaran-amount" class="form-control" value="Rp 0" readonly>
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-sm-6">
-                <label for="tanggalPengeluaran" class="form-label fw-medium">Tanggal</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="tanggalPengeluaran" class="block text-sm font-medium text-gray-600 mb-1.5">Tanggal</label>
                 <input type="date" class="form-control" id="tanggalPengeluaran" required name="tanggalPengeluaran">
               </div>
-              <div class="col-sm-6">
-                <label for="jenisPengeluaran" class="form-label fw-medium">Jenis Pengeluaran</label>
+              <div>
+                <label for="jenisPengeluaran" class="block text-sm font-medium text-gray-600 mb-1.5">Jenis Pengeluaran</label>
                 <input name="jenisPengeluaran" type="text" class="form-control" id="jenisPengeluaran"
                   placeholder="Contoh: Operasional, Gaji, Lainnya" required>
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-sm-12">
-                <label for="keterangan" class="form-label fw-medium">Keterangan</label>
-                <textarea name="keterangan" class="form-control" id="keterangan" rows="3"
-                  placeholder="Masukkan keterangan pengeluaran..." required></textarea>
-              </div>
+            <div>
+              <label for="keterangan" class="block text-sm font-medium text-gray-600 mb-1.5">Keterangan</label>
+              <textarea name="keterangan" class="form-control" id="keterangan" rows="3"
+                placeholder="Masukkan keterangan pengeluaran..." required></textarea>
             </div>
-            <div class="row mb-3">
-              <div class="col-sm-6">
-                <label for="jumlahPengeluaran" class="form-label fw-medium">Jumlah</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="jumlahPengeluaran" class="block text-sm font-medium text-gray-600 mb-1.5">Jumlah</label>
                 <div class="input-group">
                   <span class="input-group-text">Rp</span>
                   <input type="text" class="form-control" required placeholder="Masukkan jumlah pengeluaran"
@@ -537,8 +502,8 @@
                 <input name="jumlahPengeluaran" type="text" class="form-control mt-1" id="jumlahPengeluaranNumeric"
                   readonly placeholder="0" hidden>
               </div>
-              <div class="col-sm-6">
-                <label for="metodePengeluaran" class="form-label fw-medium">Metode Pengeluaran</label>
+              <div>
+                <label for="metodePengeluaran" class="block text-sm font-medium text-gray-600 mb-1.5">Metode Pengeluaran</label>
                 <select class="form-select" id="metodePengeluaran" required name="metodePengeluaran">
                   <option selected disabled>Pilih Metode</option>
                   @foreach ($metodes as $metode)
@@ -547,21 +512,19 @@
                 </select>
               </div>
             </div>
-            <div class="row mb-3">
-              <div class="col-sm-12">
-                <label for="buktiPengeluaran" class="form-label fw-medium">Bukti Pengeluaran</label>
-                <input name="buktiPengeluaran" type="file" class="form-control" id="buktiPengeluaran"
-                  accept=".jpg,.jpeg,.png,.pdf">
-                <div class="form-text text-muted">
-                  <i class="bx bx-info-circle me-1"></i>
+            <div>
+              <label for="buktiPengeluaran" class="block text-sm font-medium text-gray-600 mb-1.5">Bukti Pengeluaran</label>
+              <input name="buktiPengeluaran" type="file" class="form-control" id="buktiPengeluaran"
+                accept=".jpg,.jpeg,.png,.pdf">
+              <div class="form-text text-muted">
+                <i class="bx bx-info-circle me-1"></i>
                   Format file: JPG, PNG, PDF. Maksimal ukuran 2MB.
-                </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer gap-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-            <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+          <div class="flex justify-end gap-2 px-6 py-4 border-t border-gray-100">
+            <button type="button" class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition">Simpan</button>
           </div>
         </form>
       </div>
@@ -589,6 +552,56 @@
       }
     }
   }
+</script>
+
+<script>
+  // Kompres gambar bukti di sisi klien sebelum diupload agar selalu di bawah batas upload server
+  (function () {
+    var input = document.getElementById('buktiPengeluaran');
+    if (!input) return;
+
+    input.addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      var type = file.type;
+      // Hanya kompres gambar (bukan PDF); abaikan format yang tidak bisa dibaca canvas
+      if (!type.startsWith('image/') || type === 'image/heic' || type === 'image/heif') return;
+
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          var maxDim = 1280;
+          var width = img.width;
+          var height = img.height;
+          if (width > height && width > maxDim) {
+            height = Math.round(height * maxDim / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round(width * maxDim / height);
+            height = maxDim;
+          }
+
+          var canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob(function (blob) {
+            if (!blob) return;
+            var baseName = (file.name || 'bukti').replace(/\.[^.]+$/, '');
+            var newFile = new File([blob], baseName + '.jpg', { type: 'image/jpeg' });
+            var dt = new DataTransfer();
+            dt.items.add(newFile);
+            e.target.files = dt.files;
+          }, 'image/jpeg', 0.7);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
 </script>
 
 {{-- Modal Request Hapus Pengeluaran (Single Generic Modal) --}}
@@ -621,6 +634,70 @@
   </div>
 </div>
 
+{{-- Modal Detail Pengeluaran --}}
+<div class="modal fade" id="detailPengeluaranModal" tabindex="-1" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 bg-white shadow-2xl rounded-2xl overflow-hidden">
+      <div class="flex items-center px-6 py-4 border-b border-gray-100">
+        <h5 class="text-lg font-semibold text-gray-800 flex items-center gap-2 m-0">
+          <i class="bx bx-receipt text-info text-xl"></i> Detail Pengeluaran
+        </h5>
+      </div>
+      <div class="px-6 py-5">
+        {{-- Summary --}}
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-gray-50 rounded-xl px-5 py-4 mb-5">
+          <div>
+            <p class="text-sm text-gray-500 m-0">Jumlah Pengeluaran</p>
+            <h4 id="detailJumlah" class="text-2xl font-bold text-gray-900 m-0">-</h4>
+          </div>
+          <span id="detailStatus" class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">-</span>
+        </div>
+
+        {{-- Detail list --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Tanggal</p>
+            <p id="detailTanggal" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Jenis Pengeluaran</p>
+            <p id="detailJenis" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Jenis Kas</p>
+            <p id="detailKas" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Metode Bayar</p>
+            <p id="detailMetode" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Admin</p>
+            <p id="detailAdmin" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">RAB</p>
+            <p id="detailRab" class="font-semibold text-gray-800 m-0">-</p>
+          </div>
+          <div class="col-span-1 md:col-span-2">
+            <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-1">Keterangan</p>
+            <p id="detailKeterangan" class="font-semibold text-gray-800 m-0 whitespace-pre-wrap">-</p>
+          </div>
+        </div>
+
+        <hr class="my-5 border-gray-100">
+
+        {{-- Bukti --}}
+        <p class="text-xs uppercase tracking-wide font-semibold text-gray-400 mb-2">Bukti Pengeluaran</p>
+        <div id="detailBukti" class="border border-gray-200 rounded-xl p-4 bg-gray-50 text-center"></div>
+      </div>
+      <div class="flex justify-end px-6 py-4 border-t border-gray-100">
+        <button type="button" class="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // Event delegation for delete buttons
@@ -635,6 +712,62 @@
         // Update the modal's content.
         var form = deleteModal.querySelector('#deletePengeluaranForm');
         form.action = '/pengeluaran/hapus/' + id;
+      });
+    }
+
+    // Populate detail modal from data-* attributes of the clicked button
+    var detailModal = document.getElementById('detailPengeluaranModal');
+    if (detailModal) {
+      detailModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        if (!button) return;
+
+        document.getElementById('detailTanggal').textContent = button.getAttribute('data-tanggal') || '-';
+        document.getElementById('detailJenis').textContent = button.getAttribute('data-jenis') || '-';
+        document.getElementById('detailJumlah').textContent = button.getAttribute('data-jumlah') || '-';
+        document.getElementById('detailKas').textContent = button.getAttribute('data-kas') || '-';
+        document.getElementById('detailMetode').textContent = button.getAttribute('data-metode') || '-';
+        document.getElementById('detailAdmin').textContent = button.getAttribute('data-admin') || '-';
+        document.getElementById('detailRab').textContent = button.getAttribute('data-rab') || '-';
+        document.getElementById('detailKeterangan').textContent = button.getAttribute('data-keterangan') || '-';
+
+        // Status badge with Tailwind color
+        var statusEl = document.getElementById('detailStatus');
+        var statusText = button.getAttribute('data-status') || '-';
+        statusEl.textContent = statusText;
+        var statusClass = 'bg-gray-100 text-gray-600';
+        if (statusText.indexOf('Berhasil') !== -1 || statusText === 'Approved') {
+          statusClass = 'bg-green-100 text-green-700';
+        } else if (statusText.indexOf('Menunggu') !== -1) {
+          statusClass = 'bg-yellow-100 text-yellow-700';
+        }
+        statusEl.className = 'px-3 py-1 rounded-full text-sm font-medium ' + statusClass;
+
+        var buktiUrl = button.getAttribute('data-bukti');
+        var buktiExt = (button.getAttribute('data-bukti-ext') || '').toLowerCase();
+        var buktiContainer = document.getElementById('detailBukti');
+
+        if (buktiUrl) {
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(buktiExt)) {
+            buktiContainer.innerHTML =
+              '<a href="' + buktiUrl + '" target="_blank">' +
+              '<img src="' + buktiUrl + '" class="mx-auto rounded-xl shadow-sm" style="max-height:300px;" alt="Bukti Pengeluaran">' +
+              '</a>' +
+              '<div class="mt-3">' +
+              '<a href="' + buktiUrl + '" target="_blank" download class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition">' +
+              '<i class="bx bx-download"></i> Unduh Gambar</a></div>';
+          } else if (buktiExt === 'pdf') {
+            buktiContainer.innerHTML =
+              '<a href="' + buktiUrl + '" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition">' +
+              '<i class="bx bx-file"></i> Lihat / Unduh PDF</a>';
+          } else {
+            buktiContainer.innerHTML =
+              '<a href="' + buktiUrl + '" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition">' +
+              '<i class="bx bx-download"></i> Unduh File</a>';
+          }
+        } else {
+          buktiContainer.innerHTML = '<span class="text-gray-400">Tidak ada bukti</span>';
+        }
       });
     }
   });

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Metode;
 use App\Models\Pengeluaran;
@@ -134,6 +135,7 @@ class PengeluaranController extends Controller
   {
     $request->validate([
       'jumlahPengeluaran' => 'required|numeric|min:1',
+      'buktiPengeluaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
       // tambahkan validasi lain sesuai kebutuhan
     ]);
 
@@ -152,11 +154,16 @@ class PengeluaranController extends Controller
     }
 
     // ✅ Upload bukti pengeluaran
-    if ($request->bukti_pengeluaran != null) {
-      $path = $request->file('buktiPengeluaran')->getClientOriginalName();
-      $request->file('buktiPengeluaran')->storeAs('public/uploads', $path);
-    } else {
-      $path = null;
+    $path = null;
+    if ($request->hasFile('buktiPengeluaran') && $request->file('buktiPengeluaran')->isValid()) {
+      $file = $request->file('buktiPengeluaran');
+      $ext = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
+      $filename = time() . '_' . Str::random(8) . '.' . $ext;
+      if (!is_dir(public_path('uploads'))) {
+        mkdir(public_path('uploads'), 0755, true);
+      }
+      $file->move(public_path('uploads'), $filename);
+      $path = $filename;
     }
 
     // ✅ Simpan ke tabel pengeluaran
@@ -311,15 +318,38 @@ class PengeluaranController extends Controller
   public function updatePengeluaran(Request $request, $id)
   {
     $pengeluaran = Pengeluaran::findOrFail($id);
-    // dd($pengeluaran);
-    $pengeluaran->update([
+
+    $request->validate([
+      'buktiPengeluaran' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+    ]);
+
+    $data = [
       'tanggal_pengeluaran' => $request->tanggal,
       'jenis_pengeluaran' => $request->jenis_pengeluaran,
       'jumlah_pengeluaran' => $request->jumlah_pengeluaran,
       'kas_id' => $request->jenis_kas,
       'rab_id' => $request->rab_id,
-      'keterangan' => $request->keterangan
-    ]);
+      'keterangan' => $request->keterangan,
+    ];
+
+    if ($request->hasFile('buktiPengeluaran') && $request->file('buktiPengeluaran')->isValid()) {
+      $file = $request->file('buktiPengeluaran');
+      $ext = strtolower($file->getClientOriginalExtension()) ?: 'jpg';
+      $filename = time() . '_' . Str::random(8) . '.' . $ext;
+      if (!is_dir(public_path('uploads'))) {
+        mkdir(public_path('uploads'), 0755, true);
+      }
+      $file->move(public_path('uploads'), $filename);
+
+      // hapus file bukti lama
+      if ($pengeluaran->bukti_pengeluaran && file_exists(public_path('uploads/' . $pengeluaran->bukti_pengeluaran))) {
+        @unlink(public_path('uploads/' . $pengeluaran->bukti_pengeluaran));
+      }
+
+      $data['bukti_pengeluaran'] = $filename;
+    }
+
+    $pengeluaran->update($data);
 
     // Log
     activity('Request Hapus Pengeluaran')
