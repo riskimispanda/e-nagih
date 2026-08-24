@@ -776,14 +776,20 @@
 @section('page-script')
   <script>
     $(document).ready(function () {
-      // Initialize TomSelect
-      new TomSelect('#select-rab', {
-        create: false,
-        sortField: {
-          field: "text",
-          direction: "asc"
+      // Initialize TomSelect (dijaga agar error di sini tidak menggagalkan handler di bawahnya)
+      try {
+        if (typeof TomSelect !== 'undefined') {
+          new TomSelect('#select-rab', {
+            create: false,
+            sortField: {
+              field: "text",
+              direction: "asc"
+            }
+          });
         }
-      });
+      } catch (e) {
+        console.warn('TomSelect init dilewati:', e);
+      }
 
       let searchTimeout;
 
@@ -844,7 +850,9 @@
       // Event listener untuk pagination
       $(document).on('click', '.pagination a', function (e) {
         e.preventDefault();
-        var page = $(this).attr('href').split('page=')[1];
+        var href = $(this).attr('href') || '';
+        var match = href.match(/[?&]page=(\d+)/);
+        var page = match ? match[1] : 1;
         loadPengeluaran(page);
       });
 
