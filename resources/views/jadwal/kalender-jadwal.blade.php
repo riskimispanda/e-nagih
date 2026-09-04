@@ -1,517 +1,589 @@
 @extends('layouts.contentNavbarLayout')
-@section('title', 'Schedule')
+@section('title', 'Kalender & Jadwal Kegiatan')
 
-<!-- FullCalendar CSS -->
+@section('page-style')
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        corePlugins: {
+            preflight: false
+        },
+        theme: {
+            extend: {
+                colors: {
+                    brand: {
+                        50: '#eef2ff',
+                        100: '#e0e7ff',
+                        500: '#6366f1',
+                        600: '#4f46e5',
+                        700: '#4338ca',
+                    }
+                }
+            }
+        }
+    };
+</script>
+
+<!-- FullCalendar CSS & Icons -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/main.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+
 <style>
-    /* Enhanced Calendar Styling */
+    /* ==========================================================================
+       MODERN FULLCALENDAR TAILWIND REDESIGN
+       ========================================================================== */
+    .fc {
+        font-family: inherit;
+        --fc-border-color: #f1f5f9;
+        --fc-today-bg-color: rgba(99, 102, 241, 0.04);
+        --fc-page-bg-color: #ffffff;
+        --fc-neutral-bg-color: #f8fafc;
+        --fc-list-event-hover-bg-color: #f1f5f9;
+    }
+
+    /* Custom Header Toolbar */
     .fc .fc-toolbar.fc-header-toolbar {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
+        padding: 0.85rem 1.25rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
         display: flex;
         flex-wrap: wrap;
-        gap: .75rem;
-        padding: 1rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
     }
-    
+
     .fc .fc-toolbar-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: white;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    }
-    
-    .fc .fc-button {
-        border-radius: 8px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.2) !important;
+        font-size: 1.15rem !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        letter-spacing: -0.02em;
         display: inline-flex;
         align-items: center;
-        gap: .4rem;
-        padding: .5rem .75rem;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        border: 2px solid rgba(255,255,255,0.3) !important;
+        gap: 0.5rem;
     }
-    
-    .fc .fc-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.3) !important;
+
+    /* Button Styling */
+    .fc .fc-button {
+        border-radius: 0.75rem !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+        padding: 0.45rem 0.85rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.35rem !important;
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        text-transform: capitalize !important;
+        border: 1px solid #e2e8f0 !important;
+        outline: none !important;
     }
-    
-    .fc .fc-button:focus {
-        box-shadow: 0 0 0 .3rem rgba(255,255,255,.6) !important;
-    }
-    
+
     .fc .fc-button-primary {
-        background: rgba(255,255,255,0.95) !important;
-        color: #495057 !important;
-        border: 2px solid rgba(255,255,255,0.8) !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        border-color: #e2e8f0 !important;
     }
-    
+
     .fc .fc-button-primary:hover {
-        background: white !important;
-        color: #212529 !important;
-        border: 2px solid white !important;
-        box-shadow: 0 6px 20px rgba(255,255,255,0.4) !important;
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border-color: #cbd5e1 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
     }
-    
-    .fc .fc-button-primary:active {
-        background: #f8f9fa !important;
-        color: #212529 !important;
-        transform: translateY(0px);
+
+    .fc .fc-button-primary:active,
+    .fc .fc-button-primary.fc-button-active {
+        background: #4f46e5 !important;
+        color: #ffffff !important;
+        border-color: #4f46e5 !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
     }
-    
-    /* Calendar Grid Enhancements */
-    .fc .fc-daygrid-day.fc-day-today {
-        background: linear-gradient(135deg, rgba(13,110,253,0.1) 0%, rgba(13,110,253,0.05) 100%);
-        border: 2px solid rgba(13,110,253,0.3);
+
+    .fc .fc-button-primary:disabled {
+        opacity: 0.5 !important;
+        background: #f1f5f9 !important;
+        color: #94a3b8 !important;
+        border-color: #e2e8f0 !important;
+        transform: none !important;
     }
-    
+
+    /* Column Headers */
+    .fc .fc-col-header {
+        background: #f8fafc;
+        border-radius: 0.75rem 0.75rem 0 0;
+        overflow: hidden;
+    }
+
+    .fc .fc-col-header-cell {
+        padding: 0.65rem 0.25rem !important;
+        border-color: #e2e8f0 !important;
+    }
+
+    .fc .fc-col-header-cell-cushion {
+        font-size: 0.725rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        color: #64748b !important;
+        text-decoration: none !important;
+    }
+
+    /* Day Grid & Cells */
+    .fc .fc-scrollgrid {
+        border-color: #e2e8f0 !important;
+        border-radius: 1rem !important;
+        overflow: hidden !important;
+    }
+
+    .fc td, .fc th {
+        border-color: #f1f5f9 !important;
+    }
+
+    .fc .fc-daygrid-day {
+        transition: background-color 0.15s ease;
+    }
+
     .fc .fc-daygrid-day:hover {
-        background: rgba(102,126,234,0.05);
+        background-color: #f8fafc;
         cursor: pointer;
-        transition: background 0.2s ease;
     }
-    
+
+    .fc .fc-daygrid-day.fc-day-today {
+        background-color: rgba(99, 102, 241, 0.04) !important;
+        position: relative;
+    }
+
+    .fc .fc-daygrid-day.fc-day-today::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #4f46e5, #6366f1);
+        z-index: 1;
+    }
+
+    .fc .fc-daygrid-day-top {
+        padding: 0.4rem 0.5rem 0.2rem !important;
+    }
+
     .fc .fc-daygrid-day-number {
-        font-weight: 600;
-        padding: 8px;
-    }
-    
-    .fc .fc-event {
-        border-radius: 6px;
-        border: none;
-        padding: 2px 6px;
-        font-size: 0.85rem;
-        font-weight: 500;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        cursor: pointer;
-    }
-    
-    /* Sneat Modal Styling */
-    .modal-content {
-        border-radius: 0.5rem;
-        border: none;
-        box-shadow: 0 0.25rem 1rem rgba(161, 172, 184, 0.45);
-    }
-    
-    .modal-header {
-        background: #fff;
-        border-bottom: 1px solid #d9dee3;
-        border-radius: 0.5rem 0.5rem 0 0;
-        padding: 1.5rem 1.5rem 1rem;
-    }
-    
-    .modal-title {
-        font-weight: 600;
-        font-size: 1.125rem;
-        color: #566a7f;
-        margin: 0;
-    }
-    
-    .modal-title i {
-        color: #696cff;
-    }
-    
-    .btn-close {
-        background: transparent;
-        border: none;
-        font-size: 1rem;
-        opacity: 0.5;
-        padding: 0.25rem;
-    }
-    
-    .btn-close:hover {
-        opacity: 0.75;
-    }
-    
-    .modal-body {
-        padding: 1.5rem;
-    }
-    
-    .modal-footer {
-        background: #f8f9fa;
-        border-top: 1px solid #d9dee3;
-        border-radius: 0 0 0.5rem 0.5rem;
-        padding: 1rem 1.5rem;
-    }
-    
-    /* Sneat Form Styling */
-    .form-label {
-        font-weight: 500;
-        color: #566a7f;
-        margin-bottom: 0.5rem;
-        font-size: 0.8125rem;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-    
-    .form-label i {
-        color: #a1acb8;
-        margin-right: 0.25rem;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 0.375rem;
-        border: 1px solid #d9dee3;
-        padding: 0.4375rem 0.875rem;
-        font-size: 0.9375rem;
-        line-height: 1.53;
-        color: #566a7f;
-        background-color: #fff;
-        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: #696cff;
-        box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.25);
-        outline: 0;
-    }
-    
-    .form-control::placeholder {
-        color: #a1acb8;
-    }
-    
-    /* Sneat Radio Buttons */
-    .form-check {
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-check-input {
-        width: 1.125rem;
-        height: 1.125rem;
-        margin-top: 0.125rem;
-        border: 1px solid #d9dee3;
-        border-radius: 50%;
-    }
-    
-    .form-check-input:checked {
-        background-color: #696cff;
-        border-color: #696cff;
-    }
-    
-    .form-check-input:focus {
-        border-color: #696cff;
-        box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.25);
-    }
-    
-    .form-check-label {
-        color: #566a7f;
-        font-size: 0.9375rem;
-        margin-left: 0.5rem;
-    }
-    
-    /* Sneat Buttons */
-    .btn-primary {
-        background-color: #696cff;
-        border-color: #696cff;
-        color: #fff;
-        font-weight: 500;
-        border-radius: 0.375rem;
-        padding: 0.4375rem 1.25rem;
-        font-size: 0.9375rem;
-    }
-    
-    .btn-primary:hover {
-        background-color: #5a5fe7;
-        border-color: #5a5fe7;
-        color: #fff;
-    }
-    
-    .btn-secondary {
-        background-color: #8592a3;
-        border-color: #8592a3;
-        color: #fff;
-        font-weight: 500;
-        border-radius: 0.375rem;
-        padding: 0.4375rem 1.25rem;
-        font-size: 0.9375rem;
-    }
-    
-    .btn-secondary:hover {
-        background-color: #7a8699;
-        border-color: #7a8699;
-        color: #fff;
-    }
-    
-    .btn-danger {
-        background-color: #ff3e1d;
-        border-color: #ff3e1d;
-        color: #fff;
-        font-weight: 500;
-        border-radius: 0.375rem;
-        padding: 0.4375rem 1.25rem;
-        font-size: 0.9375rem;
-    }
-    
-    .btn-danger:hover {
-        background-color: #e6381a;
-        border-color: #e6381a;
-        color: #fff;
-    }
-    
-    /* Loading spinner */
-    .spinner-border-sm {
-        width: 1rem;
-        height: 1rem;
-    }
-    
-    /* Responsive adjustments */
-    .fc .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:nth-child(2) {
-        flex: 1 1 auto;
-        display: flex;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        color: #475569 !important;
+        text-decoration: none !important;
+        width: 1.65rem;
+        height: 1.65rem;
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
+        border-radius: 9999px;
+        transition: all 0.15s ease;
     }
-    
-    @media (max-width: 576px) {
-        .fc .fc-button {
-            padding: .4rem .6rem;
-            font-size: .85rem;
-        }
-        .fc .fc-toolbar-title {
-            font-size: 1.1rem;
-        }
-        .fc .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk {
-            flex: 1 1 100%;
-        }
-        .fc .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:first-child,
-        .fc .fc-toolbar.fc-header-toolbar .fc-toolbar-chunk:last-child {
-            display: flex;
-            justify-content: space-between;
-        }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+        background: #4f46e5 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4) !important;
     }
-    
-    /* Enhanced tooltip */
+
+    /* Event Badges */
+    .fc .fc-event {
+        border-radius: 0.5rem !important;
+        border: none !important;
+        padding: 2px 6px !important;
+        margin-bottom: 2px !important;
+        font-size: 0.725rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+        cursor: pointer !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+
+    .fc .fc-event:hover {
+        transform: translateY(-1px) scale(1.01) !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12) !important;
+        z-index: 10 !important;
+    }
+
+    .fc-event-title {
+        font-weight: 600 !important;
+        letter-spacing: -0.01em;
+    }
+
+    /* More link popover */
+    .fc .fc-more-link {
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        color: #4f46e5 !important;
+        background: #eef2ff !important;
+        padding: 1px 6px !important;
+        border-radius: 9999px !important;
+        text-decoration: none !important;
+    }
+
+    .fc .fc-more-link:hover {
+        background: #e0e7ff !important;
+        color: #3730a3 !important;
+    }
+
+    .fc .fc-popover {
+        border-radius: 1rem !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+        overflow: hidden;
+    }
+
+    .fc .fc-popover-header {
+        background: #f8fafc !important;
+        padding: 0.65rem 0.85rem !important;
+        font-weight: 700 !important;
+        font-size: 0.8rem !important;
+        color: #1e293b !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    /* Modern Tooltip */
     .fc-day-tooltip {
         position: absolute;
         z-index: 2000;
-        background: #fff;
-        color: #566a7f;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        line-height: 1.4;
-        box-shadow: 0 0.25rem 1rem rgba(161, 172, 184, 0.45);
+        background: rgba(255, 255, 255, 0.98);
+        color: #1e293b;
+        border-radius: 1rem;
+        font-size: 0.775rem;
+        line-height: 1.45;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         pointer-events: none;
         max-width: 320px;
         opacity: 0;
-        transform: translateY(8px);
-        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        padding: 1rem;
-        border: 1px solid #d9dee3;
+        transform: translateY(6px);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 0.85rem 1rem;
+        border: 1px solid #e2e8f0;
+        backdrop-filter: blur(8px);
     }
-    
+
     .fc-day-tooltip.show {
         opacity: 1;
         transform: translateY(0);
     }
-    
+
     .fc-day-tooltip .title {
-        font-weight: 600;
+        font-weight: 800;
         display: block;
         margin-bottom: 0.5rem;
-        font-size: 0.9375rem;
-        color: #566a7f;
+        font-size: 0.825rem;
+        color: #0f172a;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid #f1f5f9;
     }
-    
+
     .fc-day-tooltip ul {
         margin: 0;
-        padding-left: 1.25rem;
+        padding-left: 0;
+        list-style: none;
     }
-    
+
     .fc-day-tooltip li {
-        margin: 0.25rem 0;
-        font-size: 0.8125rem;
-        color: #a1acb8;
+        margin: 0.35rem 0;
+        padding: 0.35rem 0.5rem;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        border-left: 3px solid #6366f1;
+        font-size: 0.75rem;
+        color: #334155;
     }
-    
+
     .fc-day-tooltip .arrow {
         position: absolute;
         width: 10px;
         height: 10px;
         background: #fff;
-        border: 1px solid #d9dee3;
+        border: 1px solid #e2e8f0;
         transform: rotate(45deg);
     }
-    
-    .fc-day-tooltip.at-right .arrow { 
-        left: -6px; 
-        top: 16px; 
-        border-right: none;
-        border-bottom: none;
-    }
-    .fc-day-tooltip.at-left .arrow { 
-        right: -6px; 
-        top: 16px;
-        border-left: none;
-        border-top: none;
-    }
-    .fc-day-tooltip.at-top .arrow { 
-        left: 20px; 
-        bottom: -6px;
-        border-top: none;
-        border-left: none;
-    }
-    .fc-day-tooltip.at-bottom .arrow { 
-        left: 20px; 
-        top: -6px;
-        border-bottom: none;
-        border-right: none;
+
+    .fc-day-tooltip.at-right .arrow { left: -6px; top: 16px; border-right: none; border-bottom: none; }
+    .fc-day-tooltip.at-left .arrow  { right: -6px; top: 16px; border-left: none; border-top: none; }
+    .fc-day-tooltip.at-top .arrow   { left: 20px; bottom: -6px; border-top: none; border-left: none; }
+    .fc-day-tooltip.at-bottom .arrow{ left: 20px; top: -6px; border-bottom: none; border-right: none; }
+
+    /* Modal Styling */
+    .modern-modal-content {
+        border-radius: 1.25rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+        overflow: hidden;
     }
 </style>
+@endsection
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="card-title mb-1">📅 Schedule</h5>
-                    <p class="card-subtitle text-muted mb-0">Kelola jadwal dan acara</p>
+<div class="space-y-5">
+
+    <!-- ======================================================================== -->
+    <!-- HERO HEADER & STATS SUMMARY BANNER                                       -->
+    <!-- ======================================================================== -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <!-- Left Info -->
+            <div class="space-y-1.5">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Modul Jadwal & Agenda Tim</span>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
-                    <i class="bx bx-plus me-1"></i>Tambah Jadwal
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight leading-tight m-0 flex items-center gap-2.5">
+                    <i class="bx bx-calendar-event text-indigo-600 text-3xl"></i> Kalender Jadwal
+                </h1>
+                <p class="text-slate-500 text-xs sm:text-sm max-w-xl mb-0">
+                    Kelola meeting, penugasan teknisi, kegiatan operasional, dan pengingat harian secara terpadu.
+                </p>
+            </div>
+
+            <!-- Right Action -->
+            <div class="flex items-center gap-3 shrink-0">
+                <button type="button" data-bs-toggle="modal" data-bs-target="#addScheduleModal"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer border-0 outline-none">
+                    <i class="bx bx-plus-circle text-base"></i>
+                    <span>Tambah Jadwal Baru</span>
                 </button>
             </div>
-            <div class="card-body">
-                <div id="calendar"></div>
+        </div>
+
+        <!-- Category Legends & Live Metrics Bar -->
+        <div class="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <i class="bx bx-calendar text-slate-600"></i> Total Jadwal
+                </div>
+                <div id="stat-total-events" class="text-lg font-black text-slate-800 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Meeting
+                </div>
+                <div id="stat-meeting-events" class="text-lg font-black text-indigo-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Tugas
+                </div>
+                <div id="stat-task-events" class="text-lg font-black text-emerald-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-purple-500"></span> Acara
+                </div>
+                <div id="stat-event-events" class="text-lg font-black text-purple-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> Pengingat
+                </div>
+                <div id="stat-reminder-events" class="text-lg font-black text-amber-600 mt-0.5">0</div>
+            </div>
+            <div class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-xl p-3 transition-all">
+                <div class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-pink-500"></span> Personal
+                </div>
+                <div id="stat-personal-events" class="text-lg font-black text-pink-600 mt-0.5">0</div>
             </div>
         </div>
     </div>
+
+    <!-- ======================================================================== -->
+    <!-- MAIN CALENDAR CARD CONTAINER                                             -->
+    <!-- ======================================================================== -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div id="calendar"></div>
+    </div>
+
 </div>
 
-<!-- Add/Edit Schedule Modal -->
+<!-- ======================================================================== -->
+<!-- TAILWIND-STYLED MODAL: ADD / EDIT SCHEDULE                               -->
+<!-- ======================================================================== -->
 <div class="modal fade" id="addScheduleModal" tabindex="-1" aria-labelledby="addScheduleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addScheduleModalLabel">
-                    <i class="bx bx-calendar-plus me-2"></i>Tambah Jadwal Baru
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modern-modal-content bg-white">
+            
+            <!-- Modal Header -->
+            <div class="p-5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl shrink-0 shadow-xs">
+                        <i class="bx bx-calendar-event"></i>
+                    </div>
+                    <div>
+                        <h5 class="text-base font-bold text-slate-800 m-0 leading-tight" id="addScheduleModalLabel">
+                            Tambah Jadwal Baru
+                        </h5>
+                        <p class="text-xs text-slate-500 m-0 mt-0.5">Tentukan rincian tanggal, kategori, dan waktu agenda</p>
+                    </div>
+                </div>
+                <button type="button" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-600 flex items-center justify-center transition-colors border-0 cursor-pointer" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="bx bx-x text-xl"></i>
+                </button>
             </div>
-            <div class="modal-body">
-                <form id="addScheduleForm">
+
+            <!-- Modal Body Form -->
+            <div class="p-5 sm:p-6 space-y-4">
+                <form id="addScheduleForm" autocomplete="off" class="space-y-4">
                     @csrf
                     <input type="hidden" id="scheduleId" name="schedule_id">
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="scheduleTitle" class="form-label">
-                                <i class="bx bx-text"></i>Judul Jadwal
+
+                    <!-- Title & Category -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                        <div class="sm:col-span-7 space-y-1">
+                            <label for="scheduleTitle" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="bx bx-edit text-indigo-500"></i> Judul Jadwal <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" class="form-control" id="scheduleTitle" name="title" placeholder="Masukkan judul jadwal" required>
-                            <div class="invalid-feedback"></div>
+                            <input type="text" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white"
+                                   id="scheduleTitle" name="title" placeholder="Contoh: Rapat Evaluasi Jaringan Bulanan" required>
+                            <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="scheduleCategory" class="form-label">
-                                <i class="bx bx-category"></i>Kategori
+
+                        <div class="sm:col-span-5 space-y-1">
+                            <label for="scheduleCategory" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="bx bx-category text-indigo-500"></i> Kategori <span class="text-rose-500">*</span>
                             </label>
-                            <select class="form-select" id="scheduleCategory" name="category" required>
-                                <option value="">Pilih kategori</option>
-                                <option value="meeting">Meeting</option>
-                                <option value="task">Tugas</option>
-                                <option value="event">Acara</option>
-                                <option value="reminder">Pengingat</option>
-                                <option value="personal">Personal</option>
+                            <select class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white"
+                                    id="scheduleCategory" name="category" required>
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                <option value="meeting">🔵 Meeting</option>
+                                <option value="task">🟢 Tugas</option>
+                                <option value="event">🟣 Acara</option>
+                                <option value="reminder">🟡 Pengingat</option>
+                                <option value="personal">🔴 Personal</option>
                             </select>
-                            <div class="invalid-feedback"></div>
+                            <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                         </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="scheduleDescription" class="form-label">
-                            <i class="bx bx-detail"></i>Deskripsi
+
+                    <!-- Description -->
+                    <div class="space-y-1">
+                        <label for="scheduleDescription" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                            <i class="bx bx-align-left text-indigo-500"></i> Deskripsi Jadwal (Opsional)
                         </label>
-                        <textarea class="form-control" id="scheduleDescription" name="description" rows="3" placeholder="Deskripsi jadwal (opsional)"></textarea>
-                        <div class="invalid-feedback"></div>
+                        <textarea class="w-full rounded-xl border border-slate-200 p-3.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white"
+                                  id="scheduleDescription" name="description" rows="2" placeholder="Tuliskan catatan detail agenda jika ada..."></textarea>
+                        <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="scheduleDate" class="form-label">
-                                <i class="bx bx-calendar"></i>Tanggal
+
+                    <!-- Date & Time Type -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+                        <div class="sm:col-span-6 space-y-1">
+                            <label for="scheduleDate" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="bx bx-calendar text-indigo-500"></i> Tanggal Agenda <span class="text-rose-500">*</span>
                             </label>
-                            <input type="date" class="form-control" id="scheduleDate" name="date" required>
-                            <div class="invalid-feedback"></div>
+                            <input type="date" class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white"
+                                   id="scheduleDate" name="date" required>
+                            <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">
-                                <i class="bx bx-time"></i>Jenis Waktu
+
+                        <div class="sm:col-span-6 space-y-1">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5 mb-1.5">
+                                <i class="bx bx-time-five text-indigo-500"></i> Pengaturan Waktu
                             </label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="time_type" id="allDay" value="allday">
-                                <label class="form-check-label" for="allDay">Seharian</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700 transition-all">
+                                    <input type="radio" name="time_type" id="specificTime" value="specific" checked class="text-indigo-600 focus:ring-0">
+                                    <span class="font-bold">Jam Khusus</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer text-xs font-medium text-slate-700 transition-all">
+                                    <input type="radio" name="time_type" id="allDay" value="allday" class="text-indigo-600 focus:ring-0">
+                                    <span>Seharian Penuh</span>
+                                </label>
                             </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="time_type" id="specificTime" value="specific" checked>
-                                <label class="form-check-label" for="specificTime">Waktu Tertentu</label>
-                            </div>
                         </div>
                     </div>
-                    
-                    <div class="row" id="timeInputs">
-                        <div class="col-md-6 mb-3">
-                            <label for="startTime" class="form-label">Waktu Mulai</label>
-                            <input type="time" class="form-control" id="startTime" name="start_time" value="09:00">
-                            <div class="invalid-feedback"></div>
+
+                    <!-- Time Inputs (Start & End) -->
+                    <div class="grid grid-cols-2 gap-4 p-3 bg-slate-50/70 border border-slate-200 rounded-xl" id="timeInputs">
+                        <div class="space-y-1">
+                            <label for="startTime" class="block text-[11px] font-bold text-slate-600">Jam Mulai</label>
+                            <input type="time" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 bg-white outline-none focus:border-indigo-500"
+                                   id="startTime" name="start_time" value="09:00">
+                            <div class="invalid-feedback text-[11px] text-rose-500"></div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="endTime" class="form-label">Waktu Selesai</label>
-                            <input type="time" class="form-control" id="endTime" name="end_time" value="10:00">
-                            <div class="invalid-feedback"></div>
+                        <div class="space-y-1">
+                            <label for="endTime" class="block text-[11px] font-bold text-slate-600">Jam Selesai</label>
+                            <input type="time" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-800 bg-white outline-none focus:border-indigo-500"
+                                   id="endTime" name="end_time" value="10:00">
+                            <div class="invalid-feedback text-[11px] text-rose-500"></div>
                         </div>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="scheduleColor" class="form-label">
-                                <i class="bx bx-palette"></i>Warna
+
+                    <!-- Color & Priority -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <div class="space-y-1">
+                            <label for="scheduleColor" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="bx bx-palette text-indigo-500"></i> Warna Label
                             </label>
-                            <select class="form-select" id="scheduleColor" name="color">
-                                <option value="#696cff">Primary</option>
-                                <option value="#71dd37">Success</option>
-                                <option value="#ff3e1d">Danger</option>
-                                <option value="#ffab00">Warning</option>
-                                <option value="#03c3ec">Info</option>
-                                <option value="#8592a3">Secondary</option>
-                                <option value="#233446">Dark</option>
+                            <select class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white font-medium"
+                                    id="scheduleColor" name="color">
+                                <option value="#6366f1">Indigo (Standard)</option>
+                                <option value="#10b981">Emerald Green (Success)</option>
+                                <option value="#ef4444">Rose Red (Danger)</option>
+                                <option value="#f59e0b">Amber Orange (Warning)</option>
+                                <option value="#06b6d4">Cyan (Info)</option>
+                                <option value="#8b5cf6">Purple (Creative)</option>
+                                <option value="#ec4899">Pink (Personal)</option>
+                                <option value="#334155">Slate Dark</option>
                             </select>
-                            <div class="invalid-feedback"></div>
+                            <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="schedulePriority" class="form-label">
-                                <i class="bx bx-error"></i>Prioritas
+
+                        <div class="space-y-1">
+                            <label for="schedulePriority" class="block text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="bx bx-signal-5 text-indigo-500"></i> Tingkat Prioritas
                             </label>
-                            <select class="form-select" id="schedulePriority" name="priority">
-                                <option value="low">Rendah</option>
-                                <option value="medium" selected>Sedang</option>
-                                <option value="high">Tinggi</option>
+                            <select class="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none bg-white font-medium"
+                                    id="schedulePriority" name="priority">
+                                <option value="low">⚪ Prioritas Rendah</option>
+                                <option value="medium" selected>🟡 Prioritas Sedang</option>
+                                <option value="high">🔴 Prioritas Tinggi (Urgent)</option>
                             </select>
-                            <div class="invalid-feedback"></div>
+                            <div class="invalid-feedback text-[11px] text-rose-500 mt-1"></div>
                         </div>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-                    <i class="bx bx-x me-1"></i>Batal
+
+            <!-- Modal Footer -->
+            <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" class="px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        id="deleteSchedule" style="display: none;">
+                    <i class="bx bx-trash text-sm"></i>
+                    <span>Hapus Jadwal</span>
                 </button>
-                <button type="button" class="btn btn-danger btn-sm" id="deleteSchedule" style="display: none;">
-                    <i class="bx bx-trash me-1"></i>Hapus
-                </button>
-                <button type="button" class="btn btn-primary btn-sm" id="saveSchedule">
-                    <span class="spinner-border spinner-border-sm me-1" style="display: none;"></span>
-                    <i class="bx bx-check me-1"></i>Simpan Jadwal
-                </button>
+
+                <div class="flex items-center gap-2.5 ml-auto">
+                    <button type="button" class="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                            data-bs-dismiss="modal">
+                        Batal
+                    </button>
+                    <button type="button" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5 border-0"
+                            id="saveSchedule">
+                        <span class="spinner-border spinner-border-sm me-1" style="display: none;"></span>
+                        <i class="bx bx-check-circle text-sm"></i>
+                        <span>Simpan Jadwal</span>
+                    </button>
+                </div>
             </div>
+
         </div>
     </div>
 </div>
 @endsection
 
+@section('page-script')
 <!-- FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/locales-all.global.min.js"></script>
@@ -531,8 +603,6 @@
             csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
             document.querySelector('input[name="_token"]')?.value
         };
-        
-        console.log('Calendar configuration:', config);
         
         // Tooltip element
         const tooltipEl = document.createElement('div');
@@ -575,7 +645,6 @@
                         }
                     } catch (parseError) {
                         if (parseError.errors) throw parseError;
-                        
                         const errorText = await response.text();
                         errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
                     }
@@ -597,10 +666,12 @@
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error!',
+                    title: 'Terjadi Kesalahan',
                     text: message,
-                    confirmButtonColor: '#696cff',
-                    topLayer: true
+                    confirmButtonColor: '#4f46e5',
+                    customClass: {
+                        popup: 'rounded-2xl'
+                    }
                 });
             } else {
                 alert('Error: ' + message);
@@ -614,8 +685,10 @@
                     title: 'Berhasil!',
                     text: message,
                     showConfirmButton: false,
-                    timer: 1500,
-                    topLayer: true
+                    timer: 1600,
+                    customClass: {
+                        popup: 'rounded-2xl'
+                    }
                 });
             } else {
                 alert(message);
@@ -640,80 +713,39 @@
             });
         }
         
-        // Enhanced sample data for development
-        function getSampleEvents() {
+        function updateStatsCounter(events) {
+            if (!Array.isArray(events)) return;
             const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayStart = startOfDay(now);
+            const todayEnd = endOfDay(now);
             
-            console.log('Generating sample events for date:', today);
+            let total = events.length;
+            let meeting = 0, task = 0, eventCount = 0, reminder = 0, personal = 0;
             
-            const events = [
-                {
-                    id: '1',
-                    title: 'Meeting Tim Development',
-                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 10, 0),
-                    end: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 11, 30),
-                    color: '#696cff',
-                    extendedProps: {
-                        category: 'meeting',
-                        description: 'Meeting rutin tim development untuk review progress',
-                        priority: 'high'
-                    }
-                },
-                {
-                    id: '2',
-                    title: 'Review Code Frontend',
-                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 14, 0),
-                    end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 16, 0),
-                    color: '#ff3e1d',
-                    extendedProps: {
-                        category: 'task',
-                        description: 'Review code untuk fitur baru frontend',
-                        priority: 'medium'
-                    }
-                },
-                {
-                    id: '3',
-                    title: 'Hari Libur Nasional',
-                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2),
-                    allDay: true,
-                    color: '#71dd37',
-                    extendedProps: {
-                        category: 'event',
-                        description: 'Hari libur nasional',
-                        priority: 'low'
-                    }
-                },
-                {
-                    id: '4',
-                    title: 'Presentasi Proposal',
-                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3, 9, 0),
-                    end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 3, 10, 30),
-                    color: '#ffab00',
-                    extendedProps: {
-                        category: 'meeting',
-                        description: 'Presentasi proposal proyek baru',
-                        priority: 'high'
-                    }
-                },
-                {
-                    id: '5',
-                    title: 'Training Laravel',
-                    start: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5, 13, 0),
-                    end: new Date(today.getFullYear(), today.getMonth(), today.getDate() + 5, 17, 0),
-                    color: '#03c3ec',
-                    extendedProps: {
-                        category: 'event',
-                        description: 'Training Laravel untuk tim development',
-                        priority: 'medium'
-                    }
-                }
-            ];
+            events.forEach(ev => {
+                const cat = (ev.extendedProps?.category || '').toLowerCase();
+                if (cat === 'meeting') meeting++;
+                else if (cat === 'task') task++;
+                else if (cat === 'event') eventCount++;
+                else if (cat === 'reminder') reminder++;
+                else if (cat === 'personal') personal++;
+            });
             
-            console.log('Sample events generated:', events);
-            return events;
+            const elTotal = document.getElementById('stat-total-events');
+            const elMeeting = document.getElementById('stat-meeting-events');
+            const elTask = document.getElementById('stat-task-events');
+            const elEvent = document.getElementById('stat-event-events');
+            const elReminder = document.getElementById('stat-reminder-events');
+            const elPersonal = document.getElementById('stat-personal-events');
+            
+            if (elTotal) elTotal.textContent = total;
+            if (elMeeting) elMeeting.textContent = meeting;
+            if (elTask) elTask.textContent = task;
+            if (elEvent) elEvent.textContent = eventCount;
+            if (elReminder) elReminder.textContent = reminder;
+            if (elPersonal) elPersonal.textContent = personal;
         }
-        
+
         function eventsForDate(calendar, date) {
             const sod = startOfDay(date);
             const eod = endOfDay(date);
@@ -733,29 +765,36 @@
             });
             
             if (!events.length) {
-                return `<span class="title">${dateText}</span><em>Tidak ada jadwal</em>`;
+                return `<span class="title">${dateText}</span><em class="text-slate-400 text-[11px]">Tidak ada jadwal</em>`;
             }
             
             const items = events.map(ev => {
-            const createdBy = ev.extendedProps?.created_by || 'Tidak diketahui';
-            
-            if (ev.allDay) {
+                const createdBy = ev.extendedProps?.created_by || 'Staf';
+                const cat = ev.extendedProps?.category ? `[${ev.extendedProps.category.toUpperCase()}] ` : '';
+                
+                if (ev.allDay) {
+                    return `<li>
+                        <strong class="text-indigo-600">${cat}${escapeHtml(ev.title)}</strong><br>
+                        <span class="text-[10px] text-slate-500">Seharian • Dibuat oleh: ${escapeHtml(createdBy)}</span>
+                    </li>`;
+                }
+                
+                const s = fmtTime(ev.start);
+                const e = ev.end ? fmtTime(ev.end) : '';
+                
                 return `<li>
-                    <strong>${ev.title}</strong> — Seharian<br>
-                    <small>Dibuat oleh: ${createdBy}</small>
+                    <strong class="text-indigo-600">${cat}${escapeHtml(ev.title)}</strong><br>
+                    <span class="text-[10px] text-slate-500">Pukul ${s}${e ? ' - ' + e : ''} • Oleh: ${escapeHtml(createdBy)}</span>
                 </li>`;
-            }
-            
-            const s = fmtTime(ev.start);
-            const e = ev.end ? fmtTime(ev.end) : '';
-            
-            return `<li>
-                <strong>${ev.title}</strong> — ${s}${e ? `–${e}` : ''}<br>
-                <small>Dibuat oleh: <b>${createdBy}</b></small>
-            </li>`;
-        }).join('');
+            }).join('');
             
             return `<span class="title">${dateText}</span><ul>${items}</ul>`;
+        }
+
+        function escapeHtml(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
         
         function positionTooltip(anchorRect) {
@@ -804,33 +843,33 @@
             tooltipEl.classList.remove('show');
         }
         
-        // Custom buttons
+        // Custom Buttons with Boxicons
         const customButtons = {
             prevBI: { icon: 'chevron-left', click: function() { calendar.prev(); } },
             nextBI: { icon: 'chevron-right', click: function() { calendar.next(); } },
-            todayBI: { text: 'Hari ini', click: function() { calendar.today(); } }
+            todayBI: { text: 'Hari Ini', click: function() { calendar.today(); } }
         };
         
-        // Responsive toolbar
+        // Responsive Header Toolbar
         function getHeaderConfig() {
             const w = window.innerWidth;
-            if (w < 576) {
-                return { left: 'prevBI,nextBI todayBI', center: 'title', right: 'dayGridMonth,listWeek' };
+            if (w < 640) {
+                return { left: 'prevBI,nextBI todayBI', center: '', right: 'title' };
             }
-            if (w < 768) {
+            if (w < 840) {
                 return { left: 'prevBI,nextBI todayBI', center: 'title', right: 'dayGridMonth,listWeek' };
             }
             return { left: 'prevBI,nextBI todayBI', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' };
         }
         
-        // Initialize calendar
+        // Initialize Calendar
         const calendar = new FullCalendar.Calendar(calendarEl, {
-            themeSystem: 'bootstrap5',
+            themeSystem: 'standard',
             initialView: 'dayGridMonth',
             locale: 'id',
             firstDay: 1,
-            contentHeight: 760,
-            expandRows: true,
+            contentHeight: 'auto',
+            aspectRatio: 1.6,
             nowIndicator: true,
             dayMaxEvents: 3,
             moreLinkClick: 'popover',
@@ -851,57 +890,36 @@
             eventDisplay: 'block',
             eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
             
-            // Enhanced events loading with better logging
+            // Events Loader
             events: function(info, successCallback, failureCallback) {
-                console.log('Loading events for range:', info.startStr, 'to', info.endStr);
-                console.log('Using backend:', config.useBackend);
-                
-                if (config.useBackend) {
-                    console.log('Attempting to load from backend...');
-                    apiRequest(`${config.apiBaseUrl}/events?start=${info.startStr}&end=${info.endStr}`)
-                    .then(data => {
-                        console.log('Events loaded from backend:', data);
-                        successCallback(data);
-                    })
-                    .catch(error => {
-                        console.error('Backend loading failed:', error);
-                        console.log('Falling back to sample data');
-                        const sampleEvents = getSampleEvents();
-                        successCallback(sampleEvents);
-                    });
-                } else {
-                    console.log('Using sample data for development');
-                    const sampleEvents = getSampleEvents();
-                    successCallback(sampleEvents);
-                }
-            },
-            
-            // Enhanced event rendering with logging
-            eventDidMount: function(info) {
-                console.log('Event mounted:', {
-                    id: info.event.id,
-                    title: info.event.title,
-                    start: info.event.start,
-                    end: info.event.end,
-                    allDay: info.event.allDay
+                apiRequest(`${config.apiBaseUrl}/events?start=${info.startStr}&end=${info.endStr}`)
+                .then(data => {
+                    successCallback(data);
+                    updateStatsCounter(calendar.getEvents());
+                })
+                .catch(error => {
+                    console.error('Backend loading failed:', error);
+                    failureCallback(error);
                 });
             },
             
-            // Date click handler
+            eventsSet: function() {
+                updateStatsCounter(calendar.getEvents());
+            },
+            
+            // Date Click
             dateClick: function(info) {
-                console.log('Date clicked:', info.dateStr);
                 selectedDate = info.dateStr;
                 openAddModal(selectedDate);
             },
             
-            // Event click handler
+            // Event Click
             eventClick: function(info) {
-                console.log('Event clicked:', info.event.title);
                 info.jsEvent.preventDefault();
                 openEditModal(info.event);
             },
             
-            // Day cell hover
+            // Tooltip on Hover
             dayCellDidMount: function(arg) {
                 const el = arg.el;
                 let hoverTimeout;
@@ -913,7 +931,7 @@
                         const html = buildTooltipHtml(date, evs);
                         const rect = el.getBoundingClientRect();
                         showTooltip(html, rect);
-                    }, 100);
+                    }, 120);
                 });
                 
                 el.addEventListener('mouseleave', () => {
@@ -923,17 +941,14 @@
             }
         });
         
-        // Render calendar and log
         calendar.render();
-        console.log('Calendar rendered successfully');
         
         // Modal functions
         function openAddModal(date = null) {
-            console.log('Opening add modal for date:', date);
             currentSchedule = null;
             currentEventId = null;
             
-            document.getElementById('addScheduleModalLabel').innerHTML = '<i class="bx bx-calendar-plus me-2"></i>Tambah Jadwal Baru';
+            document.getElementById('addScheduleModalLabel').textContent = 'Tambah Jadwal Baru';
             document.getElementById('deleteSchedule').style.display = 'none';
             
             document.getElementById('addScheduleForm').reset();
@@ -947,7 +962,7 @@
                 document.getElementById('scheduleDate').value = today;
             }
             
-            document.getElementById('timeInputs').style.display = 'flex';
+            document.getElementById('timeInputs').style.display = 'grid';
             document.getElementById('specificTime').checked = true;
             
             const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
@@ -955,33 +970,16 @@
         }
         
         async function openEditModal(event) {
-            console.log('Opening edit modal for event:', event.id);
             try {
                 let schedule;
-                
                 currentEventId = event.id;
                 
-                if (config.useBackend) {
-                    const response = await apiRequest(`${config.apiBaseUrl}/${event.id}`);
-                    schedule = response.data;
-                } else {
-                    schedule = {
-                        id: event.id,
-                        title: event.title,
-                        category: event.extendedProps?.category || 'meeting',
-                        description: event.extendedProps?.description || '',
-                        date: event.start.toISOString().split('T')[0],
-                        time_type: event.allDay ? 'allday' : 'specific',
-                        start_time: event.allDay ? null : event.start.toTimeString().slice(0, 5),
-                        end_time: event.allDay || !event.end ? null : event.end.toTimeString().slice(0, 5),
-                        color: event.color || '#696cff',
-                        priority: event.extendedProps?.priority || 'medium'
-                    };
-                }
+                const response = await apiRequest(`${config.apiBaseUrl}/${event.id}`);
+                schedule = response.data;
                 
                 currentSchedule = schedule;
-                document.getElementById('addScheduleModalLabel').innerHTML = '<i class="bx bx-edit me-2"></i>Edit Jadwal';
-                document.getElementById('deleteSchedule').style.display = 'inline-block';
+                document.getElementById('addScheduleModalLabel').textContent = 'Edit Jadwal Agenda';
+                document.getElementById('deleteSchedule').style.display = 'inline-flex';
                 
                 document.getElementById('scheduleId').value = schedule.id;
                 document.getElementById('scheduleTitle').value = schedule.title;
@@ -998,7 +996,7 @@
                     document.getElementById('specificTime').checked = true;
                     document.getElementById('startTime').value = schedule.start_time || '09:00';
                     document.getElementById('endTime').value = schedule.end_time || '10:00';
-                    document.getElementById('timeInputs').style.display = 'flex';
+                    document.getElementById('timeInputs').style.display = 'grid';
                 }
                 
                 clearFormErrors();
@@ -1010,7 +1008,7 @@
             }
         }
         
-        // Modal form handlers
+        // Time Type Radio change handler
         const timeTypeRadios = document.querySelectorAll('input[name="time_type"]');
         const timeInputs = document.getElementById('timeInputs');
         
@@ -1019,14 +1017,13 @@
                 if (this.value === 'allday') {
                     timeInputs.style.display = 'none';
                 } else {
-                    timeInputs.style.display = 'flex';
+                    timeInputs.style.display = 'grid';
                 }
             });
         });
         
-        // Enhanced save schedule handler
+        // Save schedule handler
         document.getElementById('saveSchedule').addEventListener('click', async function() {
-            console.log('Save button clicked');
             const form = document.getElementById('addScheduleForm');
             const saveBtn = this;
             const spinner = saveBtn.querySelector('.spinner-border');
@@ -1038,8 +1035,8 @@
             }
             
             saveBtn.disabled = true;
-            spinner.style.display = 'inline-block';
-            icon.style.display = 'none';
+            if (spinner) spinner.style.display = 'inline-block';
+            if (icon) icon.style.display = 'none';
             
             try {
                 const formData = new FormData(form);
@@ -1050,62 +1047,21 @@
                     data.end_time = null;
                 }
                 
-                console.log('Saving schedule data:', data);
-                
-                if (config.useBackend) {
-                    let response;
-                    if (currentSchedule && currentSchedule.id) {
-                        response = await apiRequest(`${config.apiBaseUrl}/${currentSchedule.id}`, {
-                            method: 'PUT',
-                            body: JSON.stringify(data)
-                        });
-                    } else {
-                        response = await apiRequest(config.apiBaseUrl, {
-                            method: 'POST',
-                            body: JSON.stringify(data)
-                        });
-                    }
-                    
-                    showSuccess(response.message);
-                    console.log('Schedule saved successfully, refreshing calendar');
-                    calendar.refetchEvents();
+                let response;
+                if (currentSchedule && currentSchedule.id) {
+                    response = await apiRequest(`${config.apiBaseUrl}/${currentSchedule.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(data)
+                    });
                 } else {
-                    showSuccess(currentSchedule ? 'Jadwal berhasil diperbarui' : 'Jadwal berhasil ditambahkan');
-                    
-                    // Remove existing event if editing
-                    if (currentSchedule && currentSchedule.id) {
-                        const existingEvent = calendar.getEventById(currentSchedule.id);
-                        if (existingEvent) {
-                            existingEvent.remove();
-                            console.log('Removed existing event:', currentSchedule.id);
-                        }
-                    }
-                    
-                    // Create new event object
-                    const eventData = {
-                        id: currentSchedule?.id || Date.now().toString(),
-                        title: data.title,
-                        color: data.color,
-                        extendedProps: {
-                            category: data.category,
-                            description: data.description,
-                            priority: data.priority
-                        }
-                    };
-                    
-                    if (data.time_type === 'allday') {
-                        eventData.start = data.date;
-                        eventData.allDay = true;
-                    } else {
-                        eventData.start = `${data.date}T${data.start_time}:00`;
-                        if (data.end_time) {
-                            eventData.end = `${data.date}T${data.end_time}:00`;
-                        }
-                    }
-                    
-                    console.log('Adding new event to calendar:', eventData);
-                    calendar.addEvent(eventData);
+                    response = await apiRequest(config.apiBaseUrl, {
+                        method: 'POST',
+                        body: JSON.stringify(data)
+                    });
                 }
+                
+                showSuccess(response.message || 'Jadwal berhasil disimpan!');
+                calendar.refetchEvents();
                 
                 const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addScheduleModal'));
                 modal.hide();
@@ -1119,32 +1075,29 @@
                 }
             } finally {
                 saveBtn.disabled = false;
-                spinner.style.display = 'none';
-                icon.style.display = 'inline-block';
+                if (spinner) spinner.style.display = 'none';
+                if (icon) icon.style.display = 'inline-block';
             }
         });
         
-        // Enhanced delete schedule handler
+        // Delete schedule handler
         document.getElementById('deleteSchedule').addEventListener('click', async function() {
             const scheduleId = currentSchedule?.id || currentEventId;
-            
-            if (!scheduleId) {
-                showError('Tidak dapat menghapus jadwal: ID tidak ditemukan');
-                console.error('Delete error: No schedule ID found', { currentSchedule, currentEventId });
-                return;
-            }
+            if (!scheduleId) return;
             
             if (typeof Swal !== 'undefined') {
                 const result = await Swal.fire({
-                    title: 'Hapus Jadwal?',
-                    text: 'Jadwal yang dihapus tidak dapat dikembalikan!',
+                    title: 'Hapus Jadwal Ini?',
+                    text: 'Data agenda yang dihapus tidak dapat dikembalikan!',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#ff3e1d',
-                    cancelButtonColor: '#8592a3',
-                    confirmButtonText: 'Ya, Hapus!',
+                    confirmButtonColor: '#ef4444',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Ya, Hapus Jadwal',
                     cancelButtonText: 'Batal',
-                    topLayer: true
+                    customClass: {
+                        popup: 'rounded-2xl'
+                    }
                 });
                 
                 if (!result.isConfirmed) return;
@@ -1153,47 +1106,27 @@
             }
             
             try {
-                console.log('Deleting schedule:', scheduleId);
+                await apiRequest(`${config.apiBaseUrl}/${scheduleId}`, {
+                    method: 'DELETE'
+                });
                 
-                if (config.useBackend) {
-                    await apiRequest(`${config.apiBaseUrl}/${scheduleId}`, {
-                        method: 'DELETE'
-                    });
-                    
-                    console.log('Schedule deleted from backend, refreshing calendar');
-                    calendar.refetchEvents();
-                } else {
-                    const existingEvent = calendar.getEventById(scheduleId);
-                    if (existingEvent) {
-                        existingEvent.remove();
-                        console.log('Event removed from calendar:', scheduleId);
-                    } else {
-                        console.warn('Event not found in calendar:', scheduleId);
-                    }
-                }
-                
+                calendar.refetchEvents();
                 const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('addScheduleModal'));
                 modal.hide();
-                
                 showSuccess('Jadwal berhasil dihapus');
-                
             } catch (error) {
                 showError('Gagal menghapus jadwal: ' + error.message);
-                console.error('Delete error:', error);
             }
         });
         
-        // Responsive toolbar handler
-        function applyResponsiveToolbar() {
+        // Responsive toolbar listener
+        window.addEventListener('resize', function() {
             calendar.setOption('headerToolbar', getHeaderConfig());
-        }
-        window.addEventListener('resize', applyResponsiveToolbar);
-        
-        // Hide tooltip handlers
+            hideTooltip();
+        });
         window.addEventListener('scroll', hideTooltip, true);
-        window.addEventListener('resize', hideTooltip);
         
-        // Reset modal when closed
+        // Modal reset when hidden
         document.getElementById('addScheduleModal').addEventListener('hidden.bs.modal', function() {
             currentSchedule = null;
             currentEventId = null;
@@ -1202,3 +1135,4 @@
         });
     });
 </script>
+@endsection

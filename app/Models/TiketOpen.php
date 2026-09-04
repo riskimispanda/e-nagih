@@ -14,6 +14,9 @@ class TiketOpen extends Model
         'foto',
         'user_id',
         'status_id',
+        'alasan_batal',
+        'cancelled_by',
+        'cancelled_at',
         'tanggal_selesai',
         'teknisi_id'
     ];
@@ -34,6 +37,11 @@ class TiketOpen extends Model
     public function teknisi()
     {
         return $this->belongsTo(User::class, 'teknisi_id');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     public function status()

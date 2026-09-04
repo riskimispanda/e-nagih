@@ -1,943 +1,776 @@
 @extends('layouts.contentNavbarLayout')
 
-@section('title', 'Data Logistik')
+@section('title', 'Data Logistik & Inventori')
+
+@section('vendor-style')
+{{-- Tailwind CSS CDN --}}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50: '#eff6ff',
+            100: '#dbeafe',
+            200: '#bfdbfe',
+            500: '#3b82f6',
+            600: '#2563eb',
+            700: '#1d4ed8',
+          },
+        },
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        },
+        boxShadow: {
+          'card': '0 2px 8px -2px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.08)',
+          'card-hover': '0 8px 16px -4px rgba(15, 23, 42, 0.08), 0 20px 32px -8px rgba(15, 23, 42, 0.12)',
+        },
+      },
+    },
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 
 <style>
-    /* Modern, clean design styles */
-    .card {
-        border: none;
-        border-radius: 0.75rem;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.04);
-        transition: all 0.2s ease;
-    }
-    
-    .card-header {
-        background: transparent;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        padding: 1.5rem 1.5rem 1rem;
-    }
-    
-    .header-with-pattern {
-        background-color: #ffffff;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-rule='evenodd'%3E%3Cg fill='%233b82f6' fill-opacity='0.03'%3E%3Cpath opacity='.5' d='M96 95h4v1h-4v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4h-9v4h-1v-4H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15v-9H0v-1h15V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h9V0h1v15h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9h4v1h-4v9zm-1 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm9-10v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-10 0v-9h-9v9h9zm-9-10h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9zm10 0h9v-9h-9v9z'/%3E%3Cpath d='M6 5V0H5v5H0v1h5v94h1V6h94V5H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        padding: 1.75rem;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .card-header h4 {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 0;
-        font-size: 1.25rem;
-    }
-    
-    /* Header icon styling */
-    .header-icon {
-        width: 52px;
-        height: 52px;
-        background-color: rgba(59, 130, 246, 0.1);
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 10px rgba(59, 130, 246, 0.1);
-    }
-    
-    .header-content {
-        transition: all 0.3s ease;
-    }
-    
-    .header-content:hover .header-icon {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    }
-    
-    /* Statistics summary styling */
-    .stats-summary {
-        padding-right: 1.5rem;
-        border-right: 1px solid rgba(0, 0, 0, 0.05);
-    }
-    
-    .summary-item {
-        padding: 0.25rem 0;
-    }
-    
-    .card-body {
-        padding: 1.5rem;
-    }
-    
-    /* Search input styling */
-    .search-container {
-        min-width: 280px;
-    }
-    
-    .search-container .input-group {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        transition: all 0.3s ease;
-    }
-    
-    .search-container .input-group:focus-within {
-        box-shadow: 0 3px 12px rgba(59, 130, 246, 0.12);
-    }
-    
-    .search-container .input-group-text {
-        border-color: #e2e8f0;
-        color: #94a3b8;
-    }
-    
-    .form-control {
-        border: 1px solid #e2e8f0;
-        box-shadow: none;
-        transition: all 0.2s ease;
-        padding: 0.6rem 1rem;
-        font-size: 0.95rem;
-    }
-    
-    .form-control:focus {
-        border-color: #3b82f6;
-        box-shadow: none;
-    }
-    
-    .btn-primary {
-        background-color: #3b82f6;
-        border-color: #3b82f6;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-primary:hover {
-        background-color: #2563eb;
-        border-color: #2563eb;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-    
-    /* Table styling */
-    .table {
-        border-radius: 0.5rem;
-        overflow: hidden;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.02);
-        margin-bottom: 0;
-    }
-    
-    .table thead {
-        background-color: #f8fafc;
-    }
-    
-    .table th {
-        color: #475569;
-        font-weight: 600;
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.025em;
-    }
-    
-    .table td {
-        padding: 1rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-        color: #334155;
-        font-size: 0.95rem;
-    }
-    
-    .table-hover tbody tr {
-        transition: all 0.15s ease;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: #f8fafc;
-    }
-    
-    /* Action buttons */
-    .action-btn {
-        width: 32px;
-        height: 32px;
-        padding: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        margin: 0 3px;
-        transition: all 0.2s;
-    }
-    
-    .action-btn:hover {
-        transform: translateY(-2px);
-    }
-    
-    .action-btn i {
-        font-size: 1rem;
-    }
-    
-    /* Breadcrumb styling */
-    .breadcrumb {
-        padding: 0.5rem 0;
-        margin-bottom: 1.5rem;
-    }
-    
-    .breadcrumb-item a {
-        color: #64748b;
-        text-decoration: none;
-        transition: color 0.15s ease;
-    }
-    
-    .breadcrumb-item a:hover {
-        color: #3b82f6;
-    }
-    
-    .breadcrumb-item.active {
-        color: #3b82f6;
-        font-weight: 500;
-    }
-    
-    /* No results message */
-    #noResults td {
-        padding: 2rem;
-        color: #64748b;
-        font-style: italic;
-    }
-    
-    /* Badge styling */
-    .badge {
-        padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        font-size: 0.75rem;
-        font-weight: 500;
-        letter-spacing: 0.025em;
-    }
-    
-    .badge.bg-label-success {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-    }
-    
-    .badge.bg-label-warning {
-        background-color: rgba(245, 158, 11, 0.1);
-        color: #f59e0b;
-    }
-    
-    .badge.bg-label-danger {
-        background-color: rgba(239, 68, 68, 0.1);
-        color: #ef4444;
-    }
-    
-    /* Responsive improvements */
-    @media (max-width: 768px) {
-        .header-with-pattern {
-            padding: 1.25rem;
-        }
-        
-        .header-content .d-flex {
-            flex-direction: column;
-            text-align: center;
-        }
-        
-        .header-icon {
-            margin-bottom: 0.75rem;
-            margin-right: 0 !important;
-        }
-        
-        .stats-summary {
-            display: block !important;
-            border-right: none;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            padding-right: 0;
-        }
-        
-        .search-container {
-            min-width: unset;
-            width: 100%;
-        }
-        
-        .d-flex.flex-column.flex-md-row {
-            gap: 1rem !important;
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .card-body {
-            padding: 1rem;
-        }
-        
-        .table th,
-        .table td {
-            padding: 0.75rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .action-btn {
-            width: 28px;
-            height: 28px;
-            margin: 0 1px;
-        }
-        
-        .action-btn i {
-            font-size: 0.875rem;
-        }
-        
-        .header-with-pattern {
-            padding: 1rem;
-        }
-        
-        .summary-item {
-            text-align: center;
-        }
-    }
-    
-    /* Offcanvas responsive improvements */
-    @media (max-width: 576px) {
-        .offcanvas-start {
-            width: 100% !important;
-        }
-    }
-    
-    /* Form improvements */
-    .form-label {
-        color: #374151;
-        font-weight: 500;
-        margin-bottom: 0.5rem;
-    }
-    
-    .form-control:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.1);
-    }
-    
-    .form-text {
-        color: #6b7280;
-        font-size: 0.8rem;
-        margin-top: 0.25rem;
-    }
-    
-    .input-group-text {
-        background-color: #f8fafc;
-        border-color: #e2e8f0;
-        color: #6b7280;
-        font-weight: 500;
-    }
-    
-    /* Loading state for buttons */
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-    
-    /* Smooth transitions */
-    * {
-        transition: all 0.2s ease;
-    }
-    
-    /* Custom scrollbar for offcanvas */
-    .offcanvas-body::-webkit-scrollbar {
-        width: 6px;
-    }
-    
-    .offcanvas-body::-webkit-scrollbar-track {
-        background: #f1f5f9;
-    }
-    
-    .offcanvas-body::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
-    }
-    
-    .offcanvas-body::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
+  body { font-family: 'Inter', sans-serif; }
+
+  /* Custom Scrollbar */
+  .custom-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+  .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  /* Tab Navigation Styling */
+  #logistikTabs .nav-link {
+    color: #64748b;
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    padding: 0.55rem 1rem;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #logistikTabs .nav-link:hover {
+    background-color: #f8fafc;
+    color: #1e293b;
+  }
+  #logistikTabs .nav-link.active {
+    color: #2563eb;
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
+  }
+
+  /* Table Row Smooth Animation */
+  .tr-smooth {
+    transition: all 0.18s ease-in-out;
+  }
+  .tr-smooth:hover {
+    background-color: #f8fafc !important;
+  }
+
+  /* Category Badge Color Scheme */
+  .cat-badge-modem    { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+  .cat-badge-kabel    { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .cat-badge-splitter { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .cat-badge-odp      { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+  .cat-badge-odc      { background: #faf5ff; color: #7e22ce; border-color: #e9d5ff; }
+  .cat-badge-olt      { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+  .cat-badge-default  { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+  /* Modal Customizations */
+  .modal-content {
+    border: none;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  }
 </style>
+@endsection
 
 @section('content')
+<div class="space-y-5 max-w-[1500px] mx-auto pb-8">
 
-<div class="row">
-    <div class="col-12">
-        <nav class="breadcrumb-nav">
-            <ul class="breadcrumb breadcrumb-transparent breadcrumb-style2 mb-3">
-                <li class="breadcrumb-item"><a href="/">Home</a></li>
-                <li class="breadcrumb-item active text-primary" aria-current="page">Logistik</li>
-            </ul>
-        </nav>
+  <!-- ================= BREADCRUMB ================= -->
+  <nav aria-label="breadcrumb" class="mb-1">
+    <ol class="flex items-center gap-1.5 text-xs text-slate-500 mb-0 p-0 list-none">
+      <li>
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-1 text-slate-500 hover:text-blue-600 font-medium transition-colors no-underline">
+          <i class="bx bx-home-alt text-sm"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="text-slate-300">/</li>
+      <li class="text-slate-500 font-medium">Logistik</li>
+      <li class="text-slate-300">/</li>
+      <li class="text-blue-600 font-semibold">Data Logistik & Inventori</li>
+    </ol>
+  </nav>
+
+  <!-- ================= HERO HEADER BANNER ================= -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 p-5 sm:p-6 text-white shadow-lg shadow-blue-900/20">
+    <!-- Ambient Glow Backgrounds -->
+    <div class="absolute -right-10 -top-10 h-56 w-56 rounded-full bg-white/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-10 -bottom-10 h-56 w-56 rounded-full bg-indigo-400/20 blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="space-y-1">
+        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] font-semibold tracking-wide uppercase border border-white/20 text-blue-100 mb-1">
+          <i class="bx bx-package text-xs"></i> Warehouse & Asset Management
+        </div>
+        <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white m-0">Data Logistik & Stok Perangkat</h1>
+        <p class="text-xs sm:text-sm text-blue-100/90 max-w-2xl m-0 leading-relaxed">
+          Pusat monitoring ketersediaan perangkat jaringan, status pemakaian pelanggan, pemeliharaan (maintenance), dan tracking aset.
+        </p>
+      </div>
+
+      <!-- Hero Action Buttons -->
+      <div class="flex flex-wrap items-center gap-2.5 pt-1 lg:pt-0">
+        <button type="button" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-blue-700 hover:bg-blue-50 text-xs font-bold transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer border-0 outline-none" data-bs-toggle="modal" data-bs-target="#perangkat">
+          <i class="bx bx-plus-circle text-base"></i>
+          <span>Tambah Stok</span>
+        </button>
+        <button type="button" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-md border border-white/30 transition-all active:scale-95 cursor-pointer outline-none" data-bs-toggle="modal" data-bs-target="#kategori">
+          <i class="bx bx-category text-base"></i>
+          <span>Tambah Kategori</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN INVENTORY CONTAINER ================= -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-card overflow-hidden">
+    
+    <!-- Top Control Bar (Search & Tabs) -->
+    <div class="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/70 flex flex-col gap-3.5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         
-        <div class="card">
-            <div class="card-header header-with-pattern">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4 py-2">
-                    <div class="header-content">
-                        <div class="d-flex align-items-center">
-                            <div class="header-icon me-3 d-flex align-items-center justify-content-center">
-                                <i class='bx bx-package fs-3 text-primary'></i>
-                            </div>
-                            <div>
-                                <h4 class="mb-0 fw-semibold">Data Logistik</h4>
-                                <p class="text-muted mb-0 small">Manajemen stok perangkat dan inventori</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex align-items-center">
-                        <div class="search-container">
-                            <div class="input-group">
-                                <input type="text" id="search" class="form-control" placeholder="Cari perangkat..." aria-label="Search" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 border-bottom pb-3">
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#perangkat">
-                            <i class="bx bx-plus me-1"></i>Tambah Stok
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="offcanvas" data-bs-target="#kategori">
-                            <i class="bx bx-plus me-1"></i>Tambah Kategori
-                        </button>
-                    </div>
+        <!-- Search Input with Icon -->
+        <div class="relative w-full sm:w-80">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 pointer-events-none">
+            <i class="bx bx-search text-base"></i>
+          </span>
+          <input type="text" id="search" class="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs" placeholder="Cari nama, kategori, MAC, atau SN...">
+        </div>
 
-                    {{-- Navigation Tabs --}}
-                    <ul class="nav nav-pills" id="logistikTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="global-tab" data-bs-toggle="tab" data-bs-target="#global-pane" type="button" role="tab" aria-selected="true">
-                                <i class="bx bx-package me-1"></i>Stok Global
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="available-tab" data-bs-toggle="tab" data-bs-target="#available-pane" type="button" role="tab" aria-selected="false">
-                                <i class="bx bx-check-shield me-1"></i>Tersedia ({{ count($availableDevices) }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance-pane" type="button" role="tab" aria-selected="false">
-                                <i class="bx bx-wrench me-1"></i>Maintenance ({{ count($maintenanceDevices) }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="damaged-tab" data-bs-toggle="tab" data-bs-target="#damaged-pane" type="button" role="tab" aria-selected="false">
-                                <i class="bx bx-x-circle me-1"></i>Rusak ({{ count($damagedDevices) }})
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+        <!-- Refresh / Quick Filter Controls -->
+        <div class="flex items-center gap-2 self-end sm:self-auto">
+          <button type="button" onclick="location.reload()" title="Segarkan Data" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+            <i class="bx bx-refresh text-sm"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (Pill style with badge counts) -->
+      <div class="overflow-x-auto custom-scroll -mx-1 px-1 pb-1">
+        <ul class="flex items-center gap-2 min-w-max" id="logistikTabs" role="tablist">
+          <li role="presentation">
+            <button class="nav-link inline-flex items-center gap-2 active cursor-pointer" id="global-tab" data-bs-toggle="tab" data-bs-target="#global-pane" type="button" role="tab" aria-selected="true">
+              <i class="bx bx-package text-base"></i>
+              <span>Stok Global Master</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">{{ $perangkat->count() }}</span>
+            </button>
+          </li>
+          <li role="presentation">
+            <button class="nav-link inline-flex items-center gap-2 cursor-pointer" id="available-tab" data-bs-toggle="tab" data-bs-target="#available-pane" type="button" role="tab" aria-selected="false">
+              <i class="bx bx-check-shield text-base text-emerald-600"></i>
+              <span>Siap Pakai / Tersedia</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">{{ count($availableDevices) }}</span>
+            </button>
+          </li>
+          <li role="presentation">
+            <button class="nav-link inline-flex items-center gap-2 cursor-pointer" id="maintenance-tab" data-bs-toggle="tab" data-bs-target="#maintenance-pane" type="button" role="tab" aria-selected="false">
+              <i class="bx bx-wrench text-base text-amber-600"></i>
+              <span>Dalam Maintenance</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{{ count($maintenanceDevices) }}</span>
+            </button>
+          </li>
+          <li role="presentation">
+            <button class="nav-link inline-flex items-center gap-2 cursor-pointer" id="damaged-tab" data-bs-toggle="tab" data-bs-target="#damaged-pane" type="button" role="tab" aria-selected="false">
+              <i class="bx bx-x-circle text-base text-rose-600"></i>
+              <span>Barang Rusak / Afkir</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">{{ count($damagedDevices) }}</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ================= TAB CONTENT PANES ================= -->
+    <div class="tab-content p-0" id="logistikTabContent">
+
+      <!-- ================= 1. TAB: STOK GLOBAL ================= -->
+      <div class="tab-pane fade show active" id="global-pane" role="tabpanel" aria-labelledby="global-tab">
+        <div class="overflow-x-auto custom-scroll">
+          <table id="dataTable" class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
+                <th class="px-4 py-3.5 text-center w-12">No.</th>
+                <th class="px-4 py-3.5">Nama Perangkat & Kategori</th>
+                <th class="px-3 py-3.5 text-center">Tersedia</th>
+                <th class="px-3 py-3.5 text-center">Terpakai</th>
+                <th class="px-3 py-3.5 text-center">Maintenance</th>
+                <th class="px-3 py-3.5 text-center">Rusak</th>
+                <th class="px-4 py-3.5 text-right">Harga Satuan</th>
+                <th class="px-4 py-3.5 text-right">Total Nilai Aset</th>
+                <th class="px-4 py-3.5 text-center w-24">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
+              @forelse ($perangkat as $p)
+              @php
+                $kategoriLabel = $p->kategori->nama_logistik ?? '-';
+                $isKabel = strtolower($kategoriLabel) == 'kabel';
+                $isSerial = in_array(strtolower($kategoriLabel), ['modem','tenda','sfp','olt','odp','odc','htb','splitter']);
+                $totalHarga = $isKabel ? $p->harga : ($p->harga * $p->jumlah_stok);
+
+                $catLower = strtolower($kategoriLabel);
+                $catClass = 'cat-badge-default';
+                if (str_contains($catLower, 'modem') || str_contains($catLower, 'tenda')) $catClass = 'cat-badge-modem';
+                elseif (str_contains($catLower, 'kabel')) $catClass = 'cat-badge-kabel';
+                elseif (str_contains($catLower, 'splitter')) $catClass = 'cat-badge-splitter';
+                elseif (str_contains($catLower, 'odp')) $catClass = 'cat-badge-odp';
+                elseif (str_contains($catLower, 'odc')) $catClass = 'cat-badge-odc';
+                elseif (str_contains($catLower, 'olt')) $catClass = 'cat-badge-olt';
+              @endphp
+              <tr class="device-row searchable-row tr-smooth">
+                <td class="px-4 py-3 text-center text-slate-400 font-semibold row-number">{{ $loop->iteration }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base flex-shrink-0">
+                      <i class="bx bx-chip"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="font-bold text-slate-800 text-[12.5px] leading-tight truncate">{{ $p->nama_perangkat }}</div>
+                      <div class="flex items-center gap-1.5 mt-1">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider {{ $catClass }}">
+                          {{ $kategoriLabel }}
+                        </span>
+                        <span class="text-[10.5px] text-slate-400">Total: {{ number_format($p->jumlah_stok) }} {{ $isKabel ? 'm' : 'unit' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
                 
-                <div class="tab-content p-0" id="logistikTabContent">
-                    {{-- 1. STOK GLOBAL PANE --}}
-                    <div class="tab-pane fade show active" id="global-pane" role="tabpanel" aria-labelledby="global-tab">
-                        <div class="table-responsive">
-                            <table id="dataTable" class="table table-hover">
-                                <thead class="table-dark text-center">
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="25%">Nama Perangkat</th>
-                                        <th width="15%">Kategori</th>
-                                        <th width="12%">Tersedia</th>
-                                        <th width="12%">Terpakai</th>
-                                        <th width="12%">Maintenance</th>
-                                        <th width="12%">Rusak</th>
-                                        <th>Bulan</th>
-                                        <th width="20%">Total Harga</th>
-                                        <th width="10%" class="text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="text-center">
-                                    @if (count($perangkat) > 0)
-                                    @foreach ($perangkat as $p)
-                                    <tr class="device-row searchable-row">
-                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class='bx bx-chip text-muted me-1'></i>
-                                                <span class="fw-medium">{{ $p->nama_perangkat }}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <i class='bx bx-devices text-muted me-1'></i>
-                                                <span class="fw-medium">{{ $p->kategori->nama_logistik ?? '-'}}</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            @if($p->kategori?->nama_logistik == 'Kabel')
-                                            <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
-                                                {{ $p->stok_tersedia }} Meter
-                                            </span>
-                                            @else
-                                            <span class="badge bg-label-{{ $p->stok_tersedia > 10 ? 'success' : ($p->stok_tersedia > 5 ? 'warning' : 'danger') }}">
-                                                {{ $p->stok_tersedia }} Unit
-                                            </span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($p->kategori?->nama_logistik == 'Kabel')
-                                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                                {{ $p->stok_terpakai }} Meter
-                                            </span>
-                                            @else
-                                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                                {{ $p->stok_terpakai }} Unit
-                                            </span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
-                                            <span class="badge bg-label-warning">
-                                                {{ $p->stok_maintenance }} Unit
-                                            </span>
-                                            @else
-                                            <span class="badge bg-label-secondary">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
-                                            <span class="badge bg-label-danger">
-                                                {{ $p->stok_rusak }} Unit
-                                            </span>
-                                            @else
-                                            <span class="badge bg-label-secondary">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-label-info">
-                                                {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('F-Y-d') }}
-                                            </span>
-                                        </td>
-                                        @php
-                                            $total_harga = $p->harga * $p->jumlah_stok;
-                                        @endphp
-                                        <td class="fw-bold">
-                                            @if(in_array($p->kategori?->nama_logistik, ['Modem', 'Tenda', 'SFP', 'OLT', 'ODP', 'ODC', 'HTB']))
-                                            Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                            @elseif($p->kategori?->nama_logistik == 'Kabel')
-                                            Rp {{ number_format($p->harga, 0, ',', '.') }}
-                                            @else
-                                            Rp {{ number_format($total_harga, 0, ',', '.') }}
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <a href="/edit-logistik/{{ $p->id }}" data-bs-toggle="tooltip" title="Edit Stok" data-bs-placement="bottom">
-                                                    <i class="bx bx-edit text-warning"></i>
-                                                </a>|
-                                                <a href="javascript:void(0);" 
-                                                    onclick="hapusLogistik({{ $p->id }})" 
-                                                    data-bs-toggle="tooltip" 
-                                                    title="Hapus Stok" 
-                                                    data-bs-placement="bottom">
-                                                    <i class="bx bx-trash text-danger"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                    @else
-                                    <tr id="noDataResults">
-                                        <td colspan="10" class="text-center py-4">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <i class='bx bx-package text-muted mb-2' style="font-size: 2rem;"></i>
-                                                <div>Tidak ada data perangkat ditemukan</div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Tersedia -->
+                <td class="px-3 py-3 text-center">
+                  <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 min-w-[70px]">
+                    {{ number_format($p->stok_tersedia) }} {{ $isKabel ? 'm' : 'unit' }}
+                  </span>
+                </td>
 
-                    {{-- 2. BARANG TERSEDIA PANE --}}
-                    <div class="tab-pane fade" id="available-pane" role="tabpanel" aria-labelledby="available-tab">
-                        <div class="table-responsive">
-                            <table class="table table-hover text-center">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="30%">Nama Perangkat</th>
-                                        <th width="15%">Kategori</th>
-                                        <th width="20%">MAC Address</th>
-                                        <th width="20%">Serial Number</th>
-                                        <th width="10%">Status</th>
-                                        <th width="10%">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($availableDevices as $dev)
-                                    <tr class="searchable-row">
-                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
-                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
-                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-success">Tersedia</span></td>
-                                        <td>
-                                            <a href="javascript:void(0);" onclick="pindahkanKeMaintenance({{ $dev->id }})" data-bs-toggle="tooltip" title="Kirim ke Maintenance">
-                                                <i class="bx bx-wrench text-warning"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <i class='bx bx-check-shield text-muted mb-2' style="font-size: 2rem;"></i>
-                                                <div>Tidak ada barang siap pakai di gudang</div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Terpakai -->
+                <td class="px-3 py-3 text-center">
+                  <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 min-w-[70px]">
+                    {{ number_format($p->stok_terpakai) }} {{ $isKabel ? 'm' : 'unit' }}
+                  </span>
+                </td>
 
-                    {{-- 3. BARANG MAINTENANCE PANE --}}
-                    <div class="tab-pane fade" id="maintenance-pane" role="tabpanel" aria-labelledby="maintenance-tab">
-                        <div class="table-responsive">
-                            <table class="table table-hover text-center">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="30%">Nama Perangkat</th>
-                                        <th width="15%">Kategori</th>
-                                        <th width="20%">MAC Address</th>
-                                        <th width="20%">Serial Number</th>
-                                        <th width="10%">Status</th>
-                                        <th width="15%">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($maintenanceDevices as $dev)
-                                    <tr class="searchable-row">
-                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
-                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
-                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-warning">Maintenance</span></td>
-                                        <td>
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <a href="javascript:void(0);" onclick="selesaiPerbaikan({{ $dev->id }})" class="btn btn-outline-success btn-xs py-1 px-2" data-bs-toggle="tooltip" title="Selesai Perbaikan">
-                                                    <i class="bx bx-check-circle me-1"></i>Selesai
-                                                </a>
-                                                <a href="javascript:void(0);" onclick="afkirBarang({{ $dev->id }})" class="btn btn-outline-danger btn-xs py-1 px-2" data-bs-toggle="tooltip" title="Afkir (Rusak)">
-                                                    <i class="bx bx-x-circle me-1"></i>Afkir
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <i class='bx bx-wrench text-muted mb-2' style="font-size: 2rem;"></i>
-                                                <div>Tidak ada perangkat dalam proses maintenance</div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Maintenance -->
+                <td class="px-3 py-3 text-center">
+                  @if($isSerial && $p->stok_maintenance > 0)
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 min-w-[60px]">
+                      {{ $p->stok_maintenance }} unit
+                    </span>
+                  @else
+                    <span class="text-slate-300 font-mono">-</span>
+                  @endif
+                </td>
 
-                    {{-- 4. BARANG RUSAK PANE --}}
-                    <div class="tab-pane fade" id="damaged-pane" role="tabpanel" aria-labelledby="damaged-tab">
-                        <div class="table-responsive">
-                            <table class="table table-hover text-center">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th width="5%">No.</th>
-                                        <th width="30%">Nama Perangkat</th>
-                                        <th width="15%">Kategori</th>
-                                        <th width="20%">MAC Address</th>
-                                        <th width="20%">Serial Number</th>
-                                        <th width="10%">Status</th>
-                                        <th width="10%">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($damagedDevices as $dev)
-                                    <tr class="searchable-row">
-                                        <td class="fw-semibold">{{ $loop->iteration }}</td>
-                                        <td>{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
-                                        <td>{{ $dev->perangkat->kategori->nama_logistik ?? '-' }}</td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->mac_address ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-danger">{{ $dev->serial_number ?? '-' }}</span></td>
-                                        <td><span class="badge bg-label-danger">Rusak</span></td>
-                                        <td>
-                                            <a href="javascript:void(0);" onclick="hapusBarangRusak({{ $dev->id }})" data-bs-toggle="tooltip" title="Hapus Permanen">
-                                                <i class="bx bx-trash text-danger"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4">
-                                            <div class="d-flex flex-column align-items-center">
-                                                <i class='bx bx-x-circle text-muted mb-2' style="font-size: 2rem;"></i>
-                                                <div>Tidak ada barang rusak</div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <!-- Rusak -->
+                <td class="px-3 py-3 text-center">
+                  @if($isSerial && $p->stok_rusak > 0)
+                    <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 min-w-[60px]">
+                      {{ $p->stok_rusak }} unit
+                    </span>
+                  @else
+                    <span class="text-slate-300 font-mono">-</span>
+                  @endif
+                </td>
+
+                <!-- Harga Satuan -->
+                <td class="px-4 py-3 text-right font-medium text-slate-600 font-mono">
+                  Rp {{ number_format($p->harga, 0, ',', '.') }}
+                </td>
+
+                <!-- Total Nilai Aset -->
+                <td class="px-4 py-3 text-right font-bold text-slate-900 font-mono text-[12.5px]">
+                  Rp {{ number_format($totalHarga, 0, ',', '.') }}
+                </td>
+
+                <!-- Aksi -->
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <a href="/edit-logistik/{{ $p->id }}" data-bs-toggle="tooltip" title="Edit Rincian Stok" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-500 hover:text-blue-600 flex items-center justify-center transition-all">
+                      <i class="bx bx-edit text-sm"></i>
+                    </a>
+                    <button type="button" onclick="hapusLogistik({{ $p->id }})" data-bs-toggle="tooltip" title="Hapus Perangkat" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center transition-all border-0 cursor-pointer">
+                      <i class="bx bx-trash text-sm"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              @empty
+              <tr id="noDataResults">
+                <td colspan="9" class="px-4 py-16 text-center text-slate-400 bg-white">
+                  <div class="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center mx-auto mb-2 text-2xl">
+                    <i class="bx bx-package"></i>
+                  </div>
+                  <div class="font-bold text-slate-700 text-sm">Belum Ada Data Perangkat</div>
+                  <div class="text-xs text-slate-400 mt-0.5">Tambahkan stok perangkat baru melalui tombol di atas</div>
+                </td>
+              </tr>
+              @endforelse
+            </tbody>
+          </table>
         </div>
+
+        <!-- Pagination Global -->
+        <div id="pagination-global" class="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <span>Tampilkan</span>
+            <select class="page-size-select rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer shadow-xs" data-target="global">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>baris</span>
+            <span class="text-slate-300 mx-1">|</span>
+            <span id="info-global" class="font-medium text-slate-600">Menampilkan data...</span>
+          </div>
+          <div id="nav-global" class="flex items-center gap-1"></div>
+        </div>
+      </div>
+
+      <!-- ================= 2. TAB: SIAP PAKAI / TERSEDIA ================= -->
+      <div class="tab-pane fade" id="available-pane" role="tabpanel" aria-labelledby="available-tab">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
+                <th class="px-4 py-3.5 text-center w-12">No.</th>
+                <th class="px-4 py-3.5">Nama Perangkat</th>
+                <th class="px-4 py-3.5">Kategori</th>
+                <th class="px-4 py-3.5">MAC Address</th>
+                <th class="px-4 py-3.5">Serial Number (SN)</th>
+                <th class="px-3 py-3.5 text-center">Status</th>
+                <th class="px-4 py-3.5 text-center w-36">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
+              @forelse ($availableDevices as $dev)
+              <tr class="searchable-row tr-smooth">
+                <td class="px-4 py-3 text-center text-slate-400 font-semibold row-number">{{ $loop->iteration }}</td>
+                <td class="px-4 py-3 font-bold text-slate-800 text-[12px]">{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider bg-slate-50 text-slate-600 border-slate-200">
+                    {{ $dev->perangkat->kategori->nama_logistik ?? '-' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 font-mono text-slate-600">
+                  {{ $dev->mac_address ?: '-' }}
+                </td>
+                <td class="px-4 py-3 font-mono font-semibold text-blue-700">
+                  {{ $dev->serial_number ?: '-' }}
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Tersedia
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button type="button" onclick="pindahkanKeMaintenance({{ $dev->id }})" data-bs-toggle="tooltip" title="Kirim ke Maintenance / Perbaikan" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200 transition-all cursor-pointer">
+                    <i class="bx bx-wrench"></i>
+                    <span>Maintenance</span>
+                  </button>
+                </td>
+              </tr>
+              @empty
+              <tr>
+                <td colspan="7" class="px-4 py-16 text-center text-slate-400 bg-white">
+                  <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center mx-auto mb-2 text-2xl">
+                    <i class="bx bx-check-shield"></i>
+                  </div>
+                  <div class="font-bold text-slate-700 text-sm">Tidak Ada Unit Siap Pakai di Gudang</div>
+                  <div class="text-xs text-slate-400 mt-0.5">Semua unit sedang terpakai atau dalam proses perbaikan</div>
+                </td>
+              </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Available -->
+        <div id="pagination-available" class="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <span>Tampilkan</span>
+            <select class="page-size-select rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer shadow-xs" data-target="available">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>baris</span>
+            <span class="text-slate-300 mx-1">|</span>
+            <span id="info-available" class="font-medium text-slate-600">Menampilkan data...</span>
+          </div>
+          <div id="nav-available" class="flex items-center gap-1"></div>
+        </div>
+      </div>
+
+      <!-- ================= 3. TAB: MAINTENANCE ================= -->
+      <div class="tab-pane fade" id="maintenance-pane" role="tabpanel" aria-labelledby="maintenance-tab">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
+                <th class="px-4 py-3.5 text-center w-12">No.</th>
+                <th class="px-4 py-3.5">Nama Perangkat</th>
+                <th class="px-4 py-3.5">Kategori</th>
+                <th class="px-4 py-3.5">MAC Address</th>
+                <th class="px-4 py-3.5">Serial Number (SN)</th>
+                <th class="px-3 py-3.5 text-center">Status</th>
+                <th class="px-4 py-3.5 text-center w-48">Tindakan Perbaikan</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
+              @forelse ($maintenanceDevices as $dev)
+              <tr class="searchable-row tr-smooth">
+                <td class="px-4 py-3 text-center text-slate-400 font-semibold row-number">{{ $loop->iteration }}</td>
+                <td class="px-4 py-3 font-bold text-slate-800 text-[12px]">{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider bg-slate-50 text-slate-600 border-slate-200">
+                    {{ $dev->perangkat->kategori->nama_logistik ?? '-' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 font-mono text-slate-600">{{ $dev->mac_address ?: '-' }}</td>
+                <td class="px-4 py-3 font-mono font-semibold text-amber-700">{{ $dev->serial_number ?: '-' }}</td>
+                <td class="px-3 py-3 text-center">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Maintenance
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <div class="flex items-center justify-center gap-1.5">
+                    <button type="button" onclick="selesaiPerbaikan({{ $dev->id }})" title="Perbaikan Berhasil & Kembalikan ke Gudang" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-200 transition-all cursor-pointer">
+                      <i class="bx bx-check-circle"></i>
+                      <span>Selesai</span>
+                    </button>
+                    <button type="button" onclick="afkirBarang({{ $dev->id }})" title="Nyatakan Rusak Total / Afkir" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200 transition-all cursor-pointer">
+                      <i class="bx bx-x-circle"></i>
+                      <span>Afkir</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              @empty
+              <tr>
+                <td colspan="7" class="px-4 py-16 text-center text-slate-400 bg-white">
+                  <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-2 text-2xl">
+                    <i class="bx bx-wrench"></i>
+                  </div>
+                  <div class="font-bold text-slate-700 text-sm">Tidak Ada Perangkat Dalam Maintenance</div>
+                  <div class="text-xs text-slate-400 mt-0.5">Seluruh perangkat berada dalam kondisi prima atau aktif</div>
+                </td>
+              </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Maintenance -->
+        <div id="pagination-maintenance" class="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <span>Tampilkan</span>
+            <select class="page-size-select rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer shadow-xs" data-target="maintenance">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>baris</span>
+            <span class="text-slate-300 mx-1">|</span>
+            <span id="info-maintenance" class="font-medium text-slate-600">Menampilkan data...</span>
+          </div>
+          <div id="nav-maintenance" class="flex items-center gap-1"></div>
+        </div>
+      </div>
+
+      <!-- ================= 4. TAB: BARANG RUSAK / AFKIR ================= -->
+      <div class="tab-pane fade" id="damaged-pane" role="tabpanel" aria-labelledby="damaged-tab">
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-100/80 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[10.5px]">
+                <th class="px-4 py-3.5 text-center w-12">No.</th>
+                <th class="px-4 py-3.5">Nama Perangkat</th>
+                <th class="px-4 py-3.5">Kategori</th>
+                <th class="px-4 py-3.5">MAC Address</th>
+                <th class="px-4 py-3.5">Serial Number (SN)</th>
+                <th class="px-3 py-3.5 text-center">Status</th>
+                <th class="px-4 py-3.5 text-center w-28">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 bg-white">
+              @forelse ($damagedDevices as $dev)
+              <tr class="searchable-row tr-smooth">
+                <td class="px-4 py-3 text-center text-slate-400 font-semibold row-number">{{ $loop->iteration }}</td>
+                <td class="px-4 py-3 font-bold text-slate-800 text-[12px]">{{ $dev->perangkat->nama_perangkat ?? '-' }}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider bg-slate-50 text-slate-600 border-slate-200">
+                    {{ $dev->perangkat->kategori->nama_logistik ?? '-' }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 font-mono text-slate-600">{{ $dev->mac_address ?: '-' }}</td>
+                <td class="px-4 py-3 font-mono font-semibold text-rose-700">{{ $dev->serial_number ?: '-' }}</td>
+                <td class="px-3 py-3 text-center">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Rusak / Afkir
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button type="button" onclick="hapusBarangRusak({{ $dev->id }})" title="Hapus Permanen dari Database" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-[11px] font-bold transition-all border border-slate-200 cursor-pointer">
+                    <i class="bx bx-trash"></i>
+                    <span>Buang</span>
+                  </button>
+                </td>
+              </tr>
+              @empty
+              <tr>
+                <td colspan="7" class="px-4 py-16 text-center text-slate-400 bg-white">
+                  <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto mb-2 text-2xl">
+                    <i class="bx bx-x-circle"></i>
+                  </div>
+                  <div class="font-bold text-slate-700 text-sm">Tidak Ada Barang Rusak / Afkir</div>
+                  <div class="text-xs text-slate-400 mt-0.5">Inventori tercatat bersih dari unit afkir</div>
+                </td>
+              </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Damaged -->
+        <div id="pagination-damaged" class="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <span>Tampilkan</span>
+            <select class="page-size-select rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer shadow-xs" data-target="damaged">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>baris</span>
+            <span class="text-slate-300 mx-1">|</span>
+            <span id="info-damaged" class="font-medium text-slate-600">Menampilkan data...</span>
+          </div>
+          <div id="nav-damaged" class="flex items-center gap-1"></div>
+        </div>
+      </div>
+
     </div>
+  </div>
 </div>
 
-{{-- Modern Offcanvas Modal --}}
-<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="perangkat" aria-labelledby="offcanvasBothLabel">
-    <div class="offcanvas-header" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-bottom: none;">
-        <div class="d-flex align-items-center">
-            <div class="me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2); border-radius: 8px;">
-                <i class='bx bx-plus text-white fs-5'></i>
-            </div>
-            <div>
-                <h5 id="offcanvasBothLabel" class="offcanvas-title text-white mb-0 fw-semibold">Tambah Stok Logistik
-                </h5>
-                <small class="text-white-50">Tambahkan perangkat baru ke inventori</small>
-            </div>
+<!-- ==================================================================================== -->
+<!-- MODAL: TAMBAH STOK PERANGKAT (Responsive Tailwind & Bootstrap UI)                   -->
+<!-- ==================================================================================== -->
+<div class="modal fade" tabindex="-1" id="perangkat" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content rounded-2xl border-0 overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header (Tanpa Tombol X) -->
+      <div class="py-4 px-5 bg-gradient-to-r from-blue-700 to-indigo-700 text-white flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl flex-shrink-0">
+          <i class='bx bx-chip'></i>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body" style="padding: 1.5rem;">
-        <form action="/logistik/store" method="POST" id="addDeviceForm">
-            @csrf
-            <div class="mb-4">
-                <label class="form-label fw-medium" for="nama_perangkat">
-                    <i class='bx bx-chip me-1 text-muted'></i>Nama Perangkat
-                </label>
-                <input type="text" class="form-control" id="nama_perangkat" placeholder="Contoh: Router TP-Link AC1200" name="nama_perangkat" required>
-                <div class="form-text">Masukkan nama perangkat yang akan ditambahkan</div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label fw-medium">
-                    <i class='bx bx-package me-1 text-muted'></i>Kategori
-                </label>
-                <select name="kategori_id" class="form-select">
-                    <option value="" selected disabled>Pilih Kategori</option>
-                    @foreach ($kategori as $kate)
-                        <option value="{{ $kate->id }}">{{$kate->nama_logistik}}</option>
-                    @endforeach
-                </select>
-                <div class="form-text">Pilih Kategori logistik yang anda input</div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label fw-medium" for="jumlah_stok">
-                    <i class='bx bx-package me-1 text-muted'></i>Jumlah Stok
-                </label>
-                <input name="jumlah_stok" type="number" id="jumlah_stok" class="form-control" placeholder="100" min="1" required>
-                <div class="form-text">Masukkan jumlah unit yang tersedia</div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label fw-medium" for="harga-satuan">
-                    <i class='bx bx-money me-1 text-muted'></i>Harga Satuan
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">Rp</span>
-                    <input name="harga" type="text" id="harga-satuan" class="form-control" placeholder="150.000" oninput="formatRupiah(this)" required>
-                </div>
-                <div class="form-text">Masukkan harga per unit perangkat</div>
-            </div>
-            <div class="d-flex gap-2 mt-4 justify-content-end">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">
-                    <i class='bx bx-x me-1'></i>Batal
-                </button>
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bx bx-plus me-1"></i>Tambah Stok
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-{{-- Modal Kategori --}}
-<div class="offcanvas offcanvas-start" data-bs-scroll="true" tabindex="-1" id="kategori" aria-labelledby="offcanvasBothLabel">
-    <div class="offcanvas-header" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border-bottom: none;">
-        <div class="d-flex align-items-center">
-            <div class="me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; background-color: rgba(255, 255, 255, 0.2); border-radius: 8px;">
-                <i class='bx bx-plus text-white fs-5'></i>
-            </div>
-            <div>
-                <h5 id="offcanvasBothLabel" class="offcanvas-title text-white mb-0 fw-semibold">Tambah Kategori Logistik
-                </h5>
-                <small class="text-white-50">Tambahkan kategori baru untuk logistik</small>
-            </div>
+        <div>
+          <h5 class="text-base font-bold text-white mb-0 leading-tight">Tambah Stok Logistik</h5>
+          <p class="text-[11px] text-blue-100/90 mt-0.5 mb-0">Tambahkan unit perangkat baru ke inventori gudang</p>
         </div>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body" style="padding: 1.5rem;">
-        <form action="/add-kategori-logistik" method="POST" id="addDeviceForm">
-            @csrf
-            <div class="mb-4">
-                <label class="form-label fw-medium" for="nama_perangkat">
-                    <i class='bx bx-chip me-1 text-muted'></i>Nama Kategori
-                </label>
-                <input type="text" class="form-control" id="nama_perangkat" placeholder="Contoh: Modem or Kabel or ODP" name="nama_logistik" required>
-                <div class="form-text">Masukkan nama kategori yang akan ditambahkan</div>
-            </div>
-            <div class="d-flex gap-2 mt-4 justify-content-end">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="offcanvas">
-                    <i class='bx bx-x me-1'></i>Batal
-                </button>
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bx bx-plus me-1"></i>Tambah Kategori
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+      </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Search functionality
-        const searchInput = document.getElementById('search');
-        
-        function performSearch() {
-            const searchTerm = searchInput.value.toLowerCase().trim();
-            const searchableRows = document.querySelectorAll('.searchable-row');
+      <!-- Modal Body Form -->
+      <div class="p-5 sm:p-6 bg-white">
+        <form action="/logistik/store" method="POST" id="addDeviceForm" class="space-y-4">
+          @csrf
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5">
             
-            searchableRows.forEach(row => {
-                const rowText = row.textContent.toLowerCase();
-                
-                if (searchTerm === '' || rowText.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-        
-        // Event listeners for search
-        searchInput.addEventListener('keyup', performSearch);
-        searchInput.addEventListener('input', performSearch);
-        
-        // Format Rupiah function
-        window.formatRupiah = function(input) {
-            let value = input.value.replace(/[^\d]/g, '');
-            if (value !== '') {
-                value = parseInt(value);
-                value = value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-                input.value = value;
-            }
-        };
-        
-        // Form validation
-        const addDeviceForm = document.getElementById('addDeviceForm');
-        if (addDeviceForm) {
-            addDeviceForm.addEventListener('submit', function(e) {
-                const namaPerangkat = document.getElementById('nama_perangkat').value.trim();
-                const jumlahStok = document.getElementById('jumlah_stok').value;
-                const harga = document.getElementById('harga-satuan').value.trim();
-                
-                if (!namaPerangkat || !jumlahStok || !harga) {
-                    e.preventDefault();
-                    alert('Mohon lengkapi semua field yang diperlukan');
-                    return false;
-                }
-                
-                if (parseInt(jumlahStok) < 1) {
-                    e.preventDefault();
-                    alert('Jumlah stok harus minimal 1');
-                    return false;
-                }
-            });
-        }
-    });
-</script>
+            <!-- Nama Perangkat -->
+            <div class="md:col-span-8 space-y-1">
+              <label class="block text-xs font-bold text-slate-700" for="nama_perangkat">
+                <i class='bx bx-chip text-blue-600 mr-1'></i>Nama Perangkat <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs" id="nama_perangkat" placeholder="Contoh: Router TP-Link AC1200 / Splitter 1:4" name="nama_perangkat" required>
+              <span class="block text-[10.5px] text-slate-400">Nama lengkap atau tipe perangkat spesifik</span>
+            </div>
 
-<script>
-    function hapusLogistik(id) {
-        Swal.fire({
-            title: 'Yakin hapus data?',
-            text: "Data yang dihapus tidak bisa dikembalikan!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, hapus!',
-            cancelButtonText: 'Batal',
-            topLayer: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "/hapus-logistik/" + id;
-            }
-        });
-    }
+            <!-- Kategori -->
+            <div class="md:col-span-4 space-y-1">
+              <label class="block text-xs font-bold text-slate-700" for="kategori_id">
+                <i class='bx bx-category text-blue-600 mr-1'></i>Kategori <span class="text-rose-500">*</span>
+              </label>
+              <select name="kategori_id" id="kategori_id" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs cursor-pointer" required>
+                <option value="" selected disabled>Pilih Kategori</option>
+                @foreach ($kategori as $kate)
+                  <option value="{{ $kate->id }}" data-nama="{{ $kate->nama_logistik }}">{{ $kate->nama_logistik }}</option>
+                @endforeach
+              </select>
+              <span class="block text-[10.5px] text-slate-400">Kelompok kategori logistik</span>
+            </div>
 
-    function selesaiPerbaikan(id) {
-        Swal.fire({
-            title: 'Selesai Perbaikan?',
-            text: "Perangkat akan dimasukkan kembali ke stok tersedia di gudang.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Selesai!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "/logistik/perbaiki/" + id;
-            }
-        });
-    }
+            <!-- Jumlah Stok -->
+            <div class="md:col-span-6 space-y-1">
+              <label class="block text-xs font-bold text-slate-700" for="jumlah_stok">
+                <i class='bx bx-package text-blue-600 mr-1'></i>Jumlah Stok Unit/Meter <span class="text-rose-500">*</span>
+              </label>
+              <input name="jumlah_stok" type="number" id="jumlah_stok" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs" placeholder="Contoh: 10" min="1" required>
+              <span class="block text-[10.5px] text-slate-400">Total kuantitas barang yang masuk</span>
+            </div>
 
-    function pindahkanKeMaintenance(id) {
-        Swal.fire({
-            title: 'Kirim ke Maintenance?',
-            text: "Perangkat ini akan dipindahkan ke status perbaikan.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ffc107',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Kirim!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "/logistik/maintenance/" + id;
-            }
-        });
-    }
+            <!-- Harga Satuan -->
+            <div class="md:col-span-6 space-y-1">
+              <label class="block text-xs font-bold text-slate-700" for="harga-satuan">
+                <i class='bx bx-money text-blue-600 mr-1'></i>Harga Satuan (Rp) <span class="text-rose-500">*</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-bold text-slate-400 pointer-events-none">Rp</span>
+                <input name="harga" type="text" id="harga-satuan" class="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3.5 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs" placeholder="150.000" oninput="formatRupiah(this)" required>
+              </div>
+              <span class="block text-[10.5px] text-slate-400">Harga per unit / per meter</span>
+            </div>
+          </div>
 
-    function afkirBarang(id) {
-        Swal.fire({
-            title: 'Afkir Barang?',
-            text: "Perangkat ini akan dideklarasikan rusak total (afkir).",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Afkir!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "/logistik/afkir/" + id;
-            }
-        });
-    }
+          <!-- Dynamic Serial / MAC Address Section -->
+          <div id="serialFields" style="display:none;" class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-800 mb-0 flex items-center gap-1.5" id="serialFieldLabel">
+                <i class='bx bx-barcode text-blue-600 text-sm'></i> Detail Unit (Serial & MAC)
+              </label>
+              <span class="text-[10.5px] text-slate-500 font-medium" id="serialFieldHint">Input identitas per unit</span>
+            </div>
 
-    function hapusBarangRusak(id) {
-        Swal.fire({
-            title: 'Hapus Permanen?',
-            text: "Barang rusak ini akan dihapus permanen dari pencatatan sistem.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "/logistik/buang/" + id;
-            }
-        });
-    }
-</script>
+            <div id="deviceUnits" class="space-y-2 max-h-60 overflow-y-auto custom-scroll pr-1">
+              <div class="device-unit flex items-center gap-2">
+                <input type="hidden" name="is_rusak[]" value="0">
+                <div class="flex-1 sn-col">
+                  <input type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition" name="serial_number[]" placeholder="Serial Number (SN)">
+                </div>
+                <div class="flex-1 mac-col">
+                  <input type="text" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition" name="mac_address[]" placeholder="MAC Address">
+                </div>
+                <div class="w-10 flex-shrink-0 flex items-center justify-center">
+                  <button type="button" class="unit-rstatus w-[62px] h-8 rounded-lg border text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 border-slate-200 bg-slate-50 text-slate-600 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700" title="Klik untuk menandai unit rusak" data-status="ok">
+                    <i class="bx bx-check-circle text-sm"></i> OK
+                  </button>
+                </div>
+                <div class="w-8 flex-shrink-0">
+                  <button type="button" class="w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all add-unit cursor-pointer" title="Tambah unit">
+                    <i class="bx bx-plus text-base"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1 border-t border-slate-200">
+              <span class="text-[10.5px] text-slate-500 font-medium">Unit rusak akan langsung masuk daftar <strong class="text-rose-600">Rusak / Afkir</strong></span>
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-50 text-rose-700 text-[11px] font-bold border border-rose-200" id="rusakSummary">Rusak: <span id="rusakCount">0</span> unit</span>
+            </div>
+          </div>
+
+          <!-- Jumlah Rusak (untuk kategori non-serial: kabel/dropcore, dsb) -->
+          <div id="jumlahRusakField" style="display:none;" class="p-4 rounded-xl bg-rose-50/60 border border-rose-200 space-y-1.5">
+            <label class="block text-xs font-bold text-rose-800 flex items-center gap-1.5" for="jumlah_rusak">
+              <i class='bx bx-x-circle text-rose-600'></i> Jumlah Unit Rusak
+            </label>
+            <input type="number" id="jumlah_rusak" class="w-full rounded-xl border border-rose-300 bg-white px-3.5 py-2 text-xs font-bold text-rose-900 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 transition" placeholder="Contoh: 3" min="0" value="0">
+            <span class="block text-[10.5px] text-rose-700">Banyak unit yang rusak saat barang masuk. Stok tersedia akan dikurangi otomatis.</span>
+          </div>
+          <input type="hidden" name="jumlah_rusak" id="jumlah_rusak_input" value="0">
+
+          <!-- Dynamic Splitter Ratio Section -->
+          <div id="ratioField" style="display:none;" class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-1.5">
+            <label class="block text-xs font-bold text-amber-900 flex items-center gap-1.5" for="rasio">
+              <i class='bx bx-git-repo-forked text-amber-600'></i> Rasio Output Splitter <span class="text-rose-500">*</span>
+            </label>
+            <select name="rasio" id="rasio" class="w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-xs font-bold text-amber-950 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition">
+              <option value="" selected disabled>Pilih Rasio Splitter</option>
+              <option value="1:2">1 : 2 (2 Output Port)</option>
+              <option value="1:4">1 : 4 (4 Output Port)</option>
+              <option value="1:8">1 : 8 (8 Output Port)</option>
+              <option value="1:16">1 : 16 (16 Output Port)</option>
+              <option value="1:32">1 : 32 (32 Output Port)</option>
+            </select>
+            <span class="block text-[10.5px] text-amber-800">Rasio pembagian optik untuk perhitungan topologi port.</span>
+          </div>
+
+          <!-- Modal Footer Buttons -->
+          <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+            <button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all cursor-pointer border-0 outline-none" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer border-0 outline-none flex items-center gap-1.5">
+              <i class="bx bx-plus"></i>
+              <span>Tambah Stok</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================================================================================== -->
+<!-- MODAL: TAMBAH KATEGORI (Responsive Tailwind & Bootstrap UI)                         -->
+<!-- ==================================================================================== -->
+<div class="modal fade" tabindex="-1" id="kategori" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-2xl border-0 overflow-hidden shadow-2xl">
+      
+      <!-- Modal Header (Tanpa Tombol X) -->
+      <div class="py-4 px-5 bg-gradient-to-r from-blue-700 to-indigo-700 text-white flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl flex-shrink-0">
+          <i class='bx bx-category'></i>
+        </div>
+        <div>
+          <h5 class="text-base font-bold text-white mb-0 leading-tight">Tambah Kategori Logistik</h5>
+          <p class="text-[11px] text-blue-100/90 mt-0.5 mb-0">Tambahkan kategori klasifikasi barang baru</p>
+        </div>
+      </div>
+
+      <!-- Modal Body Form -->
+      <div class="p-5 sm:p-6 bg-white">
+        <form action="/add-kategori-logistik" method="POST" class="space-y-4">
+          @csrf
+          <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-700" for="nama_kategori">
+              <i class='bx bx-tag text-blue-600 mr-1'></i>Nama Kategori <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-xs" id="nama_kategori" placeholder="Contoh: Splitter, ODP, Modem, SFP, Dropcore" name="nama_logistik" required>
+            <span class="block text-[10.5px] text-slate-400">Nama kategori baru untuk pengelompokan stok</span>
+          </div>
+
+          <!-- Modal Footer Buttons -->
+          <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+            <button type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all cursor-pointer border-0 outline-none" data-bs-dismiss="modal">
+              Batal
+            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer border-0 outline-none flex items-center gap-1.5">
+              <i class="bx bx-plus"></i>
+              <span>Simpan Kategori</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
+
+@push('scripts')
+<script src="/assets/js/logistik.js"></script>
+@endpush

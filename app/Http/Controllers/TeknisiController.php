@@ -24,6 +24,7 @@ use Intervention\Image\Drivers\Gd\Driver;
 // use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\Log;
 use App\Models\ModemDetail;
+use App\Helpers\LogistikStatus;
 use Spatie\Activitylog\Models\Activity;
 use Carbon\Carbon;
 use App\Services\QontakServices;
@@ -191,6 +192,13 @@ class TeknisiController extends Controller
       ->where('jumlah_stok', '>', 0)
       ->get();
 
+    $modemDetails = ModemDetail::with('perangkat')
+      ->where('status_id', LogistikStatus::TERSEIDA)
+      ->whereHas('perangkat.kategori', function ($q) {
+        $q->whereIn('nama_logistik', ['modem', 'tenda']);
+      })
+      ->get();
+
     // $client = MikrotikServices::connect($customer->router);
 
     return view('/teknisi/detail-antrian', [
@@ -201,6 +209,7 @@ class TeknisiController extends Controller
       'paket' => $customer->paket->paket_name,
       'koneksi' => Koneksi::all(),
       'modem' => $modem,
+      'modemDetails' => $modemDetails,
       'server' => ServerModels::all(),
       'olt' => Lokasi::all(),
       'odc' => ODC::all(),
@@ -387,14 +396,23 @@ class TeknisiController extends Controller
         ]);
       }
 
-      // Simpan modem detail
-      ModemDetail::create([
-        'serial_number' => $request->serial_number,
-        'mac_address' => $request->mac_address,
-        'logistik_id' => $request->modem,
-        'status_id' => 13,
-        'customer_id' => $customer->id,
-      ]);
+      // Simpan / update modem detail
+      if ($request->modem_detail_id) {
+        $modemDetail = ModemDetail::findOrFail($request->modem_detail_id);
+        $modemDetail->update([
+          'status_id' => 13,
+          'customer_id' => $customer->id,
+          'tanggal_terpakai' => now(),
+        ]);
+      } else {
+        ModemDetail::create([
+          'serial_number' => $request->serial_number,
+          'mac_address' => $request->mac_address,
+          'logistik_id' => $request->modem,
+          'status_id' => 13,
+          'customer_id' => $customer->id,
+        ]);
+      }
 
       DB::commit(); // Jika semua sukses, simpan ke DB
 

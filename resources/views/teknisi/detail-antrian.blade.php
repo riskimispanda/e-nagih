@@ -690,12 +690,18 @@
                                         <div class="row g-3">
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-laptop me-2"></i>Serial Number Modem</label>
-                                                <input type="text" name="serial_number" class="form-control" placeholder="Masukkan S/N" required>
+                                                <select name="modem_detail_id" class="form-select" id="serial_number" required>
+                                                    <option value="" selected disabled>Pilih Serial Number</option>
+                                                </select>
+                                                <small id="serial_stock_alert" class="text-danger fw-medium mt-1" style="display:none;">
+                                                    <i class="bx bx-error-circle me-1"></i>Stok modem ini habis. Hubungi Admin Logistik.
+                                                </small>
                                             </div>
 
                                             <div class="col-12 col-sm-6 mb-2">
                                                 <label class="form-label"><i class="bx bx-phone me-2"></i>Mac Address Modem</label>
-                                                <input type="text" name="mac_address" class="form-control" placeholder="XX:XX:XX:XX:XX:XX" required>
+                                                <input type="text" name="mac_address" id="mac_address" class="form-control" placeholder="Otomatis terisi" readonly>
+                                                <input type="hidden" name="serial_number" id="hidden_serial" value="">
                                             </div>
                                             <hr class="my-2">
                                             <div class="col-sm-12">
@@ -798,10 +804,10 @@
         btn.disabled = true;
         btn.innerHTML = "<span class='spinner-border spinner-border-sm'></span> Loading...";
     });
-</script>    
+</script>
 
     <script>
-        let tomOlt, tomOdc, tomOdp;
+        let tomOlt, tomOdc, tomOdp, tomSerial;
 
         // Server BTS
             $('#server').on('change', function () {
@@ -895,6 +901,43 @@
             }
         });
 
+        // Data serial number dari ModemDetail tersedia
+        var serialData = {!! json_encode(
+            $modemDetails->groupBy('logistik_id')->map(function ($items) {
+                return $items->map(function ($item) {
+                    return ['id' => $item->id, 'sn' => $item->serial_number, 'mac' => $item->mac_address];
+                })->values();
+            })
+        ) !!};
 
+        $('#modem').on('change', function () {
+            var modemId = $(this).val();
+            var serials = serialData[modemId] || [];
+
+            if (!tomSerial) {
+                tomSerial = new TomSelect('#serial_number', { create: false });
+            }
+
+            tomSerial.clear(true);
+            tomSerial.clearOptions();
+            tomSerial.addOption({ value: '', text: 'Pilih Serial Number', disabled: true });
+            tomSerial.addOption(serials.map(function (s) {
+                return { value: s.id, text: s.sn, mac: s.mac };
+            }));
+            tomSerial.setValue('');
+            tomSerial.refreshOptions(false);
+
+            $('#mac_address').val('');
+            $('#serial_stock_alert').toggle(serials.length === 0);
+        });
+
+        $('#serial_number').on('change', function () {
+            if (tomSerial) {
+                var val = tomSerial.getValue();
+                var selected = tomSerial.options[val];
+                $('#mac_address').val(selected && selected.mac ? selected.mac : '');
+                $('#hidden_serial').val(selected ? selected.text : '');
+            }
+        });
     </script>
 @endsection

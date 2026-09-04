@@ -227,6 +227,15 @@
           ]
         },
         {
+          "url": "/pengadaan",
+          "name": "Pengadaan Barang",
+          "slug": "pengadaan",
+          "roles": [
+            "Admin Logistik",
+            "Super Admin"
+          ]
+        },
+        {
           "url": "/tracking",
           "name": "Tracking Tools",
           "slug": "tracking",
@@ -298,6 +307,16 @@
       "name": "Pengeluaran",
       "icon": "menu-icon tf-icons bx bx-money-withdraw",
       "slug": "pengeluaran-global",
+      "roles": [
+        "Super Admin",
+        "Admin Keuangan"
+      ]
+    },
+    {
+      "url": "/pengadaan/approval",
+      "name": "Approval Pengadaan",
+      "icon": "menu-icon tf-icons bx bx-check-shield",
+      "slug": "pengadaan.approval",
       "roles": [
         "Super Admin",
         "Admin Keuangan"
@@ -428,7 +447,7 @@
       "url": "/customer",
       "name": "Dashboard",
       "icon": "menu-icon tf-icons bx bx-home-smile",
-      "slug": "pelanggan",
+      "slug": "customer.dashboard",
       "roles": [
         "Customer"
       ]
@@ -540,6 +559,16 @@
             "Super Admin",
             "Teknisi"
           ]
+        },
+        {
+          "url": "/noc/data-infrastruktur",
+          "name": "Data Infrastruktur",
+          "slug": "infrastruktur",
+          "roles": [
+            "NOC",
+            "Super Admin",
+            "Teknisi"
+          ]
         }
       ]
     },
@@ -635,7 +664,9 @@
         "Super Admin",
         "Admin Keuangan",
         "Admin Logistik",
-        "Helpdesk"
+        "Helpdesk",
+        "NOC",
+        "Teknisi"
       ]
     },
     {

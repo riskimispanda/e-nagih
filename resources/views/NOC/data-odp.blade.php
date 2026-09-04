@@ -60,6 +60,7 @@
                                     <th>Data ODP</th>
                                     <th>Lokasi ODP</th>
                                     <th>Total Pelanggan</th>
+                                    <th>Splitter</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -68,7 +69,19 @@
                                     <tr class="text-uppercase">
                                         <td class="text-center">{{ $loop->iteration + ($odp->currentPage() - 1) * $odp->perPage() }}</td>
                                         <td class="fw-semibold">
-                                            <i class="bx bx-terminal me-1 text-primary"></i>{{$od->nama_odp}}
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                <span><i class="bx bx-terminal me-1 text-primary"></i>{{$od->nama_odp}}</span>
+                                                @if ($od->redaman)
+                                                    <span class="badge bg-label-danger py-0 px-2 font-monospace" style="font-size: 10.5px;">
+                                                        <i class="bx bx-broadcast me-1"></i>{{ Str::contains(strtolower($od->redaman), 'db') ? $od->redaman : $od->redaman . ' dBm' }}
+                                                    </span>
+                                                @endif
+                                                @if ($od->modemDetail)
+                                                    <span class="badge bg-label-info py-0 px-2 font-monospace" style="font-size: 10.5px;" title="Box ODP: {{ $od->modemDetail->perangkat->nama_perangkat ?? '' }}">
+                                                        <i class="bx bx-barcode me-1"></i>SN: {{ $od->modemDetail->serial_number ?: ('ID-' . $od->modemDetail->id) }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                         @php
                                             $gps = $od->gps;
@@ -96,7 +109,19 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
+                                            @if($od->splitter_count > 0)
+                                            <span class="badge bg-info">{{ $od->splitter_count }} unit{{ $od->splitter_rencana ? ' · Rasio ' . $od->splitter_rencana : '' }} ({{ $od->splitter_capacity }} port)</span>
+                                            @elseif($od->splitter_rencana)
+                                            <span class="badge bg-secondary">Belum ada · Rasio {{ $od->splitter_rencana }}</span>
+                                            @else
+                                            <span class="badge bg-secondary">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
+                                                <button type="button" class="btn btn-sm btn-outline-primary kelola-splitter-btn" data-id="{{ $od->id }}" data-nama="{{ $od->nama_odp }}" data-splitters='{{ json_encode($od->splitter_list->map(fn($s) => ['id' => $s->id, 'serial' => $s->serial_number, 'rasio' => $s->rasio])) }}' data-bs-toggle="tooltip" title="Kelola Splitter">
+                                                    <i class="bx bx-git-branch me-1"></i>Splitter
+                                                </button>
                                                 <a href="#" class="edit-odp-btn" data-id="{{ $od->id }}" data-bs-toggle="tooltip" title="Edit ODP" data-bs-placement="bottom">
                                                     <i class="bx bx-edit text-warning"></i>
                                                 </a>|
@@ -108,7 +133,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
+                                        <td colspan="6" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -151,8 +176,37 @@
                                 <input type="text" class="form-control mb-3" name="nama_odp" id="nama_odp" placeholder="ODP Dondong 2" required />
                             </div>
                             <div class="col-sm-12">
+                                <label class="form-label">Rasio Splitter</label>
+                                <select name="rasio" class="form-select mb-3">
+                                    <option value="" selected disabled>Pilih Rasio</option>
+                                    <option value="1:4">1:4 (4 port)</option>
+                                    <option value="1:8">1:8 (8 port)</option>
+                                    <option value="1:16">1:16 (16 port)</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-12">
                                 <label class="form-label">Lokasi ODP</label>
-                                <input type="text" class="form-control" name="gps" id="lokasi_odp" placeholder="GPS Lokasi ODP" required />
+                                <input type="text" class="form-control mb-3" name="gps" id="lokasi_odp" placeholder="GPS Lokasi ODP" required />
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Redaman (dBm)</label>
+                                <input type="text" class="form-control mb-3" name="redaman" placeholder="Contoh: -19.2" />
+                            </div>
+                            <div class="col-sm-12">
+                                <div class="p-3 bg-lighter rounded border mb-3">
+                                    <label class="form-label fw-bold text-primary mb-1"><i class="bx bx-package me-1"></i>Integrasi Logistik (Box ODP)</label>
+                                    <select id="modal_odp_perangkat_id" class="form-select mb-2" onchange="onOdpModalPerangkatChange(this, 'modal_odp_sn')">
+                                        <option value="">-- Pilih Box ODP dari Logistik (Opsional) --</option>
+                                        @foreach ($perangkatOdp ?? [] as $podp)
+                                            <option value="{{ $podp->id }}">📦 {{ $podp->nama_perangkat }} (Tersedia: {{ $podp->stok_tersedia }} unit)</option>
+                                        @endforeach
+                                    </select>
+                                    <label class="form-label mb-1">Serial Number (SN)</label>
+                                    <select name="modem_detail_id" id="modal_odp_sn" class="form-select font-monospace">
+                                        <option value="">-- Tanpa SN / Pilih Nanti --</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Memilih SN otomatis memotong stok di Logistik.</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -182,6 +236,15 @@
                                 <input type="text" class="form-control mb-3" name="nama_odp" id="edit_nama_odp" required>
                             </div>
                             <div class="col-sm-12">
+                                <label class="form-label">Rasio Splitter</label>
+                                <select name="rasio" id="edit_rasio_odp" class="form-select mb-3">
+                                    <option value="" disabled>Pilih Rasio</option>
+                                    <option value="1:4">1:4 (4 port)</option>
+                                    <option value="1:8">1:8 (8 port)</option>
+                                    <option value="1:16">1:16 (16 port)</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-12">
                                 <label class="form-label">Lokasi ODC</label>
                                 <select name="odc" id="edit_odc" class="form-select mb-3" required>
                                     <option value="" selected disabled>Pilih ODC</option>
@@ -192,7 +255,27 @@
                             </div>
                             <div class="col-sm-12">
                                 <label class="form-label">Lokasi ODP</label>
-                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control" id="edit_gps">
+                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control mb-3" id="edit_gps">
+                            </div>
+                            <div class="col-sm-12">
+                                <label class="form-label">Redaman (dBm)</label>
+                                <input type="text" name="redaman" placeholder="Contoh: -19.2" class="form-control mb-3" id="edit_redaman_odp">
+                            </div>
+                            <div class="col-sm-12">
+                                <div class="p-3 bg-lighter rounded border mb-3">
+                                    <label class="form-label fw-bold text-primary mb-1"><i class="bx bx-package me-1"></i>Integrasi Logistik (Box ODP)</label>
+                                    <select id="edit_odp_perangkat_id" class="form-select mb-2" onchange="onOdpModalPerangkatChange(this, 'edit_odp_sn')">
+                                        <option value="">-- Pilih Box ODP dari Logistik (Opsional) --</option>
+                                        @foreach ($perangkatOdp ?? [] as $podp)
+                                            <option value="{{ $podp->id }}">📦 {{ $podp->nama_perangkat }} (Tersedia: {{ $podp->stok_tersedia }} unit)</option>
+                                        @endforeach
+                                    </select>
+                                    <label class="form-label mb-1">Serial Number (SN)</label>
+                                    <select name="modem_detail_id" id="edit_odp_sn" class="form-select font-monospace">
+                                        <option value="">-- Tanpa SN / Pilih Nanti --</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Memilih SN otomatis memotong stok di Logistik.</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -203,6 +286,91 @@
             </div>
         </div>
     </div>
+    {{-- Modal Splitter ODP --}}
+    <div class="modal fade" id="modalKelolaSplitter" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bx bx-git-branch text-primary fs-4"></i>
+                        <h5 class="modal-title mb-0">
+                            Kelola Splitter
+                            <span id="splitterLokasiNama" class="badge bg-info-subtle text-info-emphasis ms-1"></span>
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-semibold mb-0">Daftar Splitter Terpasang</h6>
+                        <span class="badge bg-info" id="splitterTotal">0 unit</span>
+                    </div>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-hover table-sm align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="text-center">No</th>
+                                    <th>Serial Number</th>
+                                    <th class="text-center">Rasio</th>
+                                    <th class="text-center">Kapasitas</th>
+                                    <th class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="splitterListBody">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Belum ada splitter terpasang</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="fw-semibold mb-3">Tambah Splitter</h6>
+                    <form id="tambahSplitterForm" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Splitter dari Stok Logistik <span class="text-danger">*</span></label>
+                                <select name="logistik_id" id="splitterLogistikId" class="form-select" required>
+                                    <option value="" selected disabled>Pilih Perangkat Splitter dari Logistik</option>
+                                    @foreach ($perangkatSplitter as $ps)
+                                        <option value="{{ $ps->id }}" {{ $ps->stok_tersedia < 1 ? 'disabled' : '' }}>
+                                            {{ $ps->nama_perangkat }} (Tersedia: {{ $ps->stok_tersedia }} {{ $ps->kategori->nama_logistik ?? 'Unit' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Rasio Splitter <span class="text-danger">*</span></label>
+                                <select name="rasio" id="splitterRasio" class="form-select" required>
+                                    <option value="" selected disabled>Pilih Rasio</option>
+                                    <option value="1:4">1:4 (4 port)</option>
+                                    <option value="1:8">1:8 (8 port)</option>
+                                    <option value="1:16">1:16 (16 port)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Serial Number Per Port</label>
+                                <div id="splitterSerialInputs" class="row g-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">Pilih rasio untuk menampilkan field serial per port</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" form="tambahSplitterForm" class="btn btn-primary btn-sm">
+                        <i class="bx bx-save me-1"></i>Simpan Splitter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Modal Map --}}
     <div class="modal fade" id="modalMapOdp" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -226,6 +394,33 @@
     </div>
 
     <script>
+        const perangkatOdpData = @json($perangkatOdp ?? []);
+
+        function onOdpModalPerangkatChange(selectEl, targetSnSelectId, preselectedMdId = null, preselectedSn = '') {
+            const snSelect = document.getElementById(targetSnSelectId);
+            if (!snSelect) return;
+            const devId = selectEl.value;
+            const dev = (perangkatOdpData || []).find(d => String(d.id) === String(devId));
+
+            let options = '<option value="">-- Tanpa SN / Pilih Unit Nanti --</option>';
+            if (dev && dev.available_serials && dev.available_serials.length > 0) {
+                let found = false;
+                dev.available_serials.forEach(s => {
+                    const isSel = (preselectedMdId && String(s.id) === String(preselectedMdId)) ? 'selected' : '';
+                    if (isSel) found = true;
+                    options += `<option value="${s.id}" ${isSel}>🔹 SN: ${s.serial_number}${s.mac_address ? ` (${s.mac_address})` : ''}</option>`;
+                });
+                if (preselectedMdId && !found && preselectedSn) {
+                    options += `<option value="${preselectedMdId}" selected>🔹 SN: ${preselectedSn} (Unit Saat Ini)</option>`;
+                }
+            } else if (preselectedMdId && preselectedSn) {
+                options += `<option value="${preselectedMdId}" selected>🔹 SN: ${preselectedSn} (Unit Saat Ini)</option>`;
+            } else if (dev) {
+                options = '<option value="">⚠️ Stok fisik berseri belum tersedia</option>';
+            }
+            snSelect.innerHTML = options;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Edit ODP Logic (keeping jQuery for compatibility)
             $('.edit-odp-btn').click(function(e) {
@@ -238,9 +433,109 @@
                         $('#edit_nama_odp').val(data.nama_odp);
                         $('#edit_odc').val(data.odc_id);
                         $('#edit_gps').val(data.gps);
+                        $('#edit_rasio_odp').val(data.rasio);
+                        $('#edit_redaman_odp').val(data.redaman || '');
                         $('#editOdpForm').attr('action', '/update/odp/' + id);
+
+                        const pId = data.modem_detail?.logistik_id || '';
+                        const mdId = data.modem_detail_id || '';
+                        const snText = data.modem_detail?.serial_number || '';
+                        const editPSelect = document.getElementById('edit_odp_perangkat_id');
+                        if (editPSelect) {
+                            editPSelect.value = pId;
+                            onOdpModalPerangkatChange(editPSelect, 'edit_odp_sn', mdId, snText);
+                        }
+
                         $('#modalEditOdp').modal('show');
                     }
+                });
+            });
+
+            // Splitter Logic
+            const modalSplitterElement = document.getElementById('modalKelolaSplitter');
+            const modalSplitter = modalSplitterElement ? new bootstrap.Modal(modalSplitterElement) : null;
+
+            function portCount(rasio) {
+                return rasio ? parseInt(rasio.split(':')[1], 10) : 0;
+            }
+
+            function buildSplitterRows(splitters) {
+                const tbody = document.getElementById('splitterListBody');
+                const total = document.getElementById('splitterTotal');
+                if (!tbody) return;
+                if (!splitters || splitters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada splitter terpasang</td></tr>';
+                    if (total) total.textContent = '0 unit';
+                    return;
+                }
+                if (total) total.textContent = splitters.length + ' unit';
+                tbody.innerHTML = splitters.map(function (s, i) {
+                    return `<tr>
+                        <td class="text-center">${i + 1}</td>
+                        <td><code>${s.serial || '-'}</code></td>
+                        <td class="text-center"><span class="badge bg-info-subtle text-info-emphasis">${s.rasio || '-'}</span></td>
+                        <td class="text-center">${portCount(s.rasio) > 0 ? portCount(s.rasio) + ' port' : '-'}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-delete-splitter" data-id="${s.id}" data-serial="${s.serial || ''}" title="Hapus ${s.serial || ''}">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+
+            document.querySelectorAll('.kelola-splitter-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const id = btn.getAttribute('data-id');
+                    const nama = btn.getAttribute('data-nama');
+                    const splitters = JSON.parse(btn.getAttribute('data-splitters') || '[]');
+
+                    document.getElementById('splitterLokasiNama').textContent = nama;
+                    document.getElementById('tambahSplitterForm').action = '/odp/splitter/' + id;
+                    document.getElementById('splitterRasio').value = '';
+                    buildSplitterSerialInputs();
+                    buildSplitterRows(splitters);
+
+                    if (modalSplitter) modalSplitter.show();
+                });
+            });
+
+            function buildSplitterSerialInputs() {
+                const container = document.getElementById('splitterSerialInputs');
+                if (!container) return;
+                const rasio = document.getElementById('splitterRasio').value;
+                const count = portCount(rasio);
+                container.innerHTML = '';
+                if (count === 0) {
+                    container.innerHTML = '<div class="col-12"><small class="text-muted">Pilih rasio untuk menampilkan field serial per port</small></div>';
+                    return;
+                }
+                for (let i = 1; i <= count; i++) {
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `<div class="input-group input-group-sm">
+                        <span class="input-group-text">P${i}</span>
+                        <input type="text" class="form-control" name="serial_number[]" placeholder="Serial Port ${i}" required>
+                    </div>`;
+                    container.appendChild(col);
+                }
+            }
+
+            document.getElementById('splitterRasio').addEventListener('change', buildSplitterSerialInputs);
+
+            modalSplitterElement.addEventListener('click', function (e) {
+                const btn = e.target.closest('.btn-delete-splitter');
+                if (!btn) return;
+                const id = btn.getAttribute('data-id');
+                const serial = btn.getAttribute('data-serial');
+                if (!confirm('Yakin hapus splitter ' + serial + '?')) return;
+                fetch('/splitter/delete/' + id, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                }).then(function () {
+                    window.location.reload();
                 });
             });
 

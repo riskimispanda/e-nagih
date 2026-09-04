@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\User;
 use App\Models\KategoriTiket;
 use App\Models\TiketOpen;
+use App\Models\Status;
 use Spatie\Activitylog\Models\Activity;
 use App\Services\ChatServices;
 use App\Models\Router;
@@ -167,6 +168,14 @@ class TiketController extends Controller
     $monthSelesai = $request->get('month_selesai');
     $kategoriSelesai = $request->get('kategori_selesai');
 
+    // Filter untuk tabel "Tiket Dibatalkan"
+    $searchBatal = $request->get('search_batal');
+    $monthBatal = $request->get('month_batal');
+    $kategoriBatal = $request->get('kategori_batal');
+
+    // ID status "Dibatalkan" (dinamis berdasarkan nama status)
+    $statusBatalId = Status::where('nama_status', 'Dibatalkan')->value('id');
+
     // QUERY UTAMA untuk tiket yang sedang diproses (status_id 6)
     $query = TiketOpen::with([
       'kategori',
@@ -197,6 +206,22 @@ class TiketController extends Controller
       ->where('status_id', 3) // Hanya status_id 3 (selesai)
       ->orderBy('created_at', 'desc');
 
+    // QUERY tiket yang dibatalkan (status Dibatalkan)
+    $cancelQuery = TiketOpen::with([
+      'kategori',
+      'user',
+      'cancelledBy',
+      'customer' => function ($query) {
+        $query->withTrashed();
+      }
+    ])
+      ->whereHas('customer', function ($query) {
+        $query->whereIn('status_id', [3, 4, 9])
+          ->withTrashed();
+      })
+      ->where('status_id', $statusBatalId)
+      ->orderBy('created_at', 'desc');
+
     // Filter search untuk QUERY UTAMA
     if ($searchProses) {
       $query->whereHas('customer', function ($q) use ($searchProses) {
@@ -217,6 +242,16 @@ class TiketController extends Controller
       });
     }
 
+    // Filter search untuk CANCELQUERY
+    if ($searchBatal) {
+      $cancelQuery->whereHas('customer', function ($q) use ($searchBatal) {
+        $q->where('nama_customer', 'like', "%{$searchBatal}%")
+          ->orWhere('alamat', 'like', "%{$searchBatal}%")
+          ->orWhere('no_hp', 'like', "%{$searchBatal}%")
+          ->orWhere('usersecret', 'like', "%{$searchBatal}%");
+      });
+    }
+
     // Filter by month untuk QUERY UTAMA
     if ($monthProses && $monthProses != 'all') {
       $query->whereMonth('created_at', $monthProses);
@@ -225,6 +260,11 @@ class TiketController extends Controller
     // Filter by month untuk CLONEQUERY
     if ($monthSelesai && $monthSelesai != 'all') {
       $cloneQuery->whereMonth('created_at', $monthSelesai);
+    }
+
+    // Filter by month untuk CANCELQUERY
+    if ($monthBatal && $monthBatal != 'all') {
+      $cancelQuery->whereMonth('created_at', $monthBatal);
     }
 
     // Filter by category untuk QUERY UTAMA
@@ -237,8 +277,14 @@ class TiketController extends Controller
       $cloneQuery->where('kategori_id', $kategoriSelesai);
     }
 
-    $customer = $query->paginate(10, ['*'], 'proses_page')->appends($request->except('selesai_page'));
-    $completedTickets = $cloneQuery->paginate(10, ['*'], 'selesai_page')->appends($request->except('proses_page'));
+    // Filter by category untuk CANCELQUERY
+    if ($kategoriBatal && $kategoriBatal != 'all') {
+      $cancelQuery->where('kategori_id', $kategoriBatal);
+    }
+
+    $customer = $query->paginate(10, ['*'], 'proses_page')->appends($request->except(['selesai_page', 'batal_page']));
+    $completedTickets = $cloneQuery->paginate(10, ['*'], 'selesai_page')->appends($request->except(['proses_page', 'batal_page']));
+    $cancelledTickets = $cancelQuery->paginate(10, ['*'], 'batal_page')->appends($request->except(['proses_page', 'selesai_page']));
 
     // Generate all months from January to December for the dropdown
     $months = [];
@@ -253,6 +299,7 @@ class TiketController extends Controller
       'roles' => auth()->user()->roles,
       'customer' => $customer,
       'completedTickets' => $completedTickets,
+      'cancelledTickets' => $cancelledTickets,
       'months' => $months,
       'kategoriTiket' => $kategoriTiket,
       'searchProses' => $searchProses,
@@ -261,6 +308,9 @@ class TiketController extends Controller
       'searchSelesai' => $searchSelesai,
       'selectedMonthSelesai' => $monthSelesai,
       'selectedKategoriSelesai' => $kategoriSelesai,
+      'searchBatal' => $searchBatal,
+      'selectedMonthBatal' => $monthBatal,
+      'selectedKategoriBatal' => $kategoriBatal,
     ]);
   }
 
@@ -282,21 +332,48 @@ class TiketController extends Controller
     return Excel::download(new TiketExport('selesai', $month, $kategoriId, $search), 'tiket_selesai_export.xlsx');
   }
 
+  public function exportTiketBatal(Request $request)
+  {
+    $search = $request->get('search_batal');
+    $month = $request->get('month_batal');
+    $kategoriId = $request->get('kategori_batal');
+
+    return Excel::download(new TiketExport('batal', $month, $kategoriId, $search), 'tiket_batal_export.xlsx');
+  }
+
   public function cancelTiket(Request $request, $id)
   {
+    $request->validate([
+      'alasan_batal' => 'required|string|max:1000',
+    ]);
+
     $tiket = TiketOpen::findOrFail($id);
+
+    $statusBatal = Status::where('nama_status', 'Dibatalkan')->first();
+    $statusBatalId = $statusBatal ? $statusBatal->id : null;
+
     $tiket->update([
-      'status_id' => 3
+      'status_id' => $statusBatalId ?: $tiket->status_id,
+      'alasan_batal' => $request->alasan_batal,
+      'cancelled_by' => auth()->user()->id,
+      'cancelled_at' => now(),
     ]);
 
     $customer = Customer::where('id', $tiket->customer_id)->first();
-    $customer->update([
-      'status_id' => 3
-    ]);
+    if ($customer) {
+      // Kembalikan customer ke status aktif bila saat ini dalam proses tiket (4)
+      $customer->update([
+        'status_id' => $customer->status_id == 4 ? 3 : $customer->status_id,
+      ]);
+    }
 
     activity('Cancel Tiket')
       ->causedBy(auth()->user()->id)
-      ->log(auth()->user()->name . ' Membatalkan tiket untuk pelanggan ' . $customer->nama_customer);
+      ->log(auth()->user()->name . ' Membatalkan tiket untuk pelanggan ' . ($customer->nama_customer ?? $tiket->customer_id) . '. Alasan: ' . $request->alasan_batal);
+
+    if ($request->ajax() || $request->wantsJson()) {
+      return response()->json(['success' => true, 'message' => 'Tiket Berhasil Dibatalkan']);
+    }
 
     return redirect('/tiket-closed')->with('success', 'Tiket Berhasil Dibatalkan');
   }
@@ -309,7 +386,18 @@ class TiketController extends Controller
     $router = Router::with('paket')->get();
     $paket = Paket::with('router')->get();
     $modemLama = ModemDetail::with('perangkat')->where('customer_id', $id)->first();
-    $perangkat = Perangkat::whereIn('kategori_id', [1, 4, 5])->get();
+    // Hanya perangkat kategori Modem (nama_logistik mengandung 'modem')
+    $perangkat = Perangkat::whereHas('kategori', function ($q) {
+      $q->whereRaw('LOWER(nama_logistik) LIKE ?', ['%modem%']);
+    })->get();
+    $modemDetails = ModemDetail::with('perangkat')
+      ->whereHas('perangkat', function ($q) {
+        $q->whereHas('kategori', function ($sub) {
+          $sub->whereRaw('LOWER(nama_logistik) LIKE ?', ['%modem%']);
+        });
+      })
+      ->tersedia()
+      ->get();
 
     return view('Helpdesk.tiket.confirm-closed-tiket', [
       'users' => auth()->user(),
@@ -319,7 +407,8 @@ class TiketController extends Controller
       'router' => $router,
       'paket' => $paket,
       'modemLama' => $modemLama,
-      'perangkat' => $perangkat
+      'perangkat' => $perangkat,
+      'modemDetails' => $modemDetails
     ]);
   }
 
@@ -340,6 +429,7 @@ class TiketController extends Controller
       $customer = Customer::findOrFail($tiket->customer_id);
 
       $tiket->update([
+        'status_id' => 3,
         'teknisi_id' => auth()->user()->id,
         'tanggal_selesai' => Carbon::now()->toDate()
       ]);
@@ -407,8 +497,6 @@ class TiketController extends Controller
         ->log(auth()->user()->name . ' Update Paket Pelanggan ' . $customer->nama_customer . ' ke Paket ' . $customer->paket->nama_paket);
     });
 
-    $tiket->delete();
-
     return redirect('/tiket-closed')->with('success', 'Tiket Closed Berhasil Ditutup');
   }
 
@@ -445,12 +533,43 @@ class TiketController extends Controller
       // Tidak perlu manual set perangkat_id = null karena sudah otomatis di model
 
       // 3. SOFT DELETE customer (bukan hard delete)
+      $customerId = $customer->id;
+      $customerNama = $customer->nama_customer;
+      $perangkatId = $customer->perangkat_id;
+
+      // Ambil data modem yang sedang terpakai SEBELUM customer di-soft-delete
+      // (model event akan meng-null-kan customer_id pada ModemDetail)
+      $modem = \App\Models\ModemDetail::with('perangkat')
+        ->where('customer_id', $customerId)
+        ->where('status_id', 13)
+        ->first();
+
       $customer->delete(); // ✅ Sekarang ini SOFT DELETE karena model pakai SoftDeletes
+
+      // 4. Catat barang yang ditarik ke tabel dismantles (arsip mandiri)
+      $perangkatNama = $modem?->perangkat?->nama_perangkat
+        ?? \App\Models\Perangkat::find($perangkatId)?->nama_perangkat
+        ?? '-';
+
+      \App\Models\Dismantle::create([
+        'modem_detail_id' => $modem?->id,
+        'perangkat_id' => $perangkatId,
+        'serial_number' => $modem?->serial_number,
+        'mac_address' => $modem?->mac_address,
+        'customer_id_lama' => $customerId,
+        'customer_nama' => $customerNama,
+        'perangkat_nama' => $perangkatNama,
+        'teknisi_id' => auth()->user()->id,
+        'status_barang' => $request->input('status_modem', 4),
+        'keterangan_dismantle' => $request->keterangan,
+        'tanggal_dismantle' => \Carbon\Carbon::now(),
+        'foto' => $foto,
+      ]);
 
       // Log activity
       activity()
         ->causedBy(auth()->user()->id)
-        ->log("Customer {$customer->nama_customer} dideaktivasi via tiket #{$tiket->id}");
+        ->log("Customer {$customerNama} dideaktivasi via tiket #{$tiket->id}");
     });
 
     return redirect('/tiket-closed')->with('success', 'Berhasil deaktivasi pelanggan dan perangkat dikembalikan ke stok');
@@ -476,7 +595,6 @@ class TiketController extends Controller
       // Cek jika ada modem baru yang dipasang
       if ($request->modem_baru_id != null) {
         $mac = $request->mac_address;
-        $sni = $request->sni;
         $modemBaru = $request->modem_baru_id;
 
         // Update data modem di Customer
@@ -484,12 +602,16 @@ class TiketController extends Controller
           'status_id' => 3,
           'perangkat_id' => $modemBaru,
           'mac_address' => $mac,
-          'seri_perangkat' => $sni
         ]);
 
         // Cari modem lama customer yang berstatus Terpakai (13)
         $statusModemLama = $request->input('status_modem_lama', 4); // Default ke Maintenance (4)
-        
+
+        $modemLama = ModemDetail::with('perangkat')
+          ->where('customer_id', $customer->id)
+          ->where('status_id', 13)
+          ->first();
+
         ModemDetail::where('customer_id', $customer->id)
           ->where('status_id', 13)
           ->update([
@@ -497,14 +619,51 @@ class TiketController extends Controller
             'customer_id' => null
           ]);
 
-        // Buat detail modem baru dengan status Terpakai (13)
-        ModemDetail::create([
-          'logistik_id' => $modemBaru,
-          'mac_address' => $mac,
-          'serial_number' => $sni,
-          'status_id' => 13, // Terpakai
-          'customer_id' => $customer->id
+        // Catat barang lama yang ditarik ke tabel dismantles (arsip mandiri)
+        $perangkatNamaLama = $modemLama?->perangkat?->nama_perangkat
+          ?? $customer->perangkat?->nama_perangkat
+          ?? '-';
+        \App\Models\Dismantle::create([
+          'modem_detail_id' => $modemLama?->id,
+          'perangkat_id' => $customer->perangkat_id,
+          'serial_number' => $modemLama?->serial_number,
+          'mac_address' => $modemLama?->mac_address,
+          'customer_id_lama' => $customer->id,
+          'customer_nama' => $customer->nama_customer,
+          'perangkat_nama' => $perangkatNamaLama,
+          'teknisi_id' => auth()->user()->id,
+          'status_barang' => $statusModemLama,
+          'keterangan_dismantle' => $request->keterangan,
+          'tanggal_dismantle' => \Carbon\Carbon::parse($request->tanggal),
+          'foto' => null,
         ]);
+
+        // Jika pilih dari stok SN tersedia (modem_detail_id)
+        if ($request->modem_detail_id) {
+          $modemDetail = ModemDetail::findOrFail($request->modem_detail_id);
+          $modemDetail->update([
+            'status_id' => 13, // Terpakai
+            'customer_id' => $customer->id,
+            'tanggal_terpakai' => now(),
+          ]);
+          $customer->update([
+            'seri_perangkat' => $modemDetail->serial_number,
+          ]);
+        } else {
+          // Buat detail modem baru dengan status Terpakai (13)
+          $sni = $request->sni;
+          $customer->update([
+            'seri_perangkat' => $sni,
+          ]);
+          ModemDetail::create([
+            'logistik_id' => $modemBaru,
+            'mac_address' => $mac,
+            'serial_number' => $sni,
+            'status_id' => 13, // Terpakai
+            'customer_id' => $customer->id,
+            'tanggal_terpakai' => now(),
+          ]);
+        }
       } else {
         // Jika tidak ganti modem, cukup update status customer saja
         $customer->update([
@@ -533,9 +692,9 @@ class TiketController extends Controller
     // Asumsi $id adalah customer_id
     $customer = Customer::findOrFail($id);
     $tickets = TiketOpen::where('customer_id', $id)
-      ->with(['kategori', 'user'])
+      ->with(['kategori', 'user', 'cancelledBy'])
       ->orderBy('created_at', 'desc')
-      ->get();
+      ->paginate(10);
 
     return view('Helpdesk.tiket.history-tiket', [
       'users' => auth()->user(),

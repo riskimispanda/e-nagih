@@ -10,6 +10,7 @@ class Perangkat extends Model
     protected $fillable = [
         'nama_perangkat',
         'jumlah_stok',
+        'jumlah_rusak',
         'harga',
         'kategori_id'
     ];
@@ -21,7 +22,7 @@ class Perangkat extends Model
 
     public function kategori()
     {
-        return $this->belongsTo(KategoriLogistik::class);
+        return $this->belongsTo(KategoriLogistik::class, 'kategori_id');
     }
 
     public function modem()

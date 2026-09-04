@@ -13,7 +13,7 @@ class KategoriLogistik extends Model
 
     public function logistik()
     {
-        return $this->hasMany(Perangkat::class);
+        return $this->hasMany(Perangkat::class, 'kategori_id');
     }
 
 }

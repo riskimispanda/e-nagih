@@ -76,6 +76,7 @@ use App\Http\Controllers\ExportControllers;
 use App\Http\Controllers\KalenderController;
 use App\Http\Controllers\KinerjaController;
 use App\Http\Controllers\WhatspieControllers;
+use App\Http\Controllers\DamagedItemsController;
 use App\Http\Controllers\QontakController;
 use App\Http\Middleware\VerifyCsrfTokens;
 use Illuminate\Support\Facades\Log;
@@ -83,6 +84,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use App\Http\Controllers\PelangganController;
+use App\Http\Controllers\PengadaanController;
 
 // Main Page Route
 Route::get('/', [LoginBasic::class, 'index'])
@@ -97,9 +99,7 @@ Route::post('/login', [LoginBasic::class, 'login'])
 // Tambah ke web.php
 Route::get('/test-mikrotik-cache/{router_id}', [MikrotikController::class, 'testCacheConnection']);
 
-
-Route::post('/login', [LoginBasic::class, 'login'])->name('login.post');
-Route::get('/login', fn() => redirect()->route('login'));
+Route::redirect('/login', '/');
 
 Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 
@@ -233,11 +233,9 @@ Route::middleware(['auth'])->group(function () {
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('setting');
   Route::post('/sett/blokir', [SettingController::class, 'settBlokir']);
-  Route::get('/visual', [SettingController::class, 'visual'])->name('setting');
-
   Route::get('/visual', [SettingController::class, 'visual'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
-    ->name('setting');
+    ->name('setting.visual');
 
   // Invoice
   Route::match(['GET', 'POST'], '/manual/invoice', [SuperAdmin::class, 'globalInvoice'])->name('global-invoice');
@@ -257,7 +255,6 @@ Route::middleware(['auth'])->group(function () {
   Route::post('/update-photo/{id}', [UserController::class, 'updatePhoto'])->name('update-photo');
   Route::post('/update/user/{id}', [UserController::class, 'updateUser'])->name('update-user');
   Route::get('/data/invoice/{name}', [Customer::class, 'dataInvoice'])->name('invoice');
-  Route::get('/cancel-tiket/{id}', [TiketController::class, 'cancelTiket']);
 
   // SuperAdmin
   Route::get('/payment/approve', [SuperAdmin::class, 'approvalPembayaran'])->name('payment.approve');
@@ -290,6 +287,8 @@ Route::middleware(['auth'])->group(function () {
     ->name('tiket-closed');
   Route::get('/export-tiket-proses', [TiketController::class, 'exportTiketProses'])->name('export.tiket.proses');
   Route::get('/export-tiket-selesai', [TiketController::class, 'exportTiketSelesai'])->name('export.tiket.selesai');
+  Route::get('/export-tiket-batal', [TiketController::class, 'exportTiketBatal'])->name('export.tiket.batal');
+  Route::post('/cancel-tiket/{id}', [TiketController::class, 'cancelTiket'])->middleware('auth')->name('cancel-tiket');
   Route::get('/export/pembayaran/{filter}', function ($filter, Request $request) {
     $startDate = $request->start_date;
     $endDate = $request->end_date;
@@ -362,7 +361,7 @@ Route::middleware(['auth'])->group(function () {
     }
   })
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')
-    ->name('pelanggan');
+    ->name('data.customer');
 
   // * Export Pengeluaran
   // Routes untuk Export Excel Pengeluaran
@@ -504,54 +503,81 @@ Route::middleware(['auth'])->group(function () {
     'dashboard.get-customer-data'
   );
   // Customer
-  Route::get('/customer', [Customer::class, 'index'])->name('pelanggan');
+  Route::get('/customer', [Customer::class, 'index'])->name('customer.dashboard');
   Route::get('/customer/pengaduan', [Customer::class, 'pengaduan'])->name('pengaduan');
   Route::get('/customer/history', [Customer::class, 'history'])->name('history');
   Route::get('/customer/request', [Customer::class, 'req'])->name('request');
   Route::post('/customer/add/pengaduan', [Customer::class, 'addPengaduan'])->name('customer.addPengaduan');
 
-  // Logistik
-  Route::post('/logistik/store', [Logistik::class, 'store']);
-  Route::post('/add-kategori-logistik', [Logistik::class, 'tambahKategori'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/hapus-logistik/{id}', [Logistik::class, 'deleteLogistik'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/edit-logistik/{id}', [Logistik::class, 'editLogistik'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/tracking', [Logistik::class, 'tracking'])
-    ->middleware('auth', 'roles:Super Admin,Admin Logistik')
-    ->name('tracking');
-  Route::get('/logistik/perbaiki/{id}', [Logistik::class, 'perbaikiBarang'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/logistik/maintenance/{id}', [Logistik::class, 'setMaintenanceBarang'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/logistik/afkir/{id}', [Logistik::class, 'afkirBarang'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
-  Route::get('/logistik/buang/{id}', [Logistik::class, 'buangBarang'])->middleware(
-    'auth',
-    'roles:Super Admin,Admin Logistik'
-  );
+   // Logistik
+   Route::post('/logistik/store', [Logistik::class, 'store']);
+   Route::post('/add-kategori-logistik', [Logistik::class, 'tambahKategori'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/hapus-logistik/{id}', [Logistik::class, 'deleteLogistik'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/edit-logistik/{id}', [Logistik::class, 'editLogistik'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::post('/update-logistik/{id}', [Logistik::class, 'updateLogistik'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/tracking', [Logistik::class, 'tracking'])
+     ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+     ->name('tracking');
+   Route::get('/logistik/perbaiki/{id}', [Logistik::class, 'perbaikiBarang'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/logistik/maintenance/{id}', [Logistik::class, 'setMaintenanceBarang'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/logistik/afkir/{id}', [Logistik::class, 'afkirBarang'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+   Route::get('/logistik/buang/{id}', [Logistik::class, 'buangBarang'])->middleware(
+     'auth',
+     'roles:Super Admin,Admin Logistik'
+   );
+     Route::get('/dashboard-logistik', [Logistik::class, 'index'])
+       ->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')
+       ->name('dashboard-logistik');
+      Route::get('/logistik/dismantle', [Logistik::class, 'dismantleView'])
+        ->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')
+        ->name('logistik-dismantle');
+      Route::post('/logistik/dismantle/delete/{id}', [Logistik::class, 'dismantleDelete'])
+        ->middleware('auth', 'roles:Super Admin,Admin Logistik');
+      Route::post('/logistik/dismantle/bulk-delete', [Logistik::class, 'dismantleBulkDelete'])
+        ->middleware('auth', 'roles:Super Admin,Admin Logistik');
+    Route::get('/logistik/tersedia', [Logistik::class, 'statusView'])->defaults('status', 'tersedia')->middleware('auth', 'roles:Super Admin,Admin Logistik');
+    Route::get('/logistik/terpakai', [Logistik::class, 'statusView'])->defaults('status', 'terpakai')->middleware('auth', 'roles:Super Admin,Admin Logistik');
+    Route::get('/logistik/barang-rusak', [Logistik::class, 'statusView'])->defaults('status', 'barang-rusak')->middleware('auth', 'roles:Super Admin,Admin Logistik');
+    Route::get('/logistik/maintenance', [Logistik::class, 'statusView'])->defaults('status', 'maintenance')->middleware('auth', 'roles:Super Admin,Admin Logistik');
+   Route::get('/tiket-barang', [Logistik::class, 'TiketBarang'])->middleware('auth', 'roles:Admin Logistik,Super Admin');
 
-  Route::get('/dashboard-logistik', [Logistik::class, 'index'])
-    ->middleware('auth', 'roles:Super Admin,Admin Logistik,Admin Keuangan')
-    ->name('dashboard-logistik');
-  Route::get('/tiket-barang', [Logistik::class, 'TiketBarang'])->middleware('auth', 'roles:Admin Logistik,Super Admin');
+   // Damaged Items Management (Super Admin Menu)
+   Route::get('/damaged-items', [DamagedItemsController::class, 'index'])
+     ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+     ->name('damaged-items.index');
+   Route::post('/damaged-items/repair/{id}', [DamagedItemsController::class, 'repair'])
+     ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+     ->name('damaged-items.repair');
+    Route::post('/damaged-items/bulk-repair', [DamagedItemsController::class, 'bulkRepair'])
+      ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+      ->name('damaged-items.bulk-repair');
+   Route::get('/damaged-items/analytics', [DamagedItemsController::class, 'getAnalytics'])
+      ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+      ->name('damaged-items.analytics');
+   Route::get('/damaged-items/export', [DamagedItemsController::class, 'export'])
+      ->middleware('auth', 'roles:Super Admin,Admin Logistik')
+      ->name('damaged-items.export');
 
   // Teknisi
   Route::get('/teknisi/antrian', [TeknisiController::class, 'index'])
@@ -749,24 +775,40 @@ Route::middleware(['auth'])->group(function () {
     }
   });
   // Perusahaan
-  Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])->name('pendapatan');
-
   Route::get('/corp/pendapatan', [PerusahaanController::class, 'pendapatan'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
-    ->name('pendapatan');
+    ->name('corp.pendapatan');
 
   // NOC
   Route::get('/noc/data-olt', [Jaringan::class, 'index'])->name('olt');
   Route::get('/noc/data-odp', [Jaringan::class, 'odp'])->name('odp');
   Route::get('/noc/data-odc', [Jaringan::class, 'odc'])->name('odc');
   Route::get('/noc/data-server', [Jaringan::class, 'server'])->name('data-server');
-  Route::post('/olt/add', [Jaringan::class, 'addOlt'])->name('olt.store');
-  Route::post('/odc/add', [Jaringan::class, 'addOdc'])->name('odc.store');
-  Route::post('/odp/add', [Jaringan::class, 'addOdp'])->name('odp.store');
+  Route::get('/noc/data-infrastruktur', [Jaringan::class, 'infrastruktur'])->name('infrastruktur');
+  Route::get('/noc/data-infrastruktur/json', [Jaringan::class, 'infrastrukturJson'])->name('infrastruktur.json');
+  Route::get('/noc/data-infrastruktur/form-options', [Jaringan::class, 'infrastrukturFormOptions'])->name('infrastruktur.form-options');
+  Route::get('/noc/perangkat-by-kategori/{category}', [Jaringan::class, 'apiPerangkatByKategori'])->name('perangkat.by-kategori');
   Route::post('/server/add', [Jaringan::class, 'addServer'])->name('server.store');
+  Route::post('/server/update/{id}', [Jaringan::class, 'updateServer'])->name('server.update');
+  Route::delete('/server/delete/{id}', [Jaringan::class, 'deleteServer'])->name('server.delete');
+  Route::post('/olt/add', [Jaringan::class, 'addOlt'])->name('olt.store');
+  Route::post('/olt/update/{id}', [Jaringan::class, 'updateOlt'])->name('olt.update');
+  Route::delete('/olt/delete/{id}', [Jaringan::class, 'deleteOlt'])->name('olt.delete');
+  Route::post('/odc/add', [Jaringan::class, 'addOdc'])->name('odc.store');
+  Route::post('/odc/update/{id}', [Jaringan::class, 'updateOdc'])->name('odc.update');
+  Route::delete('/odc/delete/{id}', [Jaringan::class, 'deleteOdc'])->name('odc.delete');
+  Route::post('/odp/add', [Jaringan::class, 'addOdp'])->name('odp.store');
+  Route::post('/odp/update/{id}', [Jaringan::class, 'updateOdp'])->name('odp.update');
+  Route::delete('/odp/delete/{id}', [Jaringan::class, 'deleteOdp'])->name('odp.delete');
+  Route::post('/odc/splitter/{id}', [Jaringan::class, 'storeOdcSplitter'])->name('odc.splitter.store');
+  Route::post('/odp/splitter/{id}', [Jaringan::class, 'storeOdpSplitter'])->name('odp.splitter.store');
+  Route::post('/splitter/add', [Jaringan::class, 'storeSplitter'])->name('splitter.store');
+  Route::post('/splitter/update/{id}', [Jaringan::class, 'updateSplitter'])->name('splitter.update');
+  Route::post('/splitter/delete/{id}', [Jaringan::class, 'deleteSplitter'])->name('splitter.delete');
+  Route::post('/odc/sync-pon', [Jaringan::class, 'syncOdcPonPorts'])->name('odc.sync-pon');
   Route::get('/mindmap', [Jaringan::class, 'mindmap'])->name('mindmap');
   Route::get('/data/antrian-noc', [NocController::class, 'antrian'])->name('antrian-noc');
-  Route::get('/noc/proses-antrian/{id}', [NocController::class, 'prosesAntrian'])->name('antrian-noc');
+  Route::get('/noc/proses-antrian/{id}', [NocController::class, 'prosesAntrian'])->name('noc.proses-antrian');
   Route::post('/noc/assign/{id}', [NocController::class, 'assign'])->name('noc.assign');
   Route::get('/perusahaan/{id}', [NocController::class, 'antrianPerusahaan']);
   Route::post('/update/corp/{id}', [PerusahaanController::class, 'update']);
@@ -817,6 +859,7 @@ Route::middleware(['auth'])->group(function () {
 
   // Keuangan
   Route::get('/pengeluaran/ajax-filter', [PengeluaranController::class, 'ajaxFilter'])->name('pengeluaran.ajax-filter');
+  Route::get('/pengeluaran/bukti/{id}', [PengeluaranController::class, 'buktiPengeluaran'])->name('pengeluaran.bukti');
   Route::get('/data/pendapatan', [KeuanganController::class, 'index'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('pendapatan');
@@ -1006,7 +1049,7 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])
     ->middleware('auth', 'roles:Helpdesk,Agen,Super Admin,Teknisi')
     ->name('antrian-helpdesk');
-  Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('antrian-helpdesk');
+  Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('helpdesk.detail-antrian');
   Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name(
     'update-antrian-helpdesk'
   );
@@ -1165,3 +1208,12 @@ Route::get('/form/layouts-horizontal', [HorizontalForm::class, 'index'])->name('
 // tables
 Route::get('/tables/basic', [TablesBasic::class, 'index'])->name('tables-basic');
 Route::get('/plans/preview', [\App\Http\Controllers\PlanPreviewController::class, 'show'])->name('plans.preview');
+
+// * Pengadaan Barang
+Route::get('/pengadaan', [PengadaanController::class, 'index'])->name('pengadaan');
+Route::get('/pengadaan/create', [PengadaanController::class, 'create'])->name('pengadaan.create');
+Route::post('/pengadaan/store', [PengadaanController::class, 'store'])->name('pengadaan.store');
+Route::get('/pengadaan/approval', [PengadaanController::class, 'approval'])->name('pengadaan.approval');
+Route::match(['get', 'post', 'put'], '/pengadaan/acc/{id}', [PengadaanController::class, 'accPengadaan'])->name('pengadaan.acc');
+Route::match(['get', 'post', 'delete'], '/pengadaan/tolak/{id}', [PengadaanController::class, 'tolakPengadaan'])->name('pengadaan.tolak');
+Route::post('/pengadaan/terima/{id}', [PengadaanController::class, 'terimaBarang'])->name('pengadaan.terima');

@@ -524,7 +524,38 @@ class DataController extends Controller
     $odp = ODP::all();
     $koneksi = Koneksi::all();
     $media = MediaKoneksi::all();
-    $perangkat = Perangkat::whereIn('kategori_id', [1, 4, 5])->get();
+    // Hanya perangkat kategori Modem yang ditampilkan (nama_logistik mengandung 'modem')
+    $perangkat = Perangkat::with('kategori')
+      ->whereHas('kategori', function ($q) {
+        $q->whereRaw('LOWER(nama_logistik) LIKE ?', ['%modem%']);
+      })
+      ->get();
+
+    // Serial number (ModemDetail) tersedia dari logistik untuk setiap tipe modem,
+    // termasuk unit yang sedang dipakai pelanggan ini agar nilainya tetap muncul.
+    $logistikSerial = ModemDetail::with('perangkat.kategori')
+      ->whereHas('perangkat.kategori', function ($q) {
+        $q->whereRaw('LOWER(nama_logistik) LIKE ?', ['%modem%']);
+      })
+      ->whereIn('status_id', [
+        \App\Helpers\LogistikStatus::TERSEIDA,       // Tersedia
+        \App\Helpers\LogistikStatus::TERPAKAI,       // Terpakai
+        \App\Helpers\LogistikStatus::MAINTENANCE,    // Maintenance
+      ])
+      ->where(function ($q) use ($pelanggan) {
+        $q->whereNull('customer_id')
+          ->orWhere('customer_id', $pelanggan->id);
+      })
+      ->orderBy('serial_number')
+      ->get()
+      ->map(fn($m) => [
+        'id'            => $m->id,
+        'logistik_id'   => $m->logistik_id,
+        'serial_number' => $m->serial_number ?: ('ID-' . $m->id . ' (Tanpa SN)'),
+        'mac_address'   => $m->mac_address,
+        'status_id'     => $m->status_id,
+      ]);
+
     $agen = User::where('roles_id', 6)->get();
 
     return view('/pelanggan/edit', [
@@ -541,6 +572,7 @@ class DataController extends Controller
       'media' => $media,
       'perangkat' => $perangkat,
       'agen' => $agen,
+      'logistikSerial' => $logistikSerial,
     ]);
   }
 
@@ -730,17 +762,17 @@ class DataController extends Controller
       }
 
       // 🔥 AMBIL NILAI DARI REQUEST UNTUK MIKROTIK
-      $localAddress = $request->local_address;
-      $remoteAddress = $request->remote_address;
-      $usersecret = $request->usersecret ?? $pelanggan->usersecret;
-      $passSecret = $request->pass_secret ?? $pelanggan->pass_secret;
-      $paketId = $request->paket;
-      $routerId = $request->router;
+      $localAddress = $request->has('local_address') ? $request->local_address : $pelanggan->local_address;
+      $remoteAddress = $request->has('remote_address') ? $request->remote_address : $pelanggan->remote_address;
+      $usersecret = $request->filled('usersecret') ? $request->usersecret : $pelanggan->usersecret;
+      $passSecret = $request->filled('pass_secret') ? $request->pass_secret : $pelanggan->pass_secret;
+      $paketId = $request->filled('paket') ? $request->paket : $pelanggan->paket_id;
+      $routerId = $request->filled('router') ? $request->router : $pelanggan->router_id;
 
       // 🔥 UPDATE MIKROTIK DULU (dengan nilai dari request)
       $router = Router::findOrFail($routerId);
       $paket = Paket::findOrFail($paketId);
-      $konek = strtolower($pelanggan->koneksi->nama_koneksi);
+      $konek = strtolower($pelanggan->koneksi->nama_koneksi ?? 'pppoe');
 
       $client = MikrotikServices::connect($router);
       $existingSecret = MikrotikServices::checkPPPSecret($client, $usersecret);
@@ -791,16 +823,16 @@ class DataController extends Controller
         'no_identitas' => $request->no_identitas,
         'router_id' => $routerId,
         'paket_id' => $paketId,
-        'lokasi_id' => $request->odp,
-        'access_point' => $request->access_point,
-        'koneksi_id' => $request->koneksi,
-        'media_id' => $request->media,
-        'perangkat_id' => $request->perangkat,
+        'lokasi_id' => $request->has('odp') ? $request->odp : $pelanggan->lokasi_id,
+        'access_point' => $request->has('access_point') ? $request->access_point : $pelanggan->access_point,
+        'koneksi_id' => $request->has('koneksi') ? $request->koneksi : $pelanggan->koneksi_id,
+        'media_id' => $request->has('media') ? $request->media : $pelanggan->media_id,
+        'perangkat_id' => $request->has('perangkat') ? $request->perangkat : $pelanggan->perangkat_id,
         'local_address' => $localAddress,  // ✅ Nilai dari request
         'remote_address' => $remoteAddress, // ✅ Nilai dari request
-        'remote' => $request->remote,
-        'seri_perangkat' => $request->seri,
-        'mac_address' => $request->mac,
+        'remote' => $request->has('remote') ? $request->remote : $pelanggan->remote,
+        'seri_perangkat' => $request->has('seri') ? $request->seri : $pelanggan->seri_perangkat,
+        'mac_address' => $request->has('mac') ? $request->mac : $pelanggan->mac_address,
         'usersecret' => $usersecret,
         'pass_secret' => $passSecret,
         'agen_id' => $request->agen_id,

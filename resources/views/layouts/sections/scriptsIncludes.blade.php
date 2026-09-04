@@ -19,7 +19,6 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 
-
 <script>
   $(document).ready(function () {
     // Only initialize Select2 if elements with select2 class exist
@@ -127,84 +126,84 @@
   });
 </script>
 <script>
-  @if (session('success'))
-    Swal.fire({
-      icon: 'success',
-      title: 'Success',
-      text: '{{ session('success') }}',
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      topLayer: true,
-      animation: true
-    });
-  @endif
+    @if (session('success'))
+      Swal.fire({
+        icon: 'success',
+        title: 'Success',
+        text: '{{ session('success') }}',
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        topLayer: true,
+        animation: true
+      });
+    @endif
 
-  @if (session('toast_success'))
-    Swal.fire({
-      icon: 'success',
-      toast: true,
-      position: 'top-end',
-      text: '{{ session('toast_success') }}',
-      timer: 2000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      showCloseButton: true,
-      customClass: {
-        popup: 'colored-toast mini-toast',
-      },
-      background: 'white',
-      opacity: 0.8,
-      color: '#000000',
-      topLayer: true,
-      animation: true
-    });
-  @endif
+    @if (session('toast_success'))
+      Swal.fire({
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        text: '{{ session('toast_success') }}',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        showCloseButton: true,
+        customClass: {
+          popup: 'colored-toast mini-toast',
+        },
+        background: 'white',
+        opacity: 0.8,
+        color: '#000000',
+        topLayer: true,
+        animation: true
+      });
+    @endif
 
-  @if (session('error'))
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: '{{ session('error') }}',
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      topLayer: true,
-      animation: true
-    });
-  @endif
+    @if (session('error'))
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: '{{ session('error') }}',
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        topLayer: true,
+        animation: true
+      });
+    @endif
 
-  @if (session('toast_error'))
-    Swal.fire({
-      icon: 'error',
-      toast: true,
-      position: 'top-end',
-      text: '{{ session('toast_error') }}',
-      timer: 3000,
-      timerProgressBar: true,
-      showConfirmButton: false,
-      topLayer: true,
-      animation: true
-    });
-  @endif
+    @if (session('toast_error'))
+      Swal.fire({
+        icon: 'error',
+        toast: true,
+        position: 'top-end',
+        text: '{{ session('toast_error') }}',
+        timer: 3000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        topLayer: true,
+        animation: true
+      });
+    @endif
 </script>
 
 <script>
-  function formatNomorIndonesia(nomor) {
-    nomor = nomor.replace(/[^0-9]/g, ''); // hanya angka
-    if (nomor.startsWith('62')) {
-      return '0' + nomor.slice(2);
+    function formatNomorIndonesia(nomor) {
+      nomor = nomor.replace(/[^0-9]/g, ''); // hanya angka
+      if (nomor.startsWith('62')) {
+        return '0' + nomor.slice(2);
+      }
+      if (nomor.startsWith('0')) {
+        return nomor;
+      }
+      return '0' + nomor;
     }
-    if (nomor.startsWith('0')) {
-      return nomor;
-    }
-    return '0' + nomor;
-  }
 
-  // Format semua sel dengan class "nomor-hp"
-  document.querySelectorAll('.nomor-hp').forEach(function (cell) {
-    const original = cell.textContent.trim();
-    const formatted = formatNomorIndonesia(original);
-    cell.textContent = formatted;
-  });
+    // Format semua sel dengan class "nomor-hp"
+    document.querySelectorAll('.nomor-hp').forEach(function (cell) {
+      const original = cell.textContent.trim();
+      const formatted = formatNomorIndonesia(original);
+      cell.textContent = formatted;
+    });
 </script>

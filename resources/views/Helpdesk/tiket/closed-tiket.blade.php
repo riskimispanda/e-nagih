@@ -2,696 +2,522 @@
 
 @section('title', 'Tiket Closed')
 
+{{-- Tailwind CSS CDN --}}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50: '#eef0ff',
+            100: '#e0e3ff',
+            500: '#696cff',
+            600: '#5a5de6',
+          },
+        },
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        },
+        boxShadow: {
+          soft: '0 1px 3px rgba(16,24,40,0.04), 0 4px 16px rgba(16,24,40,0.05)',
+          'soft-lg': '0 2px 8px rgba(16,24,40,0.06), 0 12px 32px rgba(16,24,40,0.08)',
+        },
+      },
+    },
+  }
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+
 {{-- Driver.js for Tutorial Popup --}}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
 <style>
-  .card {
-    border: none;
-    border-radius: 0.75rem;
-    box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.04);
-    transition: box-shadow 0.2s ease;
-  }
-
-  .card:hover {
-    box-shadow: 0 0.25rem 1.5rem rgba(0, 0, 0, 0.08);
-  }
-
-  .card-header {
-    background-color: #fff;
-    border-bottom: 1px solid #e9ecef;
-    padding: 1.5rem;
-  }
-
-  .card-title {
-    font-weight: 600;
-    color: #566a7f;
-    margin-bottom: 0.25rem;
-  }
-
-  .card-subtitle {
-    color: #a1acb8;
-    font-size: 0.875rem;
-  }
-
-  .table thead th {
-    background-color: #f7f7f8;
-    color: #566a7f;
-    font-weight: 600;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border: none;
-    padding: 0.875rem 1rem;
-    vertical-align: middle;
-  }
-
-  .table tbody tr {
-    transition: all 0.2s ease;
-    border-bottom: 1px solid #f1f1f1;
-  }
-
-  .table tbody tr:last-child {
-    border-bottom: none;
-  }
-
-  .table tbody tr:hover {
-    background-color: #f8f9fa;
-    transform: translateY(-1px);
-  }
-
-  .table td {
-    padding: 1rem;
-    vertical-align: middle;
-    border: none;
-  }
-
-  .customer-avatar {
-    width: 2.5rem;
-    height: 2.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background-color: rgba(105, 108, 255, 0.08);
-    color: #696cff;
-    font-size: 1.125rem;
-  }
-
-  .customer-name {
-    font-weight: 600;
-    color: #566a7f;
-    margin-bottom: 0.25rem;
-    font-size: 0.9375rem;
-  }
-
-  .customer-address {
-    font-size: 0.8125rem;
-    color: #a1acb8;
-    margin: 0;
-    line-height: 1.4;
-  }
-
-  .btn-action {
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    border: 1px solid #e2e8f0;
-    background-color: white;
-    font-size: 1.125rem;
-  }
-
-  .btn-action:hover:not(.disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
-  }
-
-  .btn-action.btn-maps {
-    color: #696cff;
-  }
-
-  .btn-action.btn-maps:hover:not(.disabled) {
-    background-color: #696cff;
-    color: white;
-    border-color: #696cff;
-  }
-
-  .btn-action.btn-process {
-    color: #ffab00;
-  }
-
-  .btn-action.btn-process:hover {
-    background-color: #ffab00;
-    color: white;
-    border-color: #ffab00;
-  }
-
-  .btn-action.btn-done {
-    color: #a1acb8;
-    background-color: #f7f7f8;
-    cursor: not-allowed;
-  }
-
-  .badge {
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.375rem 0.625rem;
-  }
-
-  .card-footer {
-    background-color: #fff;
-    border-top: 1px solid #e9ecef;
-    padding: 1rem 1.5rem;
-  }
-
-  .pagination {
-    margin-bottom: 0;
-  }
-
-  .pagination .page-link {
-    border-radius: 0.375rem;
-    margin: 0 0.125rem;
-    border: 1px solid #d9dee3;
-    color: #697a8d;
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
-  }
-
-  .pagination .page-link:hover {
-    background-color: #f5f5f5;
-    border-color: #d9dee3;
-  }
-
-  .pagination .page-item.active .page-link {
-    background-color: #696cff;
-    border-color: #696cff;
-  }
-
-  /* PERBAIKAN PENJALANAN FILTER DAN SEARCH */
-  .filter-search-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: nowrap;
-  }
-
-  .filter-group {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-shrink: 0;
-  }
-
-  .filter-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    white-space: nowrap;
-  }
-
-  .filter-item .form-label {
-    margin-bottom: 0;
-    font-weight: 500;
-    color: #566a7f;
-    font-size: 0.875rem;
-  }
-
-  .filter-item .input-group {
-    width: auto;
-    min-width: 150px;
-  }
-
-  .filter-item .form-select {
-    min-width: 140px;
-  }
-
-  .search-form {
-    min-width: 300px;
-    max-width: 400px;
-  }
-
-  .search-form .input-group {
-    width: 100%;
-  }
-
-  .input-group-text {
-    background-color: #f8f9fa;
-    border: 1px solid #d9dee3;
-    color: #a1acb8;
-  }
-
-  .form-control,
-  .form-select {
-    border: 1px solid #d9dee3;
-    background-color: #f8f9fa;
-  }
-
-  .form-control:focus,
-  .form-select:focus {
-    box-shadow: none;
-    border-color: #696cff;
-    background-color: #fff;
-  }
-
-  /* Responsive Design */
-  @media (max-width: 992px) {
-    .filter-search-container {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.75rem;
-    }
-
-    .filter-group {
-      justify-content: space-between;
-      width: 100%;
-    }
-
-    .search-form {
-      min-width: 100%;
-      max-width: 100%;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .card-header {
-      padding: 1.25rem;
-    }
-
-    .filter-group {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.5rem;
-    }
-
-    .filter-item {
-      justify-content: space-between;
-    }
-
-    .filter-item .input-group {
-      min-width: 100%;
-    }
-
-    .table-responsive {
-      font-size: 0.875rem;
-    }
-
-    .table td,
-    .table th {
-      padding: 0.75rem 0.5rem;
-    }
-
-    .customer-avatar {
-      width: 2rem;
-      height: 2rem;
-      font-size: 1rem;
-    }
-
-    .btn-action {
-      width: 2rem;
-      height: 2rem;
-      font-size: 1rem;
-    }
-  }
-
-  @media (max-width: 576px) {
-    .filter-item {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0.25rem;
-    }
-
-    .filter-item .form-label {
-      text-align: left;
-    }
-  }
+  body { font-family: 'Inter', sans-serif; }
+  /* Custom scrollbar for table */
+  .table-scroll::-webkit-scrollbar { height: 8px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+  .table-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+  /* Soft row hover handled by tailwind classes; keep transitions smooth */
+  .row-hover { transition: background-color .2s ease, transform .2s ease; }
+  .row-hover:hover { transform: translateY(-1px); }
 </style>
+
 @section('content')
-  <div class="row">
-    <div class="col-12">
-      {{-- Tiket Open --}}
-      <div class="card mb-5">
-        <div class="card-header mb-5">
-          <div
-            class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-            <div class="d-flex flex-column">
-              <h4 class="card-title mb-1">Tiket Dalam Proses</h4>
-              <p class="card-subtitle mb-0 text-muted">Daftar tiket yang sedang menunggu penanganan.</p>
-            </div>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-outline-primary btn-sm btn-guide" id="btnGuideExport">
-                <i class="bx bx-help-circle me-1"></i> Panduan Export
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="filter-search-container">
-            <!-- Filter Group (Bulan) -->
-            <div class="filter-group">
-              <div class="filter-item">
-                <label class="form-label mb-0">Bulan:</label>
-                <select name="month_proses" id="monthFilterProses" class="form-select filter-proses">
-                  <option value="all" {{ !$selectedMonthProses ? 'selected' : '' }}>Semua</option>
-                  @foreach($months as $num => $name)
-                    <option value="{{ $num }}" {{ $selectedMonthProses == $num ? 'selected' : '' }}>
-                      {{ $name }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
+  <div class="max-w-[1400px] mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
 
-            <!-- Filter Group (Kategori) -->
-            <div class="filter-group">
-              <div class="filter-item">
-                <label class="form-label mb-0">Kategori:</label>
-                <select name="kategori_proses" id="kategoriFilterProses" class="form-select filter-proses">
-                  <option value="all" {{ !$selectedKategoriProses ? 'selected' : '' }}>Semua</option>
-                  @foreach($kategoriTiket as $kategori)
-                    <option value="{{ $kategori->id }}" {{ $selectedKategoriProses == $kategori->id ? 'selected' : '' }}>
-                      {{ $kategori->nama_kategori }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
-
-            <!-- Search Form -->
-            <div class="filter-item">
-              <label class="form-label mb-0">Search:</label>
-              <div class="input-group input-group-merge">
-                <span class="input-group-text"><i class="bx bx-search"></i></span>
-                <input type="text" class="form-control filter-proses" name="search_proses" id="searchInputProses"
-                  value="{{ $searchProses ?? '' }}" placeholder="Cari nama atau alamat...">
-              </div>
-            </div>
-            <!-- Export Button -->
-            <div class="filter-item ms-auto">
-              <button type="button" id="btnExportProses" class="btn btn-success d-flex align-items-center">
-                <i class="bx bx-spreadsheet me-1"></i> Export Excel
-              </button>
-            </div>
+    {{-- Tiket Open --}}
+    <div class="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden">
+      <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-slate-100">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h4 class="text-lg font-semibold text-slate-800 m-0">Tiket Dalam Proses</h4>
+            <p class="text-sm text-slate-400 mt-1 mb-0">Daftar tiket yang sedang menunggu penanganan.</p>
           </div>
+          <button type="button" class="btn-guide inline-flex items-center gap-2 self-start lg:self-auto rounded-lg border border-brand-500 text-brand-600 px-3.5 py-2 text-sm font-medium hover:bg-brand-50 transition" id="btnGuideExport">
+            <i class="bx bx-help-circle"></i> Panduan Export
+          </button>
         </div>
-        <div class="card-body p-0 mb-5">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th scope="col" class="ps-4">No</th>
-                  <th>Pelanggan</th>
-                  <th>No HP</th>
-                  <th class="text-center">Lokasi</th>
-                  <th>Keterangan</th>
-                  <th class="text-center">Status</th>
-                  <th>Kategori</th>
-                  <th>Tanggal Di Buat</th>
-                  <th>Di Buat Oleh</th>
-                  <th class="text-center pe-4">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="prosesTableBody">
-                @forelse ($customer as $item)
-                  <tr class="position-relative">
-                    <td class="ps-4 fw-medium">{{ $customer->firstItem() + $loop->index }}</td>
-                    <td>
-                      <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                          <div class="customer-avatar">
-                            <i class="bx bx-user"></i>
-                          </div>
-                        </div>
-                        <div class="flex-grow-1">
-                          <h6 class="customer-name mb-1">{{ $item->customer->nama_customer ?? '-' }}</h6>
-                          <p class="customer-address mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="text-nowrap">{{ $item->customer->no_hp ?? '-' }}</span>
-                    </td>
-                    <td class="text-center">
-                      @php
-                        $gps = $item->customer->gps ?? null;
-                        $url = $gps ? (Str::startsWith($gps, ['http://', 'https://']) ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
-                      @endphp
-                      <a href="{{ $url }}" target="_blank"
-                        class="btn btn-sm btn-action btn-maps {{ !$gps ? 'disabled' : '' }}" data-bs-toggle="tooltip"
-                        data-bs-placement="top" title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
-                        <i class="bx bx-map"></i>
-                      </a>
-                    </td>
-                    <td>
-                      <span class="d-inline-block text-truncate" style="max-width: 200px;" data-bs-toggle="tooltip"
-                        title="{{ $item->keterangan }}">
-                        {{ $item->keterangan }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      @if ($item->status_id == 6)
-                        <span
-                          class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Menunggu</span>
-                      @elseif($item->status_id == 3)
-                        <span
-                          class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Selesai</span>
-                      @endif
-                    </td>
-                    <td>
-                      <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                        {{ $item->kategori->nama_kategori }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge bg-label-info">
-                        {{ $item->created_at }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="fw-bold">
-                        {{ $item->user->name }}
-                      </span>
-                    </td>
-                    <td class="text-center pe-4">
-                      <div class="d-flex justify-content-center gap-2">
-                        @if ($item->status_id == 3)
-                          <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
-                            data-bs-placement="top" title="Tiket sudah selesai">
-                            <i class="bx bx-check-double"></i>
-                          </button>
-                        @else
-                          <a href="/tiket-open/{{ $item->id }}" class="btn btn-sm btn-action btn-outline-warning"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Proses & Tutup Tiket">
-                            <i class="bx bx-wrench"></i>
-                          </a>
-                          <a href="/cancel-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-action btn-sm"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
-                            <i class="bx bx-x"></i>
-                          </a>
-                        @endif
-                      </div>
-                    </td>
-                  </tr>
-                @empty
-                  <tr>
-                    <td colspan="10" class="text-center py-5">
-                      <div class="py-4">
-                        <i class="bx bx-inbox fs-1 text-muted mb-3"></i>
-                        <h5 class="text-muted">Tidak ada data tiket</h5>
-                        <p class="text-muted mb-0">Tidak ada tiket yang cocok dengan pencarian Anda.</p>
-                      </div>
-                    </td>
-                  </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-        </div>
-        @if ($customer->hasPages())
-          <div class="card-footer mt-3" id="prosesPagination">
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="footer">
-                {!! $customer->links('pagination::bootstrap-5') !!}
-              </div>
-            </div>
-          </div>
-        @endif
       </div>
 
-      {{-- Tiket Closed Selesai --}}
-      <div class="card">
-        <div class="card-header mb-5">
-          <div
-            class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-            <div class="d-flex flex-column">
-              <h4 class="card-title mb-1">Tiket Selesai</h4>
-              <p class="card-subtitle mb-0 text-muted">Daftar tiket yang telah selesai ditangani.</p>
-            </div>
+      <div class="px-5 py-5 sm:px-7">
+        <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Bulan</label>
+            <select name="month_proses" id="monthFilterProses" class="filter-proses w-full sm:w-44 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedMonthProses ? 'selected' : '' }}>Semua</option>
+              @foreach($months as $num => $name)
+                <option value="{{ $num }}" {{ $selectedMonthProses == $num ? 'selected' : '' }}>
+                  {{ $name }}
+                </option>
+              @endforeach
+            </select>
           </div>
-        </div>
-        <div class="card-body">
-          <div class="filter-search-container">
-            <!-- Filter Group (Bulan) -->
-            <div class="filter-group">
-              <div class="filter-item">
-                <label class="form-label mb-0">Bulan:</label>
-                <select name="month_selesai" id="monthFilterSelesai" class="form-select filter-selesai">
-                  <option value="all" {{ !$selectedMonthSelesai ? 'selected' : '' }}>Semua</option>
-                  @foreach($months as $num => $name)
-                    <option value="{{ $num }}" {{ $selectedMonthSelesai == $num ? 'selected' : '' }}>
-                      {{ $name }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
-            <!-- Filter Group (Kategori) -->
-            <div class="filter-group">
-              <div class="filter-item">
-                <label class="form-label mb-0">Kategori:</label>
-                <select name="kategori_selesai" id="kategoriFilterSelesai" class="form-select filter-selesai">
-                  <option value="all" {{ !$selectedKategoriSelesai ? 'selected' : '' }}>Semua</option>
-                  @foreach($kategoriTiket as $kategori)
-                    <option value="{{ $kategori->id }}" {{ $selectedKategoriSelesai == $kategori->id ? 'selected' : '' }}>
-                      {{ $kategori->nama_kategori }}
-                    </option>
-                  @endforeach
-                </select>
-              </div>
-            </div>
 
-            <!-- Search Form -->
-            <div class="filter-item">
-              <label class="form-label mb-0">Search:</label>
-              <div class="input-group input-group-merge">
-                <span class="input-group-text"><i class="bx bx-search"></i></span>
-                <input type="text" class="form-control filter-selesai" name="search_selesai" id="searchInputSelesai"
-                  value="{{ $searchSelesai ?? '' }}" placeholder="Cari nama atau alamat...">
-              </div>
-            </div>
-            <!-- Export Button -->
-            <div class="filter-item ms-auto">
-              <button type="button" id="btnExportSelesai" class="btn btn-success d-flex align-items-center">
-                <i class="bx bx-spreadsheet me-1"></i> Export Excel
-              </button>
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Kategori</label>
+            <select name="kategori_proses" id="kategoriFilterProses" class="filter-proses w-full sm:w-48 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedKategoriProses ? 'selected' : '' }}>Semua</option>
+              @foreach($kategoriTiket as $kategori)
+                <option value="{{ $kategori->id }}" {{ $selectedKategoriProses == $kategori->id ? 'selected' : '' }}>
+                  {{ $kategori->nama_kategori }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
+            <label class="text-xs font-medium text-slate-500">Search</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="bx bx-search"></i>
+              </span>
+              <input type="text" class="filter-proses w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition" name="search_proses" id="searchInputProses" value="{{ $searchProses ?? '' }}" placeholder="Cari nama atau alamat...">
             </div>
           </div>
+
+          <button type="button" id="btnExportProses" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-600 transition">
+            <i class="bx bx-spreadsheet"></i> Export Excel
+          </button>
         </div>
-        <div class="card-body p-0 mb-5">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th scope="col" class="ps-4">No</th>
-                  <th>Pelanggan</th>
-                  <th>No HP</th>
-                  <th class="text-center">Lokasi</th>
-                  <th>Keterangan</th>
-                  <th class="text-center">Status</th>
-                  <th>Kategori</th>
-                  <th>Tanggal Selesai</th>
-                  <th>Teknisi</th>
-                  <th class="text-center pe-4">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="selesaiTableBody">
-                @forelse ($completedTickets as $item)
-                  <tr class="position-relative">
-                    <td class="ps-4 fw-medium">{{ $completedTickets->firstItem() + $loop->index }}</td>
-                    <td>
-                      <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                          <div class="customer-avatar">
-                            <i class="bx bx-user"></i>
-                          </div>
-                        </div>
-                        <div class="flex-grow-1">
-                          <h6 class="customer-name mb-1">{{ $item->customer->nama_customer ?? '-' }}</h6>
-                          <p class="customer-address mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span class="text-nowrap">{{ $item->customer->no_hp ?? '-' }}</span>
-                    </td>
-                    <td class="text-center">
-                      @php
-                        $gps = $item->customer->gps ?? null;
-                        $url = $gps ? (Str::startsWith($gps, ['http://', 'https://']) ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
-                      @endphp
-                      <a href="{{ $url }}" target="_blank"
-                        class="btn btn-sm btn-action btn-maps {{ !$gps ? 'disabled' : '' }}" data-bs-toggle="tooltip"
-                        data-bs-placement="top" title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
-                        <i class="bx bx-map"></i>
-                      </a>
-                    </td>
-                    <td>
-                      <span class="d-inline-block text-truncate" style="max-width: 200px;" data-bs-toggle="tooltip"
-                        title="{{ $item->keterangan }}">
-                        {{ $item->keterangan }}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      @if ($item->status_id == 6)
-                        <span
-                          class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Menunggu</span>
-                      @elseif($item->status_id == 3)
-                        <span
-                          class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Selesai</span>
-                      @endif
-                    </td>
-                    <td>
-                      <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                        {{ $item->kategori->nama_kategori }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge bg-label-warning">
-                        {{ $item->updated_at }}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="fw-bold">
-                        {{ $item->teknisi->name ?? '-' }}
-                      </span>
-                    </td>
-                    <td class="text-center pe-4">
-                      <div class="d-flex justify-content-center gap-2">
-                        @if ($item->status_id == 3)
-                          <button class="btn btn-sm btn-action btn-done" disabled data-bs-toggle="tooltip"
-                            data-bs-placement="top" title="Tiket sudah selesai">
-                            <i class="bx bx-check-double"></i>
-                          </button>
-                        @else
-                          <a href="/tiket-open/{{ $item->id }}" class="btn btn-sm btn-action btn-outline-warning"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Proses & Tutup Tiket">
-                            <i class="bx bx-wrench"></i>
-                          </a>
-                          <a href="/cancel-tiket/{{ $item->id }}" class="btn btn-outline-danger btn-action btn-sm"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
-                            <i class="bx bx-x"></i>
-                          </a>
-                        @endif
-                      </div>
-                    </td>
-                  </tr>
-                @empty
-                  <tr>
-                    <td colspan="10" class="text-center py-5">
-                      <div class="py-4">
-                        <i class="bx bx-inbox fs-1 text-muted mb-3"></i>
-                        <h5 class="text-muted">Tidak ada data tiket</h5>
-                        <p class="text-muted mb-0">Tidak ada tiket yang cocok dengan pencarian Anda.</p>
-                      </div>
-                    </td>
-                  </tr>
-                @endforelse
-              </tbody>
-            </table>
-          </div>
-        </div>
-        @if ($completedTickets->hasPages())
-          <div class="card-footer mt-3" id="selesaiPagination">
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="footer">
-                {!! $completedTickets->links('pagination::bootstrap-5') !!}
-              </div>
-            </div>
-          </div>
-        @endif
       </div>
+
+      <div class="px-2 pb-2">
+        <div class="table-scroll overflow-x-auto">
+          <table class="w-full text-left text-sm border-separate border-spacing-y-1">
+            <thead class="bg-slate-50">
+              <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+                <th class="font-semibold px-4 py-3">No</th>
+                <th class="font-semibold px-4 py-3">Pelanggan</th>
+                <th class="font-semibold px-4 py-3">No HP</th>
+                <th class="font-semibold px-4 py-3 text-center">Lokasi</th>
+                <th class="font-semibold px-4 py-3">Keterangan</th>
+                <th class="font-semibold px-4 py-3 text-center">Status</th>
+                <th class="font-semibold px-4 py-3">Kategori</th>
+                <th class="font-semibold px-4 py-3">Tanggal Di Buat</th>
+                <th class="font-semibold px-4 py-3">Di Buat Oleh</th>
+                <th class="font-semibold px-4 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="prosesTableBody" class="text-slate-600">
+              @forelse ($customer as $item)
+                <tr class="row-hover bg-white ring-1 ring-slate-100 rounded-xl">
+                  <td class="px-4 py-3 rounded-l-xl font-medium text-slate-500">{{ $customer->firstItem() + $loop->index }}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-500 text-lg">
+                        <i class="bx bx-user"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <h6 class="font-semibold text-slate-700 text-sm truncate mb-0.5">{{ $item->customer->nama_customer ?? '-' }}</h6>
+                        <p class="text-xs text-slate-400 truncate mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $item->customer->no_hp ?? '-' }}</td>
+                  <td class="px-4 py-3 text-center">
+                    @php
+                      $gps = $item->customer->gps ?? null;
+                      $url = $gps ? (Str::startsWith($gps, ['http://', 'https://']) ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                    @endphp
+                    <a href="{{ $url }}" target="_blank" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-brand-500 transition hover:bg-brand-500 hover:text-white hover:border-brand-500 {{ !$gps ? 'pointer-events-none opacity-40' : '' }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
+                      <i class="bx bx-map"></i>
+                    </a>
+                  </td>
+                  <td class="px-4 py-3 max-w-[200px]">
+                    <span class="block truncate" data-bs-toggle="tooltip" title="{{ $item->keterangan }}">
+                      {{ $item->keterangan }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if ($item->status_id == 6)
+                      <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600">Menunggu</span>
+                    @elseif($item->status_id == 3)
+                      <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600">Selesai</span>
+                    @endif
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
+                      {{ $item->kategori->nama_kategori }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-600">
+                      {{ $item->created_at }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-700">{{ $item->user->name }}</td>
+                  <td class="px-4 py-3 rounded-r-xl text-center">
+                    <div class="flex justify-center gap-2">
+                      @if ($item->status_id == 3)
+                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Tiket sudah selesai">
+                          <i class="bx bx-check-double"></i>
+                        </button>
+                      @else
+                        <a href="/tiket-open/{{ $item->id }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-amber-500 transition hover:bg-amber-500 hover:text-white hover:border-amber-500" data-bs-toggle="tooltip" data-bs-placement="top" title="Proses & Tutup Tiket">
+                          <i class="bx bx-wrench"></i>
+                        </a>
+                        <button type="button" class="btn-cancel-tiket inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-500 transition hover:bg-rose-500 hover:text-white hover:border-rose-500" data-tiket-id="{{ $item->id }}" data-nama="{{ $item->customer->nama_customer ?? '-' }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      @endif
+                    </div>
+                  </td>
+                </tr>
+              @empty
+                <tr>
+                  <td colspan="10" class="px-4 py-12 text-center">
+                    <div class="flex flex-col items-center gap-2 text-slate-400">
+                      <i class="bx bx-inbox text-5xl"></i>
+                      <h5 class="text-base font-semibold text-slate-500 m-0">Tidak ada data tiket</h5>
+                      <p class="text-sm mb-0">Tidak ada tiket yang cocok dengan pencarian Anda.</p>
+                    </div>
+                  </td>
+                </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if ($customer->hasPages())
+        <div class="card-footer mt-3 px-5 py-4 border-t border-slate-100" id="prosesPagination">
+          <div class="flex justify-between items-center">
+            <div class="footer">
+              {!! $customer->links('pagination::bootstrap-5') !!}
+            </div>
+          </div>
+        </div>
+      @endif
     </div>
+
+    {{-- Tiket Closed Selesai --}}
+    <div class="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden">
+      <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-slate-100">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h4 class="text-lg font-semibold text-slate-800 m-0">Tiket Selesai</h4>
+            <p class="text-sm text-slate-400 mt-1 mb-0">Daftar tiket yang telah selesai ditangani.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-5 sm:px-7">
+        <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Bulan</label>
+            <select name="month_selesai" id="monthFilterSelesai" class="filter-selesai w-full sm:w-44 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedMonthSelesai ? 'selected' : '' }}>Semua</option>
+              @foreach($months as $num => $name)
+                <option value="{{ $num }}" {{ $selectedMonthSelesai == $num ? 'selected' : '' }}>
+                  {{ $name }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Kategori</label>
+            <select name="kategori_selesai" id="kategoriFilterSelesai" class="filter-selesai w-full sm:w-48 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedKategoriSelesai ? 'selected' : '' }}>Semua</option>
+              @foreach($kategoriTiket as $kategori)
+                <option value="{{ $kategori->id }}" {{ $selectedKategoriSelesai == $kategori->id ? 'selected' : '' }}>
+                  {{ $kategori->nama_kategori }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
+            <label class="text-xs font-medium text-slate-500">Search</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="bx bx-search"></i>
+              </span>
+              <input type="text" class="filter-selesai w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition" name="search_selesai" id="searchInputSelesai" value="{{ $searchSelesai ?? '' }}" placeholder="Cari nama atau alamat...">
+            </div>
+          </div>
+
+          <button type="button" id="btnExportSelesai" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-600 transition">
+            <i class="bx bx-spreadsheet"></i> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="px-2 pb-2">
+        <div class="table-scroll overflow-x-auto">
+          <table class="w-full text-left text-sm border-separate border-spacing-y-1">
+            <thead class="bg-slate-50">
+              <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+                <th class="font-semibold px-4 py-3">No</th>
+                <th class="font-semibold px-4 py-3">Pelanggan</th>
+                <th class="font-semibold px-4 py-3">No HP</th>
+                <th class="font-semibold px-4 py-3 text-center">Lokasi</th>
+                <th class="font-semibold px-4 py-3">Keterangan</th>
+                <th class="font-semibold px-4 py-3 text-center">Status</th>
+                <th class="font-semibold px-4 py-3">Kategori</th>
+                <th class="font-semibold px-4 py-3">Tanggal Selesai</th>
+                <th class="font-semibold px-4 py-3">Teknisi</th>
+                <th class="font-semibold px-4 py-3 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="selesaiTableBody" class="text-slate-600">
+              @forelse ($completedTickets as $item)
+                <tr class="row-hover bg-white ring-1 ring-slate-100 rounded-xl">
+                  <td class="px-4 py-3 rounded-l-xl font-medium text-slate-500">{{ $completedTickets->firstItem() + $loop->index }}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-500 text-lg">
+                        <i class="bx bx-user"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <h6 class="font-semibold text-slate-700 text-sm truncate mb-0.5">{{ $item->customer->nama_customer ?? '-' }}</h6>
+                        <p class="text-xs text-slate-400 truncate mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $item->customer->no_hp ?? '-' }}</td>
+                  <td class="px-4 py-3 text-center">
+                    @php
+                      $gps = $item->customer->gps ?? null;
+                      $url = $gps ? (Str::startsWith($gps, ['http://', 'https://']) ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                    @endphp
+                    <a href="{{ $url }}" target="_blank" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-brand-500 transition hover:bg-brand-500 hover:text-white hover:border-brand-500 {{ !$gps ? 'pointer-events-none opacity-40' : '' }}" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ $gps ? 'Lihat di Google Maps' : 'Lokasi tidak tersedia' }}">
+                      <i class="bx bx-map"></i>
+                    </a>
+                  </td>
+                  <td class="px-4 py-3 max-w-[200px]">
+                    <span class="block truncate" data-bs-toggle="tooltip" title="{{ $item->keterangan }}">
+                      {{ $item->keterangan }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    @if ($item->status_id == 6)
+                      <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-600">Menunggu</span>
+                    @elseif($item->status_id == 3)
+                      <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-600">Selesai</span>
+                    @endif
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">
+                      {{ $item->kategori->nama_kategori }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-600">
+                      {{ $item->updated_at }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-700">{{ $item->teknisi->name ?? '-' }}</td>
+                  <td class="px-4 py-3 rounded-r-xl text-center">
+                    <div class="flex justify-center gap-2">
+                      @if ($item->status_id == 3)
+                        <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed" disabled data-bs-toggle="tooltip" data-bs-placement="top" title="Tiket sudah selesai">
+                          <i class="bx bx-check-double"></i>
+                        </button>
+                      @else
+                        <a href="/tiket-open/{{ $item->id }}" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-amber-500 transition hover:bg-amber-500 hover:text-white hover:border-amber-500" data-bs-toggle="tooltip" data-bs-placement="top" title="Proses & Tutup Tiket">
+                          <i class="bx bx-wrench"></i>
+                        </a>
+                        <button type="button" class="btn-cancel-tiket inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rose-200 text-rose-500 transition hover:bg-rose-500 hover:text-white hover:border-rose-500" data-tiket-id="{{ $item->id }}" data-nama="{{ $item->customer->nama_customer ?? '-' }}" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Cancel">
+                          <i class="bx bx-x"></i>
+                        </button>
+                      @endif
+                    </div>
+                  </td>
+                </tr>
+              @empty
+                <tr>
+                  <td colspan="10" class="px-4 py-12 text-center">
+                    <div class="flex flex-col items-center gap-2 text-slate-400">
+                      <i class="bx bx-inbox text-5xl"></i>
+                      <h5 class="text-base font-semibold text-slate-500 m-0">Tidak ada data tiket</h5>
+                      <p class="text-sm mb-0">Tidak ada tiket yang cocok dengan pencarian Anda.</p>
+                    </div>
+                  </td>
+                </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if ($completedTickets->hasPages())
+        <div class="card-footer mt-3 px-5 py-4 border-t border-slate-100" id="selesaiPagination">
+          <div class="flex justify-between items-center">
+            <div class="footer">
+              {!! $completedTickets->links('pagination::bootstrap-5') !!}
+            </div>
+          </div>
+        </div>
+      @endif
+    </div>
+
+    {{-- Tiket Dibatalkan --}}
+    <div class="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden">
+      <div class="px-5 py-5 sm:px-7 sm:py-6 border-b border-slate-100">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h4 class="text-lg font-semibold text-slate-800 m-0">Tiket Dibatalkan</h4>
+            <p class="text-sm text-slate-400 mt-1 mb-0">Daftar tiket yang dibatalkan lengkap dengan alasan pembatalan.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-5 py-5 sm:px-7">
+        <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Bulan</label>
+            <select name="month_batal" id="monthFilterBatal" class="filter-batal w-full sm:w-44 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedMonthBatal ? 'selected' : '' }}>Semua</option>
+              @foreach($months as $num => $name)
+                <option value="{{ $num }}" {{ $selectedMonthBatal == $num ? 'selected' : '' }}>
+                  {{ $name }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1 w-full sm:w-auto">
+            <label class="text-xs font-medium text-slate-500">Kategori</label>
+            <select name="kategori_batal" id="kategoriFilterBatal" class="filter-batal w-full sm:w-48 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition">
+              <option value="all" {{ !$selectedKategoriBatal ? 'selected' : '' }}>Semua</option>
+              @foreach($kategoriTiket as $kategori)
+                <option value="{{ $kategori->id }}" {{ $selectedKategoriBatal == $kategori->id ? 'selected' : '' }}>
+                  {{ $kategori->nama_kategori }}
+                </option>
+              @endforeach
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-1 flex-1 min-w-[200px]">
+            <label class="text-xs font-medium text-slate-500">Search</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                <i class="bx bx-search"></i>
+              </span>
+              <input type="text" class="filter-batal w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-100 outline-none transition" name="search_batal" id="searchInputBatal" value="{{ $searchBatal ?? '' }}" placeholder="Cari nama atau alamat...">
+            </div>
+          </div>
+
+          <button type="button" id="btnExportBatal" class="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-rose-600 transition">
+            <i class="bx bx-spreadsheet"></i> Export Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="px-2 pb-2">
+        <div class="table-scroll overflow-x-auto">
+          <table class="w-full text-left text-sm border-separate border-spacing-y-1">
+            <thead class="bg-slate-50">
+              <tr class="text-[11px] uppercase tracking-wider text-slate-400">
+                <th class="font-semibold px-4 py-3">No</th>
+                <th class="font-semibold px-4 py-3">Pelanggan</th>
+                <th class="font-semibold px-4 py-3">No HP</th>
+                <th class="font-semibold px-4 py-3">Keterangan</th>
+                <th class="font-semibold px-4 py-3 text-center">Status</th>
+                <th class="font-semibold px-4 py-3">Kategori</th>
+                <th class="font-semibold px-4 py-3 min-w-[160px]">Alasan Pembatalan</th>
+                <th class="font-semibold px-4 py-3">Dibatalkan Oleh</th>
+                <th class="font-semibold px-4 py-3">Waktu Dibatalkan</th>
+              </tr>
+            </thead>
+            <tbody id="batalTableBody" class="text-slate-600">
+              @forelse ($cancelledTickets as $item)
+                <tr class="row-hover bg-white ring-1 ring-slate-100 rounded-xl">
+                  <td class="px-4 py-3 rounded-l-xl font-medium text-slate-500">{{ $cancelledTickets->firstItem() + $loop->index }}</td>
+                  <td class="px-4 py-3">
+                    <div class="flex items-center gap-3">
+                      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-500 text-lg">
+                        <i class="bx bx-x"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <h6 class="font-semibold text-slate-700 text-sm truncate mb-0.5">{{ $item->customer->nama_customer ?? '-' }}</h6>
+                        <p class="text-xs text-slate-400 truncate mb-0">{{ Str::limit($item->customer->alamat ?? '-', 30) }}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-slate-600">{{ $item->customer->no_hp ?? '-' }}</td>
+                  <td class="px-4 py-3 max-w-[200px]">
+                    <span class="block truncate" data-bs-toggle="tooltip" title="{{ $item->keterangan }}">
+                      {{ $item->keterangan }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-600">Dibatalkan</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                      {{ $item->kategori->nama_kategori }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 max-w-[220px]">
+                    <span class="block text-xs text-rose-600" data-bs-toggle="tooltip" title="{{ $item->alasan_batal }}">
+                      {{ $item->alasan_batal ?? '-' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 font-semibold text-slate-700">{{ $item->cancelledBy->name ?? '-' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-500">
+                      {{ $item->cancelled_at ? \Carbon\Carbon::parse($item->cancelled_at)->translatedFormat('d M Y H:i') : '-' }}
+                    </span>
+                  </td>
+                </tr>
+              @empty
+                <tr>
+                  <td colspan="9" class="px-4 py-12 text-center">
+                    <div class="flex flex-col items-center gap-2 text-slate-400">
+                      <i class="bx bx-inbox text-5xl"></i>
+                      <h5 class="text-base font-semibold text-slate-500 m-0">Tidak ada tiket dibatalkan</h5>
+                      <p class="text-sm mb-0">Tidak ada tiket batal yang cocok dengan pencarian Anda.</p>
+                    </div>
+                  </td>
+                </tr>
+              @endforelse
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      @if ($cancelledTickets->hasPages())
+        <div class="card-footer mt-3 px-5 py-4 border-t border-slate-100" id="batalPagination">
+          <div class="flex justify-between items-center">
+            <div class="footer">
+              {!! $cancelledTickets->links('pagination::bootstrap-5') !!}
+            </div>
+          </div>
+        </div>
+      @endif
+    </div>
+
   </div>
 @endsection
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     // --- UTILITY FUNCTIONS ---
     function initializeTooltips() {
       var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
       var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        // Dispose of any existing tooltips on the element before creating a new one
         var existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
         if (existingTooltip) {
           existingTooltip.dispose();
@@ -717,13 +543,11 @@
 
         const url = new URL(window.location.href);
 
-        // Set parameters for the current table
         url.searchParams.set(`search_${prefix.toLowerCase()}`, search);
         url.searchParams.set(`month_${prefix.toLowerCase()}`, month);
         url.searchParams.set(`kategori_${prefix.toLowerCase()}`, kategori);
         url.searchParams.set(`${prefix.toLowerCase()}_page`, page);
 
-        // Set ajax flag
         url.searchParams.set('ajax', 1);
 
         if (pushState) {
@@ -787,7 +611,64 @@
     // --- INITIALIZATION ---
     setupTableFilters('Proses');
     setupTableFilters('Selesai');
+    setupTableFilters('Batal');
     initializeTooltips();
+
+    // --- CANCEL TIKET MODAL (SweetAlert dengan textarea alasan) ---
+    document.querySelectorAll('.btn-cancel-tiket').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var tiketId = btn.getAttribute('data-tiket-id');
+        var nama = btn.getAttribute('data-nama') || 'pelanggan ini';
+
+        Swal.fire({
+          title: 'Batalkan Tiket?',
+          html:
+            'Tiket untuk <strong>' + nama + '</strong> akan dibatalkan.<br>' +
+            'Harap isi alasan pembatalan di bawah ini.',
+          icon: 'warning',
+          input: 'textarea',
+          inputLabel: 'Alasan Pembatalan',
+          inputPlaceholder: 'Contoh: pelanggan tidak merespon, salah input, dll...',
+          inputAttributes: { required: true },
+          inputValidator: function (value) {
+            if (!value || !value.trim()) {
+              return 'Alasan pembatalan wajib diisi!';
+            }
+          },
+          showCancelButton: true,
+          confirmButtonColor: '#e11d48',
+          cancelButtonColor: '#64748b',
+          confirmButtonText: 'Ya, Batalkan',
+          cancelButtonText: 'Batal',
+          preConfirm: function (alasan) {
+            var formData = new FormData();
+            formData.append('alasan_batal', alasan);
+            formData.append('_token', '{{ csrf_token() }}');
+            return fetch('/cancel-tiket/' + tiketId, {
+              method: 'POST',
+              body: formData,
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (response) {
+              if (!response.ok) {
+                throw new Error('Gagal membatalkan tiket');
+              }
+              return response.json();
+            });
+          }
+        }).then(function (result) {
+          if (result.isConfirmed) {
+            Swal.fire({
+              title: 'Berhasil',
+              text: 'Tiket berhasil dibatalkan.',
+              icon: 'success',
+              confirmButtonColor: '#696cff'
+            }).then(function () {
+              window.location.reload();
+            });
+          }
+        });
+      });
+    });
 
     window.onpopstate = function (event) {
       if (event.state) {
@@ -809,56 +690,56 @@
       nextBtnText: 'Lanjut',
       prevBtnText: 'Kembali',
       steps: [
-        { 
-          element: '.filter-search-container:first-of-type', 
-          popover: { 
-            title: 'Layanan Filter & Export', 
-            description: 'Selamat datang! Di sini Anda dapat memfilter data sebelum mengunduhnya ke Excel. Mari kita lihat caranya.', 
-            position: 'bottom', 
-            align: 'start' 
-          } 
+        {
+          element: '#prosesTableBody',
+          popover: {
+            title: 'Layanan Filter & Export',
+            description: 'Selamat datang! Di sini Anda dapat memfilter data sebelum mengunduhnya ke Excel. Mari kita lihat caranya.',
+            position: 'bottom',
+            align: 'start'
+          }
         },
-        { 
-          element: '#monthFilterProses', 
-          popover: { 
-            title: 'Filter Berdasarkan Bulan', 
-            description: 'Pilih bulan tertentu untuk menampilkan tiket yang dibuat pada periode tersebut.', 
-            position: 'bottom', 
-            align: 'start' 
-          } 
+        {
+          element: '#monthFilterProses',
+          popover: {
+            title: 'Filter Berdasarkan Bulan',
+            description: 'Pilih bulan tertentu untuk menampilkan tiket yang dibuat pada periode tersebut.',
+            position: 'bottom',
+            align: 'start'
+          }
         },
-        { 
-          element: '#kategoriFilterProses', 
-          popover: { 
-            title: 'Filter Berdasarkan Kategori', 
-            description: 'Gunakan ini untuk memisahkan tiket berdasarkan jenisnya, seperti Gangguan, Deaktivasi, atau Relokasi.', 
-            position: 'bottom', 
-            align: 'start' 
-          } 
+        {
+          element: '#kategoriFilterProses',
+          popover: {
+            title: 'Filter Berdasarkan Kategori',
+            description: 'Gunakan ini untuk memisahkan tiket berdasarkan jenisnya, seperti Gangguan, Deaktivasi, atau Relokasi.',
+            position: 'bottom',
+            align: 'start'
+          }
         },
-        { 
-          element: '#searchInputProses', 
-          popover: { 
-            title: 'Pencarian Instan', 
-            description: 'Ketik nama pelanggan, alamat, atau nomor HP di sini. Tabel akan otomatis memproses pencarian Anda.', 
-            position: 'bottom', 
-            align: 'start' 
-          } 
+        {
+          element: '#searchInputProses',
+          popover: {
+            title: 'Pencarian Instan',
+            description: 'Ketik nama pelanggan, alamat, atau nomor HP di sini. Tabel akan otomatis memproses pencarian Anda.',
+            position: 'bottom',
+            align: 'start'
+          }
         },
-        { 
-          element: '#btnExportProses', 
-          popover: { 
-            title: 'Unduh Laporan Excel', 
-            description: 'Setelah memfilter data yang diinginkan, klik tombol ini untuk mengunduh laporan dalam format Excel (.xlsx) secara instan.', 
-            position: 'bottom', 
-            align: 'end' 
-          } 
+        {
+          element: '#btnExportProses',
+          popover: {
+            title: 'Unduh Laporan Excel',
+            description: 'Setelah memfilter data yang diinginkan, klik tombol ini untuk mengunduh laporan dalam format Excel (.xlsx) secara instan.',
+            position: 'bottom',
+            align: 'end'
+          }
         },
-        { 
-          popover: { 
-            title: 'Siap Digunakan!', 
-            description: 'Fitur yang sama juga tersedia pada tabel "Tiket Selesai" di bawah. Selamat bekerja!', 
-          } 
+        {
+          popover: {
+            title: 'Siap Digunakan!',
+            description: 'Fitur yang sama juga tersedia pada tabel "Tiket Selesai" di bawah. Selamat bekerja!',
+          }
         }
       ]
     });

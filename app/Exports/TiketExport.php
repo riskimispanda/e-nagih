@@ -40,7 +40,7 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
 
     private function generateTitle()
     {
-        $typeName = ($this->type === 'proses') ? 'Dalam Proses' : 'Selesai';
+        $typeName = ($this->type === 'proses') ? 'Dalam Proses' : (($this->type === 'batal') ? 'Dibatalkan' : 'Selesai');
         $title = "Laporan Tiket " . $typeName;
         
         if ($this->month && $this->month != 'all') {
@@ -61,6 +61,11 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $query->whereHas('customer', function ($q) {
                 $q->whereIn('status_id', [3, 4, 9])->whereNull('deleted_at');
             })->where('status_id', 6);
+        } elseif ($this->type === 'batal') {
+            $statusBatalId = \App\Models\Status::where('nama_status', 'Dibatalkan')->value('id');
+            $query->whereHas('customer', function ($q) {
+                $q->whereIn('status_id', [3, 4, 9])->withTrashed();
+            })->where('status_id', $statusBatalId);
         } else {
             $query->whereHas('customer', function ($q) {
                 $q->whereIn('status_id', [3, 4])->withTrashed();
@@ -93,9 +98,11 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $status = 'Menunggu';
         } elseif ($item->status_id == 3) {
             $status = 'Selesai';
+        } else {
+            $status = 'Dibatalkan';
         }
 
-        return [
+        $rows = [
             $item->id,
             $item->customer->nama_customer ?? '-',
             $item->customer->alamat ?? '-',
@@ -107,11 +114,20 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $this->type === 'proses' ? ($item->user->name ?? '-') : ($item->teknisi->name ?? '-'),
             $this->type === 'selesai' ? ($item->tanggal_selesai ?: $item->updated_at->format('d-m-Y H:i:s')) : '-',
         ];
+
+        // Untuk tiket dibatalkan, tambahkan kolom pembatal
+        if ($this->type === 'batal') {
+            $rows[8] = $item->cancelledBy->name ?? '-';
+            $rows[9] = $item->cancelled_at ? \Carbon\Carbon::parse($item->cancelled_at)->format('d-m-Y H:i:s') : '-';
+            $rows[] = $item->alasan_batal ?? '-';
+        }
+
+        return $rows;
     }
 
     public function headings(): array
     {
-        return [
+        $cols = [
             'ID Tiket',
             'Nama Pelanggan',
             'Alamat',
@@ -123,6 +139,14 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $this->type === 'proses' ? 'Dibuat Oleh' : 'Teknisi',
             'Tanggal Selesai',
         ];
+
+        if ($this->type === 'batal') {
+            $cols[8] = 'Dibatalkan Oleh';
+            $cols[9] = 'Waktu Dibatalkan';
+            $cols[] = 'Alasan Pembatalan';
+        }
+
+        return $cols;
     }
 
     public function styles(Worksheet $sheet)
@@ -145,7 +169,7 @@ class TiketExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         return [
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
-                $totalColumns = 10;
+                $totalColumns = ($this->type === 'batal') ? 11 : 10;
                 $maxColumn = $this->getColumnLetter($totalColumns - 1);
 
                 $sheet->insertNewRowBefore(1, 3);

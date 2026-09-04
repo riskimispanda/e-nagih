@@ -14,6 +14,8 @@ use App\Models\Server;
 use App\Models\Lokasi;
 use App\Models\ODC;
 use App\Models\ODP;
+use App\Models\ModemDetail;
+use App\Constants\LogistikStatus;
 use App\Services\ChatServices;
 use Illuminate\Support\Facades\Log;
 
@@ -522,16 +524,44 @@ class NocController extends Controller
 
     public function editOlt($id)
     {
-        $olt = Lokasi::findOrFail($id);
+        $olt = Lokasi::with('modemDetail.perangkat')->findOrFail($id);
         return response()->json($olt);
     }
 
     public function updateOlt(Request $request, $id)
     {
         $olt = Lokasi::findOrFail($id);
-        $olt->nama_lokasi = $request->nama_lokasi;
-        $olt->id_server = $request->id_server;
+        $olt->nama_lokasi = $request->nama_lokasi ?: ($request->olt ?: $olt->nama_lokasi);
+        $olt->id_server = $request->id_server ?: ($request->lokasi_server ?: $olt->id_server);
+        if ($request->filled('jumlah_pon')) {
+            $olt->jumlah_pon = $request->jumlah_pon;
+        }
         $olt->gps = $request->gps;
+
+        if ($request->has('modem_detail_id')) {
+            $newMdId = $request->filled('modem_detail_id') ? (int) $request->modem_detail_id : null;
+            if ($olt->modem_detail_id && $olt->modem_detail_id !== $newMdId) {
+                ModemDetail::where('id', $olt->modem_detail_id)->update([
+                    'status_id' => LogistikStatus::TERSEIDA,
+                    'lokasi_id' => null,
+                    'tanggal_terpakai' => null,
+                ]);
+            }
+            if ($newMdId && $olt->modem_detail_id !== $newMdId) {
+                $md = ModemDetail::where('id', $newMdId)->where('status_id', LogistikStatus::TERSEIDA)->first();
+                if ($md) {
+                    $md->update([
+                        'status_id' => LogistikStatus::TERPAKAI,
+                        'lokasi_id' => $olt->id,
+                        'tanggal_terpakai' => now(),
+                    ]);
+                    $olt->modem_detail_id = $newMdId;
+                }
+            } elseif (!$newMdId) {
+                $olt->modem_detail_id = null;
+            }
+        }
+
         $olt->save();
         return redirect()->back()->with('toast_success', 'OLT berhasil diperbarui');
     }
@@ -539,13 +569,23 @@ class NocController extends Controller
     public function hapusOlt($id)
     {
         $olt = Lokasi::findOrFail($id);
+        if ($olt->odc()->count() > 0) {
+            return redirect()->back()->with('error', 'Tidak dapat menghapus OLT yang masih memiliki ODC!');
+        }
+        if ($olt->modem_detail_id) {
+            ModemDetail::where('id', $olt->modem_detail_id)->update([
+                'status_id' => LogistikStatus::TERSEIDA,
+                'lokasi_id' => null,
+                'tanggal_terpakai' => null,
+            ]);
+        }
         $olt->delete();
         return redirect()->back()->with('toast_success', 'OLT berhasil dihapus');
     }
 
     public function editOdc($id)
     {
-        $odc = ODC::findOrFail($id);
+        $odc = ODC::with('modemDetail.perangkat')->findOrFail($id);
         return response()->json($odc);
     }
 
@@ -554,7 +594,42 @@ class NocController extends Controller
         $odc = ODC::findOrFail($id);
         $odc->nama_odc = $request->nama_odc;
         $odc->lokasi_id = $request->olt;
+        if ($request->has('pon_port')) {
+            $odc->pon_port = $request->pon_port ?: null;
+        }
         $odc->gps = $request->gps;
+        $odc->rasio = $request->rasio;
+        if ($request->has('panjang_kabel')) {
+            $odc->panjang_kabel = $request->filled('panjang_kabel') ? $request->panjang_kabel : null;
+        }
+        if ($request->has('redaman')) {
+            $odc->redaman = $request->filled('redaman') ? $request->redaman : null;
+        }
+
+        if ($request->has('modem_detail_id')) {
+            $newMdId = $request->filled('modem_detail_id') ? (int) $request->modem_detail_id : null;
+            if ($odc->modem_detail_id && $odc->modem_detail_id !== $newMdId) {
+                ModemDetail::where('id', $odc->modem_detail_id)->update([
+                    'status_id' => LogistikStatus::TERSEIDA,
+                    'odc_id' => null,
+                    'tanggal_terpakai' => null,
+                ]);
+            }
+            if ($newMdId && $odc->modem_detail_id !== $newMdId) {
+                $md = ModemDetail::where('id', $newMdId)->where('status_id', LogistikStatus::TERSEIDA)->first();
+                if ($md) {
+                    $md->update([
+                        'status_id' => LogistikStatus::TERPAKAI,
+                        'odc_id' => $odc->id,
+                        'tanggal_terpakai' => now(),
+                    ]);
+                    $odc->modem_detail_id = $newMdId;
+                }
+            } elseif (!$newMdId) {
+                $odc->modem_detail_id = null;
+            }
+        }
+
         $odc->save();
         return redirect()->back()->with('toast_success', 'ODC berhasil diperbarui');
     }
@@ -562,13 +637,23 @@ class NocController extends Controller
     public function hapusOdc($id)
     {
         $odc = ODC::findOrFail($id);
+        if ($odc->odp()->count() > 0) {
+            return redirect()->back()->with('error', 'Tidak dapat menghapus ODC yang masih memiliki ODP!');
+        }
+        if ($odc->modem_detail_id) {
+            ModemDetail::where('id', $odc->modem_detail_id)->update([
+                'odc_id' => null,
+                'status_id' => LogistikStatus::TERSEIDA,
+                'tanggal_terpakai' => null,
+            ]);
+        }
         $odc->delete();
         return redirect()->back()->with('toast_success', 'ODC berhasil dihapus');
     }
 
     public function editOdp($id)
     {
-        $odp = ODP::findOrFail($id);
+        $odp = ODP::with('modemDetail.perangkat')->findOrFail($id);
         return response()->json($odp);
     }
 
@@ -578,6 +663,38 @@ class NocController extends Controller
         $odp->nama_odp = $request->nama_odp;
         $odp->odc_id = $request->odc;
         $odp->gps = $request->gps;
+        $odp->rasio = $request->rasio;
+        if ($request->has('panjang_kabel')) {
+            $odp->panjang_kabel = $request->filled('panjang_kabel') ? $request->panjang_kabel : null;
+        }
+        if ($request->has('redaman')) {
+            $odp->redaman = $request->filled('redaman') ? $request->redaman : null;
+        }
+
+        if ($request->has('modem_detail_id')) {
+            $newMdId = $request->filled('modem_detail_id') ? (int) $request->modem_detail_id : null;
+            if ($odp->modem_detail_id && $odp->modem_detail_id !== $newMdId) {
+                ModemDetail::where('id', $odp->modem_detail_id)->update([
+                    'status_id' => LogistikStatus::TERSEIDA,
+                    'odp_id' => null,
+                    'tanggal_terpakai' => null,
+                ]);
+            }
+            if ($newMdId && $odp->modem_detail_id !== $newMdId) {
+                $md = ModemDetail::where('id', $newMdId)->where('status_id', LogistikStatus::TERSEIDA)->first();
+                if ($md) {
+                    $md->update([
+                        'status_id' => LogistikStatus::TERPAKAI,
+                        'odp_id' => $odp->id,
+                        'tanggal_terpakai' => now(),
+                    ]);
+                    $odp->modem_detail_id = $newMdId;
+                }
+            } elseif (!$newMdId) {
+                $odp->modem_detail_id = null;
+            }
+        }
+
         $odp->save();
         return redirect()->back()->with('toast_success', 'ODP berhasil diperbarui');
     }
@@ -585,6 +702,13 @@ class NocController extends Controller
     public function hapusOdp($id)
     {
         $odp = ODP::findOrFail($id);
+        if ($odp->modem_detail_id) {
+            ModemDetail::where('id', $odp->modem_detail_id)->update([
+                'odp_id' => null,
+                'status_id' => LogistikStatus::TERSEIDA,
+                'tanggal_terpakai' => null,
+            ]);
+        }
         $odp->delete();
         return redirect()->back()->with('toast_success', 'ODP berhasil dihapus');
     }

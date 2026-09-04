@@ -226,11 +226,63 @@ class SuperAdmin extends Controller
 
     $role = Roles::whereIn('id', [1, 2, 3, 4, 5, 6, 7])->get();
 
+    // ---- Dashboard statistik ----
+    $totalToday = Activity::whereDate('created_at', today())->count();
+
+    // Aktivitas per hari (7 hari terakhir)
+    $daily = Activity::where('created_at', '>=', now()->subDays(6)->startOfDay())
+      ->selectRaw("DATE(created_at) as date, COUNT(*) as total")
+      ->groupBy('date')
+      ->orderBy('date')
+      ->pluck('total', 'date');
+
+    $chartLabels = collect(range(6, 0))->map(function ($i) {
+      return now()->subDays($i)->format('d M');
+    });
+    $chartData = $chartLabels->map(function ($label, $i) use ($daily) {
+      $date = now()->subDays(6 - $i)->toDateString();
+      return $daily->get($date, 0);
+    });
+
+    // Breakdown per role
+    $perRole = Activity::query()
+      ->whereHas('causer')
+      ->with('causer.roles:id,name')
+      ->get()
+      ->groupBy(function ($log) {
+        return $log->causer->roles->name ?? 'Unknown';
+      })
+      ->map->count()
+      ->sortDesc();
+
+    // Top user paling aktif (7 hari terakhir)
+    $topUsers = Activity::where('created_at', '>=', now()->subDays(7)->startOfDay())
+      ->whereHas('causer')
+      ->with('causer:id,name')
+      ->get()
+      ->groupBy(function ($log) {
+        return $log->causer->name ?? 'Unknown';
+      })
+      ->map->count()
+      ->sortDesc()
+      ->take(5);
+
+    // Histori terakhir update (7 hari)
+    $recentUpdate = Activity::latest('created_at')->first();
+
     return view('log.aktivitas', [
       'users' => auth()->user(),
       'roles' => auth()->user()->roles,
       'logs' => $logs,
       'role' => $role,
+      'totalToday' => $totalToday,
+      'chartLabels' => $chartLabels->values(),
+      'chartData' => $chartData->values(),
+      'perRole' => $perRole,
+      'topUsers' => $topUsers,
+      'recentUpdate' => $recentUpdate,
+      'roleMax' => max((int) $perRole->max(), 1),
+      'activityMax' => max((int) $chartData->max(), 1),
     ]);
   }
 

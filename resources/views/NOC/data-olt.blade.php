@@ -58,6 +58,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Data OLT</th>
+                                    <th>Port PON</th>
                                     <th>Lokasi OLT</th>
                                     <th>Total ODC</th>
                                     <th>Total ODP</th>
@@ -70,6 +71,20 @@
                                         <td class="text-center">{{ $loop->iteration + ($lokasi->currentPage() - 1) * $lokasi->perPage() }}</td>
                                         <td class="fw-semibold">
                                             <i class="bx bx-terminal me-1 text-primary"></i>{{ $olt->nama_lokasi }}
+                                            @if($olt->modemDetail)
+                                                <br>
+                                                <span class="badge bg-label-info font-monospace text-capitalize" style="font-size: 0.72rem;">
+                                                    <i class="bx bx-barcode me-1"></i>SN: {{ $olt->modemDetail->serial_number ?: ('ID-' . $olt->modemDetail->id) }}
+                                                    @if($olt->modemDetail->perangkat)
+                                                        ({{ $olt->modemDetail->perangkat->nama_perangkat }})
+                                                    @endif
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-label-primary">
+                                                <i class="bx bx-chip me-1"></i>{{ $olt->jumlah_pon ?? 8 }} PON
+                                            </span>
                                         </td>
                                         @php
                                             $gps = $olt->gps;
@@ -114,7 +129,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
+                                        <td colspan="7" class="text-center">Tidak ada data yang cocok dengan pencarian Anda.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -150,7 +165,7 @@
                             </div>
                             <div class="col-sm-12">
                                 <label class="form-label">Server</label>
-                                <select name="lokasi_server" id="" class="form-select mb-3">
+                                <select name="lokasi_server" id="" class="form-select mb-3" required>
                                     <option value="" selected disabled>Pilih Server</option>
                                     @foreach ($server as $s)
                                         <option value="{{ $s->id }}">{{ $s->lokasi_server }}</option>
@@ -158,8 +173,35 @@
                                 </select>
                             </div>
                             <div class="col-sm-12">
+                                <label class="form-label">Jumlah Port PON</label>
+                                <select name="jumlah_pon" class="form-select mb-3" required>
+                                    <option value="2">2 Port PON</option>
+                                    <option value="4">4 Port PON</option>
+                                    <option value="8" selected>8 Port PON (Standard)</option>
+                                    <option value="16">16 Port PON</option>
+                                    <option value="32">32 Port PON</option>
+                                    <option value="64">64 Port PON</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-12">
                                 <label class="form-label">Lokasi OLT</label>
                                 <input type="text" class="form-control" name="gps" required placeholder="https://maps.google.com/... atau -1.0269916,110.48579129">
+                            </div>
+                            <div class="col-sm-12 mt-3">
+                                <div class="p-3 bg-lighter rounded border">
+                                    <label class="form-label fw-bold text-primary mb-1"><i class="bx bx-package me-1"></i>Integrasi Logistik (Perangkat OLT)</label>
+                                    <select id="modal_olt_perangkat_id" class="form-select mb-2" onchange="onOltModalPerangkatChange(this, 'modal_olt_sn')">
+                                        <option value="">-- Pilih OLT dari Logistik (Opsional) --</option>
+                                        @foreach ($perangkatOlt ?? [] as $po)
+                                            <option value="{{ $po->id }}">📦 {{ $po->nama_perangkat }} (Tersedia: {{ $po->stok_tersedia }} unit)</option>
+                                        @endforeach
+                                    </select>
+                                    <label class="form-label mb-1">Serial Number (SN)</label>
+                                    <select name="modem_detail_id" id="modal_olt_sn" class="form-select font-monospace">
+                                        <option value="">-- Tanpa SN / Pilih Nanti --</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Memilih SN otomatis memotong stok di Logistik.</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -198,8 +240,35 @@
                                 </select>
                             </div>
                             <div class="col-sm-12">
+                                <label class="form-label">Jumlah Port PON</label>
+                                <select name="jumlah_pon" id="edit_jumlah_pon" class="form-select mb-3" required>
+                                    <option value="2">2 Port PON</option>
+                                    <option value="4">4 Port PON</option>
+                                    <option value="8">8 Port PON (Standard)</option>
+                                    <option value="16">16 Port PON</option>
+                                    <option value="32">32 Port PON</option>
+                                    <option value="64">64 Port PON</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-12">
                                 <label class="form-label">Lokasi OLT</label>
-                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control" id="edit_gps">
+                                <input type="text" name="gps" placeholder="https://maps.google.com/... atau -1.0269916,110.48579129" class="form-control mb-3" id="edit_gps">
+                            </div>
+                            <div class="col-sm-12">
+                                <div class="p-3 bg-lighter rounded border">
+                                    <label class="form-label fw-bold text-primary mb-1"><i class="bx bx-package me-1"></i>Integrasi Logistik (Perangkat OLT)</label>
+                                    <select id="edit_olt_perangkat_id" class="form-select mb-2" onchange="onOltModalPerangkatChange(this, 'edit_olt_sn')">
+                                        <option value="">-- Pilih OLT dari Logistik (Opsional) --</option>
+                                        @foreach ($perangkatOlt ?? [] as $po)
+                                            <option value="{{ $po->id }}">📦 {{ $po->nama_perangkat }} (Tersedia: {{ $po->stok_tersedia }} unit)</option>
+                                        @endforeach
+                                    </select>
+                                    <label class="form-label mb-1">Serial Number (SN)</label>
+                                    <select name="modem_detail_id" id="edit_olt_sn" class="form-select font-monospace">
+                                        <option value="">-- Tanpa SN / Pilih Nanti --</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Memilih SN otomatis memotong stok di Logistik.</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -227,13 +296,40 @@
                 </div>
                 <div class="modal-footer">
                     <small class="text-muted me-auto">* Klik marker untuk melihat info OLT</small>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn-outline-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const perangkatOltData = @json($perangkatOlt ?? []);
+
+        function onOltModalPerangkatChange(selectEl, targetSnSelectId, preselectedMdId = null, preselectedSn = '') {
+            const snSelect = document.getElementById(targetSnSelectId);
+            if (!snSelect) return;
+            const devId = selectEl.value;
+            const dev = (perangkatOltData || []).find(d => String(d.id) === String(devId));
+
+            let options = '<option value="">-- Tanpa SN / Pilih Unit Nanti --</option>';
+            if (dev && dev.available_serials && dev.available_serials.length > 0) {
+                let found = false;
+                dev.available_serials.forEach(s => {
+                    const isSel = (preselectedMdId && String(s.id) === String(preselectedMdId)) ? 'selected' : '';
+                    if (isSel) found = true;
+                    options += `<option value="${s.id}" ${isSel}>🔹 SN: ${s.serial_number}${s.mac_address ? ` (${s.mac_address})` : ''}</option>`;
+                });
+                if (preselectedMdId && !found && preselectedSn) {
+                    options += `<option value="${preselectedMdId}" selected>🔹 SN: ${preselectedSn} (Unit Saat Ini)</option>`;
+                }
+            } else if (preselectedMdId && preselectedSn) {
+                options += `<option value="${preselectedMdId}" selected>🔹 SN: ${preselectedSn} (Unit Saat Ini)</option>`;
+            } else if (dev) {
+                options = '<option value="">⚠️ Stok fisik berseri belum tersedia</option>';
+            }
+            snSelect.innerHTML = options;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Edit OLT Logic
             document.querySelectorAll('.edit-olt-btn').forEach(function(btn) {
@@ -245,8 +341,19 @@
                         .then(data => {
                             document.getElementById('edit_nama_lokasi').value = data.nama_lokasi || '';
                             document.getElementById('edit_id_server').value = data.id_server || '';
+                            document.getElementById('edit_jumlah_pon').value = data.jumlah_pon || 8;
                             document.getElementById('edit_gps').value = data.gps || 'Lokasi belum di atur';
                             document.getElementById('editOltForm').action = `/update/olt/${id}`;
+
+                            const pId = data.modem_detail?.logistik_id || '';
+                            const mdId = data.modem_detail_id || '';
+                            const snText = data.modem_detail?.serial_number || '';
+                            const editPSelect = document.getElementById('edit_olt_perangkat_id');
+                            if (editPSelect) {
+                                editPSelect.value = pId;
+                                onOltModalPerangkatChange(editPSelect, 'edit_olt_sn', mdId, snText);
+                            }
+
                             var modal = new bootstrap.Modal(document.getElementById('modalEditOlt'));
                             modal.show();
                         });

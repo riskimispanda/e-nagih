@@ -9,7 +9,7 @@
         <div class="card mb-3">
             <div class="card-header">
                 <h5 class="card-title fw-bold">Tracking Tools</h5>
-                <small class="card-subtitle text-muted">Halaman Untuk Tracking Modem Atau Tenda yang sudah Terpakai</small>
+                <small class="card-subtitle text-muted">Tracking perangkat serial (Modem, Tenda, ODP, OLT, HTB, SFP)</small>
             </div>
         </div>
         <div class="card">
@@ -88,18 +88,18 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-label-info fw-bold" style="text-transform: uppercase;">
-                                        {{$item->customer->teknisi->name ?? '-'}}
+                                        {{ optional(optional($item->customer)->teknisi)->name ?? '-' }}
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge bg-label-danger fw-bold">
-                                        {{ $item->created_at->translatedFormat('F-Y-d') ?? '-' }}
+                                        {{ $item->tanggal_terpakai ? $item->tanggal_terpakai->translatedFormat('F-Y-d') : '-' }}
                                     </span>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center">Data Tidak Ditemukan</td>
+                                <td colspan="8" class="text-center">Data Tidak Ditemukan</td>
                             </tr>
                             @endforelse
                         </tbody>
