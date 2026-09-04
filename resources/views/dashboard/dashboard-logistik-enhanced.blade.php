@@ -294,7 +294,7 @@
                         $pctMaintenance = $totalStok > 0 ? round(($p->stok_maintenance / $totalStok) * 100) : 0;
                     @endphp
                     <tr class="device-row table-hover-row transition-colors">
-                        <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $index + 1 }}</td>
+                        <td class="py-3 px-4 text-center font-medium text-slate-400 row-number">{{ $index + 1 }}</td>
                         
                         <!-- Nama Perangkat -->
                         <td class="py-3 px-4">
@@ -395,6 +395,13 @@
                         </td>
                     </tr>
                     @endforelse
+                    <tr id="inventoryNoMatchRow" style="display: none;">
+                        <td colspan="10" class="py-12 text-center text-slate-400">
+                            <i class="bx bx-search text-3xl text-slate-300 block mb-2"></i>
+                            <div class="font-medium text-slate-600">Tidak ada perangkat yang sesuai</div>
+                            <div class="text-xs text-slate-400 mt-0.5">Coba ubah kata kunci pencarian atau filter kategori</div>
+                        </td>
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr class="bg-slate-50 border-t-2 border-slate-200 text-xs font-bold text-slate-700">
@@ -412,6 +419,26 @@
                     </tr>
                 </tfoot>
             </table>
+        </div>
+
+        <!-- Inventory Pagination -->
+        <div id="inventoryPagination" class="px-5 py-3.5 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <div class="flex items-center gap-2">
+                <span>Tampilkan</span>
+                <select id="inventoryPageSize" class="rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 cursor-pointer shadow-2xs transition-all">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span>baris per halaman</span>
+                <span class="text-slate-300 mx-1">|</span>
+                <span id="inventoryPaginationInfo" class="font-medium text-slate-600">
+                    Menampilkan data...
+                </span>
+            </div>
+            <div id="inventoryPaginationNav" class="flex items-center gap-1"></div>
         </div>
 
     </div>
@@ -517,11 +544,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --------------------------------------------------------------------------
-    // Table Search & Category Filter
+    // Table Pagination, Search & Category Filter
     // --------------------------------------------------------------------------
     const searchInput = document.getElementById('searchInventory');
     const categoryFilter = document.getElementById('categoryFilter');
-    const rows = document.querySelectorAll('.device-row');
+    const pageSizeSelect = document.getElementById('inventoryPageSize');
+    const paginationInfo = document.getElementById('inventoryPaginationInfo');
+    const paginationNav = document.getElementById('inventoryPaginationNav');
+    const noMatchRow = document.getElementById('inventoryNoMatchRow');
+    const rows = Array.from(document.querySelectorAll('.device-row'));
+
+    let paginationState = {
+        page: 1,
+        pageSize: pageSizeSelect ? parseInt(pageSizeSelect.value, 10) : 10
+    };
 
     if (categoryFilter && rows.length > 0) {
         const categories = new Set();
@@ -538,11 +574,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function filterRows() {
-        const searchVal = (searchInput ? searchInput.value : '').toLowerCase();
-        const catVal = (categoryFilter ? categoryFilter.value : '').toLowerCase();
+    function createPageBtn(pageNumber, text, isActive, isDisabled) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.innerHTML = text !== undefined ? text : pageNumber;
 
-        rows.forEach(row => {
+        if (isActive) {
+            btn.className = 'w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-xs flex items-center justify-center';
+        } else {
+            btn.className = 'w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition cursor-pointer flex items-center justify-center shadow-2xs disabled:opacity-40 disabled:cursor-not-allowed';
+        }
+
+        if (isDisabled) {
+            btn.disabled = true;
+        } else if (!isActive) {
+            btn.addEventListener('click', function() {
+                paginationState.page = pageNumber;
+                renderInventoryPagination();
+            });
+        }
+        return btn;
+    }
+
+    function renderInventoryPagination() {
+        const searchVal = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        const catVal = (categoryFilter ? categoryFilter.value : '').toLowerCase().trim();
+
+        // 1. Filter rows
+        const filteredRows = rows.filter(row => {
             const text = row.textContent.toLowerCase();
             const catEl = row.querySelector('td:nth-child(3) span');
             const rowCat = catEl ? catEl.textContent.trim().toLowerCase() : '';
@@ -550,12 +609,123 @@ document.addEventListener('DOMContentLoaded', function() {
             const matchSearch = !searchVal || text.includes(searchVal);
             const matchCat = !catVal || rowCat === catVal;
 
-            row.style.display = (matchSearch && matchCat) ? '' : 'none';
+            return matchSearch && matchCat;
+        });
+
+        const totalItems = filteredRows.length;
+        const pageSize = paginationState.pageSize;
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+        if (paginationState.page > totalPages) paginationState.page = totalPages;
+        if (paginationState.page < 1) paginationState.page = 1;
+
+        const startIndex = (paginationState.page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+
+        // 2. Hide all device rows first
+        rows.forEach(r => r.style.display = 'none');
+
+        // 3. Show and renumber current page slice
+        filteredRows.slice(startIndex, endIndex).forEach((r, idx) => {
+            r.style.display = '';
+            const numCell = r.querySelector('.row-number');
+            if (numCell) {
+                numCell.textContent = startIndex + idx + 1;
+            }
+        });
+
+        // 4. Handle Empty / No Match State
+        if (noMatchRow) {
+            noMatchRow.style.display = (totalItems === 0 && rows.length > 0) ? '' : 'none';
+        }
+
+        // 5. Update info text
+        if (paginationInfo) {
+            if (totalItems === 0) {
+                paginationInfo.textContent = 'Tidak ada perangkat yang cocok';
+            } else if (totalItems === rows.length) {
+                const displayEnd = Math.min(endIndex, totalItems);
+                paginationInfo.textContent = `Menampilkan ${startIndex + 1} - ${displayEnd} dari ${totalItems} perangkat`;
+            } else {
+                const displayEnd = Math.min(endIndex, totalItems);
+                paginationInfo.textContent = `Menampilkan ${startIndex + 1} - ${displayEnd} dari ${totalItems} perangkat (difilter dari ${rows.length} total)`;
+            }
+        }
+
+        // 6. Render Nav Buttons
+        if (paginationNav) {
+            paginationNav.innerHTML = '';
+
+            if (totalItems === 0) return;
+
+            // Prev Button
+            const prevBtn = createPageBtn(paginationState.page - 1, '<i class="bx bx-chevron-left text-sm"></i>', false, paginationState.page === 1);
+            prevBtn.title = 'Halaman Sebelumnya';
+            paginationNav.appendChild(prevBtn);
+
+            // Page numbers algorithm with ellipsis
+            const maxButtons = 5;
+            let startPage = Math.max(1, paginationState.page - 2);
+            let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+            if (endPage - startPage < maxButtons - 1) {
+                startPage = Math.max(1, endPage - maxButtons + 1);
+            }
+
+            if (startPage > 1) {
+                paginationNav.appendChild(createPageBtn(1, '1', paginationState.page === 1, false));
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'w-6 text-center text-slate-400 text-xs font-mono select-none';
+                    dots.textContent = '...';
+                    paginationNav.appendChild(dots);
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationNav.appendChild(createPageBtn(i, i.toString(), i === paginationState.page, false));
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'w-6 text-center text-slate-400 text-xs font-mono select-none';
+                    dots.textContent = '...';
+                    paginationNav.appendChild(dots);
+                }
+                paginationNav.appendChild(createPageBtn(totalPages, totalPages.toString(), totalPages === paginationState.page, false));
+            }
+
+            // Next Button
+            const nextBtn = createPageBtn(paginationState.page + 1, '<i class="bx bx-chevron-right text-sm"></i>', false, paginationState.page === totalPages);
+            nextBtn.title = 'Halaman Selanjutnya';
+            paginationNav.appendChild(nextBtn);
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            paginationState.page = 1;
+            renderInventoryPagination();
         });
     }
 
-    if (searchInput) searchInput.addEventListener('input', filterRows);
-    if (categoryFilter) categoryFilter.addEventListener('change', filterRows);
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function() {
+            paginationState.page = 1;
+            renderInventoryPagination();
+        });
+    }
+
+    if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', function() {
+            paginationState.pageSize = parseInt(this.value, 10);
+            paginationState.page = 1;
+            renderInventoryPagination();
+        });
+    }
+
+    // Initial render
+    renderInventoryPagination();
 });
 
 function deleteDevice(id) {
