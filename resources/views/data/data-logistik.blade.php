@@ -157,6 +157,15 @@
 
         <!-- Refresh / Quick Filter Controls -->
         <div class="flex items-center gap-2 self-end sm:self-auto">
+          @if(auth()->user()->roles_id == 1)
+          <form method="POST" action="/logistik/sync" class="m-0">
+            @csrf
+            <button type="submit" onclick="return confirm('Sinkronkan jumlah stok global dengan stok fisik perangkat?')" title="Sinkronkan stok perangkat dengan data fisik" class="px-3 py-2 bg-white border border-emerald-200 hover:bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+              <i class="bx bx-sync text-sm"></i>
+              <span>Sync Stok</span>
+            </button>
+          </form>
+          @endif
           <button type="button" onclick="location.reload()" title="Segarkan Data" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
             <i class="bx bx-refresh text-sm"></i>
             <span>Refresh</span>

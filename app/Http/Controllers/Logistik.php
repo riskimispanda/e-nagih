@@ -704,5 +704,36 @@ class Logistik extends Controller
         }
     }
 
+    public function sync()
+    {
+        $perangkat = Perangkat::with('kategori')->get();
+
+        DB::beginTransaction();
+
+        try {
+            $updated = 0;
+            foreach ($perangkat as $item) {
+                if (!LogistikStatus::isSerialized($item->kategori->nama_logistik ?? '')) {
+                    continue;
+                }
+
+                $fisik = ModemDetail::where('logistik_id', $item->id)->count();
+                if ((int) $item->jumlah_stok !== (int) $fisik) {
+                    $item->jumlah_stok = $fisik;
+                    $item->save();
+                    $updated++;
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('toast_success', "Sinkronisasi stok selesai. {$updated} perangkat diperbarui.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal sinkronisasi stok: ' . $e->getMessage());
+            return redirect()->back()->with('toast_error', 'Gagal sinkronisasi stok: ' . $e->getMessage());
+        }
+    }
+
 
 }

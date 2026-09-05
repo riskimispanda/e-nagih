@@ -560,6 +560,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/logistik/terpakai', [Logistik::class, 'statusView'])->defaults('status', 'terpakai')->middleware('auth', 'roles:Super Admin,Admin Logistik');
     Route::get('/logistik/barang-rusak', [Logistik::class, 'statusView'])->defaults('status', 'barang-rusak')->middleware('auth', 'roles:Super Admin,Admin Logistik');
     Route::get('/logistik/maintenance', [Logistik::class, 'statusView'])->defaults('status', 'maintenance')->middleware('auth', 'roles:Super Admin,Admin Logistik');
+    Route::post('/logistik/sync', [Logistik::class, 'sync'])->middleware('auth', 'roles:Super Admin');
    Route::get('/tiket-barang', [Logistik::class, 'TiketBarang'])->middleware('auth', 'roles:Admin Logistik,Super Admin');
 
    // Damaged Items Management (Super Admin Menu)

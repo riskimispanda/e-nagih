@@ -290,6 +290,7 @@ class Analytics extends Controller
 
     // Single query grouped by status
     $modemDetails = ModemDetail::with('perangkat.kategori')
+        ->whereHas('perangkat')
         ->whereIn('status_id', [LogistikStatus::MAINTENANCE, LogistikStatus::TERSEIDA, LogistikStatus::RUSAK])
         ->get()
         ->groupBy('status_id');
