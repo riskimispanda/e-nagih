@@ -244,28 +244,33 @@ class SuperAdmin extends Controller
       return $daily->get($date, 0);
     });
 
-    // Breakdown per role
-    $perRole = Activity::query()
-      ->whereHas('causer')
-      ->with('causer.roles:id,name')
-      ->get()
-      ->groupBy(function ($log) {
-        return $log->causer->roles->name ?? 'Unknown';
-      })
-      ->map->count()
-      ->sortDesc();
+    // Breakdown per role — agregasi di DB agar tidak memuat seluruh tabel ke memori
+    $activityTable = (new Activity)->getTable();
+    $causerType = (new User)->getMorphClass();
 
-    // Top user paling aktif (7 hari terakhir)
-    $topUsers = Activity::where('created_at', '>=', now()->subDays(7)->startOfDay())
-      ->whereHas('causer')
-      ->with('causer:id,name')
-      ->get()
-      ->groupBy(function ($log) {
-        return $log->causer->name ?? 'Unknown';
+    $perRole = DB::table($activityTable)
+      ->join('users', function ($join) use ($causerType, $activityTable) {
+        $join->on('users.id', '=', $activityTable . '.causer_id')
+          ->where($activityTable . '.causer_type', '=', $causerType);
       })
-      ->map->count()
-      ->sortDesc()
-      ->take(5);
+      ->leftJoin('roles', 'roles.id', '=', 'users.roles_id')
+      ->selectRaw("COALESCE(roles.name, 'Unknown') AS role_name, COUNT(*) AS total")
+      ->groupBy(DB::raw("COALESCE(roles.name, 'Unknown')"))
+      ->orderByDesc('total')
+      ->pluck('total', 'role_name');
+
+    // Top user paling aktif (7 hari terakhir) — agregasi di DB
+    $topUsers = DB::table($activityTable)
+      ->join('users', function ($join) use ($causerType, $activityTable) {
+        $join->on('users.id', '=', $activityTable . '.causer_id')
+          ->where($activityTable . '.causer_type', '=', $causerType);
+      })
+      ->where($activityTable . '.created_at', '>=', now()->subDays(7)->startOfDay())
+      ->selectRaw('users.name, COUNT(*) AS total')
+      ->groupBy('users.id', 'users.name')
+      ->orderByDesc('total')
+      ->limit(5)
+      ->pluck('total', 'name');
 
     // Histori terakhir update (7 hari)
     $recentUpdate = Activity::latest('created_at')->first();
