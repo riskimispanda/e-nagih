@@ -122,6 +122,9 @@ class DataController extends Controller
       case 'status-inactive':
         $query->orderByRaw('CASE WHEN status_id = 9 THEN 0 ELSE 1 END');
         break;
+      case 'maintenance':
+        $query->where('status_id', 4);
+        break;
       case 'package':
         $query->join('pakets', 'customers.paket_id', '=', 'pakets.id')
           ->orderBy('pakets.nama_paket', 'asc')

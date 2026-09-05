@@ -1171,6 +1171,7 @@
                       <option value="name-desc">Nama Z-A</option>
                       <option value="status-active">Status Aktif</option>
                       <option value="status-inactive">Status Non-Aktif</option>
+                      <option value="maintenance">Maintenance</option>
                     </select>
                   </div>
                 </div>
