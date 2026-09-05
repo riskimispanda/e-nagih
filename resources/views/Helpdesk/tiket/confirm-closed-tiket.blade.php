@@ -89,10 +89,6 @@
           <i class="bx bx-category"></i>
           {{ $kategori->kategori->nama_kategori }}
         </span>
-        <a href="/data/logistik" class="inline-flex w-fit items-center gap-1.5 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-ink-50">
-          <i class="bx bx-list-ul"></i>
-          Data Logistik
-        </a>
       </div>
     </div>
 
