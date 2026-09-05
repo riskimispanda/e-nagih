@@ -502,7 +502,7 @@
   @endif
 
   {{-- Form Gangguan --}}
-  @if($kategori->kategori->nama_kategori == 'Gangguan' || $kategori->kategori->nama_kategori == 'Maintenance')
+  @if($kategori->kategori->nama_kategori == 'Gangguan' || $kategori->kategori->nama_kategori == 'Maintenance' || $kategori->kategori->nama_kategori == 'Ganti Alat')
   <div class="mb-4 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft">
     <div class="tw-header flex items-center justify-between border-b border-slate-100 px-5 py-4" data-tw-collapse="formDeaktivasiCollapse" aria-expanded="true">
       <div class="flex items-center gap-3">
