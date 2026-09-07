@@ -9,9 +9,82 @@ use App\Models\Customer;
 use App\Models\Kas;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+
 class TripayServices
 {
+  /**
+   * Error message dari request Tripay terakhir (untuk di-surface ke view).
+   *
+   * @var string|null
+   */
+  public ?string $lastError = null;
+
+  /**
+   * Eksekusi request HTTP ke API Tripay dengan pengaturan yang konsisten:
+   * proxy dari env, connect timeout, logging errno + HTTP code.
+   *
+   * @param string $url
+   * @param array $options Override/perset tambahan untuk curl_setopt_array
+   * @return array{body: string, errno: int, error: string, httpCode: int}
+   */
+  protected function httpRequest(string $url, array $options = []): array
+  {
+    $apiKey = config('tripay.api_key');
+    $proxy = $this->getProxy();
+
+    $curlOpts = [
+      CURLOPT_URL => $url,
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $apiKey],
+      CURLOPT_CONNECTTIMEOUT => 5,
+      CURLOPT_TIMEOUT => 15,
+    ];
+
+    if ($proxy) {
+      $curlOpts[CURLOPT_PROXY] = $proxy;
+    }
+
+    foreach ($options as $key => $value) {
+      if ($key === CURLOPT_HTTPHEADER && isset($curlOpts[CURLOPT_HTTPHEADER])) {
+        $curlOpts[CURLOPT_HTTPHEADER] = array_merge($curlOpts[CURLOPT_HTTPHEADER], $value);
+        continue;
+      }
+      $curlOpts[$key] = $value;
+    }
+
+    $curl = curl_init();
+    curl_setopt_array($curl, $curlOpts);
+
+    $body = curl_exec($curl);
+    $errno = curl_errno($curl);
+    $error = curl_error($curl);
+    $httpCode = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    return [
+      'body' => $body === false ? '' : $body,
+      'errno' => $errno,
+      'error' => $error,
+      'httpCode' => $httpCode,
+    ];
+  }
+
+  /**
+   * Ambil proxy dari environment (HTTPS_PROXY / HTTP_PROXY) jika diset.
+   *
+   * @return string|null
+   */
+  protected function getProxy(): ?string
+  {
+    return getenv('HTTPS_PROXY')
+      ?: getenv('https_proxy')
+      ?: getenv('HTTP_PROXY')
+      ?: getenv('http_proxy')
+      ?: null;
+  }
+
   /**
    * Get payment instructions for a specific payment method
    *
@@ -20,42 +93,35 @@ class TripayServices
    */
   public function getPaymentInstructions(string $code): array
   {
-    $apiKey = config('tripay.api_key');
     $baseUrl = rtrim(config('tripay.base_url'), '/');
     $url = $baseUrl . '/payment/instruction?code=' . urlencode($code);
 
-    $curl = curl_init();
+    $result = $this->httpRequest($url);
 
-    curl_setopt_array($curl, [
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HTTPHEADER => [
-        'Authorization: Bearer ' . $apiKey
-      ],
-      CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-      CURLOPT_TIMEOUT => 10,
-    ]);
-
-    $response = curl_exec($curl);
-    $error = curl_error($curl);
-    curl_close($curl);
-
-    if ($error) {
-      \Log::error("Tripay Payment Instruction Error: $error");
+    if ($result['errno']) {
+      $message = $result['error'] . ' (errno ' . $result['errno'] . ')';
+      Log::error('Tripay Payment Instruction Error', [
+        'errno' => $result['errno'],
+        'error' => $result['error'],
+        'http_code' => $result['httpCode'],
+      ]);
       return [
         'success' => false,
-        'message' => $error,
+        'message' => $message,
         'data' => null
       ];
     }
 
-    $result = json_decode($response, true);
+    $decoded = json_decode($result['body'], true);
 
-    if (!($result['success'] ?? false)) {
-      \Log::warning('Tripay Instruction Response Error: ' . $response);
+    if (!($decoded['success'] ?? false)) {
+      Log::warning('Tripay Instruction Response Error', [
+        'http_code' => $result['httpCode'],
+        'response' => $result['body'],
+      ]);
     }
 
-    return $result;
+    return $decoded ?: ['success' => false, 'message' => 'Invalid response from Tripay', 'data' => null];
   }
 
 
@@ -67,80 +133,88 @@ class TripayServices
    */
   public function getTransactionDetails(string $reference): array
   {
-    $apiKey = config('tripay.api_key');
     $baseUrl = rtrim(config('tripay.base_url'), '/');
     $url = $baseUrl . '/transaction/detail?reference=' . urlencode($reference);
 
-    $curl = curl_init();
+    $result = $this->httpRequest($url);
 
-    curl_setopt_array($curl, [
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HTTPHEADER => [
-        'Authorization: Bearer ' . $apiKey
-      ],
-      CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-      CURLOPT_TIMEOUT => 10,
-    ]);
-
-    $response = curl_exec($curl);
-    $error = curl_error($curl);
-    curl_close($curl);
-
-    if ($error) {
-      \Log::error("Tripay Transaction Detail Error: $error");
+    if ($result['errno']) {
+      $message = $result['error'] . ' (errno ' . $result['errno'] . ')';
+      Log::error('Tripay Transaction Detail Error', [
+        'errno' => $result['errno'],
+        'error' => $result['error'],
+        'http_code' => $result['httpCode'],
+      ]);
       return [
         'success' => false,
-        'message' => $error,
+        'message' => $message,
         'data' => null
       ];
     }
 
-    $result = json_decode($response, true);
+    $decoded = json_decode($result['body'], true);
 
-    if (!($result['success'] ?? false)) {
-      \Log::warning("Tripay Transaction Detail Failed: " . $response);
+    if (!($decoded['success'] ?? false)) {
+      Log::warning('Tripay Transaction Detail Failed', [
+        'http_code' => $result['httpCode'],
+        'response' => $result['body'],
+      ]);
     }
 
-    return $result;
+    return $decoded ?: ['success' => false, 'message' => 'Invalid response from Tripay', 'data' => null];
   }
 
 
   public function getPaymentChannels(): array
   {
-    $apiKey = config('tripay.api_key');
-    $baseUrl = config('tripay.base_url'); // ambil dari config/tripay.php
+    $cacheKey = 'tripay_payment_channels_' . config('tripay.merchant_code');
 
-    $url = rtrim($baseUrl, '/') . '/merchant/payment-channel';
+    $cached = Cache::get($cacheKey);
+    if (is_array($cached)) {
+      return $cached;
+    }
 
-    $curl = curl_init();
+    $baseUrl = rtrim(config('tripay.base_url'), '/');
+    $url = $baseUrl . '/merchant/payment-channel';
 
-    curl_setopt_array($curl, [
-      CURLOPT_URL => $url,
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HTTPHEADER => [
-        'Authorization: Bearer ' . $apiKey
-      ],
-      CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-      CURLOPT_TIMEOUT => 10,
-    ]);
+    $result = $this->httpRequest($url);
 
-    $response = curl_exec($curl);
-    $error = curl_error($curl);
-    curl_close($curl);
+    if ($result['errno']) {
+      $this->lastError = $result['error'] . ' (errno ' . $result['errno'] . ')';
+      Log::error('Tripay Payment Channel Error', [
+        'errno' => $result['errno'],
+        'error' => $result['error'],
+        'http_code' => $result['httpCode'],
+      ]);
 
-    if ($error) {
-      \Log::error('Tripay Payment Channel Error: ' . $error);
+      // Fallback ke cache lama (stale) supaya halaman tidak kosong saat Tripay tidak terjangkau
+      $stale = Cache::get($cacheKey);
+      if (is_array($stale)) {
+        return $stale;
+      }
+
       return [];
     }
 
-    $result = json_decode($response, true);
+    $decoded = json_decode($result['body'], true);
 
-    if ($result['success'] ?? false) {
-      return $result['data'] ?? [];
+    if (($decoded['success'] ?? false) && isset($decoded['data'])) {
+      $channels = $decoded['data'];
+      Cache::put($cacheKey, $channels, now()->addMinutes(5));
+      return $channels;
     }
 
-    \Log::warning('Tripay Payment Channel Unexpected Response: ' . $response);
+    $this->lastError = ($decoded['message'] ?? 'Unexpected response from Tripay') . ' (HTTP ' . $result['httpCode'] . ')';
+    Log::warning('Tripay Payment Channel Unexpected Response', [
+      'http_code' => $result['httpCode'],
+      'response' => $result['body'],
+    ]);
+
+    $stale = Cache::get($cacheKey);
+    if (is_array($stale)) {
+      return $stale;
+    }
+
     return [];
   }
 
@@ -235,27 +309,22 @@ class TripayServices
 
     \Log::info('Tripay transaction payload', ['payload' => $payload]);
 
-    $curl = curl_init();
-    curl_setopt_array($curl, [
-      CURLOPT_URL => $baseUrl . '/transaction/create',
-      CURLOPT_RETURNTRANSFER => true,
-      CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $apiKey],
+    $result = $this->httpRequest($baseUrl . '/transaction/create', [
       CURLOPT_POST => true,
       CURLOPT_POSTFIELDS => http_build_query($payload),
-      CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
-      CURLOPT_TIMEOUT => 15,
     ]);
 
-    $response = curl_exec($curl);
-    $error = curl_error($curl);
-    curl_close($curl);
-
-    if ($error) {
-      \Log::error('Error creating Tripay transaction: ' . $error);
-      return ['success' => false, 'message' => $error];
+    if ($result['errno']) {
+      $message = $result['error'] . ' (errno ' . $result['errno'] . ')';
+      Log::error('Error creating Tripay transaction', [
+        'errno' => $result['errno'],
+        'error' => $result['error'],
+        'http_code' => $result['httpCode'],
+      ]);
+      return ['success' => false, 'message' => $message];
     }
 
-    $decoded = json_decode($response, true);
+    $decoded = json_decode($result['body'], true);
     \Log::info('Tripay transaction response', ['response' => $decoded]);
 
     if ($decoded['success'] ?? false) {

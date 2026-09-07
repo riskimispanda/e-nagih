@@ -517,6 +517,20 @@
               </div>
               <div class="card-body">
                 <div class="payment-methods-list">
+                  @if (count($channels) === 0)
+                    <div class="alert alert-danger">
+                      <div class="d-flex align-items-start">
+                        <i class="fas fa-plug icon-warning me-2 mt-1"></i>
+                        <div>
+                          <div class="fw-semibold">Metode pembayaran tidak dapat dimuat</div>
+                          <div class="small text-muted">Terjadi masalah koneksi ke server pembayaran. Silakan coba lagi beberapa saat atau hubungi admin.</div>
+                          @if (!empty($channels_error))
+                            <div class="small mt-1 text-danger">Detail: {{ $channels_error }}</div>
+                          @endif
+                        </div>
+                      </div>
+                    </div>
+                  @endif
                   @foreach ($channels as $channel)
                     <div class="payment-method" onclick="selectPaymentMethod(this, '{{ $channel['code'] }}')"
                       data-code="{{ $channel['code'] }}">

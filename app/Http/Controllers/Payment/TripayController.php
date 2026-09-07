@@ -91,7 +91,8 @@ class TripayController extends Controller
     return view('/pelanggan/payment/invoice', [
       'invoice' => $invoice,
       'channels' => $filteredChannels,
-      'invoiceAll' => $invoiceAll
+      'invoiceAll' => $invoiceAll,
+      'channels_error' => $tripay->lastError ?: null,
     ]);
   }
 
