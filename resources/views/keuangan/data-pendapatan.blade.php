@@ -112,47 +112,6 @@
       transform: translateY(-1px);
     }
 
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .loading-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid #0d6efd;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
     .table-responsive {
       border-radius: 0;
     }
@@ -187,54 +146,6 @@
       align-items: center;
       justify-content: center;
       font-size: 1rem;
-    }
-
-    /* Loading Overlay Styles */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-
-    .loading-content {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 12px;
-      text-align: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #dc3545;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1rem;
-    }
-
-    @keyframes spin {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    .loading-text {
-      font-size: 1rem;
-      color: #333;
-      margin: 0;
     }
   </style>
 @endsection
@@ -1029,26 +940,13 @@
     </div>
   @endforeach
 
-  <!-- Tambahkan ini di bagian bawah content, sebelum loading overlay -->
   <div id="ajaxModalsContainer"></div>
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay d-none">
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <p id="loadingText" class="loading-text">sabar, semua butuh proses</p>
-    </div>
-  </div>
 
 
   {{-- Javascript --}}
   <script>
     function showLoadingOverlay(message) {
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const loadingText = document.getElementById('loadingText');
-      if (loadingOverlay && loadingText) {
-        loadingText.textContent = message;
-        loadingOverlay.classList.remove('d-none');
-      }
+      // Loading animation disabled
     }
   </script>
   <script>
@@ -1896,30 +1794,13 @@
       return buttons;
     }
 
-    // Show loading overlay
+    // Loading handlers
     function showLoading() {
       isLoading = true;
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const loadingText = document.getElementById('loadingText');
-
-      if (loadingOverlay && loadingText) {
-        // Reset to default text when used by other functions
-        loadingText.textContent = 'Memuat data...';
-        loadingOverlay.classList.remove('d-none');
-      }
     }
 
-    // Hide loading overlay
     function hideLoading() {
       isLoading = false;
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const loadingText = document.getElementById('loadingText');
-
-      if (loadingOverlay && loadingText) {
-        // Reset to default text when used by other functions
-        loadingText.textContent = 'Memuat data...';
-        loadingOverlay.classList.add('d-none');
-      }
     }
 
     // Show notification
