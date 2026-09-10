@@ -30,6 +30,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Models\ModemDetail;
 use App\Models\TiketOpen;
 use App\Models\User;
+use App\Helpers\LogistikStatus;
 
 class DataController extends Controller
 {
@@ -822,6 +823,101 @@ class DataController extends Controller
 
       Log::info('Success update profile Pelanggan di Mikrotik: ' . $usersecret . '-' . $targetProfile . ($isIsolir ? ' (Status: Isolir)' : ''));
 
+      // 📡 Sinkronisasi Data Modem & Serial Number
+      $perangkatId = $request->filled('perangkat') ? $request->perangkat : $pelanggan->perangkat_id;
+      $seriPerangkat = $pelanggan->seri_perangkat;
+      $macAddress = $request->filled('mac') ? $request->mac : $pelanggan->mac_address;
+
+      $modemDetailId = $request->input('modem_detail_id');
+
+      if (!empty($modemDetailId)) {
+        $selectedModem = ModemDetail::find($modemDetailId);
+        if ($selectedModem) {
+          $seriPerangkat = $selectedModem->serial_number ?: $seriPerangkat;
+          $macAddress = $selectedModem->mac_address ?: $macAddress;
+          $perangkatId = $selectedModem->logistik_id ?: $perangkatId;
+
+          // Lepas modem lama milik customer ini jika sebelumnya memakai unit berbeda
+          ModemDetail::where('customer_id', $pelanggan->id)
+            ->where('id', '!=', $selectedModem->id)
+            ->update([
+              'customer_id' => null,
+              'status_id' => LogistikStatus::TERSEIDA,
+            ]);
+
+          // Pasang unit modem terpilih ke pelanggan
+          $selectedModem->update([
+            'customer_id' => $pelanggan->id,
+            'status_id' => LogistikStatus::TERPAKAI,
+            'tanggal_terpakai' => $selectedModem->tanggal_terpakai ?: now(),
+          ]);
+        }
+      } elseif ($request->filled('seri')) {
+        $inputSeri = trim($request->seri);
+        // Cek apakah input berupa ID ModemDetail yang valid
+        $matchedById = is_numeric($inputSeri) ? ModemDetail::find($inputSeri) : null;
+        if ($matchedById) {
+          $seriPerangkat = $matchedById->serial_number ?: $seriPerangkat;
+          $macAddress = $matchedById->mac_address ?: $macAddress;
+          $perangkatId = $matchedById->logistik_id ?: $perangkatId;
+
+          ModemDetail::where('customer_id', $pelanggan->id)
+            ->where('id', '!=', $matchedById->id)
+            ->update([
+              'customer_id' => null,
+              'status_id' => LogistikStatus::TERSEIDA,
+            ]);
+
+          $matchedById->update([
+            'customer_id' => $pelanggan->id,
+            'status_id' => LogistikStatus::TERPAKAI,
+            'tanggal_terpakai' => $matchedById->tanggal_terpakai ?: now(),
+          ]);
+        } else {
+          // Input adalah nomor seri string manual
+          $seriPerangkat = $inputSeri;
+          $matchedBySn = ModemDetail::where('serial_number', $seriPerangkat)
+            ->where('logistik_id', $perangkatId)
+            ->first();
+
+          if ($matchedBySn) {
+            ModemDetail::where('customer_id', $pelanggan->id)
+              ->where('id', '!=', $matchedBySn->id)
+              ->update([
+                'customer_id' => null,
+                'status_id' => LogistikStatus::TERSEIDA,
+              ]);
+
+            $matchedBySn->update([
+              'customer_id' => $pelanggan->id,
+              'status_id' => LogistikStatus::TERPAKAI,
+              'tanggal_terpakai' => $matchedBySn->tanggal_terpakai ?: now(),
+            ]);
+            $macAddress = $matchedBySn->mac_address ?: $macAddress;
+          } else {
+            // Update atau buat catatan modem jika belum ada di logistik
+            ModemDetail::updateOrCreate(
+              ['customer_id' => $pelanggan->id],
+              [
+                'logistik_id' => $perangkatId,
+                'serial_number' => $seriPerangkat,
+                'mac_address' => $macAddress,
+                'status_id' => LogistikStatus::TERPAKAI,
+              ]
+            );
+          }
+        }
+      } else {
+        // Jika modem_detail_id kosong dan seri kosong, pastikan unit modem yang sudah terpasang tetap terjaga
+        if ($pelanggan->perangkat_id && $pelanggan->seri_perangkat) {
+          ModemDetail::where('customer_id', $pelanggan->id)
+            ->update([
+              'logistik_id' => $perangkatId,
+              'mac_address' => $macAddress,
+            ]);
+        }
+      }
+
       // 🔥 BARU UPDATE DATABASE (setelah Mikrotik sukses)
       $data = [
         'nama_customer' => $request->nama,
@@ -835,12 +931,12 @@ class DataController extends Controller
         'access_point' => $request->has('access_point') ? $request->access_point : $pelanggan->access_point,
         'koneksi_id' => $request->has('koneksi') ? $request->koneksi : $pelanggan->koneksi_id,
         'media_id' => $request->has('media') ? $request->media : $pelanggan->media_id,
-        'perangkat_id' => $request->has('perangkat') ? $request->perangkat : $pelanggan->perangkat_id,
+        'perangkat_id' => $perangkatId,
         'local_address' => $localAddress,  // ✅ Nilai dari request
         'remote_address' => $remoteAddress, // ✅ Nilai dari request
         'remote' => $request->has('remote') ? $request->remote : $pelanggan->remote,
-        'seri_perangkat' => $request->has('seri') ? $request->seri : $pelanggan->seri_perangkat,
-        'mac_address' => $request->has('mac') ? $request->mac : $pelanggan->mac_address,
+        'seri_perangkat' => $seriPerangkat,
+        'mac_address' => $macAddress,
         'usersecret' => $usersecret,
         'pass_secret' => $passSecret,
         'agen_id' => $request->agen_id,
@@ -872,17 +968,6 @@ class DataController extends Controller
           'tagihan' => $tagihanProrate
         ]);
       }
-
-      // Update Data Modem
-      ModemDetail::updateOrCreate(
-        ['customer_id' => $pelanggan->id],
-        [
-          'logistik_id' => $request->perangkat,
-          'serial_number' => $pelanggan->seri_perangkat,
-          'mac_address' => $pelanggan->mac_address,
-          'status_id' => 13
-        ]
-      );
 
       activity('Edit Pelanggan')
         ->causedBy(auth()->user())

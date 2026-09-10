@@ -546,26 +546,27 @@
 
                             {{-- Serial Number (dari logistik) --}}
                             <div>
-                                <label class="flex items-center gap-1 text-xs font-semibold text-slate-700 mb-1.5" for="seri">Serial Number</label>
+                                <label class="flex items-center gap-1 text-xs font-semibold text-slate-700 mb-1.5" for="modem_detail_id">Serial Number</label>
                                 @php
                                     $selectedSeriId = null;
                                     $selectedSeriMac = $pelanggan->mac_address;
+                                    $selectedSeriSn = $pelanggan->seri_perangkat;
                                     foreach ($logistikSerial as $ls) {
                                         if ($ls['logistik_id'] == $pelanggan->perangkat_id && $ls['serial_number'] == $pelanggan->seri_perangkat) {
                                             $selectedSeriId = $ls['id'];
                                             $selectedSeriMac = $ls['mac_address'] ?? $pelanggan->mac_address;
+                                            $selectedSeriSn = $ls['serial_number'];
                                             break;
                                         }
                                     }
                                 @endphp
-                                <select name="seri" id="seri" class="form-control-custom">
-                                    @if($selectedSeriId === null)
-                                        <option value="" selected data-logistik="">
-                                            {{ $pelanggan->seri_perangkat ? $pelanggan->seri_perangkat . ' (SN saat ini)' : 'Pilih Serial Number' }}
-                                        </option>
-                                    @endif
+                                <input type="hidden" name="seri" id="seri_input" value="{{ old('seri', $selectedSeriSn) }}">
+                                <select name="modem_detail_id" id="modem_detail_id" class="form-control-custom">
+                                    <option value="" data-sn="{{ $selectedSeriSn }}" data-mac="{{ $selectedSeriMac }}" data-logistik="{{ $pelanggan->perangkat_id }}">
+                                        {{ $selectedSeriSn ? $selectedSeriSn . ' (SN saat ini)' : 'Pilih Serial Number' }}
+                                    </option>
                                     @foreach ($logistikSerial as $ls)
-                                        <option value="{{ $ls['id'] }}" data-mac="{{ $ls['mac_address'] }}" data-logistik="{{ $ls['logistik_id'] }}" {{ $ls['logistik_id'] == $pelanggan->perangkat_id && $selectedSeriId == $ls['id'] ? 'selected' : '' }}>
+                                        <option value="{{ $ls['id'] }}" data-sn="{{ $ls['serial_number'] }}" data-mac="{{ $ls['mac_address'] }}" data-logistik="{{ $ls['logistik_id'] }}" {{ $selectedSeriId == $ls['id'] ? 'selected' : '' }}>
                                             {{ $ls['serial_number'] }}
                                         </option>
                                     @endforeach
@@ -593,6 +594,7 @@
                 <input type="hidden" name="remote_address" value="{{ $pelanggan->remote_address }}">
                 <input type="hidden" name="remote" value="{{ $pelanggan->remote }}">
                 <input type="hidden" name="perangkat" value="{{ $pelanggan->perangkat_id }}">
+                <input type="hidden" name="modem_detail_id" value="{{ $selectedSeriId ?? '' }}">
                 <input type="hidden" name="seri" value="{{ $pelanggan->seri_perangkat }}">
                 <input type="hidden" name="mac" value="{{ $pelanggan->mac_address }}">
 
@@ -645,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function () {
         noHpInput.addEventListener('blur', formatNoHp);
     }
 
-    const selectConfigs = ['#paket','#router','#olt','#odc','#odp','#bts','#perangkat','#pic','#media','#koneksi','#seri'];
+    const selectConfigs = ['#paket','#router','#olt','#odc','#odp','#bts','#perangkat','#pic','#media','#koneksi'];
     const tsInstances = {};
     selectConfigs.forEach(selector => {
         const el = document.querySelector(selector);
@@ -663,47 +665,104 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Otomatis isi MAC Address berdasarkan Serial Number terpilih dari logistik
+    // Otomatis isi MAC Address dan Serial Number berdasarkan Modem terpilih dari logistik
     const macInput = document.getElementById('mac');
-    const seriSelect = document.getElementById('seri');
-
-    function applyMacFromSeri() {
-        if (!macInput || !seriSelect) return;
-        const opt = seriSelect.options[seriSelect.selectedIndex];
-        const mac = opt ? opt.getAttribute('data-mac') || '' : '';
-        macInput.value = mac;
-    }
-
-    if (seriSelect) {
-        seriSelect.addEventListener('change', applyMacFromSeri);
-    }
-
-    // Saring pilihan Serial Number agar sesuai dengan Modem yang dipilih
+    const seriInput = document.getElementById('seri_input');
     const perangkatSelect = document.getElementById('perangkat');
-    if (perangkatSelect && seriSelect) {
-        function filterSerials() {
-            const perangkatId = perangkatSelect.value;
-            let firstVisible = null;
-            Array.from(seriSelect.options).forEach(opt => {
-                const show = opt.getAttribute('data-logistik') === perangkatId || opt.getAttribute('data-logistik') === '';
-                opt.hidden = !show;
-                if (show && !firstVisible) firstVisible = opt;
-            });
-            let current = seriSelect.options[seriSelect.selectedIndex];
-            if (!current || current.hidden) {
-                if (firstVisible) seriSelect.value = firstVisible.value;
-            }
-            if (tsInstances['#seri']) {
-                tsInstances['#seri'].sync();
-                tsInstances['#seri'].refreshOptions();
-            }
-            applyMacFromSeri();
-        }
-        perangkatSelect.addEventListener('change', filterSerials);
-        filterSerials();
-    }
+    const modemDetailSelect = document.getElementById('modem_detail_id');
 
-    applyMacFromSeri();
+    const logistikSerialData = @json($logistikSerial);
+    const initialPerangkatId = "{{ $pelanggan->perangkat_id }}";
+    const initialModemDetailId = "{{ $selectedSeriId ?? '' }}";
+    const initialSeriSn = "{{ $selectedSeriSn ?? '' }}";
+    const initialMac = "{{ $selectedSeriMac ?? '' }}";
+
+    let tsModem = null;
+    if (modemDetailSelect) {
+        tsModem = new TomSelect(modemDetailSelect, {
+            create: false,
+            sortField: { field: "text", direction: "asc" }
+        });
+        tsInstances['#modem_detail_id'] = tsModem;
+
+        tsModem.on('dropdown_open', function() {
+            const section = modemDetailSelect.closest('.animate-section');
+            if (section) section.style.zIndex = '50';
+        });
+        tsModem.on('dropdown_close', function() {
+            const section = modemDetailSelect.closest('.animate-section');
+            if (section) section.style.zIndex = '';
+        });
+
+        tsModem.on('change', function(val) {
+            if (!val) {
+                if (seriInput) seriInput.value = initialSeriSn || '';
+                if (macInput) macInput.value = initialMac || '';
+                return;
+            }
+            const found = logistikSerialData.find(item => String(item.id) === String(val));
+            if (found) {
+                if (macInput) macInput.value = found.mac_address || '';
+                if (seriInput) seriInput.value = found.serial_number || '';
+            }
+        });
+
+        function updateModemSerialOptions(selectedPerangkatId, preserveVal = null) {
+            if (!tsModem) return;
+            const currentSelected = preserveVal !== null ? preserveVal : tsModem.getValue();
+            tsModem.clear();
+            tsModem.clearOptions();
+
+            // Tambahkan opsi fallback SN saat ini jika tipe perangkat cocok
+            if (initialSeriSn && (String(initialPerangkatId) === String(selectedPerangkatId) || !selectedPerangkatId)) {
+                tsModem.addOption({
+                    value: initialModemDetailId ? String(initialModemDetailId) : '',
+                    text: initialSeriSn + ' (SN saat ini)'
+                });
+            }
+
+            // Tambahkan serial number yang sesuai perangkat dari logistik
+            logistikSerialData.forEach(item => {
+                if (String(item.logistik_id) === String(selectedPerangkatId)) {
+                    tsModem.addOption({
+                        value: String(item.id),
+                        text: item.serial_number
+                    });
+                }
+            });
+
+            tsModem.refreshOptions(false);
+
+            // Tentukan pilihan aktif
+            if (currentSelected && tsModem.options[String(currentSelected)]) {
+                tsModem.setValue(String(currentSelected));
+            } else if (initialModemDetailId && tsModem.options[String(initialModemDetailId)]) {
+                tsModem.setValue(String(initialModemDetailId));
+            } else if (initialSeriSn && tsModem.options['']) {
+                tsModem.setValue('');
+            } else {
+                const keys = Object.keys(tsModem.options);
+                if (keys.length > 0) {
+                    tsModem.setValue(keys[0]);
+                }
+            }
+        }
+
+        // Hubungkan perubahan pilihan perangkat ke daftar serial number
+        if (tsInstances['#perangkat']) {
+            tsInstances['#perangkat'].on('change', function(val) {
+                updateModemSerialOptions(val);
+            });
+        } else if (perangkatSelect) {
+            perangkatSelect.addEventListener('change', function() {
+                updateModemSerialOptions(this.value);
+            });
+        }
+
+        // Inisialisasi awal saat form dibuka
+        const curPerangkat = tsInstances['#perangkat'] ? tsInstances['#perangkat'].getValue() : (perangkatSelect ? perangkatSelect.value : initialPerangkatId);
+        updateModemSerialOptions(curPerangkat, initialModemDetailId);
+    }
 
     const form = document.getElementById('formUpdatePelanggan');
     if (form) {
