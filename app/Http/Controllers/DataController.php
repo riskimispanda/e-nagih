@@ -777,16 +777,20 @@ class DataController extends Controller
       $paket = Paket::findOrFail($paketId);
       $konek = strtolower($pelanggan->koneksi->nama_koneksi ?? 'pppoe');
 
+      // Cek apakah pelanggan sedang dalam status isolir (status_id == 9)
+      $isIsolir = ($pelanggan->status_id == 9);
+      // Jika pelanggan sedang isolir, Mikrotik harus tetap menggunakan profile isolir
+      $targetProfile = $isIsolir ? 'ISOLIREBILLING' : $paket->paket_name;
+
       $client = MikrotikServices::connect($router);
       $existingSecret = MikrotikServices::checkPPPSecret($client, $usersecret);
 
       if ($existingSecret) {
-        // Update profile di Mikrotik dengan nilai dari REQUEST
-
+        // Update profile di Mikrotik dengan target profile yang sesuai
         $updateResult = MikrotikServices::UpgradeDowngrade(
           $client,
           $usersecret,
-          $paket->paket_name,
+          $targetProfile,
           $localAddress,  // ✅ Pakai nilai dari request
           $remoteAddress   // ✅ Pakai nilai dari request
         );
@@ -794,7 +798,8 @@ class DataController extends Controller
         if (!$updateResult) {
           Log::warning("Gagal update Mikrotik, tetapi lanjut update database", [
             'usersecret' => $usersecret,
-            'paket' => $paket->paket_name
+            'targetProfile' => $targetProfile,
+            'isIsolir' => $isIsolir
           ]);
         }
 
@@ -804,7 +809,7 @@ class DataController extends Controller
         $newDial = MikrotikServices::addPPPSecret($client, [
           'name' => $usersecret,
           'password' => $passSecret,
-          'profile' => $paket->paket_name,
+          'profile' => $targetProfile,
           'service' => $konek,
           'remoteAddress' => $remoteAddress,
           'localAddress' => $localAddress,
@@ -815,7 +820,7 @@ class DataController extends Controller
         }
       }
 
-      Log::info('Success update profile Pelanggan di Mikrotik: ' . $usersecret . '-' . $paket->paket_name);
+      Log::info('Success update profile Pelanggan di Mikrotik: ' . $usersecret . '-' . $targetProfile . ($isIsolir ? ' (Status: Isolir)' : ''));
 
       // 🔥 BARU UPDATE DATABASE (setelah Mikrotik sukses)
       $data = [
