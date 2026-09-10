@@ -326,7 +326,7 @@ class Logistik extends Controller
     {
         $log = Perangkat::with('kategori')->findOrFail($id);
         $data = KategoriLogistik::all();
-        $modemDetails = ModemDetail::where('logistik_id', $id)->get();
+        $modemDetails = ModemDetail::with('customer')->where('logistik_id', $id)->get();
         return view('/data/edit-logistik',[
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,

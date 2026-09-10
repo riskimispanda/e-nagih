@@ -19,6 +19,7 @@
 @section('content')
 @php
 $kategoriLabel = $log->kategori->nama_logistik ?? '';
+$isModem = str_contains(strtolower($kategoriLabel), 'modem');
 $isSplitter = strtolower($kategoriLabel) === 'splitter';
 $isSerial = in_array(strtolower($kategoriLabel), ['modem','tenda','sfp','olt','odp','odc','htb','splitter']);
 $isNoMac = in_array(strtolower($kategoriLabel), ['olt','odp','odc','splitter']);
@@ -199,6 +200,47 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                                 <button type="button" class="w-9 h-9 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition-all add-unit cursor-pointer" title="Tambah unit"><i class="bx bx-plus text-lg"></i></button>
                             </div>
                             <input type="hidden" name="edit_detail_id[]" value="{{ $md->id }}">
+
+                            @if ($isModem && $mdTerpakai)
+                            @php
+                            $cust = $md->customer ?? ($md->serial_number ? \App\Models\Customer::where('seri_perangkat', $md->serial_number)->first() : null);
+                            @endphp
+                            <div class="customer-info-box col-span-12 mt-1 pt-2 border-t border-blue-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div class="flex items-center flex-wrap gap-2 text-slate-700">
+                                    @if ($cust)
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-100/90 text-blue-800 border border-blue-200">
+                                        <i class="bx bx-user text-xs"></i>
+                                        {{ $cust->nama_customer }}
+                                        <span class="text-blue-600 font-normal">#{{ $cust->id }}</span>
+                                    </span>
+                                    @if ($cust->no_hp)
+                                    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $cust->no_hp) }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 no-underline transition-colors" title="Hubungi WhatsApp">
+                                        <i class="bx bxl-whatsapp text-sm text-emerald-600"></i>{{ $cust->no_hp }}
+                                    </a>
+                                    @endif
+                                    @if ($md->tanggal_terpakai)
+                                    <span class="inline-flex items-center gap-1 text-[11px] text-slate-500">
+                                        <i class="bx bx-calendar text-slate-400"></i> Terpasang: <strong class="text-slate-600">{{ \Carbon\Carbon::parse($md->tanggal_terpakai)->format('d M Y') }}</strong>
+                                    </span>
+                                    @endif
+                                    @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                        <i class="bx bx-info-circle text-xs"></i> Status unit terpakai (Belum tertaut ke ID pelanggan)
+                                    </span>
+                                    @endif
+                                </div>
+                                @if ($cust)
+                                <div class="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
+                                    <a href="{{ route('detail-pelanggan', $cust->id) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white text-blue-700 hover:bg-blue-50 border border-blue-300 shadow-2xs no-underline transition-all">
+                                        <i class="bx bx-show text-xs"></i> Detail Pelanggan
+                                    </a>
+                                    <a href="{{ url('/edit-pelanggan/' . $cust->id) }}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-300 shadow-2xs no-underline transition-all">
+                                        <i class="bx bx-edit text-xs"></i> Edit
+                                    </a>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
                         </div>
                         @empty
                         <div class="device-unit grid grid-cols-12 gap-3 items-center bg-slate-50/60 border border-slate-200 rounded-xl p-2.5">
@@ -373,6 +415,8 @@ document.addEventListener('DOMContentLoaded', function () {
             clone.classList.remove('is-terpakai', 'border-blue-300', 'bg-blue-50/60');
             var statusSpan = clone.querySelector('.unit-terpakai-badge');
             if (statusSpan) statusSpan.remove();
+            var custInfo = clone.querySelector('.customer-info-box');
+            if (custInfo) custInfo.remove();
             var btn = clone.querySelector('.add-unit');
             btn.className = 'w-9 h-9 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center transition-all remove-unit cursor-pointer';
             btn.innerHTML = '<i class="bx bx-x text-lg"></i>';
