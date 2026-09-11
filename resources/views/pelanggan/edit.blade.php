@@ -8,6 +8,10 @@
         in_array($userRoleId, [1, 4]) ||
         in_array($userRole, ['noc', 'super admin', 'superadmin'])
     );
+    $canEditProrata = auth()->check() && (
+        in_array($userRoleId, [1, 2, 4]) ||
+        in_array($userRole, ['noc', 'super admin', 'superadmin', 'admin keuangan'])
+    );
 @endphp
 
 @section('page-style')
@@ -110,6 +114,10 @@
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/20">
                                         <i class="bx bx-shield-quarter text-xs"></i> Admin & NOC
                                     </span>
+                                @elseif($canEditProrata)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                                        <i class="bx bx-dollar text-xs"></i> Admin Keuangan
+                                    </span>
                                 @else
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-white/10 text-white/60 border border-white/10">
                                         <i class="bx bx-user text-xs"></i> Data Kontak
@@ -159,12 +167,12 @@
                 <div class="p-5 sm:p-7 space-y-5">
 
                     {{-- Prorata --}}
-                    @if($canEditTechnical)
+                    @if($canEditProrata)
                         <div>
                             <label class="flex items-center gap-2 text-xs font-semibold text-slate-700 mb-2.5">
                                 <i class="bx bx-dollar text-blue-500 text-sm"></i>
                                 Status Prorata Tagihan
-                                <span class="text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">Admin & NOC</span>
+                                <span class="text-[10px] font-medium text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md">Admin & Keuangan</span>
                             </label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <label class="relative flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/30 cursor-pointer transition-all duration-200 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 has-[:checked]:shadow-sm has-[:checked]:shadow-blue-500/10">
