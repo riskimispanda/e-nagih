@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DataControllerApi;
 use App\Http\Controllers\Api\CustomerControllerApi;
 use App\Http\Controllers\Api\TeknisiControllerApi;
 use App\Http\Controllers\Api\MikrotikControllerApi;
+use App\Http\Controllers\Api\PaymentCorrectionController;
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
@@ -31,6 +32,12 @@ Route::get('/dev/detail', [DataControllerApi::class, 'detailCounting']);
   Route::get('/verified-fix', [DataControllerApi::class, 'verifyFixSimplified']);
   Route::get('/router/{id}/version', [MikrotikControllerApi::class, 'checkVersion']);
   Route::get('/router/{id}/neighbors', [MikrotikControllerApi::class, 'getNeighbors']);
+
+  // Fix Payment Mismatch (Kasus salah kirim link pelanggan)
+  Route::prefix('payment-correction')->group(function () {
+    Route::get('/analyze', [PaymentCorrectionController::class, 'analyze']);
+    Route::post('/execute', [PaymentCorrectionController::class, 'execute']);
+  });
 
 
 // Protected routes
