@@ -11,6 +11,7 @@ use App\Services\ChatServices;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 use Exception;
 
 class PaymentCorrectionService
@@ -30,212 +31,266 @@ class PaymentCorrectionService
         ?int $wrongInvoiceId = null,
         ?int $targetInvoiceId = null
     ): array {
-        // 1. Ambil Data Pelanggan
-        $payerCustomer = Customer::with(['paket', 'status', 'router'])->find($payerCustomerId);
-        if (!$payerCustomer) {
-            return [
-                'can_proceed' => false,
-                'message' => "Customer pembayar (ID: {$payerCustomerId}) tidak ditemukan."
-            ];
-        }
+        try {
+            // 1. Ambil Data Pelanggan
+            $payerCustomer = Customer::with(['paket', 'status', 'router'])->find($payerCustomerId);
+            if (!$payerCustomer) {
+                return [
+                    'can_proceed' => false,
+                    'message' => "Customer pembayar (ID: {$payerCustomerId}) tidak ditemukan."
+                ];
+            }
 
-        $wrongCustomer = Customer::with(['paket', 'status', 'router'])->find($wrongCustomerId);
-        if (!$wrongCustomer) {
-            return [
-                'can_proceed' => false,
-                'message' => "Customer yang salah dibayar (ID: {$wrongCustomerId}) tidak ditemukan."
-            ];
-        }
+            $wrongCustomer = Customer::with(['paket', 'status', 'router'])->find($wrongCustomerId);
+            if (!$wrongCustomer) {
+                return [
+                    'can_proceed' => false,
+                    'message' => "Customer yang salah dibayar (ID: {$wrongCustomerId}) tidak ditemukan."
+                ];
+            }
 
-        // 2. Cari Invoice Keliru milik Customer 14552
-        $wrongInvoiceQuery = Invoice::with(['pembayaran', 'status', 'paket'])
-            ->where('customer_id', $wrongCustomerId);
-
-        if ($wrongInvoiceId) {
-            $wrongInvoice = $wrongInvoiceQuery->where('id', $wrongInvoiceId)->first();
-        } else {
-            // Ambil invoice status 8 terbaru atau yang memiliki reference tripay / pembayaran
-            $wrongInvoice = $wrongInvoiceQuery->where('status_id', 8)
-                ->orderBy('updated_at', 'desc')
-                ->first();
-
-            // Jika tidak ada status 8, cari yang punya reference tripay
-            if (!$wrongInvoice) {
+            // 2. Cari Invoice Keliru milik Customer 14552
+            $wrongInvoice = null;
+            if ($wrongInvoiceId) {
                 $wrongInvoice = Invoice::with(['pembayaran', 'status', 'paket'])
                     ->where('customer_id', $wrongCustomerId)
-                    ->whereNotNull('reference')
+                    ->where('id', $wrongInvoiceId)
+                    ->first();
+            } else {
+                // Prioritas 1: Invoice status 8 (Sudah Bayar) terbaru
+                $wrongInvoice = Invoice::with(['pembayaran', 'status', 'paket'])
+                    ->where('customer_id', $wrongCustomerId)
+                    ->where('status_id', 8)
                     ->orderBy('updated_at', 'desc')
                     ->first();
+
+                // Prioritas 2: Invoice yang memiliki reference Tripay
+                if (!$wrongInvoice) {
+                    $wrongInvoice = Invoice::with(['pembayaran', 'status', 'paket'])
+                        ->where('customer_id', $wrongCustomerId)
+                        ->whereNotNull('reference')
+                        ->orderBy('updated_at', 'desc')
+                        ->first();
+                }
+
+                // Prioritas 3: Invoice yang memiliki record di tabel pembayaran
+                if (!$wrongInvoice) {
+                    $wrongInvoice = Invoice::with(['pembayaran', 'status', 'paket'])
+                        ->where('customer_id', $wrongCustomerId)
+                        ->whereHas('pembayaran')
+                        ->orderBy('updated_at', 'desc')
+                        ->first();
+                }
             }
-        }
 
-        if (!$wrongInvoice) {
-            return [
-                'can_proceed' => false,
-                'message' => "Invoice lunas / berbayar milik Customer {$wrongCustomerId} ({$wrongCustomer->nama_customer}) tidak ditemukan."
-            ];
-        }
+            if (!$wrongInvoice) {
+                return [
+                    'can_proceed' => false,
+                    'message' => "Invoice lunas / berbayar milik Customer {$wrongCustomerId} ({$wrongCustomer->nama_customer}) tidak ditemukan."
+                ];
+            }
 
-        // Cari record Pembayaran terkait invoice keliru
-        $pembayaran = Pembayaran::where('invoice_id', $wrongInvoice->id)
-            ->orderBy('id', 'desc')
-            ->first();
-
-        // Cari record Kas terkait pembayaran / invoice keliru
-        $kas = null;
-        if ($pembayaran) {
-            $kas = Kas::where('pembayaran_id', $pembayaran->id)->first();
-        }
-        if (!$kas) {
-            $kas = Kas::where('keterangan', 'like', "%#{$wrongInvoice->id}%")
-                ->orWhere('keterangan', 'like', "%{$wrongCustomer->nama_customer}%")
+            // Cari record Pembayaran terkait invoice keliru
+            $pembayaran = Pembayaran::where('invoice_id', $wrongInvoice->id)
                 ->orderBy('id', 'desc')
                 ->first();
-        }
 
-        // 3. Cari Invoice Target milik Customer 12141 yang seharusnya dibayar
-        $targetInvoiceQuery = Invoice::with(['status', 'paket'])
-            ->where('customer_id', $payerCustomerId);
-
-        if ($targetInvoiceId) {
-            $targetInvoice = $targetInvoiceQuery->where('id', $targetInvoiceId)->first();
-        } else {
-            // Ambil invoice belum bayar (status_id = 7) yang paling relevan (jatuh tempo terdekat/tertua)
-            $targetInvoice = $targetInvoiceQuery->where('status_id', 7)
-                ->orderBy('jatuh_tempo', 'asc')
+            // Cari record Kas terkait pembayaran / invoice keliru
+            // Catatan: Kolom tabel kas tidak memiliki 'pembayaran_id', gunakan customer_id atau matching keterangan
+            $kas = Kas::where('customer_id', $wrongCustomerId)
+                ->where('debit', '>', 0)
+                ->orderBy('id', 'desc')
                 ->first();
 
-            // Jika tidak ada status 7, ambil invoice terbaru
-            if (!$targetInvoice) {
+            if (!$kas) {
+                $kas = Kas::where(function ($q) use ($wrongInvoice, $wrongCustomer) {
+                    $q->where('keterangan', 'like', "%#{$wrongInvoice->id}%")
+                      ->orWhere('keterangan', 'like', "%{$wrongCustomer->nama_customer}%");
+                })
+                ->where('debit', '>', 0)
+                ->orderBy('id', 'desc')
+                ->first();
+            }
+
+            // 3. Cari Invoice Target milik Customer 12141 yang seharusnya dibayar
+            $targetInvoice = null;
+            if ($targetInvoiceId) {
                 $targetInvoice = Invoice::with(['status', 'paket'])
                     ->where('customer_id', $payerCustomerId)
-                    ->orderBy('jatuh_tempo', 'desc')
+                    ->where('id', $targetInvoiceId)
                     ->first();
-            }
-        }
+            } else {
+                // Prioritas 1: Invoice belum bayar (status_id = 7) tertua / jatuh tempo terdekat
+                $targetInvoice = Invoice::with(['status', 'paket'])
+                    ->where('customer_id', $payerCustomerId)
+                    ->where('status_id', 7)
+                    ->orderBy('jatuh_tempo', 'asc')
+                    ->first();
 
-        if (!$targetInvoice) {
+                // Prioritas 2: Invoice terbaru apa pun statusnya jika belum ada yang status 7
+                if (!$targetInvoice) {
+                    $targetInvoice = Invoice::with(['status', 'paket'])
+                        ->where('customer_id', $payerCustomerId)
+                        ->orderBy('jatuh_tempo', 'desc')
+                        ->first();
+                }
+            }
+
+            if (!$targetInvoice) {
+                return [
+                    'can_proceed' => false,
+                    'message' => "Invoice target milik Customer {$payerCustomerId} ({$payerCustomer->nama_customer}) tidak ditemukan."
+                ];
+            }
+
+            // 4. Deteksi apakah ada invoice bulan depan yang terbuat otomatis untuk Customer 14552
+            $autoGeneratedNextInvoice = null;
+            if (!empty($wrongInvoice->jatuh_tempo)) {
+                try {
+                    $bulanDepan = Carbon::parse($wrongInvoice->jatuh_tempo)->addMonthNoOverflow();
+                    $autoGeneratedNextInvoice = Invoice::where('customer_id', $wrongCustomerId)
+                        ->where('id', '!=', $wrongInvoice->id)
+                        ->whereMonth('jatuh_tempo', $bulanDepan->month)
+                        ->whereYear('jatuh_tempo', $bulanDepan->year)
+                        ->where('status_id', 7) // Belum bayar
+                        ->first();
+                } catch (Throwable $e) {
+                    Log::warning("Gagal parsing jatuh tempo untuk invoice {$wrongInvoice->id}: " . $e->getMessage());
+                }
+            }
+
+            // 5. Analisa Selisih Nominal Harga Paket
+            $paidAmount = $pembayaran
+                ? (float) $pembayaran->jumlah_bayar
+                : (float) ($wrongInvoice->tagihan + ($wrongInvoice->tambahan ?? 0));
+
+            $targetBill = (float) (
+                $targetInvoice->tagihan +
+                ($targetInvoice->tambahan ?? 0) +
+                ($targetInvoice->tunggakan ?? 0) -
+                ($targetInvoice->saldo ?? 0)
+            );
+
+            $diff = $paidAmount - $targetBill;
+
+            $pricingStatus = 'exact_match';
+            if ($diff > 0) {
+                $pricingStatus = 'overpaid'; // Kelebihan bayar
+            } elseif ($diff < 0) {
+                $pricingStatus = 'underpaid'; // Kurang bayar
+            }
+
+            $payerPaketName = $payerCustomer->paket?->nama_paket ?? $payerCustomer->paket?->paket_name ?? 'N/A';
+            $wrongPaketName = $wrongCustomer->paket?->nama_paket ?? $wrongCustomer->paket?->paket_name ?? 'N/A';
+
+            return [
+                'can_proceed' => true,
+                'payer_customer' => [
+                    'id' => $payerCustomer->id,
+                    'nama' => $payerCustomer->nama_customer,
+                    'no_hp' => $payerCustomer->no_hp,
+                    'status_id' => $payerCustomer->status_id,
+                    'status_nama' => $payerCustomer->status?->nama_status ?? 'N/A',
+                    'paket' => $payerPaketName,
+                    'harga_paket' => $payerCustomer->paket?->harga ?? 0,
+                    'is_blocked' => ($payerCustomer->status_id == 9),
+                ],
+                'wrong_customer' => [
+                    'id' => $wrongCustomer->id,
+                    'nama' => $wrongCustomer->nama_customer,
+                    'no_hp' => $wrongCustomer->no_hp,
+                    'status_id' => $wrongCustomer->status_id,
+                    'status_nama' => $wrongCustomer->status?->nama_status ?? 'N/A',
+                    'paket' => $wrongPaketName,
+                    'harga_paket' => $wrongCustomer->paket?->harga ?? 0,
+                ],
+                'wrong_invoice' => [
+                    'id' => $wrongInvoice->id,
+                    'merchant_ref' => $wrongInvoice->merchant_ref,
+                    'reference' => $wrongInvoice->reference,
+                    'status_id' => $wrongInvoice->status_id,
+                    'status_nama' => $wrongInvoice->status?->nama_status ?? 'N/A',
+                    'tagihan' => $wrongInvoice->tagihan,
+                    'tambahan' => $wrongInvoice->tambahan,
+                    'metode_bayar' => $wrongInvoice->metode_bayar,
+                    'jatuh_tempo' => $wrongInvoice->jatuh_tempo,
+                ],
+                'target_invoice' => [
+                    'id' => $targetInvoice->id,
+                    'merchant_ref' => $targetInvoice->merchant_ref,
+                    'status_id' => $targetInvoice->status_id,
+                    'status_nama' => $targetInvoice->status?->nama_status ?? 'N/A',
+                    'tagihan' => $targetInvoice->tagihan,
+                    'tambahan' => $targetInvoice->tambahan,
+                    'tunggakan' => $targetInvoice->tunggakan ?? 0,
+                    'saldo' => $targetInvoice->saldo ?? 0,
+                    'jatuh_tempo' => $targetInvoice->jatuh_tempo,
+                ],
+                'pembayaran' => $pembayaran ? [
+                    'id' => $pembayaran->id,
+                    'invoice_id' => $pembayaran->invoice_id,
+                    'jumlah_bayar' => $pembayaran->jumlah_bayar,
+                    'metode_bayar' => $pembayaran->metode_bayar,
+                    'tanggal_bayar' => $pembayaran->tanggal_bayar,
+                    'keterangan' => $pembayaran->keterangan,
+                ] : null,
+                'kas' => $kas ? [
+                    'id' => $kas->id,
+                    'debit' => $kas->debit,
+                    'tanggal_kas' => $kas->tanggal_kas,
+                    'keterangan' => $kas->keterangan,
+                ] : null,
+                'auto_generated_next_invoice_wrong_customer' => $autoGeneratedNextInvoice ? [
+                    'id' => $autoGeneratedNextInvoice->id,
+                    'customer_id' => $autoGeneratedNextInvoice->customer_id,
+                    'tagihan' => $autoGeneratedNextInvoice->tagihan,
+                    'status_id' => $autoGeneratedNextInvoice->status_id,
+                    'jatuh_tempo' => $autoGeneratedNextInvoice->jatuh_tempo,
+                    'created_at' => $autoGeneratedNextInvoice->created_at,
+                ] : null,
+                'pricing_analysis' => [
+                    'paid_amount' => $paidAmount,
+                    'target_bill' => $targetBill,
+                    'difference' => $diff,
+                    'status' => $pricingStatus,
+                    'notes' => match ($pricingStatus) {
+                        'exact_match' => 'Nominal pembayaran sama persis dengan total tagihan target.',
+                        'overpaid' => 'Terdapat kelebihan pembayaran sebesar Rp ' . number_format($diff, 0, ',', '.') . ' yang akan dialokasikan ke saldo.',
+                        'underpaid' => 'Terdapat kekurangan pembayaran sebesar Rp ' . number_format(abs($diff), 0, ',', '.') . '.',
+                    }
+                ],
+                'actions_preview' => [
+                    "Alihkan Pembayaran ID " . ($pembayaran?->id ?? 'Baru') . " dari Invoice #{$wrongInvoice->id} ke Invoice #{$targetInvoice->id}.",
+                    "Ubah status Invoice #{$targetInvoice->id} (Customer 12141) menjadi Lunas (status_id: 8).",
+                    "Kembalikan status Invoice #{$wrongInvoice->id} (Customer 14552) menjadi Belum Bayar (status_id: 7).",
+                    $autoGeneratedNextInvoice
+                        ? "Hapus invoice bulan depan #{$autoGeneratedNextInvoice->id} milik Customer 14552 yang terbuat otomatis saat salah bayar."
+                        : "Tidak ada invoice bulan depan 14552 yang perlu dihapus.",
+                    "Buat invoice bulan depan untuk Customer 12141 (jika belum ada).",
+                    $payerCustomer->status_id == 9
+                        ? "Unblock koneksi MikroTik dan ubah status Customer 12141 menjadi Aktif (status_id: 3)."
+                        : "Status Customer 12141 saat ini: " . ($payerCustomer->status?->nama_status ?? 'Aktif') . ".",
+                    "Perbarui catatan kas agar mencantumkan Customer 12141 ({$payerCustomer->nama_customer}).",
+                    "Catat log aktivitas di audit trail."
+                ]
+            ];
+        } catch (Throwable $e) {
+            Log::error("Error in PaymentCorrectionService@analyze: " . $e->getMessage(), [
+                'payer_id' => $payerCustomerId,
+                'wrong_id' => $wrongCustomerId,
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return [
                 'can_proceed' => false,
-                'message' => "Invoice target milik Customer {$payerCustomerId} ({$payerCustomer->nama_customer}) tidak ditemukan."
+                'message' => 'Terjadi kesalahan saat menganalisa: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
+                'file' => basename($e->getFile()),
+                'line' => $e->getLine()
             ];
         }
-
-        // 4. Deteksi apakah ada invoice bulan depan yang terbuat otomatis untuk Customer 14552
-        $autoGeneratedNextInvoice = null;
-        if ($wrongInvoice->jatuh_tempo) {
-            $bulanDepan = Carbon::parse($wrongInvoice->jatuh_tempo)->addMonthNoOverflow();
-            $autoGeneratedNextInvoice = Invoice::where('customer_id', $wrongCustomerId)
-                ->where('id', '!=', $wrongInvoice->id)
-                ->whereMonth('jatuh_tempo', $bulanDepan->month)
-                ->whereYear('jatuh_tempo', $bulanDepan->year)
-                ->where('status_id', 7) // Belum bayar
-                ->first();
-        }
-
-        // 5. Analisa Selisih Nominal Harga Paket
-        $paidAmount = $pembayaran ? (float) $pembayaran->jumlah_bayar : (float) ($wrongInvoice->tagihan + $wrongInvoice->tambahan);
-        $targetBill = (float) ($targetInvoice->tagihan + $targetInvoice->tambahan + ($targetInvoice->tunggakan ?? 0) - ($targetInvoice->saldo ?? 0));
-        $diff = $paidAmount - $targetBill;
-
-        $pricingStatus = 'exact_match';
-        if ($diff > 0) {
-            $pricingStatus = 'overpaid'; // Kelebihan bayar
-        } elseif ($diff < 0) {
-            $pricingStatus = 'underpaid'; // Kurang bayar
-        }
-
-        return [
-            'can_proceed' => true,
-            'payer_customer' => [
-                'id' => $payerCustomer->id,
-                'nama' => $payerCustomer->nama_customer,
-                'no_hp' => $payerCustomer->no_hp,
-                'status_id' => $payerCustomer->status_id,
-                'status_nama' => $payerCustomer->status->nama_status ?? 'N/A',
-                'paket' => $payerCustomer->paket->nama_paket ?? 'N/A',
-                'harga_paket' => $payerCustomer->paket->harga ?? 0,
-                'is_blocked' => ($payerCustomer->status_id == 9),
-            ],
-            'wrong_customer' => [
-                'id' => $wrongCustomer->id,
-                'nama' => $wrongCustomer->nama_customer,
-                'no_hp' => $wrongCustomer->no_hp,
-                'status_id' => $wrongCustomer->status_id,
-                'status_nama' => $wrongCustomer->status->nama_status ?? 'N/A',
-                'paket' => $wrongCustomer->paket->nama_paket ?? 'N/A',
-                'harga_paket' => $wrongCustomer->paket->harga ?? 0,
-            ],
-            'wrong_invoice' => [
-                'id' => $wrongInvoice->id,
-                'merchant_ref' => $wrongInvoice->merchant_ref,
-                'reference' => $wrongInvoice->reference,
-                'status_id' => $wrongInvoice->status_id,
-                'status_nama' => $wrongInvoice->status->nama_status ?? 'N/A',
-                'tagihan' => $wrongInvoice->tagihan,
-                'tambahan' => $wrongInvoice->tambahan,
-                'metode_bayar' => $wrongInvoice->metode_bayar,
-                'jatuh_tempo' => $wrongInvoice->jatuh_tempo,
-            ],
-            'target_invoice' => [
-                'id' => $targetInvoice->id,
-                'merchant_ref' => $targetInvoice->merchant_ref,
-                'status_id' => $targetInvoice->status_id,
-                'status_nama' => $targetInvoice->status->nama_status ?? 'N/A',
-                'tagihan' => $targetInvoice->tagihan,
-                'tambahan' => $targetInvoice->tambahan,
-                'tunggakan' => $targetInvoice->tunggakan ?? 0,
-                'saldo' => $targetInvoice->saldo ?? 0,
-                'jatuh_tempo' => $targetInvoice->jatuh_tempo,
-            ],
-            'pembayaran' => $pembayaran ? [
-                'id' => $pembayaran->id,
-                'invoice_id' => $pembayaran->invoice_id,
-                'jumlah_bayar' => $pembayaran->jumlah_bayar,
-                'metode_bayar' => $pembayaran->metode_bayar,
-                'tanggal_bayar' => $pembayaran->tanggal_bayar,
-                'keterangan' => $pembayaran->keterangan,
-            ] : null,
-            'kas' => $kas ? [
-                'id' => $kas->id,
-                'debit' => $kas->debit,
-                'tanggal_kas' => $kas->tanggal_kas,
-                'keterangan' => $kas->keterangan,
-            ] : null,
-            'auto_generated_next_invoice_wrong_customer' => $autoGeneratedNextInvoice ? [
-                'id' => $autoGeneratedNextInvoice->id,
-                'customer_id' => $autoGeneratedNextInvoice->customer_id,
-                'tagihan' => $autoGeneratedNextInvoice->tagihan,
-                'status_id' => $autoGeneratedNextInvoice->status_id,
-                'jatuh_tempo' => $autoGeneratedNextInvoice->jatuh_tempo,
-                'created_at' => $autoGeneratedNextInvoice->created_at,
-            ] : null,
-            'pricing_analysis' => [
-                'paid_amount' => $paidAmount,
-                'target_bill' => $targetBill,
-                'difference' => $diff,
-                'status' => $pricingStatus,
-                'notes' => match ($pricingStatus) {
-                    'exact_match' => 'Nominal pembayaran sama persis dengan total tagihan target.',
-                    'overpaid' => 'Terdapat kelebihan pembayaran sebesar Rp ' . number_format($diff, 0, ',', '.') . ' yang akan dialokasikan ke saldo.',
-                    'underpaid' => 'Terdapat kekurangan pembayaran sebesar Rp ' . number_format(abs($diff), 0, ',', '.') . '.',
-                }
-            ],
-            'actions_preview' => [
-                "Alihkan Pembayaran ID " . ($pembayaran->id ?? 'N/A') . " dari Invoice #{$wrongInvoice->id} ke Invoice #{$targetInvoice->id}.",
-                "Ubah status Invoice #{$targetInvoice->id} (Customer 12141) menjadi Lunas (status_id: 8).",
-                "Kembalikan status Invoice #{$wrongInvoice->id} (Customer 14552) menjadi Belum Bayar (status_id: 7).",
-                $autoGeneratedNextInvoice
-                    ? "Hapus invoice bulan depan #{$autoGeneratedNextInvoice->id} milik Customer 14552 yang terbuat otomatis saat salah bayar."
-                    : "Tidak ada invoice bulan depan 14552 yang perlu dihapus.",
-                "Buat invoice bulan depan untuk Customer 12141 (jika belum ada).",
-                $payerCustomer->status_id == 9
-                    ? "Unblock koneksi MikroTik dan ubah status Customer 12141 menjadi Aktif (status_id: 3)."
-                    : "Status Customer 12141 sudah aktif ({$payerCustomer->status_id}).",
-                "Perbarui catatan kas agar mencantumkan Customer 12141 ({$payerCustomer->nama_customer}).",
-                "Catat log aktivitas di audit trail."
-            ]
-        ];
     }
 
     /**
@@ -243,7 +298,6 @@ class PaymentCorrectionService
      *
      * @param array $options
      * @return array
-     * @throws Exception
      */
     public function execute(array $options): array
     {
@@ -296,7 +350,7 @@ class PaymentCorrectionService
             }
 
             $paidAmount = (float) $analysis['pricing_analysis']['paid_amount'];
-            $metodeBayar = $pembayaran->metode_bayar ?? $wrongInvoice->metode_bayar ?? 'Tripay';
+            $metodeBayar = $pembayaran?->metode_bayar ?? $wrongInvoice->metode_bayar ?? 'Tripay';
 
             // --- A. Alihkan Pembayaran ke Invoice 12141 ---
             if ($pembayaran) {
@@ -322,9 +376,7 @@ class PaymentCorrectionService
             // --- B. Perbarui Kas ---
             if ($kas) {
                 $kas->keterangan = "Pembayaran langganan dari {$payerCustomer->nama_customer} via {$metodeBayar} (Koreksi dari Customer {$wrongCustomer->nama_customer})";
-                if (isset($kas->customer_id)) {
-                    $kas->customer_id = $payerCustomer->id;
-                }
+                $kas->customer_id = $payerCustomer->id;
                 $kas->save();
             }
 
@@ -363,28 +415,32 @@ class PaymentCorrectionService
             $createdNextInvoiceId = null;
             $jatuhTempo = $targetInvoice->jatuh_tempo;
             if ($jatuhTempo) {
-                $bulanDepan = Carbon::parse($jatuhTempo)->addMonthNoOverflow();
-                $sudahAda = Invoice::where('customer_id', $payerCustomer->id)
-                    ->whereMonth('jatuh_tempo', $bulanDepan->month)
-                    ->whereYear('jatuh_tempo', $bulanDepan->year)
-                    ->exists();
+                try {
+                    $bulanDepan = Carbon::parse($jatuhTempo)->addMonthNoOverflow();
+                    $sudahAda = Invoice::where('customer_id', $payerCustomer->id)
+                        ->whereMonth('jatuh_tempo', $bulanDepan->month)
+                        ->whereYear('jatuh_tempo', $bulanDepan->year)
+                        ->exists();
 
-                if (!$sudahAda) {
-                    $merchantRefBaru = 'INV-' . $payerCustomer->id . '-' . time();
-                    $nextInvoice = Invoice::create([
-                        'customer_id' => $payerCustomer->id,
-                        'paket_id' => $payerCustomer->paket_id,
-                        'tagihan' => $payerCustomer->paket->harga ?? 0,
-                        'tambahan' => 0,
-                        'saldo' => $saldoBaru > 0 ? $saldoBaru : 0,
-                        'merchant_ref' => $merchantRefBaru,
-                        'status_id' => 7, // Belum bayar
-                        'jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
-                        'tanggal_blokir' => $targetInvoice->tanggal_blokir,
-                        'metode_bayar' => $metodeBayar,
-                    ]);
-                    $createdNextInvoiceId = $nextInvoice->id;
-                    Log::info("Invoice bulan depan untuk Customer {$payerCustomer->id} berhasil dibuat (Invoice #{$createdNextInvoiceId})");
+                    if (!$sudahAda) {
+                        $merchantRefBaru = 'INV-' . $payerCustomer->id . '-' . time();
+                        $nextInvoice = Invoice::create([
+                            'customer_id' => $payerCustomer->id,
+                            'paket_id' => $payerCustomer->paket_id,
+                            'tagihan' => $payerCustomer->paket?->harga ?? 0,
+                            'tambahan' => 0,
+                            'saldo' => $saldoBaru > 0 ? $saldoBaru : 0,
+                            'merchant_ref' => $merchantRefBaru,
+                            'status_id' => 7, // Belum bayar
+                            'jatuh_tempo' => $bulanDepan->copy()->endOfMonth()->setTime(23, 59, 59),
+                            'tanggal_blokir' => $targetInvoice->tanggal_blokir,
+                            'metode_bayar' => $metodeBayar,
+                        ]);
+                        $createdNextInvoiceId = $nextInvoice->id;
+                        Log::info("Invoice bulan depan untuk Customer {$payerCustomer->id} berhasil dibuat (Invoice #{$createdNextInvoiceId})");
+                    }
+                } catch (Throwable $e) {
+                    Log::warning("Gagal membuat invoice bulan depan untuk customer {$payerCustomer->id}: " . $e->getMessage());
                 }
             }
 
@@ -396,12 +452,13 @@ class PaymentCorrectionService
                         $mikrotik = new MikrotikServices();
                         $client = MikrotikServices::connect($payerCustomer->router);
                         $mikrotik->removeActiveConnections($client, $payerCustomer->usersecret);
-                        $mikrotik->unblokUser($client, $payerCustomer->usersecret, $payerCustomer->paket->nama_paket ?? $payerCustomer->paket->paket_name ?? 'default');
+                        $profileName = $payerCustomer->paket?->nama_paket ?? $payerCustomer->paket?->paket_name ?? 'default';
+                        $mikrotik->unblokUser($client, $payerCustomer->usersecret, $profileName);
                     }
                     $payerCustomer->update(['status_id' => 3]); // Aktif
                     $payerUnblocked = true;
                     Log::info("Customer 12141 ({$payerCustomer->nama_customer}) berhasil di-unblock.");
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     Log::error("Gagal unblock Customer 12141 di MikroTik: " . $e->getMessage());
                 }
             }
@@ -409,13 +466,12 @@ class PaymentCorrectionService
             // --- H. Tangani Status Customer 14552 (Jika Perlu Diisolir Kembali) ---
             $wrongCustomerReverted = false;
             if ($revertWrongCustomerStatus) {
-                // Cek apakah jatuh tempo atau tanggal blokir 14552 sudah terlewati
-                $tanggalBlokir14552 = $wrongInvoice->tanggal_blokir
-                    ? Carbon::parse($wrongInvoice->tanggal_blokir)
-                    : Carbon::parse($wrongInvoice->jatuh_tempo);
+                try {
+                    $tanggalBlokir14552 = $wrongInvoice->tanggal_blokir
+                        ? Carbon::parse($wrongInvoice->tanggal_blokir)
+                        : ($wrongInvoice->jatuh_tempo ? Carbon::parse($wrongInvoice->jatuh_tempo) : null);
 
-                if (now()->greaterThanOrEqualTo($tanggalBlokir14552) && $wrongCustomer->status_id == 3) {
-                    try {
+                    if ($tanggalBlokir14552 && now()->greaterThanOrEqualTo($tanggalBlokir14552) && $wrongCustomer->status_id == 3) {
                         if ($wrongCustomer->router) {
                             $errorInfo = [];
                             $client = MikrotikServices::connect($wrongCustomer->router);
@@ -426,17 +482,21 @@ class PaymentCorrectionService
                         $wrongCustomer->update(['status_id' => 9]); // Blokir
                         $wrongCustomerReverted = true;
                         Log::info("Customer 14552 ({$wrongCustomer->nama_customer}) dikembalikan ke status isolir karena tagihannya belum lunas.");
-                    } catch (Exception $e) {
-                        Log::error("Gagal isolir kembali Customer 14552 di MikroTik: " . $e->getMessage());
                     }
+                } catch (Throwable $e) {
+                    Log::error("Gagal isolir kembali Customer 14552 di MikroTik: " . $e->getMessage());
                 }
             }
 
             // --- I. Audit Activity Log ---
-            activity('koreksi-pembayaran')
-                ->performedOn($targetInvoice)
-                ->log("Koreksi salah bayar: Pemindahan pembayaran Rp " . number_format($paidAmount, 0, ',', '.') .
-                    " dari Customer ID {$wrongCustomer->id} ({$wrongCustomer->nama_customer}) ke Customer ID {$payerCustomer->id} ({$payerCustomer->nama_customer})");
+            try {
+                activity('koreksi-pembayaran')
+                    ->performedOn($targetInvoice)
+                    ->log("Koreksi salah bayar: Pemindahan pembayaran Rp " . number_format($paidAmount, 0, ',', '.') .
+                        " dari Customer ID {$wrongCustomer->id} ({$wrongCustomer->nama_customer}) ke Customer ID {$payerCustomer->id} ({$payerCustomer->nama_customer})");
+            } catch (Throwable $e) {
+                Log::warning("Gagal mencatat activity log: " . $e->getMessage());
+            }
 
             DB::commit();
 
@@ -449,7 +509,7 @@ class PaymentCorrectionService
                     $chat->pembayaranBerhasil($payerCustomer->no_hp, $pembayaran);
                     $waSent = true;
                     Log::info("WhatsApp konfirmasi bayar berhasil dikirim ke {$payerCustomer->nama_customer} ({$payerCustomer->no_hp})");
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     Log::error("Gagal mengirim WhatsApp ke {$payerCustomer->nama_customer}: " . $e->getMessage());
                 }
             }
@@ -485,7 +545,7 @@ class PaymentCorrectionService
                 ]
             ];
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             Log::error("Gagal mengeksekusi koreksi pembayaran: " . $e->getMessage(), [
                 'file' => $e->getFile(),
