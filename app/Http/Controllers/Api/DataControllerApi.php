@@ -1450,13 +1450,58 @@ class DataControllerApi extends Controller
         ];
       });
 
+      // ===== KLASIFIKASI GAP: urutan prioritas BA_Aktif > Advance_Payment > Menunggak > Invoice_Belum_Terbit =====
+      $klasifikasiGap = function ($d) {
+        if ($d['ba_aktif']) {
+          return 'BA_Aktif';
+        }
+        if ($d['has_invoice_this_month'] && (int) $d['invoice_status_id'] === 8) {
+          return 'Advance_Payment';
+        }
+        if ($d['has_invoice_this_month'] && (int) $d['invoice_status_id'] === 7) {
+          return 'Menunggak';
+        }
+        return 'Invoice_Belum_Terbit';
+      };
+
+      $aktifBelumBayarDetails = $aktifBelumBayarDetails->map(function ($d) use ($klasifikasiGap) {
+        $d['kategori'] = $klasifikasiGap($d);
+        return $d;
+      });
+
       $denganBaAktif = $aktifBelumBayarDetails->filter(function ($d) {
         return $d['ba_aktif'];
       })->count();
 
+      $detailPerKategori = $aktifBelumBayarDetails->groupBy('kategori')->map(function ($items) {
+        return $items->values();
+      });
+
+      $rekapKategori = $aktifBelumBayarDetails->groupBy('kategori')->map(function ($items) {
+        return $items->count();
+      });
+
+      $bayarTapiBukanAktifDetails = $bayarTapiBukanAktifDetails->map(function ($d) {
+        $d['kategori'] = 'Non_Aktif_Terbayar';
+        return $d;
+      });
+
+      $missingCustomerDetails = $missingCustomerDetails->map(function ($d) {
+        $d['kategori'] = 'Non_Aktif_Terbayar';
+        return $d;
+      });
+
+      $kategoriDefinisi = [
+        'BA_Aktif' => 'Pelanggan aktif dengan Berita Acara aktif (penangguhan blokir), belum bayar bulan ini',
+        'Advance_Payment' => 'Invoice bulan ini sudah lunas (status 8) tapi pembayaran tercatat bulan sebelumnya',
+        'Menunggak' => 'Invoice bulan ini masih Belum Bayar (status 7) dan tidak punya BA aktif',
+        'Invoice_Belum_Terbit' => 'Tidak ada invoice untuk bulan ini (belum terbit)',
+        'Non_Aktif_Terbayar' => 'Terhitung di card pembayaran tapi customer tidak termasuk pelanggan aktif (status/paket/deleted)',
+      ];
+
       return response()->json([
         'success' => true,
-        'keterangan' => 'totalCustomer_card = replika persis logic card Pembayaran Bulan Ini (KeuanganController@pembayaran $totalCustomer); pelanggan_aktif = replika DataController@index (status 3/4, bukan paket 11, non-deleted)',
+        'keterangan' => 'totalCustomer_card = replika persis logic card Pembayaran Bulan Ini (KeuanganController@pembayaran $totalCustomer); pelanggan_aktif = replika DataController@index (status 3/4, bukan paket 11, non-deleted). gap diklasifikasikan: BA_Aktif > Advance_Payment > Menunggak > Invoice_Belum_Terbit.',
         'filter' => [
           'bulan' => (int) $bulan,
           'tahun' => (int) $tahun,
@@ -1470,7 +1515,10 @@ class DataControllerApi extends Controller
           'bayar_tapi_bukan_aktif' => $bayarTapiBukanAktifIds->count(),
           'selisih_card_vs_aktif' => $totalCustomerCard - $aktifIds->count(),
           'pembayaran_tanpa_invoice' => $pembayaranTanpaInvoice,
+          'rekap_kategori' => $rekapKategori,
         ],
+        'kategori_definisi' => $kategoriDefinisi,
+        'detail_per_kategori' => $detailPerKategori,
         'pelanggan_aktif_belum_bayar' => $aktifBelumBayarDetails->values(),
         'bayar_tapi_bukan_aktif' => $bayarTapiBukanAktifDetails->merge($missingCustomerDetails)->values(),
       ]);
