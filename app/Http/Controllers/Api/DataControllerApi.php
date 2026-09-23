@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use App\Models\Pengeluaran;
 use App\Models\Pendapatan;
 use App\Models\Customer;
+use App\Models\BeritaAcara;
 
 class DataControllerApi extends Controller
 {
@@ -1298,6 +1299,188 @@ class DataControllerApi extends Controller
               'error' => $e->getMessage()
           ], 500);
       }
+  }
+
+  /**
+   * Analisa gap antara "Jumlah Pelanggan" card Pembayaran Bulan Ini vs Pelanggan Aktif.
+   * Menyalin persis logic $totalCustomer (KeuanganController@pembayaran) dan
+   * baseline Pelanggan Aktif (DataController@index).
+   *
+   * @param Request $request (month, year, agen_id)
+   * @return \Illuminate\Http\JsonResponse
+   */
+  public function analyzePembayaranGapAktif(Request $request)
+  {
+    try {
+      $bulan = $request->input('month', Carbon::now()->month);
+      $tahun = $request->input('year', Carbon::now()->year);
+      $agen_id = $request->input('agen_id');
+
+      // ===== SISI CARD: replika persis $totalCustomer di KeuanganController@pembayaran() =====
+      $monthlyCustomerQuery = Pembayaran::query()->with('invoice');
+
+      if ($bulan && $bulan !== '' && $bulan !== null) {
+        $monthlyCustomerQuery->whereMonth('tanggal_bayar', $bulan)
+          ->whereYear('tanggal_bayar', $tahun);
+      } else {
+        $monthlyCustomerQuery->whereMonth('tanggal_bayar', Carbon::now()->month)
+          ->whereYear('tanggal_bayar', Carbon::now()->year);
+      }
+
+      if ($agen_id) {
+        $monthlyCustomerQuery->whereHas('invoice.customer', function ($sub) use ($agen_id) {
+          $sub->withTrashed()->where('agen_id', $agen_id);
+        });
+      }
+
+      $payments = $monthlyCustomerQuery->get();
+
+      $pembayaranTanpaInvoice = $payments->filter(function ($p) {
+        return $p->invoice === null;
+      })->count();
+
+      // Total persis seperti card (unique() include null collapse), di-filter untuk diff
+      $uniqueCustomerIds = $payments->pluck('invoice.customer_id')->unique();
+      $totalCustomerCard = $uniqueCustomerIds->count();
+      $paidCustomerIds = $uniqueCustomerIds->filter();
+
+      // ===== SISI BASELINE: Pelanggan Aktif (status 3/4, bukan paket 11, tidak soft-deleted) =====
+      $aktifQuery = Customer::whereIn('status_id', [3, 4])
+        ->whereNot('paket_id', 11)
+        ->whereNull('deleted_at');
+      if ($agen_id) {
+        $aktifQuery->where('agen_id', $agen_id);
+      }
+      $aktifCustomers = $aktifQuery->get();
+      $aktifIds = $aktifCustomers->pluck('id');
+
+      // ===== DIFF =====
+      $aktifBelumBayarIds = $aktifIds->diff($paidCustomerIds)->values();
+      $bayarTapiBukanAktifIds = $paidCustomerIds->diff($aktifIds)->values();
+
+      // ===== DETAIL: Pelanggan aktif yang tidak/belum terhitung bayar bulan ini (= gap) =====
+      $aktifBelumBayarDetails = Customer::whereIn('id', $aktifBelumBayarIds)
+        ->with(['paket', 'status', 'agen'])
+        ->get()
+        ->map(function ($c) use ($bulan, $tahun) {
+          $invoice = Invoice::with('status')
+            ->where('customer_id', $c->id)
+            ->whereMonth('jatuh_tempo', $bulan)
+            ->whereYear('jatuh_tempo', $tahun)
+            ->orderBy('jatuh_tempo', 'desc')
+            ->first();
+
+          $lastPayment = Pembayaran::whereIn('invoice_id', $c->invoice()->pluck('id'))
+            ->latest('tanggal_bayar')
+            ->first();
+
+          $ba = BeritaAcara::where('customer_id', $c->id)
+            ->orderBy('tanggal_selesai_ba', 'desc')
+            ->first();
+          $baAktif = $ba && $ba->tanggal_selesai_ba && $ba->tanggal_selesai_ba >= now()->toDateString();
+
+          return [
+            'customer_id' => $c->id,
+            'nama_customer' => $c->nama_customer ?? 'Tidak Ada Nama',
+            'no_hp' => $c->no_hp,
+            'alamat' => $c->alamat,
+            'status_id' => $c->status_id,
+            'status_name' => $c->status->nama_status ?? 'N/A',
+            'paket_id' => $c->paket_id,
+            'paket_name' => $c->paket->nama_paket ?? 'N/A',
+            'agen_id' => $c->agen_id,
+            'agen' => $c->agen->name ?? '-',
+            'punya_ba' => (bool) $ba,
+            'ba_aktif' => $baAktif,
+            'ba_created' => $ba && $ba->tanggal_ba ? $ba->tanggal_ba->format('Y-m-d') : null,
+            'ba_expired' => $ba && $ba->tanggal_selesai_ba ? $ba->tanggal_selesai_ba->format('Y-m-d') : null,
+            'has_invoice_this_month' => (bool) $invoice,
+            'invoice_status_id' => $invoice ? $invoice->status_id : null,
+            'invoice_status' => $invoice ? ($invoice->status->nama_status ?? 'status id ' . $invoice->status_id) : null,
+            'invoice_jatuh_tempo' => $invoice ? Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d') : null,
+            'last_payment_date' => $lastPayment ? Carbon::parse($lastPayment->tanggal_bayar)->format('Y-m-d') : null,
+          ];
+        });
+
+      // ===== DETAIL: Terhitung bayar tapi bukan pelanggan aktif (anomali sebaliknya) =====
+      $bayarTapiBukanAktifCustomers = Customer::withTrashed()
+        ->whereIn('id', $bayarTapiBukanAktifIds)
+        ->with(['paket', 'status'])
+        ->get();
+
+      $bayarTapiBukanAktifDetails = $bayarTapiBukanAktifCustomers->map(function ($c) {
+        $reasons = [];
+        if ($c->deleted_at) {
+          $reasons[] = 'soft_deleted';
+        }
+        if (($c->paket_id ?? null) == 11) {
+          $reasons[] = 'paket_fasum_11';
+        }
+        if (!in_array($c->status_id, [3, 4])) {
+          $reasons[] = 'status_tidak_3_4';
+        }
+
+        return [
+          'customer_id' => $c->id,
+          'nama_customer' => $c->nama_customer ?? 'Tidak Ada Nama',
+          'no_hp' => $c->no_hp,
+          'status_id' => $c->status_id,
+          'status_name' => $c->status->nama_status ?? 'N/A',
+          'paket_id' => $c->paket_id,
+          'paket_name' => $c->paket->nama_paket ?? 'N/A',
+          'deleted_at' => $c->deleted_at ? Carbon::parse($c->deleted_at)->format('Y-m-d') : null,
+          'reasons' => $reasons,
+        ];
+      });
+
+      $foundIds = $bayarTapiBukanAktifDetails->pluck('customer_id');
+      $missingCustomerIds = $bayarTapiBukanAktifIds->diff($foundIds)->values();
+
+      $missingCustomerDetails = $missingCustomerIds->map(function ($id) {
+        return [
+          'customer_id' => $id,
+          'nama_customer' => 'TIDAK DITEMUKAN DI TABEL customer (termasuk withTrashed)',
+          'no_hp' => null,
+          'status_id' => null,
+          'status_name' => null,
+          'paket_id' => null,
+          'paket_name' => null,
+          'deleted_at' => null,
+          'reasons' => ['customer_tidak_ada_di_tabel'],
+        ];
+      });
+
+      $denganBaAktif = $aktifBelumBayarDetails->filter(function ($d) {
+        return $d['ba_aktif'];
+      })->count();
+
+      return response()->json([
+        'success' => true,
+        'keterangan' => 'totalCustomer_card = replika persis logic card Pembayaran Bulan Ini (KeuanganController@pembayaran $totalCustomer); pelanggan_aktif = replika DataController@index (status 3/4, bukan paket 11, non-deleted)',
+        'filter' => [
+          'bulan' => (int) $bulan,
+          'tahun' => (int) $tahun,
+          'agen_id' => $agen_id ? (int) $agen_id : null,
+        ],
+        'summary' => [
+          'totalCustomer_card' => $totalCustomerCard,
+          'pelanggan_aktif' => $aktifIds->count(),
+          'gap_aktif_belum_bayar' => $aktifBelumBayarIds->count(),
+          'gap_aktif_belum_bayar_dengan_ba_aktif' => $denganBaAktif,
+          'bayar_tapi_bukan_aktif' => $bayarTapiBukanAktifIds->count(),
+          'selisih_card_vs_aktif' => $totalCustomerCard - $aktifIds->count(),
+          'pembayaran_tanpa_invoice' => $pembayaranTanpaInvoice,
+        ],
+        'pelanggan_aktif_belum_bayar' => $aktifBelumBayarDetails->values(),
+        'bayar_tapi_bukan_aktif' => $bayarTapiBukanAktifDetails->merge($missingCustomerDetails)->values(),
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat menganalisa gap pembayaran',
+        'error' => $e->getMessage()
+      ], 500);
+    }
   }
 
 }

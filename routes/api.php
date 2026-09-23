@@ -14,6 +14,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/getByMonth', [CustomerControllerApi::class, 'getInvoicesByMonthOptimized']);
 Route::get('/dev', [DataControllerApi::class, 'debugging']);
 Route::get('/dev/detail', [DataControllerApi::class, 'detailCounting']);
+Route::get('/pembayaran/gap-aktif', [DataControllerApi::class, 'analyzePembayaranGapAktif']);
   Route::get('/generate-preview', [DataControllerApi::class, 'getFasumCount']);
   Route::get('/generate-preview-monthly', [DataControllerApi::class, 'previewGenerateInvoicesMonthly']);
   Route::post('/generate-invoices', [DataControllerApi::class, 'generateFasumInvoices']);
