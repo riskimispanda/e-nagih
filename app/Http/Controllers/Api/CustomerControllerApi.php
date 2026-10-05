@@ -797,5 +797,107 @@ class CustomerControllerApi extends Controller
     })->count();
   }
 
+  public function generateInvoice(Request $request)
+  {
+    $request->validate([
+      'customer_id' => 'nullable|integer',
+      'month' => 'nullable|integer|min:1|max:12',
+      'year' => 'nullable|integer|min:2000|max:2100',
+    ]);
+
+    $customerId = (int) $request->input('customer_id', 14799);
+    $month = (int) $request->input('month', 9);
+    $year = (int) $request->input('year', 2026);
+
+    try {
+      $customer = Customer::with('paket')->find($customerId);
+
+      if (!$customer) {
+        return response()->json([
+          'success' => false,
+          'message' => "Customer dengan ID {$customerId} tidak ditemukan"
+        ], 404);
+      }
+
+      if (!$customer->paket) {
+        return response()->json([
+          'success' => false,
+          'message' => "Customer {$customer->nama_customer} tidak memiliki paket"
+        ], 422);
+      }
+
+      $jatuhTempo = Carbon::create($year, $month, 1)->endOfMonth();
+
+      $existing = Invoice::where('customer_id', $customer->id)
+        ->whereMonth('jatuh_tempo', $month)
+        ->whereYear('jatuh_tempo', $year)
+        ->first();
+
+      if ($existing) {
+        return response()->json([
+          'success' => false,
+          'message' => "Invoice periode {$jatuhTempo->format('F Y')} untuk {$customer->nama_customer} sudah ada",
+          'data' => [
+            'invoice_id' => $existing->id,
+            'merchant_ref' => $existing->merchant_ref,
+            'tagihan' => $existing->tagihan,
+            'jatuh_tempo' => Carbon::parse($existing->jatuh_tempo)->format('Y-m-d'),
+            'status_id' => $existing->status_id
+          ]
+        ], 200);
+      }
+
+      DB::beginTransaction();
+
+      $invoice = Invoice::create([
+        'customer_id' => $customer->id,
+        'paket_id' => $customer->paket_id,
+        'status_id' => 7,
+        'tagihan' => $customer->paket->harga ?? 0,
+        'merchant_ref' => 'INV-' . $customer->id . '-' . time(),
+        'jatuh_tempo' => $jatuhTempo,
+      ]);
+
+      DB::commit();
+
+      Log::info('Generate Invoice Single Customer', [
+        'invoice_id' => $invoice->id,
+        'customer_id' => $customer->id,
+        'periode' => $jatuhTempo->format('F Y'),
+        'tagihan' => $invoice->tagihan
+      ]);
+
+      return response()->json([
+        'success' => true,
+        'message' => "Invoice {$jatuhTempo->format('F Y')} berhasil dibuat untuk {$customer->nama_customer}",
+        'data' => [
+          'invoice_id' => $invoice->id,
+          'merchant_ref' => $invoice->merchant_ref,
+          'customer_id' => $customer->id,
+          'customer_name' => $customer->nama_customer,
+          'paket_id' => $customer->paket_id,
+          'paket' => $customer->paket->nama_paket,
+          'tagihan' => $invoice->tagihan,
+          'jatuh_tempo' => Carbon::parse($invoice->jatuh_tempo)->format('Y-m-d'),
+          'status_id' => $invoice->status_id,
+          'status' => 'Belum Dibayar'
+        ]
+      ], 201);
+
+    } catch (\Exception $e) {
+      DB::rollBack();
+
+      Log::error('Gagal generate invoice: ' . $e->getMessage(), [
+        'customer_id' => $customerId,
+        'line' => $e->getLine(),
+        'file' => $e->getFile()
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Gagal generate invoice: ' . $e->getMessage()
+      ], 500);
+    }
+  }
 
 }

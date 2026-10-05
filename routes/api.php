@@ -30,6 +30,7 @@ Route::get('/pembayaran/gap-aktif', [DataControllerApi::class, 'analyzePembayara
   Route::get('/analyze-gap-42', [DataControllerApi::class, 'analyzeGap42']);
   Route::get('/testInvoice', [CustomerControllerApi::class, 'testInvoice']);
   Route::get('/findMissing', [CustomerControllerApi::class, 'findMissingCustomers']);
+  Route::post('/generate-invoice', [CustomerControllerApi::class, 'generateInvoice']);
   Route::get('/verified-fix', [DataControllerApi::class, 'verifyFixSimplified']);
   Route::get('/router/{id}/version', [MikrotikControllerApi::class, 'checkVersion']);
   Route::get('/router/{id}/neighbors', [MikrotikControllerApi::class, 'getNeighbors']);
