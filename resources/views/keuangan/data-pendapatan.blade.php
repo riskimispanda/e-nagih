@@ -54,6 +54,29 @@
       border: 1px solid #e9ecef;
     }
 
+    /* Card informasi cara pencarian paling akurat (warning) */
+    .search-tip {
+      background: #fff3cd;
+      border: 1px solid #ffe69c;
+      border-left: 4px solid #ffc107;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #664d03;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+    }
+
+    .search-tip .search-tip-title {
+      font-weight: 700;
+    }
+
+    .search-tip i {
+      flex-shrink: 0;
+      font-size: 1.25rem;
+      color: #e0a800;
+      margin-top: 1px;
+    }
+
     .table-card {
       background: #fff;
       border-radius: 12px;
@@ -252,6 +275,16 @@
 
   <!-- Search and Filter Section -->
   <div class="search-card p-4 mb-4">
+    {{-- Card informasi: cara pencarian paling akurat --}}
+    <div class="search-tip d-flex align-items-start gap-2 mb-3" role="alert">
+      <i class="bx bx-error"></i>
+      <div>
+        <span class="search-tip-title d-block">Pencarian Paling Akurat: Nomor Identitas Pelanggan</span>
+        Ketik sebagian atau seluruh <strong>Nomor Identitas (NIK)</strong> pelanggan pada kolom pencarian agar hasil langsung tepat.
+        Pencarian memakai nama, nomor HP, atau alamat bisa memunculkan beberapa data yang mirip.
+      </div>
+    </div>
+
     <form id="filterForm">
       <div class="row g-3">
         <!-- Search Input -->
@@ -259,7 +292,7 @@
           <label class="form-label fw-medium text-dark">Pencarian</label>
           <div class="position-relative">
             <input type="text" id="searchInput" name="search" value="{{ $search ?? '' }}"
-              placeholder="Cari nama customer atau paket..." class="form-control">
+              placeholder="Cari nama customer, no. identitas, atau paket..." class="form-control">
           </div>
         </div>
 

@@ -127,6 +127,69 @@ class KeuanganController extends Controller
   }
 
 
+  /**
+   * Panjang maksimum keyword pencarian.
+   * Keyword yang terlalu panjang tidak menambah akurasi, hanya membebani query LIKE.
+   */
+  private const SEARCH_MAX_LENGTH = 60;
+
+  /**
+   * Terapkan filter pencarian invoice: nama customer, no_identitas, no_hp, alamat, dan nama paket.
+   *
+   * Optimasi:
+   * - Customer dan paket dicari lewat subquery non-korelasional (whereIn) yang dieksekusi sekali,
+   *   bukan whereHas()/orWhereHas() yang mengevaluasi subquery EXISTS untuk tiap baris invoice.
+   * - Hasil subquery dipakai sebagai index lookup ke invoice.customer_id / invoice.paket_id
+   *   (keduanya sudah ber-index lewat foreign key).
+   * - Wildcard LIKE dari input user (% dan _) di-escape agar tidak memaksa pemindaian seluruh tabel.
+   *
+   * @param  \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder  $query
+   * @param  mixed  $search
+   */
+  private function applyInvoiceSearch($query, $search): void
+  {
+    if (!is_string($search)) {
+      return;
+    }
+
+    $search = trim($search);
+
+    if ($search === '') {
+      return;
+    }
+
+    if (mb_strlen($search) > self::SEARCH_MAX_LENGTH) {
+      $search = mb_substr($search, 0, self::SEARCH_MAX_LENGTH);
+    }
+
+    $term = '%' . $this->escapeLikeWildcards($search) . '%';
+
+    // withTrashed() agar customer yang sudah dinonaktifkan tetap bisa ditemukan.
+    $customerIds = Customer::withTrashed()
+      ->select('id')
+      ->where(function ($q) use ($term) {
+        $q->where('nama_customer', 'like', $term)
+          ->orWhere('no_identitas', 'like', $term)
+          ->orWhere('no_hp', 'like', $term)
+          ->orWhere('alamat', 'like', $term);
+      });
+
+    $paketIds = Paket::select('id')->where('nama_paket', 'like', $term);
+
+    $query->where(function ($q) use ($customerIds, $paketIds) {
+      $q->whereIn('customer_id', $customerIds)
+        ->orWhereIn('paket_id', $paketIds);
+    });
+  }
+
+  /**
+   * Escape karakter wildcard LIKE agar input user tidak diperlakukan sebagai pola pencarian.
+   */
+  private function escapeLikeWildcards(string $value): string
+  {
+    return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+  }
+
   public function index(Request $request)
   {
     // Get filter parameters
@@ -198,15 +261,9 @@ class KeuanganController extends Controller
     $countInvoiceAll = $countInvoiceAllQuery->distinct('customer_id')->count();
     // dd($countInvoiceAll);
 
-    // Apply search filter - INCLUDE SOFT DELETED CUSTOMERS IN SEARCH
-    if ($search) {
-      $query->whereHas('customer', function ($q) use ($search) {
-        $q->withTrashed() // Include soft deleted customers in search
-          ->where('nama_customer', 'like', '%' . $search . '%');
-      })->orWhereHas('paket', function ($q) use ($search) {
-        $q->where('nama_paket', 'like', '%' . $search . '%');
-      });
-    }
+    // Apply search filter (nama customer, no_identitas, no_hp, alamat & nama paket)
+    // Dibungkus satu closure agar tidak mem-by-pass filter lain (status/bulan/tahun) lewat OR.
+    $this->applyInvoiceSearch($query, $search);
 
     // Apply status filter
     if ($status) {
@@ -437,16 +494,6 @@ class KeuanganController extends Controller
       $perPage = $request->get('per_page', 25);
       $page = $request->get('page', 1);
 
-      Log::info('AJAX Request Parameters:', [
-        'search' => $search,
-        'status' => $status,
-        'bulan' => $bulan,
-        'tahun' => $tahun,
-        'agen_id' => $agen_id,
-        'perPage' => $perPage,
-        'page' => $page
-      ]);
-
       // PERBAIKAN: Gunakan withTrashed() untuk customer relationship
       $query = Invoice::with([
         'customer' => function ($query) {
@@ -459,19 +506,8 @@ class KeuanganController extends Controller
         ->where('paket_id', '!=', 11)
         ->whereIn('status_id', [1, 7]);
 
-      // Apply search filter - PERBAIKI: Include withTrashed() di search juga
-      if (!empty($search)) {
-        $query->where(function ($q) use ($search) {
-          $q->whereHas('customer', function ($customerQuery) use ($search) {
-            $customerQuery->withTrashed() // ✅ INI JUGA
-              ->where('nama_customer', 'like', '%' . $search . '%')
-              ->orWhere('no_hp', 'like', '%' . $search . '%')
-              ->orWhere('alamat', 'like', '%' . $search . '%');
-          })->orWhereHas('paket', function ($paketQuery) use ($search) {
-            $paketQuery->where('nama_paket', 'like', '%' . $search . '%');
-          });
-        });
-      }
+      // Apply search filter (nama customer, no_identitas, no_hp, alamat & nama paket)
+      $this->applyInvoiceSearch($query, $search);
 
       // Apply status filter
       if (!empty($status)) {
@@ -571,10 +607,10 @@ class KeuanganController extends Controller
           ->whereYear('jatuh_tempo', Carbon::now()->year);
       }
 
-      $pendingRevenue = $pendingRevenueQuery->get()
-        ->sum(function ($invoice) {
-          return ($invoice->tagihan + $invoice->tambahan + $invoice->tunggakan);
-        });
+      // Dihitung langsung di database (aggregate), bukan menarik seluruh baris ke PHP dulu.
+      $pendingRevenue = (float) $pendingRevenueQuery
+        ->selectRaw('COALESCE(SUM(COALESCE(tagihan, 0) + COALESCE(tambahan, 0) + COALESCE(tunggakan, 0)), 0) as total')
+        ->value('total');
 
       // PERBAIKAN: Total Invoices - Include soft deleted customers
       $totalInvoicesQuery = Invoice::where('status_id', 7)
@@ -591,13 +627,6 @@ class KeuanganController extends Controller
       }
 
       $totalInvoices = $totalInvoicesQuery->count();
-
-      Log::info('Statistics Calculated:', [
-        'totalRevenue' => $totalRevenue,
-        'monthlyRevenue' => $monthlyRevenue,
-        'pendingRevenue' => $pendingRevenue,
-        'totalInvoices' => $totalInvoices
-      ]);
 
       // Add encrypted_customer_id to each invoice
       $invoicesWithEncryption = collect($invoices)->map(function ($invoice) {
