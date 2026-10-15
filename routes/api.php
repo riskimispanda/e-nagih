@@ -9,12 +9,33 @@ use App\Http\Controllers\Api\TeknisiControllerApi;
 use App\Http\Controllers\Api\MikrotikControllerApi;
 use App\Http\Controllers\Api\PaymentCorrectionController;
 
-// Public routes
+/*
+|--------------------------------------------------------------------------
+| Public routes
+|--------------------------------------------------------------------------
+| Hanya login yang publik — endpoint ini memang harus bisa diakses
+| sebelum pengguna memiliki token.
+*/
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/getByMonth', [CustomerControllerApi::class, 'getInvoicesByMonthOptimized']);
-Route::get('/dev', [DataControllerApi::class, 'debugging']);
-Route::get('/dev/detail', [DataControllerApi::class, 'detailCounting']);
-Route::get('/pembayaran/gap-aktif', [DataControllerApi::class, 'analyzePembayaranGapAktif']);
+
+/*
+|--------------------------------------------------------------------------
+| Protected routes (wajib auth:sanctum)
+|--------------------------------------------------------------------------
+| Seluruh endpoint lain — data pelanggan/invoice, debug & analisa, generate
+| dan perbaikan invoice, koreksi pembayaran, hingga utilitas router —
+| dipindahkan ke dalam middleware auth agar tidak bisa diakses tanpa token.
+*/
+Route::middleware('auth:sanctum')->group(function () {
+  // --- Data pelanggan / invoice ---
+  Route::get('/getByMonth', [CustomerControllerApi::class, 'getInvoicesByMonthOptimized']);
+
+  // --- Debug & analisa ---
+  Route::get('/dev', [DataControllerApi::class, 'debugging']);
+  Route::get('/dev/detail', [DataControllerApi::class, 'detailCounting']);
+  Route::get('/pembayaran/gap-aktif', [DataControllerApi::class, 'analyzePembayaranGapAktif']);
+
+  // --- Generate & perbaikan invoice ---
   Route::get('/generate-preview', [DataControllerApi::class, 'getFasumCount']);
   Route::get('/generate-preview-monthly', [DataControllerApi::class, 'previewGenerateInvoicesMonthly']);
   Route::post('/generate-invoices', [DataControllerApi::class, 'generateFasumInvoices']);
@@ -32,18 +53,18 @@ Route::get('/pembayaran/gap-aktif', [DataControllerApi::class, 'analyzePembayara
   Route::get('/findMissing', [CustomerControllerApi::class, 'findMissingCustomers']);
   Route::post('/generate-invoice', [CustomerControllerApi::class, 'generateInvoice']);
   Route::get('/verified-fix', [DataControllerApi::class, 'verifyFixSimplified']);
+
+  // --- Utilitas Router (Mikrotik) ---
   Route::get('/router/{id}/version', [MikrotikControllerApi::class, 'checkVersion']);
   Route::get('/router/{id}/neighbors', [MikrotikControllerApi::class, 'getNeighbors']);
 
-  // Fix Payment Mismatch (Kasus salah kirim link pelanggan)
+  // --- Fix Payment Mismatch (Kasus salah kirim link pelanggan) ---
   Route::prefix('payment-correction')->group(function () {
     Route::get('/analyze', [PaymentCorrectionController::class, 'analyze']);
     Route::post('/execute', [PaymentCorrectionController::class, 'execute']);
   });
 
-
-// Protected routes
-Route::middleware('auth:sanctum')->group(function () {
+  // --- Aplikasi (butuh login) ---
   Route::post('/logout', [AuthController::class, 'logout']);
   Route::get('/user', [AuthController::class, 'user']);
   Route::get('/invoice', [AuthController::class, 'invoiceCustomer']);
@@ -71,5 +92,4 @@ Route::middleware('auth:sanctum')->group(function () {
   Route::get('/paymentHistory/{id}', [CustomerControllerApi::class, 'paymentHistory']);
   // Fix Issues
   Route::get('/invoice/{id}/proses-otomatis', [CustomerControllerApi::class, 'prosesOtomatisPembayaran']);
-
 });
