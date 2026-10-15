@@ -54,19 +54,35 @@ class Customer extends Controller
       'customer' => function ($query) {
         $query->withTrashed();
       },
-      'pembayaran',
+      // Urutkan pembayaran agar pembayaran terakhir deterministik
+      // dan rincian di halaman history tampil berurutan.
+      'pembayaran' => function ($query) {
+        $query->orderBy('tanggal_bayar')->orderBy('id');
+      },
       'paket'
     ])
       ->where('customer_id', $customerId)
       ->paginate(10);
     // dd($invoice);
     $deaktivasi = CustomerModel::withTrashed()->where('id', $customerId)->first();
+
+    // Ringkasan (KPI) halaman histori pelanggan.
+    $summary = [
+      'total_invoice' => $invoice->total(),
+      'total_dibayar' => (float) Pembayaran::whereHas('invoice', function ($query) use ($customerId) {
+        $query->where('customer_id', $customerId);
+      })->sum('jumlah_bayar'),
+      'belum_bayar' => Invoice::where('customer_id', $customerId)->where('status_id', 7)->count(),
+      'tunggakan' => (float) Invoice::where('customer_id', $customerId)->where('status_id', 7)->sum('tunggakan'),
+    ];
+
     return view('/pelanggan/history', [
       'users' => Auth::user(),
       'roles' => auth()->user()->roles,
       'customer' => CustomerModel::where('nama_customer', Auth::user()->name)->first(),
       'invoice' => $invoice,
-      'deaktivasi' => $deaktivasi
+      'deaktivasi' => $deaktivasi,
+      'summary' => $summary
     ]);
   }
 

@@ -2,352 +2,475 @@
 
 @section('title', 'Dashboard')
 
+@php
+  // ===== Formatter rupiah (ringkas untuk card, lengkap untuk tooltip) =====
+  $formatRupiah = function ($value) {
+    $value = (float) $value;
+    $abs = abs($value);
+    $sign = $value < 0 ? '-' : '';
+
+    if ($abs >= 1000000000000) {
+      return $sign . 'Rp ' . number_format($abs / 1000000000000, 1, ',', '.') . ' T';
+    }
+    if ($abs >= 1000000000) {
+      return $sign . 'Rp ' . number_format($abs / 1000000000, 1, ',', '.') . ' M';
+    }
+    if ($abs >= 1000000) {
+      return $sign . 'Rp ' . number_format($abs / 1000000, 1, ',', '.') . ' Jt';
+    }
+    if ($abs >= 1000) {
+      return $sign . 'Rp ' . number_format($abs / 1000, 0, ',', '.') . ' Rb';
+    }
+
+    return $sign . 'Rp ' . number_format($abs, 0, ',', '.');
+  };
+  $formatRupiahFull = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
+
+  // ===== Layer peta (sinkron dengan warna di script) =====
+  $mapLayers = [
+    'server' => ['label' => 'Server', 'color' => '#ef4444'],
+    'olt' => ['label' => 'OLT', 'color' => '#f97316'],
+    'odc' => ['label' => 'ODC', 'color' => '#22c55e'],
+    'odp' => ['label' => 'ODP', 'color' => '#3b82f6'],
+    'customer' => ['label' => 'Customer', 'color' => '#a855f7'],
+  ];
+
+  $labaPositif = $laba >= 0;
+
+  $chartData = [
+    'labels' => $chartMonthLabels,
+    'pendapatan' => $chartPendapatan,
+    'pengeluaran' => $chartPengeluaran,
+    'pelangganBaru' => $chartPelangganBaru,
+    'tagihan' => [
+      'lunas' => (int) $countLunas,
+      'belumLunas' => (int) $countInvoiceAllUnPaid,
+    ],
+  ];
+@endphp
+
 @section('vendor-style')
   @vite('resources/assets/vendor/libs/apex-charts/apex-charts.scss')
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+@endsection
+
+@section('page-style')
+  {{-- Tailwind CDN: mengikuti pola dashboard logistik (preflight dimatikan agar tidak menimpa Bootstrap/Sneat) --}}
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: {
+        preflight: false
+      }
+    };
+  </script>
+  <script>
+    // Terapkan mode privasi sebelum render agar nominal tidak berkedip tampil
+    try {
+      if (localStorage.getItem('dashboard-privacy-mode') === '1') {
+        document.documentElement.classList.add('privacy-mode');
+      }
+    } catch (e) {}
+  </script>
+  <style>
+    /* ====== Kartu KPI ====== */
+    .kpi-card {
+      transition: transform .2s cubic-bezier(.4, 0, .2, 1), box-shadow .2s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(15, 23, 42, .07), 0 4px 6px -4px rgba(15, 23, 42, .05);
+    }
+
+    /* ====== Mode privasi nominal ====== */
+    .private-dots {
+      display: none;
+    }
+
+    html.privacy-mode .private-amount {
+      display: none !important;
+    }
+
+    html.privacy-mode .private-dots {
+      display: inline-flex !important;
+    }
+
+    html.privacy-mode .chart-private {
+      filter: blur(8px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ====== Alert jadwal hari ini ====== */
+    @keyframes slideInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: .7;
+      }
+    }
+
+    #jadwal-alert-wrapper {
+      animation: slideInDown 0.45s cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .jadwal-header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 60%, #06b6d4 100%);
+      border-radius: 14px 14px 0 0;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .jadwal-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .jadwal-pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #d4ff00;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    .jadwal-title-text {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .3px;
+    }
+
+    .jadwal-count-badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      white-space: nowrap;
+    }
+
+    .jadwal-date-text {
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 0.78rem;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .jadwal-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .jadwal-btn-icon {
+      background: rgba(255, 255, 255, 0.18);
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+
+    .jadwal-btn-icon:hover {
+      background: rgba(255, 255, 255, 0.35);
+      transform: scale(1.1);
+    }
+
+    .jadwal-body {
+      background: #f0f7ff;
+      border: 1px solid #fff;
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      padding: 14px 16px 16px;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(.22, 1, .36, 1), padding 0.35s ease, opacity 0.3s ease;
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    .jadwal-body.collapsed {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .jadwal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .jadwal-card {
+      background: #fff;
+      border-radius: 11px;
+      border-left: 4px solid #3b82f6;
+      box-shadow: 0 1px 6px rgba(59, 130, 246, 0.08);
+      padding: 12px 14px;
+      transition: transform .2s, box-shadow .2s;
+      animation: fadeInUp 0.4s ease both;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .jadwal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.15);
+    }
+
+    .jadwal-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 60px;
+      height: 60px;
+      background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 70%);
+      pointer-events: none;
+    }
+
+    .jadwal-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .jadwal-card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1e3a5f;
+      line-height: 1.3;
+      flex: 1;
+    }
+
+    .jadwal-priority-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .priority-high {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .priority-medium {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .priority-low {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .jadwal-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: #4b6a8a;
+    }
+
+    .jadwal-meta-row i {
+      font-size: 0.85rem;
+    }
+
+    .jadwal-time-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 0.73rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .jadwal-category-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f0f9ff;
+      color: #0369a1;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid #bae6fd;
+    }
+
+    .jadwal-desc {
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.45;
+      border-top: 1px solid #e0efff;
+      padding-top: 6px;
+      margin-top: 2px;
+      word-break: break-word;
+    }
+
+    .jadwal-user-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      color: #64748b;
+      border-top: 1px dashed #dbeafe;
+      padding-top: 6px;
+      margin-top: 2px;
+    }
+
+    .jadwal-user-avatar {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #3b82f6, #06b6d4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* ====== Peta ====== */
+    #map {
+      z-index: 1;
+    }
+
+    #map .leaflet-control-attribution {
+      font-size: 10px;
+      background: rgba(255, 255, 255, .8);
+    }
+
+    #map .leaflet-popup-content {
+      margin: 10px 12px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .kpi-card,
+      .jadwal-card {
+        transition: none !important;
+      }
+
+      .kpi-card:hover,
+      .jadwal-card:hover {
+        transform: none !important;
+      }
+
+      #jadwal-alert-wrapper,
+      .jadwal-card,
+      .jadwal-pulse-dot {
+        animation: none !important;
+      }
+    }
+  </style>
 @endsection
 
 @section('vendor-script')
   @vite('resources/assets/vendor/libs/apex-charts/apexcharts.js')
 @endsection
 
-@section('page-script')
-  @vite('resources/assets/js/dashboards-analytics.js')
-@endsection
-<!-- Tambahkan Boxicons dan Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet' />
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-
-<style>
-  .toggle-icon {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 18px;
-  }
-
-  .toggle-icon:hover {
-    transform: scale(1.2);
-  }
-
-  .dots-placeholder {
-    font - size: 24px;
-    letter-spacing: 3px;
-    color: #6c757d;
-  }
-
-  /* Custom scrollbar untuk transaksi */
-  .transaction-list::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  .transaction-list::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-  }
-
-  .transaction-list::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 10px;
-  }
-
-  .transaction-list::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-
-  /* ===== JADWAL ALERT STYLES ===== */
-  @keyframes slideInDown {
-    from {
-      opacity: 0;
-      transform: translateY(-16px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes pulse-dot {
-
-    0 %,
-    100 % {
-      transform: scale(1);
-      opacity: 1;
-    }
-
-    50% {
-      transform: scale(1.4);
-      opacity: .7;
-    }
-  }
-
-  #jadwal-alert-wrapper {
-    animation: slideInDown 0.45s cubic-bezier(.22, 1, .36, 1) both;
-  }
-
-  .jadwal-header {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 60%, #06b6d4 100%);
-    border-radius: 14px 14px 0 0;
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .jadwal-header-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .jadwal-pulse-dot {
-    width: 10px;
-    height: 10px;
-    background: #d4ff00ff;
-    border-radius: 50%;
-    animation: pulse-dot 1.5s ease-in-out infinite;
-    flex-shrink: 0;
-  }
-
-  .jadwal-title-text {
-    font - size: 0.95rem;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: .3px;
-  }
-
-  .jadwal-count-badge {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 2px 9px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    white-space: nowrap;
-  }
-
-  .jadwal-date-text {
-    color: rgba(255, 255, 255, 0.82);
-    font-size: 0.78rem;
-    margin-left: auto;
-    white-space: nowrap;
-  }
-
-  .jadwal-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .jadwal-btn-icon {
-    background: rgba(255, 255, 255, 0.18);
-    border: none;
-    color: #fff;
-    border-radius: 8px;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background .2s, transform .2s;
-  }
-
-  .jadwal-btn-icon:hover {
-    background: rgba(255, 255, 255, 0.35);
-    transform: scale(1.1);
-  }
-
-  .jadwal-body {
-    background: #f0f7ff;
-    border: 1px solid #ffffffff;
-    border-top: none;
-    border-radius: 0 0 14px 14px;
-    padding: 14px 16px 16px;
-    overflow: hidden;
-    transition: max-height 0.4s cubic-bezier(.22, 1, .36, 1), padding 0.35s ease, opacity 0.3s ease;
-    max-height: 2000px;
-    opacity: 1;
-  }
-
-  .jadwal-body.collapsed {
-    max - height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .jadwal-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 12px;
-  }
-
-  .jadwal-card {
-    background: #fff;
-    border-radius: 11px;
-    border-left: 4px solid #3b82f6;
-    box-shadow: 0 1px 6px rgba(59, 130, 246, 0.08);
-    padding: 12px 14px;
-    transition: transform .2s, box-shadow .2s;
-    animation: fadeInUp 0.4s ease both;
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .jadwal-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.15);
-  }
-
-  .jadwal-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 60px;
-    height: 60px;
-    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 70%);
-    pointer-events: none;
-  }
-
-  .jadwal-card-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .jadwal-card-title {
-    font - size: 0.88rem;
-    font-weight: 700;
-    color: #1e3a5f;
-    line-height: 1.3;
-    flex: 1;
-  }
-
-  .jadwal-priority-badge {
-    font - size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 20px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-  }
-
-  .priority-high {
-    background: #fee2e2;
-    color: #dc2626;
-  }
-
-  .priority-medium {
-    background: #fef3c7;
-    color: #d97706;
-  }
-
-  .priority-low {
-    background: #dcfce7;
-    color: #16a34a;
-  }
-
-  .jadwal-meta-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    color: #4b6a8a;
-  }
-
-  .jadwal-meta-row i {
-    font - size: 0.85rem;
-  }
-
-  .jadwal-time-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #dbeafe;
-    color: #1d4ed8;
-    font-size: 0.73rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-  }
-
-  .jadwal-category-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #f0f9ff;
-    color: #0369a1;
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 20px;
-    border: 1px solid #bae6fd;
-  }
-
-  .jadwal-desc {
-    font - size: 0.75rem;
-    color: #64748b;
-    line-height: 1.45;
-    border-top: 1px solid #e0efff;
-    padding-top: 6px;
-    margin-top: 2px;
-    word-break: break-word;
-  }
-
-  .jadwal-user-row {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.72rem;
-    color: #64748b;
-    border-top: 1px dashed #dbeafe;
-    padding-top: 6px;
-    margin-top: 2px;
-  }
-
-  .jadwal-user-avatar {
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(135deg, #3b82f6, #06b6d4);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #fff;
-    flex-shrink: 0;
-  }
-</style>
 @section('content')
   <div class="space-y-6">
-    <!-- Alert Jadwal Hari Ini -->
-    @if($todaySchedules->count())
+
+    {{-- ==================== HEADER HALAMAN ==================== --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="min-w-0">
+          <div
+            class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            {{ $roles?->name ?? 'Pengguna' }}
+          </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight mt-2 mb-0">
+            Selamat datang, {{ $users->name }} 👋
+          </h1>
+          <p class="text-slate-500 text-xs sm:text-sm mt-1 mb-0">
+            Ringkasan operasional NBilling —
+            <span class="font-semibold text-slate-600">{{ \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }}</span>
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" id="privacy-toggle" aria-pressed="false"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-colors cursor-pointer">
+            <i id="privacy-toggle-icon" class="bx bx-lock-open-alt text-base text-slate-500"></i>
+            <span id="privacy-toggle-label">Sembunyikan Nominal</span>
+          </button>
+          <a href="/data/pembayaran"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition-colors no-underline">
+            <i class="bx bx-receipt text-base text-indigo-600"></i> Lihat Transaksi
+          </a>
+          <button type="button" onclick="window.location.reload()"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors cursor-pointer border-0">
+            <i class="bx bx-refresh text-base"></i> Segarkan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {{-- ==================== ALERT JADWAL HARI INI ==================== --}}
+    @if ($todaySchedules->count())
       @php
         $categoryIcons = [
           'meeting' => 'bx-group',
@@ -371,28 +494,26 @@
         $todayFormatted = \Carbon\Carbon::today()->locale('id')->isoFormat('dddd, D MMMM YYYY');
       @endphp
       <div id="jadwal-alert-wrapper">
-        <!-- Header -->
         <div class="jadwal-header">
           <div class="jadwal-header-left">
             <div class="jadwal-pulse-dot"></div>
             <span class="jadwal-title-text"><i class="bx bx-calendar-check fs-4"></i> Jadwal Hari Ini</span>
             <span class="jadwal-count-badge">{{ $todaySchedules->count() }} Jadwal</span>
           </div>
-          <span class="jadwal-date-text d-none d-md-block">{{ $todayFormatted }}</span>
+          <span class="jadwal-date-text hidden md:inline">{{ $todayFormatted }}</span>
           <div class="jadwal-header-actions">
-            <button class="jadwal-btn-icon" id="jadwal-toggle-btn" title="Sembunyikan/Tampilkan">
+            <button class="jadwal-btn-icon" id="jadwal-toggle-btn" title="Sembunyikan/Tampilkan" aria-label="Sembunyikan atau tampilkan jadwal">
               <i class="bx bx-chevron-up" id="jadwal-chevron-icon"></i>
             </button>
-            <button class="jadwal-btn-icon" id="jadwal-close-btn" title="Tutup">
+            <button class="jadwal-btn-icon" id="jadwal-close-btn" title="Tutup" aria-label="Tutup panel jadwal">
               <i class="bx bx-x"></i>
             </button>
           </div>
         </div>
 
-        <!-- Body -->
         <div class="jadwal-body" id="jadwal-body">
           <div class="jadwal-grid">
-            @foreach($todaySchedules as $i => $schedule)
+            @foreach ($todaySchedules as $i => $schedule)
               @php
                 $borderColor = $schedule->color ?? '#3b82f6';
                 $catIcon = $categoryIcons[$schedule->category] ?? 'bx-calendar';
@@ -408,17 +529,15 @@
                 $animDelay = $i * 60;
               @endphp
               <div class="jadwal-card" style="border-left-color: {{ $borderColor }}; animation-delay: {{ $animDelay }}ms;">
-                <!-- Title + Priority -->
                 <div class="jadwal-card-top">
                   <div class="jadwal-card-title">{{ $schedule->title }}</div>
-                  @if($schedule->priority)
+                  @if ($schedule->priority)
                     <span class="jadwal-priority-badge {{ $pClass }}">{{ $pLabel }}</span>
                   @endif
                 </div>
 
-                <!-- Time -->
                 <div class="jadwal-meta-row">
-                  @if($schedule->time_type === 'specific')
+                  @if ($schedule->time_type === 'specific')
                     <span class="jadwal-time-chip">
                       <i class="bx bx-time-five"></i>
                       {{ $schedule->start_time ? \Carbon\Carbon::parse($schedule->start_time)->format('H:i') : '--:--' }}
@@ -431,19 +550,17 @@
                     </span>
                   @endif
 
-                  @if($schedule->category)
+                  @if ($schedule->category)
                     <span class="jadwal-category-chip">
                       <i class="bx {{ $catIcon }}"></i>{{ $catLabel }}
                     </span>
                   @endif
                 </div>
 
-                <!-- Description -->
-                @if($schedule->description)
+                @if ($schedule->description)
                   <div class="jadwal-desc">{{ $schedule->description }}</div>
                 @endif
 
-                <!-- User -->
                 <div class="jadwal-user-row">
                   <div class="jadwal-user-avatar">{{ $userInitial }}</div>
                   <span>{{ $userName }}</span>
@@ -455,604 +572,705 @@
       </div>
     @endif
 
-    <!-- Welcome Card -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div class="flex flex-col md:flex-row items-center">
-        <div class="md:w-7/12 p-6 md:p-8">
-          <h1 class="text-2xl md:text-3xl fw-bold text-gray-900 mb-4">
-            Selamat Datang {{ $users->name }} 🎉
-          </h1>
-          <p class="text-gray-600 text-lg leading-relaxed">
-            <span class="fw-bold text-blue-600">NBilling</span> adalah aplikasi berbasis web yang dirancang untuk
-            mempermudah proses pencatatan, pengelolaan, dan penagihan pembayaran pelanggan.
-          </p>
-        </div>
-        <div class="md:w-5/12 flex justify-center md:justify-end p-4">
-          <img src="{{ asset('assets/img/illustrations/man-with-laptop.png') }}" alt="Welcome Illustration"
-            class="w-64 md:w-72 scaleX-n1-rtl">
-        </div>
-      </div>
-    </div>
-
-    <!-- Statistik Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Total Pelanggan -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-yellow-50 rounded-xl">
-            <i class="bx bx-user text-yellow-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Total Pelanggan</p>
-        <h3 class="text-2xl font-bold text-gray-900 mb-2">{{$paket}}</h3>
-        <div class="flex items-center text-sm text-green-600 font-medium">
-          <i class='bx bx-up-arrow-alt mr-1'></i>
-          <span>{{$newCustomer->count()}} baru</span>
-        </div>
-      </div>
-
-      <!-- Total Pendapatan -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-blue-50 rounded-xl">
-            <i class="bx bx-wallet text-blue-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Total Pendapatan</p>
-        <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</h3>
-      </div>
-
-      <!-- Total Pengeluaran -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-red-50 rounded-xl">
-            <i class="bx bx-cart text-red-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Total Pengeluaran</p>
-        <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}</h3>
-      </div>
-
-      <!-- Laba/Rugi -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-green-50 rounded-xl">
-            <i class="bx bxs-wallet text-green-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Laba/Rugi</p>
-        <h3 class="text-2xl font-bold text-gray-900">Rp {{ number_format($laba, 0, ',', '.') }}</h3>
-      </div>
-    </div>
-
-    <!-- Status Pelanggan & Tiket -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <!-- Pelanggan Lunas -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-green-50 rounded-xl">
-            <i class="bx bxs-wallet text-green-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Pelanggan Lunas</p>
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-2xl font-bold text-gray-900 amount-text" id="lunas-amount">
-            <span class="nominal-text">Rp {{ number_format($pelangganLunas, 0, ',', '.') }}</span>
-            <span class="dots-placeholder hidden text-gray-400 text-xl">•••••••</span>
-          </h3>
-          <button class="text-gray-400 hover:text-green-600 transition-colors duration-200 toggle-icon"
-            data-target="lunas-card">
-            <i class="bx bx-show text-xl"></i>
-          </button>
-        </div>
-        <span
-          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mb-2">
-          <i class="bx bxs-user mr-1"></i>{{ $countLunas }} Pelanggan Lunas (MONTHLY)
-        </span>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-          <i class="bx bxs-user mr-1"></i>{{ $countInvoiceAllPaid }} Pelanggan Lunas (YEARLY)
-        </span>
-      </div>
-
-      <!-- Pelanggan Belum Lunas -->
-      <div
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow duration-300">
-        <div class="flex items-center justify-between mb-4">
-          <div class="p-3 bg-red-50 rounded-xl">
-            <i class="bx bxs-cart text-red-600 text-xl"></i>
-          </div>
-        </div>
-        <p class="text-gray-600 text-sm font-medium mb-1">Pelanggan Belum Lunas</p>
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-2xl font-bold text-gray-900 amount-text" id="belum-lunas-amount">
-            <span class="nominal-text">Rp {{ number_format($pelangganBelumLunas, 0, ',', '.') }}</span>
-            <span class="dots-placeholder hidden text-gray-400 text-xl">•••••••</span>
-          </h3>
-          <button class="text-gray-400 hover:text-green-600 transition-colors duration-200 toggle-icon"
-            data-target="belum-lunas-card">
-            <i class="bx bx-show text-xl"></i>
-          </button>
-        </div>
-        <span
-          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 mb-2">
-          <i class="bx bxs-user mr-1"></i>{{ $countInvoiceAllUnPaid }} Pelanggan Belum Lunas (MONTHLY)
-        </span>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <i class="bx bxs-user mr-1"></i>{{ $countBelumLunas }} Pelanggan Belum Lunas (YEARLY)
-        </span>
-      </div>
-
-      <!-- Tiket Open -->
-      <a href="/tiket-open" class="block transform hover:scale-105 transition-transform duration-200"
-        data-bs-toggle="tooltip" data-bs-placement="bottom" title="Halaman Tiket Open">
-        <div
-          class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 h-full">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-yellow-50 rounded-xl">
-              <i class="bx bx-card text-yellow-600 text-xl"></i>
-            </div>
-          </div>
-          <p class="text-gray-600 text-sm font-medium mb-1">Tiket Open</p>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">{{$open}}</h3>
-          <span
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            <i class="bx bx-card mr-1"></i>{{ $open }} Tiket
-          </span>
-        </div>
-      </a>
-
-      <!-- Tiket Closed -->
-      <a href="/tiket-closed" class="block transform hover:scale-105 transition-transform duration-200"
-        data-bs-toggle="tooltip" data-bs-placement="bottom" title="Halaman Tiket Closed">
-        <div
-          class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all duration-300 h-full">
-          <div class="flex items-center justify-between mb-4">
-            <div class="p-3 bg-green-50 rounded-xl">
-              <i class="bx bxs-card text-green-600 text-xl"></i>
-            </div>
-          </div>
-          <p class="text-gray-600 text-sm font-medium mb-1">Tiket Closed</p>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">{{$closed}}</h3>
-          <span
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <i class="bx bxs-card mr-1"></i>{{ $closed }} Tiket
-          </span>
-        </div>
-      </a>
-    </div>
-
-    <!-- Log Sistem -->
-    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-      <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-        <div>
-          <h3 class="text-lg fw-bold text-gray-900">Log Sistem </h3>
-          <p class="text-gray-600 text-sm">Aktivitas terbaru
-            <strong>{{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM YYYY') }}</strong>
-          </p>
-        </div>
-        <div>
-          <span
-            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            <i class="bx bx-radio-circle-marked mr-1"></i> Live
-          </span>
-        </div>
-      </div>
-      <div class="p-6 mb-2 flex-grow overflow-auto">
-        <div class="table-responsive">
-          <table id="activityLogTable" class="table table-hover w-full whitespace-nowrap pt-3">
-            <thead class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
-              <tr>
-                <th class="px-3 py-2 text-left font-medium">Waktu</th>
-                <th class="px-3 py-2 text-left font-medium">User</th>
-                <th class="px-3 py-2 text-left font-medium">Roles</th>
-                <th class="px-3 py-2 text-left font-medium">Aktivitas</th>
-              </tr>
-            </thead>
-            <tbody class="text-sm divide-y divide-gray-100">
-              <!-- Polled data will go here -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mapping Section -->
+    {{-- ==================== RINGKASAN KEUANGAN ==================== --}}
     <div class="space-y-4">
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <h3 class="text-xl fw-bold text-gray-900 mb-2">Mapping Customer</h3>
-        <p class="text-gray-600">Peta mapping untuk melihat lokasi server, olt, odc, odp, dan customer</p>
+      <div class="px-1">
+        <h2 class="text-xs font-extrabold uppercase tracking-[.14em] text-slate-400 mb-0">Ringkasan Keuangan</h2>
+        <p class="text-sm font-semibold text-slate-600 mt-1 mb-0">Akumulasi pendapatan, pengeluaran, dan tren 6 bulan terakhir</p>
       </div>
-      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div id="map" class="h-96 lg:h-[520px] w-full rounded-lg"></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+        {{-- Total Pendapatan --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pendapatan</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-trending-up"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">
+              <span class="private-amount" title="{{ $formatRupiahFull($totalPendapatan) }}">{{ $formatRupiah($totalPendapatan) }}</span>
+              <span class="private-dots text-slate-400">••••••</span>
+            </div>
+            <div class="text-[11px] font-medium text-emerald-600 mt-1.5 flex items-center gap-1">
+              <i class="bx bx-check-circle"></i> Seluruh pemasukan tercatat
+            </div>
+          </div>
+        </div>
+
+        {{-- Total Pengeluaran --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pengeluaran</span>
+            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-trending-down"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">
+              <span class="private-amount" title="{{ $formatRupiahFull($totalPengeluaran) }}">{{ $formatRupiah($totalPengeluaran) }}</span>
+              <span class="private-dots text-slate-400">••••••</span>
+            </div>
+            <div class="text-[11px] font-medium text-rose-600 mt-1.5 flex items-center gap-1">
+              <i class="bx bx-check-circle"></i> Seluruh pengeluaran tercatat
+            </div>
+          </div>
+        </div>
+
+        {{-- Laba / Rugi --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Laba / Rugi</span>
+            <div
+              class="w-8 h-8 rounded-xl flex items-center justify-center text-lg shrink-0 {{ $labaPositif ? 'bg-indigo-50 text-indigo-600' : 'bg-rose-50 text-rose-600' }}">
+              <i class="bx bx-wallet"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">
+              <span class="private-amount" title="{{ $formatRupiahFull($laba) }}">{{ $formatRupiah($laba) }}</span>
+              <span class="private-dots text-slate-400">••••••</span>
+            </div>
+            <div class="text-[11px] font-medium mt-1.5 flex items-center gap-1 {{ $labaPositif ? 'text-indigo-600' : 'text-rose-600' }}">
+              <i class="bx {{ $labaPositif ? 'bx-up-arrow-alt' : 'bx-down-arrow-alt' }}"></i>
+              {{ $labaPositif ? 'Surplus' : 'Defisit' }} — pendapatan dikurangi pengeluaran
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {{-- Chart tren + status tagihan --}}
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
+        <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 sm:px-6 pt-5 flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Tren Keuangan 6 Bulan</h3>
+              <p class="text-slate-500 text-xs mt-1 mb-0">Pendapatan dibandingkan pengeluaran per bulan</p>
+            </div>
+            <div class="hidden sm:flex items-center gap-3 text-[11px] font-bold text-slate-500 shrink-0">
+              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Pendapatan</span>
+              <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Pengeluaran</span>
+            </div>
+          </div>
+          <div id="chart-tren" class="chart-private px-2 pb-3" style="min-height: 330px"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="px-5 pt-5">
+            <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Status Tagihan</h3>
+            <p class="text-slate-500 text-xs mt-1 mb-0">Pelanggan lunas vs belum lunas</p>
+          </div>
+          <div id="chart-status-tagihan" class="chart-private" style="min-height: 200px"></div>
+          <div class="px-5 pb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-bold text-slate-600">
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Lunas bulan ini: {{ $countLunas }}
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Belum lunas: {{ $countInvoiceAllUnPaid }}
+            </span>
+          </div>
+          <p class="px-5 pb-3 text-center text-[11px] font-medium text-slate-400 m-0">
+            Tahun ini: {{ $countInvoiceAllPaid }} lunas • {{ $countBelumLunas }} belum lunas
+          </p>
+
+          <div class="border-t border-slate-100 px-5 pt-3 pb-2 flex-grow">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan Baru</span>
+              <span class="text-[11px] font-medium text-slate-400">6 bulan</span>
+            </div>
+            <div id="chart-pelanggan-baru" class="chart-private" style="min-height: 130px"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Transactions & Bottom Content -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Transactions -->
-      <div class="lg:col-span-1 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
-          <h5 class="text-lg fw-semibold text-gray-900">Transaksi Baru</h5>
-          <p class="text-grey-600">Transaksi baru-baru ini</p>
+    {{-- ==================== PELANGGAN & OPERASIONAL ==================== --}}
+    <div class="space-y-4">
+      <div class="px-1">
+        <h2 class="text-xs font-extrabold uppercase tracking-[.14em] text-slate-400 mb-0">Pelanggan &amp; Operasional</h2>
+        <p class="text-sm font-semibold text-slate-600 mt-1 mb-0">Status pelanggan dan tiket bulan berjalan</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {{-- Total Pelanggan --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Pelanggan</span>
+            <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-group"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">{{ $paket }}</div>
+            <div class="text-[11px] font-medium mt-1.5 flex items-center gap-1 {{ $newCustomer->count() > 0 ? 'text-emerald-600' : 'text-slate-400' }}">
+              <i class="bx bx-up-arrow-alt"></i> {{ $newCustomer->count() }} baru bulan ini
+            </div>
+          </div>
         </div>
-        <div class="p-6">
-          <div class="space-y-4">
-            @foreach ($pembayaran->take(5) as $transaksi)
-              <div class="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                <div class="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <img src="{{ asset('assets/img/icons/unicons/wallet.png') }}" alt="Wallet" class="w-6 h-6">
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">
-                    {{$transaksi->invoice->customer->nama_customer}}
-                  </p>
-                  <div class="flex items-center space-x-2 mt-1">
-                    <span
-                      class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      {{$transaksi->metode_bayar}}
-                    </span>
-                  </div>
-                </div>
-                <div class="flex-shrink-0">
-                  <span
-                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    Rp {{ number_format($transaksi->jumlah_bayar, 0, ',', '.') }}
+
+        {{-- Pelanggan Lunas --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan Lunas</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-user-check"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">
+              <span class="private-amount" title="{{ $formatRupiahFull($pelangganLunas) }}">{{ $formatRupiah($pelangganLunas) }}</span>
+              <span class="private-dots text-slate-400">••••••</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                <i class="bx bx-calendar text-[11px]"></i>{{ $countLunas }} bulan ini
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                {{ $countInvoiceAllPaid }} tahun ini
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {{-- Pelanggan Belum Lunas --}}
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-full">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Belum Lunas</span>
+            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-user-x"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">
+              <span class="private-amount" title="{{ $formatRupiahFull($pelangganBelumLunas) }}">{{ $formatRupiah($pelangganBelumLunas) }}</span>
+              <span class="private-dots text-slate-400">••••••</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5 mt-2">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                <i class="bx bx-calendar text-[11px]"></i>{{ $countInvoiceAllUnPaid }} bulan ini
+              </span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-100">
+                {{ $countBelumLunas }} tahun ini
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {{-- Tiket Open --}}
+        <a href="/tiket-open" class="kpi-card group bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-full no-underline hover:border-amber-300">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600">Tiket Open</span>
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-amber-100 transition-colors">
+              <i class="bx bx-receipt"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">{{ $open }}</div>
+            <div class="text-[11px] font-semibold text-amber-600 mt-1.5 flex items-center gap-1">
+              <i class="bx bx-right-arrow-alt text-sm"></i> Lihat tiket open
+            </div>
+          </div>
+        </a>
+
+        {{-- Tiket Closed --}}
+        <a href="/tiket-closed" class="kpi-card group bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between h-full no-underline hover:border-sky-300">
+          <div class="flex items-start justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-sky-600">Tiket Closed</span>
+            <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-sky-100 transition-colors">
+              <i class="bx bx-check-shield"></i>
+            </div>
+          </div>
+          <div class="mt-3">
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-tight">{{ $closed }}</div>
+            <div class="text-[11px] font-semibold text-sky-600 mt-1.5 flex items-center gap-1">
+              <i class="bx bx-right-arrow-alt text-sm"></i> Lihat tiket closed
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    {{-- ==================== TRANSAKSI BARU ==================== --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div
+        class="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Transaksi Baru</h3>
+          <p class="text-slate-500 text-xs mt-1 mb-0">Pembayaran terbaru bulan ini</p>
+        </div>
+        <a href="/data/pembayaran"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition-colors no-underline shrink-0 self-start sm:self-auto">
+          <i class="bx bx-receipt text-base text-indigo-600"></i> Lihat Semua Transaksi
+        </a>
+      </div>
+
+      <div class="p-3 sm:p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+          @forelse ($pembayaran->take(9) as $transaksi)
+            @php
+              $metode = strtolower($transaksi->metode_bayar ?? '');
+              $metodeClass = match (true) {
+                  str_contains($metode, 'cash') || str_contains($metode, 'tunai') => 'bg-amber-100 text-amber-800',
+                  str_contains($metode, 'transfer') => 'bg-sky-100 text-sky-800',
+                  str_contains($metode, 'qris') || str_contains($metode, 'qr') => 'bg-indigo-100 text-indigo-800',
+                  default => 'bg-slate-100 text-slate-700',
+              };
+              $namaCustomer = $transaksi->invoice?->customer?->nama_customer ?? 'Pelanggan';
+              $inisial = strtoupper(mb_substr($namaCustomer, 0, 1));
+            @endphp
+            <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-colors">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                {{ $inisial }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-800 truncate mb-0">{{ $namaCustomer }}</p>
+                <div class="flex items-center gap-2 mt-1">
+                  <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold {{ $metodeClass }}">
+                    {{ $transaksi->metode_bayar ?: 'Lainnya' }}
                   </span>
+                  <span class="text-[11px] text-slate-400">{{ $transaksi->created_at?->locale('id')->diffForHumans() }}</span>
                 </div>
               </div>
-            @endforeach
-          </div>
+              <div class="text-right shrink-0">
+                <span class="text-sm font-bold text-emerald-600 tabular-nums private-amount">{{ $formatRupiahFull($transaksi->jumlah_bayar) }}</span>
+                <span class="text-xs font-bold text-slate-400 tabular-nums private-dots">••••••</span>
+              </div>
+            </div>
+          @empty
+            <div class="col-span-full flex flex-col items-center justify-center py-10 text-center">
+              <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mb-3">
+                <i class="bx bx-inbox"></i>
+              </div>
+              <p class="text-sm font-semibold text-slate-600 mb-1">Belum ada transaksi bulan ini</p>
+              <p class="text-xs text-slate-400 m-0">Transaksi pembayaran akan tampil di sini.</p>
+            </div>
+          @endforelse
+        </div>
+      </div>
+    </div>
 
-          {{-- Tombol View All --}}
-          <div class="text-center mt-6 pt-4 border-t border-gray-200">
-            <a href="/data/pembayaran"
-              class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              data-bs-toggle="tooltip" title="Lihat Transaksi" data-bs-placement="top">
-              View All
-            </a>
-          </div>
+    {{-- ==================== PETA MAPPING ==================== --}}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Mapping Customer</h3>
+          <p class="text-slate-500 text-xs mt-1 mb-0">Lokasi server, OLT, ODC, ODP, dan customer</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          @foreach ($mapLayers as $key => $layer)
+            <label
+              class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-semibold text-slate-600 cursor-pointer hover:border-slate-300 select-none transition-colors">
+              <input type="checkbox" class="map-layer-toggle accent-slate-600" data-layer="{{ $key }}" checked>
+              <span class="w-2 h-2 rounded-full" style="background: {{ $layer['color'] }}"></span>
+              {{ $layer['label'] }}
+              <span id="legend-count-{{ $key }}" class="text-slate-400 font-bold">0</span>
+            </label>
+          @endforeach
+
+          <button type="button" id="map-reset-view"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border-0 cursor-pointer transition-colors">
+            <i class="bx bx-reset text-sm"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div id="map" class="h-96 lg:h-[480px] w-full"></div>
+        <div id="map-skeleton" class="absolute inset-0 bg-slate-100 animate-pulse flex items-center justify-center">
+          <span class="text-slate-400 text-xs font-bold inline-flex items-center gap-2">
+            <i class="bx bx-loader-alt animate-spin text-lg"></i> Memuat peta…
+          </span>
+        </div>
+        <div id="map-error" class="hidden absolute inset-0 bg-white/90 flex items-center justify-center p-4">
+          <span class="text-rose-500 text-xs font-bold inline-flex items-center gap-2 text-center">
+            <i class="bx bx-error-circle text-lg"></i> Gagal memuat data peta. Muat ulang halaman untuk mencoba lagi.
+          </span>
         </div>
       </div>
     </div>
   </div>
 @endsection
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
-<script>
-  document.addEventListener("DOMContentLoaded", async () => {
-    const map = L.map('map').setView([-9.5, 110.5], 10);
-    const bounds = L.latLngBounds();
+@push('scripts')
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      attribution: '© Panda'
-    }).addTo(map);
+  <script>
+    window.dashboardChartData = @json($chartData);
+  </script>
 
+  <script>
+    (function () {
+      'use strict';
 
-    const colors = {
-      server: 'red',
-      olt: 'orange',
-      odc: 'green',
-      odp: 'blue',
-      customer: 'purple'
-    };
-
-    const icons = {
-      server: 'bx-server fw-bold',
-      olt: 'bx-terminal fw-bold',
-      odc: 'bx-terminal fw-bold',
-      odp: 'bx-terminal fw-bold',
-      customer: 'bx-user fw-bold'
-    };
-
-    const data = await fetch("{{ route('peta.data') }}").then(res => res.json());
-
-    const nodes = {
-      server: {},
-      olt: {},
-      odc: {},
-      odp: {},
-      customer: {}
-    };
-
-    const linesDrawn = [];
-
-    data.forEach(item => {
-      const latlng = [item.lat, item.lng];
-      bounds.extend(latlng);
-      nodes[item.jenis][item.id] = item;
-
-      const customIcon = L.divIcon({
-        className: '',
-        html: `<i class='bx ${icons[item.jenis]}' style="font-size: 24px; color: ${colors[item.jenis]};"></i>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-
-      const marker = L.marker(latlng, { icon: customIcon }).addTo(map);
-
-      const detailPopup = `
-  <div class="p-2">
-    <b class="text-sm">${item.jenis.toUpperCase()}</b><br>
-      <span class="text-xs">Nama: ${item.nama}</span><br>
-        <span class="text-xs">Koordinat: ${item.lat}, ${item.lng}</span>
-      </div>
-      `;
-
-      marker.on('mouseover', function () {
-        marker.bindPopup(detailPopup).openPopup();
-      });
-
-      marker.on('mouseout', function () {
-        map.closePopup();
-      });
-
-      marker.on('click', function () {
-        drawConnections(item);
-      });
-    });
-
-    function drawConnections(item) {
-      linesDrawn.forEach(line => map.removeLayer(line));
-      linesDrawn.length = 0;
-
-      const connection = [];
-
-      if (item.jenis === 'customer') {
-        const odp = nodes.odp[item.odp_id];
-        const odc = odp ? nodes.odc[odp.odc_id] : null;
-        const olt = odc ? nodes.olt[odc.olt_id] : null;
-        const server = olt ? nodes.server[olt.server_id] : null;
-
-        if (odp) connection.push([item, odp]);
-        if (odc) connection.push([odp, odc]);
-        if (olt) connection.push([odc, olt]);
-        if (server) connection.push([olt, server]);
-
-      } else if (item.jenis === 'odp') {
-        const odc = nodes.odc[item.odc_id];
-        const olt = odc ? nodes.olt[odc.olt_id] : null;
-        const server = olt ? nodes.server[olt.server_id] : null;
-
-        if (odc) connection.push([item, odc]);
-        if (olt) connection.push([odc, olt]);
-        if (server) connection.push([olt, server]);
-
-      } else if (item.jenis === 'odc') {
-        const olt = nodes.olt[item.olt_id];
-        const server = olt ? nodes.server[olt.server_id] : null;
-
-        if (olt) connection.push([item, olt]);
-        if (server) connection.push([olt, server]);
-
-      } else if (item.jenis === 'olt') {
-        const server = nodes.server[item.server_id];
-        if (server) connection.push([item, server]);
-      }
-
-      connection.forEach(([child, parent]) => {
-        if (child && parent) {
-          const line = L.polyline([
-            [child.lat, child.lng],
-            [parent.lat, parent.lng]
-          ], {
-            color: colors[child.jenis] || 'gray',
-            weight: 3,
-            opacity: 0.8
-          }).addTo(map);
-          linesDrawn.push(line);
+      function ready(fn) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn);
+        } else {
+          fn();
         }
-      });
-    }
-
-    map.fitBounds(bounds);
-
-    // Legend
-    const legend = L.control({ position: "bottomright" });
-    legend.onAdd = function () {
-      const div = L.DomUtil.create("div", "bg-white p-4 rounded-lg shadow-lg border border-gray-200");
-      const types = Object.keys(colors);
-      div.innerHTML = `<h4 class="font-semibold text-gray-900 mb-2">Legenda</h4>`;
-      types.forEach(key => {
-        div.innerHTML += `
-                    <div class="flex items-center space-x-2 mb-1">
-                        <i class='bx ${icons[key]}' style="color:${colors[key]};font-size:16px;"></i>
-                        <span class="text-sm text-gray-700">${key.charAt(0).toUpperCase() + key.slice(1)}</span>
-                    </div>`;
-      });
-      return div;
-    };
-    legend.addTo(map);
-  });
-
-  // Toggle visibility untuk card amount + Jadwal Alert
-  document.addEventListener('DOMContentLoaded', function () {
-
-    // ===== Jadwal Alert Toggle & Close =====
-    const jadwalWrapper = document.getElementById('jadwal-alert-wrapper');
-    const jadwalBody = document.getElementById('jadwal-body');
-    const jadwalToggleBtn = document.getElementById('jadwal-toggle-btn');
-    const jadwalCloseBtn = document.getElementById('jadwal-close-btn');
-    const jadwalChevron = document.getElementById('jadwal-chevron-icon');
-
-    if (jadwalWrapper) {
-      let isCollapsed = false;
-
-      if (jadwalToggleBtn) {
-        jadwalToggleBtn.addEventListener('click', function () {
-          isCollapsed = !isCollapsed;
-          jadwalBody.classList.toggle('collapsed', isCollapsed);
-          jadwalChevron.style.transition = 'transform 0.50s ease';
-          jadwalChevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-        });
       }
 
-      if (jadwalCloseBtn) {
-        jadwalCloseBtn.addEventListener('click', function () {
-          jadwalWrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-          jadwalWrapper.style.opacity = '0';
-          jadwalWrapper.style.transform = 'translateY(-12px)';
-          setTimeout(function () { jadwalWrapper.style.display = 'none'; }, 320);
-        });
+      var rupiah = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+
+      function compactRupiah(value) {
+        var v = Number(value) || 0;
+        var abs = Math.abs(v);
+        if (abs >= 1e12) return (v / 1e12).toFixed(1).replace('.', ',') + ' T';
+        if (abs >= 1e9) return (v / 1e9).toFixed(1).replace('.', ',') + ' M';
+        if (abs >= 1e6) return (v / 1e6).toFixed(1).replace('.', ',') + ' Jt';
+        if (abs >= 1e3) return (v / 1e3).toFixed(0) + ' Rb';
+        return String(v);
       }
-    }
 
+      function fullRupiah(value) {
+        return 'Rp ' + rupiah.format(Number(value) || 0);
+      }
 
-    initializeCardStates();
-
-    document.querySelectorAll('.toggle-icon').forEach(icon => {
-      icon.addEventListener('click', function () {
-        const target = this.getAttribute('data-target');
-        toggleCardVisibility(target, this);
+      ready(function () {
+        initPrivacyToggle();
+        initJadwalAlert();
+        initCharts();
+        initMap();
       });
-    });
 
-    function toggleCardVisibility(target, icon) {
-      const cardElement = document.querySelector(`[data-target="${target}"]`).closest('.bg-white');
-      const nominalText = cardElement.querySelector('.nominal-text');
-      const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
-      const iconElement = icon.querySelector('i');
+      /* ==================== Mode privasi nominal ==================== */
+      function initPrivacyToggle() {
+        var KEY = 'dashboard-privacy-mode';
+        var btn = document.getElementById('privacy-toggle');
+        var icon = document.getElementById('privacy-toggle-icon');
+        var label = document.getElementById('privacy-toggle-label');
 
-      if (nominalText.classList.contains('hidden')) {
-        // Show - tampilkan teks asli
-        nominalText.classList.remove('hidden');
-        dotsPlaceholder.classList.add('hidden');
-        iconElement.classList.remove('bx-show');
-        iconElement.classList.add('bx-hide');
-        icon.classList.remove('text-gray-400');
-        icon.classList.add('text-green-600');
-
-        localStorage.setItem(`card-${target}-hidden`, 'false');
-      } else {
-        // Hide - tampilkan dots
-        nominalText.classList.add('hidden');
-        dotsPlaceholder.classList.remove('hidden');
-        iconElement.classList.remove('bx-hide');
-        iconElement.classList.add('bx-show');
-        icon.classList.remove('text-green-600');
-        icon.classList.add('text-gray-400');
-
-        localStorage.setItem(`card-${target}-hidden`, 'true');
-      }
-    }
-
-    function initializeCardStates() {
-      const cards = [
-        { target: 'lunas-card' },
-        { target: 'belum-lunas-card' }
-      ];
-
-      cards.forEach(card => {
-        const isHidden = localStorage.getItem(`card-${card.target}-hidden`) === 'true';
-        const icon = document.querySelector(`[data-target="${card.target}"]`);
-
-        if (icon) {
-          const cardElement = icon.closest('.bg-white');
-          const nominalText = cardElement.querySelector('.nominal-text');
-          const dotsPlaceholder = cardElement.querySelector('.dots-placeholder');
-          const iconElement = icon.querySelector('i');
-
-          if (isHidden) {
-            nominalText.classList.add('hidden');
-            dotsPlaceholder.classList.remove('hidden');
-            iconElement.classList.remove('bx-hide');
-            iconElement.classList.add('bx-show');
-            icon.classList.remove('text-green-600');
-            icon.classList.add('text-gray-400');
-          } else {
-            nominalText.classList.remove('hidden');
-            dotsPlaceholder.classList.add('hidden');
-            iconElement.classList.remove('bx-show');
-            iconElement.classList.add('bx-hide');
-            icon.classList.remove('text-gray-400');
-            icon.classList.add('text-green-600');
-          }
+        function apply(state) {
+          document.documentElement.classList.toggle('privacy-mode', state);
+          try { localStorage.setItem(KEY, state ? '1' : '0'); } catch (e) {}
+          if (icon) icon.className = 'bx ' + (state ? 'bx-lock-alt' : 'bx-lock-open-alt') + ' text-base text-slate-500';
+          if (label) label.textContent = state ? 'Tampilkan Nominal' : 'Sembunyikan Nominal';
+          if (btn) btn.setAttribute('aria-pressed', state ? 'true' : 'false');
         }
-      });
-    }
 
-    // INIT DATATABLES WITH POLLING
-    function initLogSistemDataTable() {
-      if (typeof $.fn.DataTable === 'undefined') {
-        $.getScript('https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js', function () {
-          setupDataTable();
-        });
-      } else {
-        setupDataTable();
+        var stored = false;
+        try { stored = localStorage.getItem(KEY) === '1'; } catch (e) {}
+        apply(stored);
+
+        if (btn) {
+          btn.addEventListener('click', function () {
+            apply(!document.documentElement.classList.contains('privacy-mode'));
+          });
+        }
       }
 
-      function setupDataTable() {
-        const logTable = $('#activityLogTable').DataTable({
-          ajax: {
-            url: "{{ route('api.dashboard.activity-logs') }}",
-            type: "GET",
-            dataSrc: "data"
-          },
-          columns: [
-            {
-              data: "created_at",
-              render: function (data, type, row) {
-                if (type === 'sort' || type === 'type') {
-                  return row.created_at_raw;
+      /* ==================== Alert jadwal ==================== */
+      function initJadwalAlert() {
+        var wrapper = document.getElementById('jadwal-alert-wrapper');
+        if (!wrapper) return;
+
+        var body = document.getElementById('jadwal-body');
+        var toggleBtn = document.getElementById('jadwal-toggle-btn');
+        var closeBtn = document.getElementById('jadwal-close-btn');
+        var chevron = document.getElementById('jadwal-chevron-icon');
+        var isCollapsed = false;
+
+        if (toggleBtn && body) {
+          toggleBtn.addEventListener('click', function () {
+            isCollapsed = !isCollapsed;
+            body.classList.toggle('collapsed', isCollapsed);
+            if (chevron) {
+              chevron.style.transition = 'transform 0.5s ease';
+              chevron.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+          });
+        }
+
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function () {
+            wrapper.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+            wrapper.style.opacity = '0';
+            wrapper.style.transform = 'translateY(-12px)';
+            setTimeout(function () { wrapper.style.display = 'none'; }, 320);
+          });
+        }
+      }
+
+      /* ==================== ApexCharts ==================== */
+      function initCharts() {
+        var data = window.dashboardChartData || {};
+        if (typeof ApexCharts === 'undefined') return;
+
+        var muted = '#94a3b8';
+        var fontFamily = 'Public Sans, Inter, sans-serif';
+
+        var trendEl = document.getElementById('chart-tren');
+        if (trendEl) {
+          new ApexCharts(trendEl, {
+            chart: {
+              type: 'area',
+              height: 330,
+              toolbar: { show: false },
+              zoom: { enabled: false },
+              fontFamily: fontFamily,
+              parentHeightOffset: 0
+            },
+            series: [
+              { name: 'Pendapatan', data: data.pendapatan || [] },
+              { name: 'Pengeluaran', data: data.pengeluaran || [] }
+            ],
+            colors: ['#10b981', '#f43f5e'],
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2.5, lineCap: 'round' },
+            fill: {
+              type: 'gradient',
+              gradient: { shadeIntensity: 1, opacityFrom: 0.32, opacityTo: 0.04, stops: [0, 90] }
+            },
+            grid: { borderColor: '#e2e8f0', strokeDashArray: 4, padding: { left: 6, right: 10 } },
+            xaxis: {
+              categories: data.labels || [],
+              axisBorder: { show: false },
+              axisTicks: { show: false },
+              labels: { style: { colors: muted, fontSize: '11px', fontWeight: 600 } }
+            },
+            yaxis: {
+              labels: { formatter: compactRupiah, style: { colors: muted, fontSize: '11px', fontWeight: 600 } }
+            },
+            legend: { show: false },
+            markers: { size: 0, strokeWidth: 0, hover: { size: 5 } },
+            tooltip: { y: { formatter: fullRupiah } },
+            noData: { text: 'Belum ada data', style: { color: muted, fontSize: '12px' } }
+          }).render();
+        }
+
+        var donutEl = document.getElementById('chart-status-tagihan');
+        if (donutEl) {
+          var tagihan = data.tagihan || { lunas: 0, belumLunas: 0 };
+          new ApexCharts(donutEl, {
+            chart: { type: 'donut', height: 200, fontFamily: fontFamily },
+            series: [Number(tagihan.lunas) || 0, Number(tagihan.belumLunas) || 0],
+            labels: ['Lunas', 'Belum Lunas'],
+            colors: ['#10b981', '#f43f5e'],
+            stroke: { width: 0 },
+            dataLabels: { enabled: false },
+            legend: { show: false },
+            plotOptions: {
+              pie: {
+                expandOnClick: false,
+                donut: {
+                  size: '74%',
+                  labels: {
+                    show: true,
+                    name: { show: true, fontSize: '11px', color: muted, fontWeight: 600 },
+                    value: {
+                      show: true,
+                      fontSize: '22px',
+                      fontWeight: 800,
+                      color: '#1e293b',
+                      formatter: function (val) { return val + ' plg'; }
+                    },
+                    total: {
+                      show: true,
+                      showAlways: true,
+                      label: 'Total',
+                      fontSize: '11px',
+                      color: muted,
+                      formatter: function (w) {
+                        return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' plg';
+                      }
+                    }
+                  }
                 }
-                return `<span class="text-gray-600 text-xs" title="${row.created_at_raw}"><i class='bx bx-time-five mr-1'></i> ${data}</span>`;
               }
             },
-            {
-              data: "causer_name",
-              render: function (data) {
-                return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class='bx bx-user mr-1'></i> ${data}</span>`;
-              }
+            tooltip: {
+              y: { formatter: function (val) { return val + ' pelanggan'; } }
             },
-            {
-              data: "role_name",
-              render: function (data) {
-                return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"><i class='bx bx-shield-quarter mr-1'></i> ${data}</span>`;
-              }
-            },
-            {
-              data: "description",
-              render: function (data) {
-                return `<span class="text-gray-700 font-medium text-xs break-words">${data}</span>`;
-              }
+            noData: { text: 'Belum ada data', style: { color: muted, fontSize: '12px' } }
+          }).render();
+        }
+
+        var growthEl = document.getElementById('chart-pelanggan-baru');
+        if (growthEl) {
+          new ApexCharts(growthEl, {
+            chart: { type: 'bar', height: 130, sparkline: { enabled: true }, fontFamily: fontFamily },
+            series: [{ name: 'Pelanggan Baru', data: data.pelangganBaru || [] }],
+            colors: ['#6366f1'],
+            plotOptions: { bar: { columnWidth: '45%', borderRadius: 5 } },
+            xaxis: { categories: data.labels || [] },
+            tooltip: {
+              y: { formatter: function (val) { return val + ' pelanggan baru'; } }
             }
-          ],
-          order: [[0, 'desc']],
-          pageLength: 5,
-          lengthMenu: [5, 10, 25, 50],
-          dom: '<"flex justify-between items-center mb-2"lf>rt<"flex justify-between items-center mt-3 pt-2 text-sm text-gray-600"ip>',
-          language: {
-            emptyTable: "Tidak ada log aktivitas",
-            info: "Menampilkan _START_ - _END_ dari _TOTAL_ log",
-            infoEmpty: "Menampilkan 0 log",
-            infoFiltered: "(difilter dari _MAX_ total log)",
-            search: "Cari:",
-            lengthMenu: "_MENU_",
-            zeroRecords: "Log aktivitas tidak ditemukan",
-            paginate: {
-              first: "Awal",
-              last: "Akhir",
-              next: "Lanjut",
-              previous: "Kembali"
-            }
-          }
+          }).render();
+        }
+      }
+
+      /* ==================== Peta Leaflet ==================== */
+      function initMap() {
+        var mapEl = document.getElementById('map');
+        if (!mapEl || typeof L === 'undefined') return;
+
+        var skeleton = document.getElementById('map-skeleton');
+        var errorBox = document.getElementById('map-error');
+        var map = L.map(mapEl).setView([-9.5, 110.5], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 20,
+          attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var colors = {
+          server: '#ef4444',
+          olt: '#f97316',
+          odc: '#22c55e',
+          odp: '#3b82f6',
+          customer: '#a855f7'
+        };
+        var icons = {
+          server: 'bx-server',
+          olt: 'bx-terminal',
+          odc: 'bx-git-branch',
+          odp: 'bx-hdd',
+          customer: 'bx-user'
+        };
+
+        var layers = {};
+        var counts = {};
+        var nodes = { server: {}, olt: {}, odc: {}, odp: {}, customer: {} };
+        var linesDrawn = [];
+        var bounds = L.latLngBounds();
+
+        Object.keys(colors).forEach(function (key) {
+          layers[key] = L.layerGroup().addTo(map);
+          counts[key] = 0;
         });
 
-        // Set DataTables polling every 5 seconds
-        setInterval(function () {
-          if ($('#activityLogTable').is(':visible')) {
-            logTable.ajax.reload(null, false); // Reload without resetting paging
-          }
-        }, 5000);
-      }
-    }
+        function hideSkeleton() {
+          if (skeleton) skeleton.classList.add('hidden');
+        }
 
-    // Call datatables init
-    initLogSistemDataTable();
-  });
-</script>
+        function showError() {
+          hideSkeleton();
+          if (errorBox) errorBox.classList.remove('hidden');
+        }
+
+        fetch("{{ route('peta.data') }}")
+          .then(function (res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(function (data) {
+            (data || []).forEach(function (item) {
+              if (!item || !item.jenis || !layers[item.jenis]) return;
+
+              var latlng = [item.lat, item.lng];
+              bounds.extend(latlng);
+              nodes[item.jenis][item.id] = item;
+              counts[item.jenis]++;
+
+              var marker = L.marker(latlng, {
+                icon: L.divIcon({
+                  className: '',
+                  html: "<i class='bx " + (icons[item.jenis] || 'bx-map-pin') +
+                    "' style=\"font-size: 20px; color: " + colors[item.jenis] +
+                    "; text-shadow: 0 1px 3px rgba(255,255,255,.9);\"></i>",
+                  iconSize: [20, 20],
+                  iconAnchor: [10, 10]
+                })
+              });
+
+              marker.bindPopup(
+                '<div class="text-xs"><b>' + String(item.jenis).toUpperCase() + '</b><br>' +
+                'Nama: ' + (item.nama || '-') + '<br>' +
+                'Koordinat: ' + item.lat + ', ' + item.lng + '</div>'
+              );
+              marker.on('mouseover', function () { marker.openPopup(); });
+              marker.on('mouseout', function () { map.closePopup(); });
+              marker.on('click', function () { drawConnections(item); });
+              marker.addTo(layers[item.jenis]);
+            });
+
+            Object.keys(counts).forEach(function (key) {
+              var el = document.getElementById('legend-count-' + key);
+              if (el) el.textContent = counts[key];
+            });
+
+            if (bounds.isValid()) {
+              map.fitBounds(bounds, { padding: [30, 30] });
+            }
+            hideSkeleton();
+            setTimeout(function () { map.invalidateSize(); }, 120);
+          })
+          .catch(showError);
+
+        document.querySelectorAll('.map-layer-toggle').forEach(function (toggle) {
+          toggle.addEventListener('change', function () {
+            var key = this.getAttribute('data-layer');
+            if (!layers[key]) return;
+            if (this.checked) {
+              map.addLayer(layers[key]);
+            } else {
+              map.removeLayer(layers[key]);
+            }
+          });
+        });
+
+        var resetBtn = document.getElementById('map-reset-view');
+        if (resetBtn) {
+          resetBtn.addEventListener('click', function () {
+            if (bounds.isValid()) map.fitBounds(bounds, { padding: [30, 30] });
+          });
+        }
+
+        function drawConnections(item) {
+          linesDrawn.forEach(function (line) { map.removeLayer(line); });
+          linesDrawn.length = 0;
+
+          var connection = [];
+
+          if (item.jenis === 'customer') {
+            var odp = nodes.odp[item.odp_id];
+            var odc = odp ? nodes.odc[odp.odc_id] : null;
+            var olt = odc ? nodes.olt[odc.olt_id] : null;
+            var server = olt ? nodes.server[olt.server_id] : null;
+
+            if (odp) connection.push([item, odp]);
+            if (odc) connection.push([odp, odc]);
+            if (olt) connection.push([odc, olt]);
+            if (server) connection.push([olt, server]);
+          } else if (item.jenis === 'odp') {
+            var odc2 = nodes.odc[item.odc_id];
+            var olt2 = odc2 ? nodes.olt[odc2.olt_id] : null;
+            var server2 = olt2 ? nodes.server[olt2.server_id] : null;
+
+            if (odc2) connection.push([item, odc2]);
+            if (olt2) connection.push([odc2, olt2]);
+            if (server2) connection.push([olt2, server2]);
+          } else if (item.jenis === 'odc') {
+            var olt3 = nodes.olt[item.olt_id];
+            var server3 = olt3 ? nodes.server[olt3.server_id] : null;
+
+            if (olt3) connection.push([item, olt3]);
+            if (server3) connection.push([olt3, server3]);
+          } else if (item.jenis === 'olt') {
+            var server4 = nodes.server[item.server_id];
+            if (server4) connection.push([item, server4]);
+          }
+
+          connection.forEach(function (pair) {
+            var child = pair[0];
+            var parent = pair[1];
+            if (child && parent) {
+              var line = L.polyline([
+                [child.lat, child.lng],
+                [parent.lat, parent.lng]
+              ], {
+                color: colors[child.jenis] || 'gray',
+                weight: 3,
+                opacity: 0.8
+              }).addTo(map);
+              linesDrawn.push(line);
+            }
+          });
+        }
+      }
+    })();
+  </script>
+@endpush
