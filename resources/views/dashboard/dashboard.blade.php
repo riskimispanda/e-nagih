@@ -37,6 +37,22 @@
 
   $labaPositif = $laba >= 0;
 
+  // ===== Statistik kartu Pelanggan Baru (6 bulan terakhir) =====
+  $growthTotal = (int) array_sum($chartPelangganBaru);
+  $growthBulanIni = (int) ($chartPelangganBaru[count($chartPelangganBaru) - 1] ?? 0);
+  $growthBulanLalu = (int) ($chartPelangganBaru[count($chartPelangganBaru) - 2] ?? 0);
+  $growthDelta = $growthBulanIni - $growthBulanLalu;
+  $growthDeltaPct = $growthBulanLalu > 0 ? (int) round(abs($growthDelta) / $growthBulanLalu * 100) : null;
+  $growthBadgeClass = $growthDelta > 0
+    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+    : ($growthDelta < 0 ? 'bg-rose-50 text-rose-700 border-rose-100' : 'bg-slate-50 text-slate-500 border-slate-200');
+  $growthBadgeIcon = $growthDelta > 0 ? 'bx-up-arrow-alt' : ($growthDelta < 0 ? 'bx-down-arrow-alt' : 'bx-minus');
+
+  // ===== Statistik kartu Transaksi Baru =====
+  $transaksiTotal = (float) $pembayaran->sum('jumlah_bayar');
+  $transaksiCount = $pembayaran->count();
+  $transaksiDitampilkan = min(9, $transaksiCount);
+
   $chartData = [
     'labels' => $chartMonthLabels,
     'pendapatan' => $chartPendapatan,
@@ -640,7 +656,7 @@
         </div>
       </div>
 
-      {{-- Chart tren + status tagihan --}}
+      {{-- Chart tren + pelanggan baru --}}
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-5">
         <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-5 sm:px-6 pt-5 flex items-start justify-between gap-4">
@@ -657,30 +673,39 @@
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div class="px-5 pt-5">
-            <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Status Tagihan</h3>
-            <p class="text-slate-500 text-xs mt-1 mb-0">Pelanggan lunas vs belum lunas</p>
-          </div>
-          <div id="chart-status-tagihan" class="chart-private" style="min-height: 200px"></div>
-          <div class="px-5 pb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-[11px] font-bold text-slate-600">
-            <span class="inline-flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>Lunas bulan ini: {{ $countLunas }}
-            </span>
-            <span class="inline-flex items-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>Belum lunas: {{ $countInvoiceAllUnPaid }}
-            </span>
-          </div>
-          <p class="px-5 pb-3 text-center text-[11px] font-medium text-slate-400 m-0">
-            Tahun ini: {{ $countInvoiceAllPaid }} lunas • {{ $countBelumLunas }} belum lunas
-          </p>
-
-          <div class="border-t border-slate-100 px-5 pt-3 pb-2 flex-grow">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan Baru</span>
-              <span class="text-[11px] font-medium text-slate-400">6 bulan</span>
+          <div class="px-5 pt-5 flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0">
+                <i class="bx bx-user-plus"></i>
+              </div>
+              <div>
+                <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Pelanggan Baru</h3>
+                <p class="text-slate-500 text-xs mt-0.5 mb-0">6 bulan terakhir</p>
+              </div>
             </div>
-            <div id="chart-pelanggan-baru" class="chart-private" style="min-height: 130px"></div>
+            @if ($growthDeltaPct !== null)
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold border shrink-0 {{ $growthBadgeClass }}" title="Dibandingkan bulan lalu">
+                <i class="bx {{ $growthBadgeIcon }} text-sm"></i>{{ $growthDeltaPct }}%
+              </span>
+            @elseif ($growthBulanIni > 0)
+              <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
+                <i class="bx bx-star text-sm"></i>Baru bulan ini
+              </span>
+            @endif
           </div>
+
+          <div class="px-5 mt-3.5 flex items-end justify-between gap-3">
+            <div>
+              <div class="text-2xl font-extrabold text-slate-800 tracking-tight tabular-nums leading-none">{{ $growthTotal }}</div>
+              <div class="text-[11px] font-medium text-slate-400 mt-1.5">Total 6 bulan</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xl font-extrabold tracking-tight tabular-nums leading-none {{ $growthBulanIni > 0 ? 'text-indigo-600' : 'text-slate-400' }}">{{ $growthBulanIni }}</div>
+              <div class="text-[11px] font-medium text-slate-400 mt-1.5">Bulan ini</div>
+            </div>
+          </div>
+
+          <div id="chart-pelanggan-baru" class="chart-private flex-grow px-2 pt-3 pb-3" style="min-height: 230px"></div>
         </div>
       </div>
     </div>
@@ -794,19 +819,36 @@
     {{-- ==================== TRANSAKSI BARU ==================== --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div
-        class="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        class="px-5 sm:px-6 py-4 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
           <h3 class="text-base font-extrabold text-slate-800 tracking-tight mb-0">Transaksi Baru</h3>
-          <p class="text-slate-500 text-xs mt-1 mb-0">Pembayaran terbaru bulan ini</p>
+          <p class="text-slate-500 text-xs mt-1 mb-0">
+            @if ($transaksiCount > $transaksiDitampilkan)
+              Menampilkan {{ $transaksiDitampilkan }} dari {{ $transaksiCount }} transaksi bulan ini
+            @elseif ($transaksiCount > 0)
+              {{ $transaksiCount }} transaksi bulan ini
+            @else
+              Pembayaran terbaru bulan ini
+            @endif
+          </p>
         </div>
-        <a href="/data/pembayaran"
-          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition-colors no-underline shrink-0 self-start sm:self-auto">
-          <i class="bx bx-receipt text-base text-indigo-600"></i> Lihat Semua Transaksi
-        </a>
+
+        <div class="flex flex-wrap items-center gap-2 shrink-0 self-start lg:self-auto">
+          <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700 text-xs font-bold"
+            title="Total pembayaran bulan ini">
+            <i class="bx bx-wallet text-sm"></i>
+            <span class="private-amount" title="{{ $formatRupiahFull($transaksiTotal) }}">{{ $formatRupiah($transaksiTotal) }}</span>
+            <span class="private-dots text-emerald-500">••••••</span>
+          </span>
+          <a href="/data/pembayaran"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs transition-colors no-underline">
+            <i class="bx bx-receipt text-base text-indigo-600"></i> Lihat Semua Transaksi
+          </a>
+        </div>
       </div>
 
       <div class="p-3 sm:p-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5">
           @forelse ($pembayaran->take(9) as $transaksi)
             @php
               $metode = strtolower($transaksi->metode_bayar ?? '');
@@ -819,22 +861,22 @@
               $namaCustomer = $transaksi->invoice?->customer?->nama_customer ?? 'Pelanggan';
               $inisial = strtoupper(mb_substr($namaCustomer, 0, 1));
             @endphp
-            <div class="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50 transition-colors">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:bg-white hover:border-slate-200 hover:shadow-sm transition-colors">
               <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white text-xs font-bold flex items-center justify-center shrink-0">
                 {{ $inisial }}
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-slate-800 truncate mb-0">{{ $namaCustomer }}</p>
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold {{ $metodeClass }}">
-                    {{ $transaksi->metode_bayar ?: 'Lainnya' }}
-                  </span>
-                  <span class="text-[11px] text-slate-400">{{ $transaksi->created_at?->locale('id')->diffForHumans() }}</span>
-                </div>
+                <p class="text-sm font-semibold text-slate-800 truncate mb-0 leading-tight">{{ $namaCustomer }}</p>
+                <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold mt-1.5 {{ $metodeClass }}">
+                  {{ $transaksi->metode_bayar ?: 'Lainnya' }}
+                </span>
               </div>
               <div class="text-right shrink-0">
-                <span class="text-sm font-bold text-emerald-600 tabular-nums private-amount">{{ $formatRupiahFull($transaksi->jumlah_bayar) }}</span>
-                <span class="text-xs font-bold text-slate-400 tabular-nums private-dots">••••••</span>
+                <p class="text-sm font-bold text-emerald-600 tabular-nums whitespace-nowrap mb-0 leading-tight">
+                  <span class="private-amount">{{ $formatRupiahFull($transaksi->jumlah_bayar) }}</span>
+                  <span class="private-dots text-slate-400">••••••</span>
+                </p>
+                <p class="text-[11px] font-medium text-slate-400 whitespace-nowrap mt-1.5 mb-0">{{ $transaksi->created_at?->locale('id')->diffForHumans() }}</p>
               </div>
             </div>
           @empty
@@ -1040,64 +1082,63 @@
           }).render();
         }
 
-        var donutEl = document.getElementById('chart-status-tagihan');
-        if (donutEl) {
-          var tagihan = data.tagihan || { lunas: 0, belumLunas: 0 };
-          new ApexCharts(donutEl, {
-            chart: { type: 'donut', height: 200, fontFamily: fontFamily },
-            series: [Number(tagihan.lunas) || 0, Number(tagihan.belumLunas) || 0],
-            labels: ['Lunas', 'Belum Lunas'],
-            colors: ['#10b981', '#f43f5e'],
-            stroke: { width: 0 },
-            dataLabels: { enabled: false },
-            legend: { show: false },
+        var growthEl = document.getElementById('chart-pelanggan-baru');
+        if (growthEl) {
+          var growthData = (data.pelangganBaru || []).map(function (v) { return Number(v) || 0; });
+          var growthLabels = (data.labels || []).map(function (label) { return String(label).split(' ')[0]; });
+          var growthTotal = growthData.reduce(function (a, b) { return a + b; }, 0);
+          var growthMax = growthData.reduce(function (a, b) { return Math.max(a, b); }, 0);
+          var growthAvg = growthData.length ? growthTotal / growthData.length : 0;
+          var growthLastIdx = growthData.length - 1;
+
+          new ApexCharts(growthEl, {
+            chart: {
+              type: 'bar',
+              height: 230,
+              toolbar: { show: false },
+              fontFamily: fontFamily,
+              parentHeightOffset: 0
+            },
+            series: [{ name: 'Pelanggan Baru', data: growthData }],
+            colors: ['#a5b4fc'],
             plotOptions: {
-              pie: {
-                expandOnClick: false,
-                donut: {
-                  size: '74%',
-                  labels: {
-                    show: true,
-                    name: { show: true, fontSize: '11px', color: muted, fontWeight: 600 },
-                    value: {
-                      show: true,
-                      fontSize: '22px',
-                      fontWeight: 800,
-                      color: '#1e293b',
-                      formatter: function (val) { return val + ' plg'; }
-                    },
-                    total: {
-                      show: true,
-                      showAlways: true,
-                      label: 'Total',
-                      fontSize: '11px',
-                      color: muted,
-                      formatter: function (w) {
-                        return w.globals.seriesTotals.reduce(function (a, b) { return a + b; }, 0) + ' plg';
-                      }
-                    }
-                  }
+              bar: {
+                columnWidth: '48%',
+                borderRadius: 6,
+                borderRadiusApplication: 'end',
+                colors: {
+                  ranges: [{ from: growthLastIdx, to: growthLastIdx, color: '#4f46e5' }]
                 }
               }
             },
-            tooltip: {
-              y: { formatter: function (val) { return val + ' pelanggan'; } }
+            dataLabels: {
+              enabled: true,
+              formatter: function (val) { return val > 0 ? val : ''; },
+              style: { fontSize: '10px', fontWeight: 700, colors: ['#64748b'] }
             },
-            noData: { text: 'Belum ada data', style: { color: muted, fontSize: '12px' } }
-          }).render();
-        }
-
-        var growthEl = document.getElementById('chart-pelanggan-baru');
-        if (growthEl) {
-          new ApexCharts(growthEl, {
-            chart: { type: 'bar', height: 130, sparkline: { enabled: true }, fontFamily: fontFamily },
-            series: [{ name: 'Pelanggan Baru', data: data.pelangganBaru || [] }],
-            colors: ['#6366f1'],
-            plotOptions: { bar: { columnWidth: '45%', borderRadius: 5 } },
-            xaxis: { categories: data.labels || [] },
+            grid: { borderColor: '#e2e8f0', strokeDashArray: 4, padding: { left: 8, right: 8, top: 4 } },
+            xaxis: {
+              categories: growthLabels,
+              axisBorder: { show: false },
+              axisTicks: { show: false },
+              labels: { style: { colors: muted, fontSize: '11px', fontWeight: 600 } }
+            },
+            yaxis: { show: false, max: growthMax + 1 },
+            annotations: growthTotal > 0 ? {
+              yaxis: [{
+                y: growthAvg,
+                borderColor: '#cbd5e1',
+                strokeDashArray: 4,
+                label: {
+                  text: 'Rata-rata ' + (Math.round(growthAvg * 10) / 10).toString().replace('.', ','),
+                  style: { background: '#f8fafc', color: '#94a3b8', fontSize: '10px', fontWeight: 600, padding: { left: 5, right: 5, top: 2, bottom: 2 } }
+                }
+              }]
+            } : {},
             tooltip: {
               y: { formatter: function (val) { return val + ' pelanggan baru'; } }
-            }
+            },
+            noData: { text: 'Belum ada data', style: { color: muted, fontSize: '12px' } }
           }).render();
         }
       }
