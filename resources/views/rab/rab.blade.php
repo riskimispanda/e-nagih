@@ -80,43 +80,53 @@
       white-space: nowrap;
     }
 
-    /* ====== Kontrol DataTables (length, search, info, pagination) ====== */
-    .dt-length select,
-    .dt-search input {
-      border: 1px solid #e2e8f0;
-      border-radius: .75rem;
-      background-color: #fff;
-      padding: .5rem .75rem;
-      font-size: .75rem;
+    /* ======
+       Kontrol DataTables (length, search, info, pagination).
+       Di-scope dengan #rabTable_wrapper karena CSS bawaan plugin memakai
+       selector .dataTables_wrapper ... (specificity lebih tinggi),
+       background berupa gradient, dan color dengan !important.
+       ====== */
+    #rabTable_wrapper .dataTables_length select,
+    #rabTable_wrapper .dataTables_filter input {
+      border: 1px solid #e2e8f0 !important;
+      border-radius: .75rem !important;
+      background: #fff !important;
+      padding: .5rem .75rem !important;
+      font-size: .75rem !important;
       font-weight: 600;
-      color: #334155;
+      color: #334155 !important;
       outline: none;
       transition: border-color .2s ease, box-shadow .2s ease;
     }
 
-    .dt-search input {
+    #rabTable_wrapper .dataTables_filter input {
       min-width: 220px;
+      margin-left: .5rem;
     }
 
-    .dt-length select:focus,
-    .dt-search input:focus {
-      border-color: #6366f1;
+    #rabTable_wrapper .dataTables_length select:focus,
+    #rabTable_wrapper .dataTables_filter input:focus {
+      border-color: #6366f1 !important;
       box-shadow: 0 0 0 .2rem rgba(99, 102, 241, .15);
     }
 
-    .dt-length label,
-    .dt-search label {
+    #rabTable_wrapper .dataTables_length label,
+    #rabTable_wrapper .dataTables_filter label {
       font-size: .75rem;
       font-weight: 600;
       color: #64748b;
     }
 
-    .dt-info {
+    #rabTable_wrapper .dataTables_info {
+      float: none;
+      padding-top: 0;
       font-size: .75rem;
       color: #64748b;
     }
 
-    .dt-pagination {
+    #rabTable_wrapper .dataTables_paginate {
+      float: none;
+      padding-top: 0;
       display: flex;
       align-items: center;
       justify-content: flex-end;
@@ -124,58 +134,73 @@
       gap: 2px;
     }
 
-    .dt-pagination .paginate_button i {
-      font-size: .95rem;
-      line-height: 1;
-    }
-
-    .dt-pagination .ellipsis {
-      display: inline-flex;
+    #rabTable_wrapper .dataTables_paginate .paginate_button {
+      box-sizing: border-box;
+      display: inline-flex !important;
       align-items: center;
       justify-content: center;
       min-width: 2rem;
       height: 2rem;
-      color: #94a3b8;
-      font-size: .75rem;
-      font-weight: 700;
-      user-select: none;
-    }
-
-    .dt-pagination .paginate_button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 2rem;
-      height: 2rem;
-      margin: 0 2px;
+      margin: 0 !important;
       padding: 0 .5rem !important;
       border: 1px solid #e2e8f0 !important;
       border-radius: .75rem !important;
-      background-color: #fff !important;
+      background: #fff !important;
       color: #334155 !important;
       font-size: .75rem;
       font-weight: 600;
+      line-height: 1;
+      text-align: center;
+      text-decoration: none !important;
       cursor: pointer;
+      box-shadow: none !important;
       transition: background-color .15s ease, border-color .15s ease;
     }
 
-    .dt-pagination .paginate_button.current,
-    .dt-pagination .paginate_button.current:hover {
-      background-color: #4f46e5 !important;
+    #rabTable_wrapper .dataTables_paginate .paginate_button:hover {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #1e293b !important;
+    }
+
+    #rabTable_wrapper .dataTables_paginate .paginate_button:active {
+      background: #eef2ff !important;
+      box-shadow: none !important;
+    }
+
+    #rabTable_wrapper .dataTables_paginate .paginate_button.current,
+    #rabTable_wrapper .dataTables_paginate .paginate_button.current:hover {
+      background: #4f46e5 !important;
       border-color: #4f46e5 !important;
       color: #fff !important;
     }
 
-    .dt-pagination .paginate_button:hover:not(.disabled):not(.current) {
-      background-color: #f1f5f9 !important;
-    }
-
-    .dt-pagination .paginate_button.disabled,
-    .dt-pagination .paginate_button.disabled:hover {
-      background-color: #f8fafc !important;
+    #rabTable_wrapper .dataTables_paginate .paginate_button.disabled,
+    #rabTable_wrapper .dataTables_paginate .paginate_button.disabled:hover,
+    #rabTable_wrapper .dataTables_paginate .paginate_button.disabled:active {
+      background: #f8fafc !important;
       border-color: #f1f5f9 !important;
       color: #cbd5e1 !important;
       cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    #rabTable_wrapper .dataTables_paginate .paginate_button i {
+      font-size: .95rem;
+      line-height: 1;
+    }
+
+    #rabTable_wrapper .dataTables_paginate .ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 2rem;
+      padding: 0 !important;
+      color: #94a3b8;
+      font-size: .75rem;
+      font-weight: 700;
+      user-select: none;
     }
 
     .dataTables_processing {
@@ -211,21 +236,22 @@
 
     @media (max-width: 767.98px) {
 
-      .dt-length,
-      .dt-search,
-      .dt-info,
-      .dt-pagination {
+      #rabTable_wrapper .dataTables_length,
+      #rabTable_wrapper .dataTables_filter,
+      #rabTable_wrapper .dataTables_info {
         width: 100%;
         text-align: center;
+        float: none;
       }
 
-      .dt-pagination {
-        justify-content: center;
-      }
-
-      .dt-search input {
+      #rabTable_wrapper .dataTables_filter input {
         width: 100%;
         min-width: 0;
+      }
+
+      #rabTable_wrapper .dataTables_paginate {
+        width: 100%;
+        justify-content: center;
       }
     }
   </style>
