@@ -265,6 +265,9 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/log/blokir-gagal', [SuperAdmin::class, 'logBlokirGagal'])
     ->middleware('auth', 'roles:Super Admin,NOC')
     ->name('log-blokir-gagal');
+  Route::post('/log/blokir-gagal/{id}/retry', [SuperAdmin::class, 'retryBlokir'])
+    ->middleware('auth', 'roles:Super Admin,NOC')
+    ->name('log-blokir-gagal.retry');
   Route::get('/logs-detail/{id}', [SuperAdmin::class, 'logDetail'])
     ->middleware('auth', 'roles:Super Admin')
     ->name('logs-detail');
@@ -274,7 +277,9 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/rab/detail/{id}', [RabController::class, 'detail'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('rab-detail');
-  Route::post('/edit/role/{id}', [UserController::class, 'editRole'])->name('edit-role');
+  Route::post('/edit/role/{id}', [UserController::class, 'editRole'])
+    ->middleware('roles:Super Admin,Admin Keuangan')
+    ->name('edit-role');
   Route::get('/peta', [MapController::class, 'index']);
   Route::get('/peta/data', [MapController::class, 'data'])->name('peta.data');
   Route::get('/peta/debug-gps', [MapController::class, 'debugGps'])->name('peta.debug-gps');

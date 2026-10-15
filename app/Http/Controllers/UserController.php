@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Roles;
 
@@ -11,17 +12,59 @@ class UserController extends Controller
     /**
     * Display a listing of the resource.
     */
-    public function index()
+    public function index(Request $request)
     {
-        $user = User::whereNot('roles_id', 8)->paginate(10);
-        // dd($user);
-        $role = Roles::whereNot('name', 'Customer')->get();
-        // dd($role);
-        return view('user_management.management_user',[
+        $search = trim((string) $request->query('q', ''));
+        $roleFilter = $request->query('role');
+
+        $userQuery = User::query()
+            // Kolom seperlunya + eager load role (mencegah N+1 query per baris tabel)
+            ->select(['id', 'name', 'email', 'no_hp', 'alamat', 'roles_id', 'profile'])
+            ->with('roles:id,name')
+            // roles_id bertipe varchar → bandingkan sebagai string agar index terpakai
+            // (perbandingan dengan integer memicu implicit CAST dan mematikan index).
+            ->where('roles_id', '!=', '8');
+
+        if ($search !== '') {
+            $userQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('no_hp', 'like', "%{$search}%");
+            });
+        }
+
+        if ($roleFilter !== null && $roleFilter !== '' && ctype_digit((string) $roleFilter)) {
+            // Cast ke string (bukan int) agar index roles_id tetap dipakai.
+            $userQuery->where('roles_id', (string) $roleFilter);
+        }
+
+        $user = $userQuery
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
+        $role = Roles::query()
+            ->select(['id', 'name'])
+            ->whereNot('name', 'Customer')
+            ->orderBy('name')
+            ->get();
+
+        // Rekap jumlah user per role dalam 1 query agregat (untuk kartu ringkasan).
+        // Bandingkan roles_id sebagai string agar index (roles_id, name) dipakai.
+        $roleSummary = User::query()
+            ->select('roles_id', DB::raw('count(*) as total'))
+            ->where('roles_id', '!=', '8')
+            ->groupBy('roles_id')
+            ->pluck('total', 'roles_id');
+
+        return view('user_management.management_user', [
             'users' => auth()->user(),
             'roles' => auth()->user()->roles,
             'user' => $user,
-            'role' => $role
+            'role' => $role,
+            'roleSummary' => $roleSummary,
+            'search' => $search,
+            'roleFilter' => $roleFilter,
         ]);
     }
 
@@ -112,17 +155,37 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // Update username (kolom `name`, dipakai untuk login) jika diisi & berubah.
+        if ($request->filled('name')) {
+            $username = trim((string) $request->input('name'));
+
+            if (mb_strlen($username) < 3) {
+                return redirect('/user/management')->with('error', 'Username minimal 3 karakter');
+            }
+
+            if ($username !== $user->name
+                && User::where('name', $username)->where('id', '!=', $user->id)->exists()) {
+                return redirect('/user/management')->with('error', 'Username "' . $username . '" sudah dipakai user lain');
+            }
+
+            $user->name = $username;
+        }
+
         // update role
         $user->roles_id = $request->input('roles_id');
 
         // cek apakah admin mengisi field password
         if ($request->filled('password')) {
+            if (mb_strlen((string) $request->input('password')) < 8) {
+                return redirect('/user/management')->with('error', 'Password minimal 8 karakter');
+            }
+
             $user->password = bcrypt($request->input('password'));
         }
 
         $user->save();
 
-        return redirect('/user/management')->with('success', 'Role user berhasil diubah');
+        return redirect('/user/management')->with('success', 'Data user berhasil diubah');
     }
 
     public function updateUser(Request $request, $id)
