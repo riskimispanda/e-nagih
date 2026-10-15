@@ -3,1573 +3,958 @@
 @section('title', 'Data Pelanggan')
 
 @section('page-style')
+  <!-- Tailwind CSS CDN with Preflight Disabled -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: {
+        preflight: false
+      }
+    };
+  </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css" />
   <style>
-    /* Header Styles */
-    .modern-card-header {
-      padding: 1.25rem 1.25rem 0.75rem;
-      background-color: #ffffff;
-      border-bottom: none;
-      position: relative;
+    /* KPI card hover (ala dashboard logistik) */
+    .kpi-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .card {
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      overflow: hidden;
-      transition: all 0.2s ease;
-    }
-
-    .card:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .card-header {
-      background-color: #ffffff;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-      padding: 1rem;
-    }
-
-    .header-title {
-      font-size: 1.2rem;
-      color: #2c3e50;
-      margin-bottom: 1rem;
-      position: relative;
-      padding-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    .header-title::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      height: 2px;
-      width: 40px;
-      background-color: #5e72e4;
-      border-radius: 2px;
-    }
-
-    /* Data Card Styles */
-    .stats-grid {
-      margin-top: 0.25rem;
-    }
-
-    .data-card {
-      background-color: #ffffff;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-left: 3px solid transparent;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-      padding: 0.9rem 1rem;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-      display: flex;
-      align-items: center;
-      position: relative;
-      overflow: hidden;
-      height: 100%;
-    }
-
-    .data-card[data-bs-toggle="modal"],
-    a>.data-card {
-      cursor: pointer;
-    }
-
-    .data-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.09);
-    }
-
-    .data-card.primary-card {
-      border-left-color: #5e72e4;
-    }
-
-    .data-card.success-card {
-      border-left-color: #2dce89;
-    }
-
-    .data-card.danger-card {
-      border-left-color: #f5365c;
-    }
-
-    .data-card.secondary-card {
-      border-left-color: #8898aa;
-    }
-
-    .data-card.warning-card {
-      border-left-color: #f7b924;
-    }
-
-    .data-card-icon {
-      font-size: 1.35rem;
-      margin-right: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 44px;
-      height: 44px;
-      min-width: 44px;
-      border-radius: 10px;
-      position: relative;
-      transition: transform 0.2s ease;
-    }
-
-    .data-card:hover .data-card-icon {
-      transform: scale(1.08);
-    }
-
-    .data-card-icon.primary {
-      background-color: rgba(94, 114, 228, 0.1);
-      color: #5e72e4;
-    }
-
-    .data-card-icon.success {
-      background-color: rgba(45, 206, 137, 0.1);
-      color: #2dce89;
-    }
-
-    .data-card-icon.danger {
-      background-color: rgba(245, 54, 92, 0.1);
-      color: #f5365c;
-    }
-
-    .data-card-icon.secondary {
-      background-color: rgba(136, 152, 170, 0.1);
-      color: #8898aa;
-    }
-
-    .data-card-icon.warning {
-      background-color: rgba(247, 185, 36, 0.1);
-      color: #f7b924;
-    }
-
-    .data-card-content {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .data-label {
-      font-size: 0.68rem;
-      color: #8898aa;
-      margin-bottom: 0.25rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      line-height: 1.35;
-    }
-
-    .data-value {
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    .data-value .badge {
-      font-size: 0.75rem;
-      padding: 0.32rem 0.65rem;
-      border-radius: 50rem;
-    }
-
-    .data-card-note {
-      width: 100%;
-      margin-top: 0.5rem;
-      padding-top: 0.45rem;
-      border-top: 1px dashed #e9ecef;
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-    }
-
-    .data-card-note small {
-      font-size: 0.68rem;
-      color: #8898aa;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    @media (max-width: 575.98px) {
-      .data-card {
-        padding: 0.7rem 0.75rem;
-        border-radius: 8px;
-      }
-
-      .data-card-icon {
-        width: 36px;
-        height: 36px;
-        min-width: 36px;
-        margin-right: 0.6rem;
-        font-size: 1.1rem;
-        border-radius: 8px;
-      }
-
-      .data-label {
-        font-size: 0.62rem;
-      }
-
-      .data-value {
-        font-size: 0.95rem;
-      }
-
-      .data-value .badge {
-        font-size: 0.7rem;
-        padding: 0.25rem 0.55rem;
-      }
-    }
-
-    /* Search & Sort Container Styles */
-    .search-container {
-      background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-      padding: 1rem;
-      margin-bottom: 1rem;
-      transition: all 0.2s ease;
-    }
-
-    .search-container:hover {
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-
-    .search-sort-wrapper {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .search-group {
-      flex: 1;
-      min-width: 250px;
-    }
-
-    .sort-group {
-      flex: 0 0 auto;
-      min-width: 180px;
-    }
-
-    .search-input {
-      border-radius: 4px 0 0 4px;
-      border: 1px solid #e9ecef;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.85rem;
-      transition: all 0.2s ease;
-    }
-
-    .search-input:focus {
-      box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1);
-      border-color: #5e72e4;
-      outline: none;
-    }
-
-    .search-button {
-      border-radius: 0 4px 4px 0;
-      background-color: #5e72e4;
-      border: none;
-      color: white;
-      padding: 0.5rem 0.75rem;
-      transition: all 0.2s ease;
-    }
-
-    .search-button:hover {
-      background-color: #4a5cd0;
-    }
-
-    .sort-label {
-      font-size: 0.75rem;
-      color: #8898aa;
-      font-weight: 500;
-      margin-bottom: 0.25rem;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
-
-    .sort-select {
-      border-radius: 4px;
-      border: 1px solid #e9ecef;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.85rem;
-      transition: all 0.2s ease;
-      background-color: #ffffff;
-      color: #495057;
-      width: 100%;
-    }
-
-    /* Custom Tom Select alignment styles */
-    .ts-wrapper.sort-select {
-      padding: 0 !important;
-      border: none !important;
-      background: transparent !important;
-    }
-    .ts-wrapper.sort-select .ts-control {
-      height: 38px !important;
-      padding: 0.5rem 0.75rem !important;
-      font-size: 0.85rem !important;
-      border: 1px solid #e9ecef !important;
-      border-radius: 4px !important;
-      display: flex;
-      align-items: center;
-      background-color: #ffffff !important;
-    }
-    .ts-wrapper.sort-select.focus .ts-control {
-      box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1) !important;
-      border-color: #5e72e4 !important;
-    }
-
-    .sort-select:focus {
-      box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1);
-      border-color: #5e72e4;
-      outline: none;
-    }
-
-    .sort-select option {
-      padding: 0.5rem;
-    }
-
-    /* Export Dropdown Styles */
-    .export-dropdown {
-      position: relative;
-      display: inline-block;
-    }
-
-    /* .export-dropdown .dropdown-toggle {
-                                                                  background-color: #2dce89;
-                                                                  border: none;
-                                                                  color: white;
-                                                                  padding: 0.5rem 1rem;
-                                                                  font-size: 0.875rem;
-                                                                  border-radius: 4px;
-                                                                  transition: all 0.2s ease;
-                                                                  display: flex;
-                                                                  align-items: center;
-                                                                  gap: 0.5rem;
-                                                                  cursor: pointer;
-                                                              } */
-
-    .export-dropdown .dropdown-toggle:hover {
-      background-color: #24a46d;
-    }
-
-    .export-dropdown .dropdown-toggle:focus {
-      box-shadow: 0 0 0 0.15rem rgba(45, 206, 137, 0.25);
-      outline: none;
-    }
-
-    .export-dropdown .dropdown-menu {
-      min-width: 200px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      padding: 0.5rem 0;
-      margin-top: 0.25rem;
-    }
-
-    .export-dropdown .dropdown-item {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
-      color: #495057;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s ease;
-    }
-
-    .export-dropdown .dropdown-item:hover {
-      background-color: #f8f9fa;
-      color: #2dce89;
-    }
-
-    .export-dropdown .dropdown-item i {
-      font-size: 1rem;
-      width: 16px;
-      text-align: center;
-    }
-
-    .export-dropdown .dropdown-divider {
-      height: 1px;
-      background-color: #e9ecef;
-      margin: 0.5rem 0;
-      border: none;
-    }
-
-    .export-dropdown .dropdown-header {
-      padding: 0.5rem 1rem;
-      font-size: 0.75rem;
-      color: #8898aa;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background-color: #f8f9fa;
-      margin-bottom: 0.25rem;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-      .search-sort-wrapper {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      .search-group,
-      .sort-group {
-        width: 100%;
-        min-width: unset;
-      }
-
-      .export-dropdown .dropdown-toggle {
-        width: 100%;
-        justify-content: center;
-      }
-    }
-
-    @media (max-width: 576px) {
-      .search-container {
-        padding: 0.75rem;
-      }
-
-      .search-input,
-      .sort-select {
-        font-size: 0.8rem;
-        padding: 0.45rem 0.65rem;
-      }
-    }
-
-    .divider {
-      height: 1px;
-      background-color: rgba(0, 0, 0, 0.05);
-      margin: 1rem 0;
-      border: none;
-    }
-
-    /* Modern Table Styles */
-    .modern-table {
-      border-collapse: separate;
-      border-spacing: 0;
-      width: 100%;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .modern-table thead {
-      background-color: #f8f9fa;
-    }
-
-    .modern-table th {
-      padding: 1rem;
-      font-weight: 600;
-      color: #495057;
-      border-bottom: 2px solid #e9ecef;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      letter-spacing: 0.5px;
-    }
-
-    .modern-table td {
-      padding: 0.85rem 1rem;
-      vertical-align: middle;
-      border-bottom: 1px solid #f1f1f1;
-      color: #495057;
-      font-size: 0.9rem;
-    }
-
-    .modern-table tbody tr {
-      transition: background-color 0.2s;
-    }
-
-    .modern-table tbody tr:hover {
-      background-color: #f8f9fa;
-    }
-
-    .modern-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    /* Action Buttons */
-    .action-btn {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      margin: 0 3px;
-      transition: all 0.2s;
-    }
-
-    .action-btn:hover {
+    .kpi-card:hover {
       transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.025);
     }
 
-    .action-btn i {
-      font-size: 1rem;
+    .table-hover-row:hover td {
+      background-color: #f8fafc;
     }
 
-    /* Status Badges */
-    .status-badge {
-      padding: 0.4rem 0.8rem;
-      font-weight: 500;
-      letter-spacing: 0.3px;
+    /* Bootstrap collapse vs utility `.collapse` Tailwind (visibility: collapse) */
+    #filterCollapse.collapse.show {
+      visibility: visible;
     }
 
-    /* No Results Message */
-    .no-results {
-      text-align: center;
-      padding: 2rem;
-      color: #6c757d;
-      font-style: italic;
-      display: none;
+    /* Tom Select (filter agen) */
+    .ts-wrapper {
+      width: 100% !important;
+      height: auto !important;
+      border: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
     }
 
-    /* Pagination Styles */
-    .pagination-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background-color: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-    }
-
-    .pagination-info {
-      font-size: 0.875rem;
-      color: #6c757d;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .pagination-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .pagination-btn {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #e9ecef;
-      background-color: #ffffff;
-      color: #495057;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 0.875rem;
-      min-width: 36px;
-      text-align: center;
-    }
-
-    .pagination-btn:hover:not(:disabled) {
-      background-color: #5e72e4;
-      color: white;
-      border-color: #5e72e4;
-    }
-
-    .pagination-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .pagination-btn.active {
-      background-color: #5e72e4;
-      color: white;
-      border-color: #5e72e4;
-    }
-
-    .page-size-selector {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .page-size-select {
-      padding: 0.375rem 0.5rem;
-      border: 1px solid #e9ecef;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      background-color: #ffffff;
-      color: #495057;
-    }
-
-    .page-size-select:focus {
-      outline: none;
-      border-color: #5e72e4;
-      box-shadow: 0 0 0 0.15rem rgba(94, 114, 228, 0.1);
-    }
-
-    .data-count-info {
-      background-color: #f8f9fa;
-      padding: 0.75rem 1rem;
-      border-radius: 6px;
-      font-size: 0.875rem;
-      color: #495057;
-      border-left: 3px solid #5e72e4;
-    }
-
-    .count-highlight {
+    .ts-wrapper .ts-control {
+      height: 2.5rem;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 0.75rem !important;
+      padding: 0 2rem 0 0.75rem !important;
+      font-size: 0.75rem !important;
       font-weight: 600;
-      color: #5e72e4;
-    }
-
-    /* Responsive pagination */
-    @media (max-width: 768px) {
-      .pagination-container {
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .pagination-info {
-        flex-direction: column;
-        gap: 0.5rem;
-        text-align: center;
-      }
-
-      .pagination-controls {
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-    }
-
-    /* Payment Confirmation Modal Styles - Minimalist Version */
-    .payment-modal .modal-dialog {
-      max-width: 480px;
-      margin: 1.75rem auto;
-    }
-
-    @media (max-width: 576px) {
-      .payment-modal .modal-dialog {
-        max-width: 95%;
-        margin: 0.5rem auto;
-      }
-    }
-
-    .payment-modal .modal-content {
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
-      background-color: #ffffff;
-    }
-
-    .payment-modal .modal-header {
-      background-color: #5e72e4;
-      border-bottom: none;
-      padding: 1rem 1.25rem;
-      position: relative;
-    }
-
-    .payment-modal .modal-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: white;
+      color: #334155;
+      box-shadow: none !important;
+      background-color: #ffffff !important;
       display: flex;
       align-items: center;
     }
 
-    .payment-modal .modal-title i {
-      margin-right: 0.5rem;
-      font-size: 1.1rem;
+    .ts-wrapper.focus .ts-control {
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15) !important;
     }
 
-    .payment-modal .modal-body {
-      padding: 1.25rem;
+    /* Panah konsisten untuk Tom Select single */
+    .ts-wrapper.single .ts-control {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 0.7rem center !important;
+      background-size: 0.85rem !important;
     }
 
-    .payment-modal .modal-footer {
-      border-top: 1px solid #f1f1f1;
-      padding: 1rem 1.25rem;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    @media (max-width: 576px) {
-      .payment-modal .modal-footer {
-        justify-content: space-between;
-      }
-
-      .payment-modal .btn-cancel,
-      .payment-modal .btn-confirm {
-        flex: 1;
-      }
-    }
-
-    .payment-modal .close-btn {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 1.1rem;
-      line-height: 1;
-      padding: 4px;
-      margin: 0;
-      opacity: 0.8;
-      transition: opacity 0.2s;
-    }
-
-    .payment-modal .close-btn:hover {
-      opacity: 1;
-    }
-
-    .payment-modal .customer-info {
-      border-left: 2px solid #5e72e4;
-      padding: 0.5rem 0 0.5rem 0.75rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .payment-modal .info-item {
-      margin-bottom: 0.5rem;
-      display: flex;
-      flex-wrap: wrap;
-    }
-
-    .payment-modal .info-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .payment-modal .info-label {
+    .ts-wrapper .ts-dropdown {
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
       font-size: 0.75rem;
-      color: #8898aa;
-      font-weight: 500;
-      width: 120px;
-      flex-shrink: 0;
-    }
-
-    @media (max-width: 576px) {
-      .payment-modal .info-label {
-        width: 100%;
-        margin-bottom: 0.125rem;
-      }
-
-      .payment-modal .info-value {
-        width: 100%;
-        padding-left: 0.25rem;
-      }
-    }
-
-    .payment-modal .info-value {
-      font-size: 0.875rem;
-      color: #2c3e50;
       font-weight: 600;
-      flex-grow: 1;
+      overflow: hidden;
     }
 
-    .payment-modal .form-label {
-      font-size: 0.8rem;
-      color: #495057;
-      font-weight: 500;
-      margin-bottom: 0.375rem;
+    .ts-wrapper .ts-dropdown .option.active {
+      background-color: #eef2ff;
+      color: #4f46e5;
     }
 
-    .payment-modal .form-control {
-      border-radius: 4px;
-      border: 1px solid #e9ecef;
+    /* Select dengan panah kustom (filter panel) */
+    .filter-select {
+      -webkit-appearance: none;
+      appearance: none;
+      padding-right: 2rem !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      background-size: 0.85rem;
+    }
+
+    /* Export dropdown */
+    .export-menu {
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+      padding: 0.375rem;
+      max-height: 340px;
+      overflow-y: auto;
+    }
+
+    .export-menu .dropdown-item {
+      border-radius: 0.5rem;
       padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-      transition: border-color 0.2s ease;
-    }
-
-    .payment-modal .form-control:focus {
-      border-color: #5e72e4;
-      box-shadow: none;
-    }
-
-    .payment-modal .form-select {
-      border-radius: 4px;
-      border: 1px solid #e9ecef;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-      transition: border-color 0.2s ease;
-    }
-
-    .payment-modal .form-select:focus {
-      border-color: #5e72e4;
-      box-shadow: none;
-    }
-
-    .payment-modal .btn-confirm {
-      background-color: #5e72e4;
-      border: none;
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      font-weight: 500;
-      font-size: 0.875rem;
-      transition: background-color 0.2s;
-      color: white;
-    }
-
-    .payment-modal .btn-confirm:hover {
-      background-color: #4a5cd0;
-    }
-
-    .payment-modal .btn-cancel {
-      background-color: transparent;
-      border: 1px solid #e9ecef;
-      color: #495057;
-      border-radius: 4px;
-      padding: 0.5rem 1rem;
-      font-weight: 500;
-      font-size: 0.875rem;
-      transition: background-color 0.2s;
-    }
-
-    .payment-modal .btn-cancel:hover {
-      background-color: #f8f9fa;
-    }
-
-    .payment-modal .payment-amount {
-      font-size: 1.5rem;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: #5e72e4;
-      text-align: center;
-      margin: 1rem 0;
-    }
-
-    .payment-modal .payment-amount .currency {
-      font-size: 1rem;
-      margin-right: 0.25rem;
-      font-weight: 500;
-    }
-
-    .payment-modal .payment-amount.no-invoice {
-      color: #f5365c !important;
-      font-size: 1.2rem;
-    }
-
-    .payment-modal .payment-amount.no-invoice::after {
-      content: " (Tidak ada tagihan)";
-      font-size: 0.8rem;
-      color: #8898aa;
-      font-weight: 400;
-    }
-
-    .payment-modal .payment-details {
-      margin-top: 1.25rem;
-    }
-
-    .payment-modal .payment-method-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 0.375rem;
-    }
-
-    .payment-modal .payment-method-option {
+      color: #334155;
       display: flex;
       align-items: center;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #e9ecef;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: border-color 0.2s;
-      flex: 1;
-      min-width: 120px;
+      gap: 0.5rem;
+      white-space: normal;
     }
 
-    .payment-modal .payment-method-option:hover {
-      border-color: #5e72e4;
+    .export-menu .dropdown-item:hover {
+      background-color: #f1f5f9;
+      color: #4f46e5;
     }
 
-    .payment-modal .payment-method-option.selected {
-      border-color: #5e72e4;
-      background-color: rgba(94, 114, 228, 0.05);
+    .export-menu .dropdown-header {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      padding: 0.5rem 0.75rem 0.25rem;
     }
 
-    .payment-modal .payment-method-icon {
-      color: #5e72e4;
-      margin-right: 0.5rem;
-      font-size: 1rem;
+    .export-menu .dropdown-divider {
+      border-top-color: #f1f5f9;
+      margin: 0.375rem 0;
     }
 
-    .payment-modal .payment-method-label {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #495057;
+    /* Modal polish */
+    .app-modal .modal-content {
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+
+    .app-modal .modal-header {
+      border-bottom: 1px solid #f1f5f9;
+      padding: 1rem 1.25rem;
+    }
+
+    .app-modal .modal-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .app-modal .modal-body {
+      padding: 1.25rem;
     }
   </style>
 @endsection
 
 @section('content')
-  <div class="row">
-    <!-- Card with data summary -->
-    <div class="col-sm-12 mb-4">
-      <div class="card">
-        <div class="card-header modern-card-header">
-          <h4 class="header-title">Data Global</h4>
-          <div class="row g-3 stats-grid">
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <div class="data-card bg-white primary-card">
-                <div class="data-card-icon primary">
-                  <i class="bx bx-user"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Jumlah Pelanggan</div>
-                  <div class="data-value">
-                    <span class="badge bg-primary rounded-pill">
-                      {{ $allData }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <div class="data-card bg-white success-card">
-                <div class="data-card-icon success">
-                  <i class="bx bx-check-circle"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Pelanggan Aktif</div>
-                  <div class="data-value">
-                    <span class="badge bg-success rounded-pill">
-                      {{ $pelangganAktif }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <div class="data-card bg-white danger-card" data-bs-toggle="modal" data-bs-target="#blokir">
-                <div class="data-card-icon danger">
-                  <i class="bx bx-x-circle"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Pelanggan Non-Aktif</div>
-                  <div class="data-value">
-                    <span class="badge bg-danger rounded-pill">
-                      {{ $nonAktif->count() }}
-                    </span>
-                  </div>
-                  <div class="data-card-note">
-                    <small>Tanggal Isolir : {{ $dateBlokir->tanggal_blokir }}</small>
-                    <small>Jam Isolir : 00:01:00 WIB</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <a href="/pelanggan-dismantle" data-bs-toggle="tooltip" title="Pelanggan Dismantle">
-                <div class="data-card bg-white danger-card">
-                  <div class="data-card-icon danger">
-                    <i class="bx bx-check-circle"></i>
-                  </div>
-                  <div class="data-card-content">
-                    <div class="data-label">Pelanggan Dismantle</div>
-                    <div class="data-value">
-                      <span class="badge bg-danger rounded-pill">
-                        {{ $dismantle }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#maintenance">
-              <div class="data-card bg-white danger-card">
-                <div class="data-card-icon danger">
-                  <i class="bx bx-loader"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">List Tiket</div>
-                  <div class="data-value">
-                    <span class="badge bg-danger rounded-pill">
-                      {{ $maintenance->count() }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#selesai">
-              <div class="data-card bg-white success-card">
-                <div class="data-card-icon success">
-                  <i class="bx bx-check-circle"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Installasi Hari Ini</div>
-                  <div class="data-value">
-                    <span class="badge bg-success rounded-pill">
-                      {{ $hariIni }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#antrian">
-              <div class="data-card bg-white warning-card">
-                <div class="data-card-icon warning">
-                  <i class="bx bx-hourglass"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Antrian Hari Ini</div>
-                  <div class="data-value">
-                    <span class="badge bg-warning rounded-pill">
-                      {{ $menunggu }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3" data-bs-toggle="modal" data-bs-target="#bulanan">
-              <div class="data-card bg-white success-card">
-                <div class="data-card-icon success">
-                  <i class="bx bx-calendar"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Instalasi {{now()->translatedFormat('F Y')}}</div>
-                  <div class="data-value">
-                    <span class="badge bg-success rounded-pill">
-                      {{ $bulananInstallasi }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
-                <div class="data-card-icon secondary">
-                  <i class="bx bx-package"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Pelanggan Fasum</div>
-                  <div class="data-value">
-                    <span class="badge bg-secondary rounded-pill">
-                      {{ $fasum }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Data Agen">
-                <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
-                  <div class="data-card-icon secondary">
-                    <i class="bx bx-user"></i>
-                  </div>
-                  <div class="data-card-content">
-                    <div class="data-label">Data Agen</div>
-                    <div class="data-value">
-                      <span class="badge bg-secondary rounded-pill">
-                        {{ $countAgen }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </a>
-            </div>
-            <div class="col-6 col-lg-4 col-xxl-3">
-              <div class="data-card bg-white secondary-card" data-bs-toggle="modal" data-bs-target="#gagal">
-                <div class="data-card-icon secondary">
-                  <i class="bx bx-error-circle"></i>
-                </div>
-                <div class="data-card-content">
-                  <div class="data-label">Data Import</div>
-                  <div class="data-value">
-                    <span class="badge bg-secondary rounded-pill">
-                      {{ $importData }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+  @php
+    $isFilterActive = request()->filled('search') || request()->filled('agen_id') || (request()->filled('sort') && request('sort') !== 'default') || (request()->filled('per_page') && request('per_page') !== '10');
+
+    // Nomor halaman untuk pagination (maks. 5 tombol + elipsis)
+    $currentPage = $data->currentPage();
+    $lastPage = $data->lastPage();
+    if ($lastPage <= 7) {
+      $paginationPages = range(1, $lastPage);
+    } else {
+      $paginationPages = [1];
+      if ($currentPage > 4) {
+        $paginationPages[] = '...';
+      }
+      foreach (range(max(2, $currentPage - 1), min($lastPage - 1, $currentPage + 1)) as $p) {
+        $paginationPages[] = $p;
+      }
+      if ($currentPage < $lastPage - 3) {
+        $paginationPages[] = '...';
+      }
+      $paginationPages[] = $lastPage;
+    }
+  @endphp
+
+  <div class="space-y-6">
+
+    <!-- ======================================================================== -->
+    <!-- HEADER                                                                   -->
+    <!-- ======================================================================== -->
+    <div class="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Modul Data Pelanggan</span>
           </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight leading-tight m-0 flex items-center gap-2.5">
+            <i class="bx bx-group text-indigo-600 text-2xl"></i> Data Pelanggan
+          </h1>
+          <p class="text-slate-500 text-xs sm:text-sm m-0">
+            Monitoring data pelanggan, status layanan, instalasi, tiket, dan pembayaran.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
+            <i class="bx bx-user"></i> {{ $allData }} Pelanggan
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Card with search and table -->
-    <div class="col-sm-12">
-      <div class="card">
-        <div class="card-header modern-card-header mb-3">
-          @php
-            $isFilterActive = request()->filled('search') || request()->filled('agen_id') || (request()->filled('sort') && request('sort') !== 'default') || (request()->filled('per_page') && request('per_page') !== '10');
-          @endphp
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="header-title mb-0" style="padding-bottom: 0px !important;">Daftar Pelanggan</h4>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-sm {{ $isFilterActive ? 'btn-primary' : 'btn-outline-primary' }}" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="{{ $isFilterActive ? 'true' : 'false' }}" aria-controls="filterCollapse">
-                <i class="bx bx-filter-alt me-1"></i> Filter
-                @if($isFilterActive)
-                  <span class="badge bg-white text-primary ms-1">Aktif</span>
-                @endif
-              </button>
-              <button type="button" class="btn btn-sm btn-primary" id="btn-tutorial-sort" data-bs-toggle="tooltip"
-                data-bs-placement="top" title="Panduan Penggunaan">
-                <i class="bx bx-help-circle me-1"></i> Panduan
-              </button>
+    <!-- ======================================================================== -->
+    <!-- DATA GLOBAL (KPI CARDS)                                                  -->
+    <!-- ======================================================================== -->
+    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+      <div class="flex items-center justify-between gap-2.5 mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i class="bx bx-stats"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-800 m-0 leading-tight">Data Global</h3>
+            <p class="text-xs text-slate-500 m-0 mt-0.5">Ringkasan pelanggan, instalasi, tiket, dan agen</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+
+        <!-- Jumlah Pelanggan -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Jumlah Pelanggan</span>
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-group"></i>
             </div>
           </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $allData }}</div>
+            <div class="text-[11px] font-medium text-slate-500 mt-0.5">Total pelanggan terdaftar</div>
+          </div>
+        </div>
 
-          <!-- Success/Error Messages -->
-          @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-              <i class="bx bx-check-circle me-2"></i>
-              {{ session('success') }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          @endif
-
-          @if (session('error'))
-            <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-              <i class="bx bx-error-circle me-2"></i>
-              {{ session('error') }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          @endif
-
-          @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-              <i class="bx bx-error-circle me-2"></i>
-              <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                  <li>{{ $error }}</li>
-                @endforeach
-              </ul>
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-          @endif
-
-          <!-- Collapse Container for Filters -->
-          <div class="collapse {{ $isFilterActive ? 'show' : '' }} mt-3" id="filterCollapse">
-            <div class="p-3 border rounded bg-light bg-opacity-10">
-              <div class="row g-3 mb-4">
-                <!-- Pencarian -->
-                <div class="col-12 col-md-4">
-                  <div class="sort-group col-sm-12">
-                    <div class="sort-label">Pencarian</div>
-                    <div class="input-group">
-                      <input type="text" class="form-control search-input"
-                        placeholder="Cari pelanggan, alamat, hp, atau usersecret..." id="searchCustomer" style="height: 38px;">
-                      <button class="btn search-button" type="button" id="searchButton" style="height: 38px;">
-                        <i class="bx bx-search"></i>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <!-- Agen -->
-                <div class="col-12 col-md-4">
-                  <div class="sort-group col-sm-12">
-                    <div class="sort-label">Agen</div>
-                    <select class="sort-select" id="agenSelect" style="height: 38px;">
-                      <option value="">Semua Agen</option>
-                      @foreach ($agents as $agent)
-                        <option value="{{ $agent->id }}" {{ (isset($agen_id) && $agen_id == $agent->id) ? 'selected' : '' }}>
-                          {{ $agent->name }}
-                        </option>
-                      @endforeach
-                    </select>
-                  </div>
-                </div>
-                <!-- Urutkan Berdasarkan -->
-                <div class="col-12 col-md-4" id="tutorial-sort-container">
-                  <div class="sort-group col-sm-12">
-                    <div class="sort-label">Urutkan Berdasarkan</div>
-                    <select class="sort-select" id="sortSelect" style="height: 38px;">
-                      <option value="default">Default</option>
-                      <option value="name-asc">Nama A-Z</option>
-                      <option value="name-desc">Nama Z-A</option>
-                      <option value="status-active">Status Aktif</option>
-                      <option value="status-inactive">Status Non-Aktif</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row align-items-center g-3">
-                <!-- Halaman Selector & Info -->
-                <div class="col-12 col-md-6">
-                  <div class="sort-group col-sm-12">
-                    <div class="sort-label">Halaman</div>
-                    <div class="pagination-info">
-                      <div class="page-size-selector">
-                        <label for="pageSize">Data per halaman:</label>
-                        <select id="pageSize" class="page-size-select">
-                          @foreach([10, 25, 50, 100, 250] as $size)
-                            <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
-                              {{ $size }}
-                        </option>
-                          @endforeach
-                          <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>
-                            Semua</option>
-                        </select>
-                      </div>
-                      <div class="data-count-info">
-                        Menampilkan <span class="count-highlight">{{ $data->firstItem() ?? 0 }}</span> -
-                        <span class="count-highlight">{{ $data->lastItem() ?? 0 }}</span> dari
-                        <span class="count-highlight">{{ $data->total() }}</span> data
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- Export Dropdown -->
-                <div class="col-12 col-md-6 d-flex justify-content-start justify-content-md-end align-self-end mb-1">
-                  <div class="export-dropdown">
-                    <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="height: 38px;">
-                      <i class="bx bx-file me-1"></i>
-                      Export Excel
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-scrollable dropdown-menu-end" style="max-height: 300px; overflow-y: auto;">
-                      <li>
-                        <h6 class="dropdown-header">Export Semua Data</h6>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="/semua">
-                          <i class="bx bx-download"></i>
-                          Semua Pelanggan
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="/aktif">
-                          <i class="bx bx-check-circle"></i>
-                          Pelanggan Aktif
-                        </a>
-                      </li>
-                      <li>
-                        <a class="dropdown-item" href="/nonaktif">
-                          <i class="bx bx-x-circle"></i>
-                          Pelanggan Non-Aktif
-                        </a>
-                      </li>
-                      <li>
-                        <hr class="dropdown-divider">
-                      </li>
-                      <li>
-                        <h6 class="dropdown-header">Export Berdasarkan Paket</h6>
-                      </li>
-                      @php
-                        $pakets = \App\Models\Paket::orderBy('nama_paket')->get();
-                      @endphp
-                      @forelse($pakets as $paket)
-                        <li>
-                          <a class="dropdown-item" href="/paket/{{ $paket->id }}">
-                            <i class="bx bx-package"></i>
-                            {{ $paket->nama_paket }}
-                          </a>
-                        </li>
-                      @empty
-                        <li>
-                          <span class="dropdown-item text-muted">
-                            <i class="bx bx-info-circle"></i>
-                            Tidak ada paket tersedia
-                          </span>
-                        </li>
-                      @endforelse
-                      @if($pakets->count() > 0)
-                        <li>
-                          <hr class="dropdown-divider">
-                        </li>
-                        <li>
-                          <a class="dropdown-item" href="/ringkasan-per-paket">
-                            <i class="bx bx-chart"></i>
-                            Ringkasan Per Paket
-                          </a>
-                        </li>
-                      @endif
-                      <li>
-                        <hr class="dropdown-divider">
-                      </li>
-                      <li>
-                        <h6 class="dropdown-header">Export Berdasarkan Bulan</h6>
-                      </li>
-                      @php
-                        $months = [
-                          '01' => 'Januari',
-                          '02' => 'Februari',
-                          '03' => 'Maret',
-                          '04' => 'April',
-                          '05' => 'Mei',
-                          '06' => 'Juni',
-                          '07' => 'Juli',
-                          '08' => 'Agustus',
-                          '09' => 'September',
-                          '10' => 'Oktober',
-                          '11' => 'November',
-                          '12' => 'Desember'
-                        ];
-                        $currentYear = date('Y');
-                      @endphp
-
-                      @foreach($months as $num => $name)
-                        <li>
-                          <a class="dropdown-item"
-                            href="{{ route('export.bulan', ['month' => $num, 'year' => $currentYear]) }}">
-                            <i class="bx bx-calendar"></i>
-                            {{ $name }} {{ $currentYear }}
-                          </a>
-                        </li>
-                      @endforeach
-                    </ul>
-                  </div>
-                </div>
-              </div>
+        <!-- Pelanggan Aktif -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Pelanggan Aktif</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0">
+              <i class="bx bx-check-circle"></i>
             </div>
           </div>
-        <div class="card-body">
-          <!-- WebSocket Connection Status -->
-          <div class="row mb-3" style="display: none">
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Status Koneksi WebSocket</h5>
-                  <div id="status" class="alert alert-info">Menghubungkan ke server WebSocket...</div>
-                  <div id="messages" class="small text-muted" style="max-height: 150px; overflow-y: auto;"></div>
-                </div>
-              </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $pelangganAktif }}</div>
+            <div class="text-[11px] font-medium text-emerald-600 mt-0.5">Layanan berjalan normal</div>
+          </div>
+        </div>
+
+        <!-- Pelanggan Non-Aktif -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-rose-300"
+          data-bs-toggle="modal" data-bs-target="#blokir">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-rose-600">Non-Aktif</span>
+            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-rose-100 transition-colors">
+              <i class="bx bx-x-circle"></i>
             </div>
           </div>
-
-          <div class="table-responsive mb-2">
-            <table class="table modern-table" id="customerTable">
-              <thead>
-                <tr class="text-center">
-                  <th>No</th>
-                  <th>Aksi</th>
-                  <th>Nama</th>
-                  <th>Telp.</th>
-                  <th>PIC</th>
-                  <th>ODP</th>
-                  <th>Paket</th>
-                  <th>Status</th>
-                  <th>Tanggal Installasi</th>
-                  <th>History Pembayaran</th>
-                  <th>Pembayaran Terakhir</th>
-                  <th>Remote IP</th>
-                  {{-- <th>Aksi</th> --}}
-                </tr>
-              </thead>
-              <tbody id="customerTableBody">
-                @foreach ($data as $item)
-                  <tr class="customer-row text-center" data-id="{{ $item->id }}"
-                    data-tagihan="{{ $item->invoice->isNotEmpty() && $item->invoice->first()->status ? ($item->invoice->first()->status->nama_status == 'Sudah Bayar' ? '0' : $item->invoice->first()->tagihan ?? '0') : '0' }}"
-                    data-customer-id="{{ $item->id }}"
-                    data-invoice-id="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}"
-                    data-tagihan-tambahan="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->tambahan : '' }}">
-                    <td class="text-center">{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
-                    <td>
-                      <div class="row justify-content-center">
-                        @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 4)
-                          <a href="/blokir/{{ $item->id }}" class="btn btn-danger action-btn blokir-customer-btn mb-2"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Blokir Pelanggan">
-                            <i class="bx bx-block"></i>
-                          </a>
-                          <a href="/unblokir/{{ $item->id }}" class="btn btn-warning action-btn unblokir-customer-btn mb-2"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Aktifkan Pelanggan">
-                            <i class="bx bx-check-circle"></i>
-                          </a>
-                        @endif
-                        <a href="/detail-pelanggan/{{ $item->id }}" class="btn btn-info action-btn detail-customer-btn mb-2"
-                          data-bs-toggle="tooltip" data-bs-placement="top" title="Detail Pelanggan">
-                          <i class="bx bx-show"></i>
-                        </a>
-                        <a href="/edit-pelanggan/{{ $item->id }}"
-                          class="btn btn-secondary action-btn detail-customer-btn mb-2" data-bs-toggle="tooltip"
-                          data-bs-placement="top" title="Edit Pelanggan" title="Edit Pelanggan">
-                          <i class="bx bx-pencil text-white"></i>
-                        </a>
-                      </div>
-                    </td>
-                    <td class="customer-name">
-                      <div class="fw-bold">
-                        {{ $item->nama_customer }}
-                      </div>
-                      <span class="d-block text-muted">
-                        <small>{{$item->alamat}}</small>
-                      </span>
-                    </td>
-                    <td class="nomor-hp">{{ $item->no_hp }}</td>
-                    <td class="fw-bold">{{$item->agen->name ?? '-'}}</td>
-                    <td>
-                      @if($item->media_id == 3 && isset($item->odp))
-                        @php
-                          $gps = $item->odp->gps;
-                          $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
-                          $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
-                        @endphp
-                        <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }}
-                          class="badge bg-info bg-opacity-10 status-badge text-info">
-                          {{ $item->odp->nama_odp ?? '-' }}
-                        </a>
-                      @else
-                        <span class="badge bg-info bg-opacity-10 status-badge text-info">-</span>
-                      @endif
-                    </td>
-                    <td class="nama-paket">
-                      <span class="badge bg-warning bg-opacity-10 status-badge text-warning">
-                        {{ $item->paket->nama_paket ?? '-'}}
-                      </span>
-                    </td>
-                    <td class="text-center">
-                      @if ($item->status_id == 3)
-                        <span class="badge bg-success bg-opacity-10 text-success status-badge">
-                          Aktif
-                        </span>
-                      @elseif($item->status_id == 9)
-                        <span class="badge bg-danger status-badge bg-opacity-10 text-danger"
-                          style="text-transform: uppercase">
-                          Isolire Billing
-                        </span>
-                      @elseif($item->status_id == 4)
-                        <span class="badge bg-info status-badge bg-opacity-10 text-info" style="text-transform: uppercase">
-                          Maintenance
-                        </span>
-                      @endif
-                    </td>
-                    <td>
-                      @if($item->tanggal_selesai == null)
-                        <span class="badge bg-label-warning">
-                          Import data
-                        </span>
-                      @else
-                        <span class="badge bg-label-info">
-                          {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y')) }}
-                        </span>
-                      @endif
-                    </td>
-                    <td>
-                      <a href="/riwayatPembayaran/{{ $item->id }}" class="btn btn-outline-info action-btn"
-                        data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}"
-                        data-bs-placement="top">
-                        <i class="bx bx-history"></i>
-                      </a>
-                    </td>
-                    <td>
-                      <span class="badge bg-label-danger">{{$item->last_pembayaran ?? '-'}}</span>
-                    </td>
-                    <td>
-                      <div class="row">
-                        <div class="d-flex justify-content-center">
-                          <a href="http://{{ $item->remote ?? '#' }}" target="_blank" class="btn btn-warning action-btn"
-                            data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
-                            <i class="bx bx-cloud"></i>
-                          </a>
-                          <a href="/traffic-pelanggan/{{ $item->id }}" class="btn btn-info action-btn"
-                            data-bs-toggle="tooltip" data-bs-placement="bottom" title="Traffic {{ $item->nama_customer }}">
-                            <i class="bx bx-chart"></i>
-                          </a>
-                        </div>
-                      </div>
-                    </td>
-                    {{-- <td class="text-center">
-                      <div class="row">
-                        <div class="d-flex justify-content-center">
-                          @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id ==
-                          4)
-                          <a href="/blokir/{{ $item->id }}" class="btn btn-danger action-btn blokir-customer-btn mb-2"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Blokir Pelanggan">
-                            <i class="bx bx-block"></i>
-                          </a>
-                          <a href="/unblokir/{{ $item->id }}" class="btn btn-warning action-btn unblokir-customer-btn mb-2"
-                            data-bs-toggle="tooltip" data-bs-placement="top" title="Aktifkan Pelanggan">
-                            <i class="bx bx-check-circle"></i>
-                          </a>
-                          @endif
-                          <a href="/detail-pelanggan/{{ $item->id }}"
-                            class="btn btn-info action-btn detail-customer-btn mb-2" data-bs-toggle="tooltip"
-                            data-bs-placement="top" title="Detail Pelanggan">
-                            <i class="bx bx-show"></i>
-                          </a>
-                          <a href="/edit-pelanggan/{{ $item->id }}"
-                            class="btn btn-secondary action-btn detail-customer-btn mb-2" data-bs-toggle="tooltip"
-                            data-bs-placement="top" title="Edit Pelanggan" title="Edit Pelanggan">
-                            <i class="bx bx-pencil text-white"></i>
-                          </a>
-                        </div>
-                      </div>
-                    </td> --}}
-                  </tr>
-                @endforeach
-                <tr>
-                  <td colspan="12" class="bg-label-secondary">
-                    <span class="badge bg-label-danger fw-bold">
-                      Total Pendapatan: Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            @if(empty($item))
-              <div class="d-flex flex-column align-items-center justify-content-center py-5" id="noDataMessage">
-                <div class="mb-3">
-                  <i class="bx bx-user-x" style="font-size: 4rem; color: #8898aa;"></i>
-                </div>
-                <h5 class="text-muted mb-2">Belum Ada Pelanggan</h5>
-                <p class="text-muted">Saat ini belum ada data pelanggan yang terdaftar.</p>
-              </div>
-            @endif
-            <div class="no-results" id="noResults">
-              <p>Tidak ada data pelanggan yang sesuai dengan pencarian.</p>
-            </div>
-          </div>
-
-          <!-- Pagination Container -->
-          <div class="pagination-container" id="paginationContainer">
-            <div class="pagination-controls">
-              {{ $data->links('pagination::bootstrap-5') }}
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $nonAktif->count() }}</div>
+            <div class="text-[10px] font-medium text-slate-400 mt-0.5 truncate" title="Tanggal Isolir : {{ $dateBlokir->tanggal_blokir }}">
+              Isolir: {{ $dateBlokir->tanggal_blokir }} &middot; 00:01:00 WIB
             </div>
           </div>
         </div>
+
+        <!-- Pelanggan Dismantle -->
+        <a href="/pelanggan-dismantle" data-bs-toggle="tooltip" title="Pelanggan Dismantle"
+          class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between no-underline group hover:border-purple-300">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-purple-600">Dismantle</span>
+            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-purple-100 transition-colors">
+              <i class="bx bx-archive-in"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $dismantle }}</div>
+            <div class="text-[11px] font-medium text-purple-600 mt-0.5">Perangkat ditarik teknisi</div>
+          </div>
+        </a>
+
+        <!-- List Tiket -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-amber-300"
+          data-bs-toggle="modal" data-bs-target="#maintenance">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600">List Tiket</span>
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-amber-100 transition-colors">
+              <i class="bx bx-wrench"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $maintenance->count() }}</div>
+            <div class="text-[11px] font-medium text-amber-600 mt-0.5">Tiket open berjalan</div>
+          </div>
+        </div>
+
+        <!-- Installasi Hari Ini -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-emerald-300"
+          data-bs-toggle="modal" data-bs-target="#selesai">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Installasi Hari Ini</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-emerald-100 transition-colors">
+              <i class="bx bx-check-circle"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $hariIni }}</div>
+            <div class="text-[11px] font-medium text-emerald-600 mt-0.5">Selesai hari ini</div>
+          </div>
+        </div>
+
+        <!-- Antrian Hari Ini -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-amber-300"
+          data-bs-toggle="modal" data-bs-target="#antrian">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-600">Antrian Hari Ini</span>
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-amber-100 transition-colors">
+              <i class="bx bx-hourglass"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $menunggu }}</div>
+            <div class="text-[11px] font-medium text-amber-600 mt-0.5">Menunggu / on progress</div>
+          </div>
+        </div>
+
+        <!-- Instalasi Bulan Ini -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-blue-300"
+          data-bs-toggle="modal" data-bs-target="#bulanan">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600">Instalasi {{ now()->translatedFormat('F Y') }}</span>
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-blue-100 transition-colors">
+              <i class="bx bx-calendar"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $bulananInstallasi }}</div>
+            <div class="text-[11px] font-medium text-blue-600 mt-0.5">Total bulan berjalan</div>
+          </div>
+        </div>
+
+        <!-- Pelanggan Fasum -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-slate-300"
+          data-bs-toggle="modal" data-bs-target="#gagal">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pelanggan Fasum</span>
+            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-slate-200 transition-colors">
+              <i class="bx bx-package"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $fasum }}</div>
+            <div class="text-[11px] font-medium text-slate-500 mt-0.5">Fasilitas umum</div>
+          </div>
+        </div>
+
+        <!-- Data Agen -->
+        <a href="/data-agen" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Data Agen"
+          class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between no-underline group hover:border-blue-300">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600">Data Agen</span>
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-blue-100 transition-colors">
+              <i class="bx bx-user-check"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $countAgen }}</div>
+            <div class="text-[11px] font-medium text-blue-600 mt-0.5">Agen terdaftar</div>
+          </div>
+        </a>
+
+        <!-- Data Import -->
+        <div class="kpi-card bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between cursor-pointer group hover:border-slate-300"
+          data-bs-toggle="modal" data-bs-target="#gagal">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Data Import</span>
+            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg shrink-0 group-hover:bg-slate-200 transition-colors">
+              <i class="bx bx-import"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-extrabold text-slate-800 tracking-tight">{{ $importData }}</div>
+            <div class="text-[11px] font-medium text-slate-500 mt-0.5">Data hasil import</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================== -->
+    <!-- DAFTAR PELANGGAN                                                         -->
+    <!-- ======================================================================== -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+      <!-- Card Header -->
+      <div class="p-5 border-b border-slate-100">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg">
+              <i class="bx bx-list-ul"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-800 m-0 leading-tight">Daftar Pelanggan</h3>
+              <p class="text-xs text-slate-500 m-0 mt-0.5">Kelola data pelanggan, status layanan, dan pembayaran</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button type="button"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border font-semibold text-xs transition-all cursor-pointer {{ $isFilterActive ? 'border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700' }}"
+              data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="{{ $isFilterActive ? 'true' : 'false' }}"
+              aria-controls="filterCollapse">
+              <i class="bx bx-filter-alt text-base"></i> Filter
+              @if($isFilterActive)
+                <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-bold">Aktif</span>
+              @endif
+            </button>
+            <button type="button" id="btn-tutorial-sort" data-bs-toggle="tooltip" data-bs-placement="top" title="Panduan Penggunaan"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-all cursor-pointer border-0">
+              <i class="bx bx-help-circle text-base"></i> Panduan
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Body -->
+      <div class="p-5">
+
+        <!-- Success/Error Messages -->
+        @if (session('success'))
+          <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 !rounded-2xl !border !border-emerald-200 !bg-emerald-50 !text-emerald-800" role="alert">
+            <i class="bx bx-check-circle text-lg"></i>
+            <span class="text-xs font-semibold">{{ session('success') }}</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        @endif
+
+        @if (session('error'))
+          <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 !rounded-2xl !border !border-rose-200 !bg-rose-50 !text-rose-800" role="alert">
+            <i class="bx bx-error-circle text-lg"></i>
+            <span class="text-xs font-semibold">{{ session('error') }}</span>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        @endif
+
+        @if ($errors->any())
+          <div class="alert alert-danger alert-dismissible fade show !rounded-2xl !border !border-rose-200 !bg-rose-50 !text-rose-800" role="alert">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bx bx-error-circle text-lg"></i>
+              <span class="text-xs font-bold">Terjadi kesalahan:</span>
+            </div>
+            <ul class="mb-0 text-xs">
+              @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+              @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        @endif
+
+        <!-- Collapse Container for Filters -->
+        <div class="collapse {{ $isFilterActive ? 'show' : '' }} mt-4" id="filterCollapse">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <!-- Pencarian -->
+              <div class="md:col-span-2 min-w-0">
+                <label for="searchCustomer" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Pencarian</label>
+                <div class="flex items-stretch h-10 rounded-xl border border-slate-200 bg-white overflow-hidden transition-all focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15">
+                  <input type="text" id="searchCustomer" placeholder="Cari pelanggan, alamat, hp, atau usersecret..."
+                    class="flex-1 min-w-0 px-3 text-xs font-medium text-slate-700 bg-transparent border-0 outline-none placeholder-slate-400">
+                  <button type="button" id="searchButton" title="Cari"
+                    class="shrink-0 px-4 bg-indigo-600 hover:bg-indigo-700 text-white border-0 cursor-pointer transition-colors">
+                    <i class="bx bx-search text-base"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Agen -->
+              <div class="min-w-0">
+                <label for="agenSelect" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Agen</label>
+                <select id="agenSelect"
+                  class="filter-select w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 transition-all cursor-pointer">
+                  <option value="">Semua Agen</option>
+                  @foreach ($agents as $agent)
+                    <option value="{{ $agent->id }}" {{ (isset($agen_id) && $agen_id == $agent->id) ? 'selected' : '' }}>
+                      {{ $agent->name }}
+                    </option>
+                  @endforeach
+                </select>
+              </div>
+
+              <!-- Urutkan Berdasarkan -->
+              <div id="tutorial-sort-container" class="min-w-0">
+                <label for="sortSelect" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Urutkan Berdasarkan</label>
+                <select id="sortSelect"
+                  class="filter-select w-full h-10 px-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 transition-all cursor-pointer">
+                  <option value="default">Default</option>
+                  <option value="name-asc">Nama A-Z</option>
+                  <option value="name-desc">Nama Z-A</option>
+                  <option value="status-active">Status Aktif</option>
+                  <option value="status-inactive">Status Non-Aktif</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-4 pt-4 border-t border-slate-200/70">
+              <!-- Data per Halaman -->
+              <div class="min-w-0">
+                <label for="pageSize" class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Data per Halaman</label>
+                <div class="flex items-center gap-2.5">
+                  <select id="pageSize"
+                    class="filter-select h-10 px-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 transition-all cursor-pointer">
+                    @foreach([10, 25, 50, 100, 250] as $size)
+                      <option value="{{ $size }}" {{ request('per_page', 10) == $size ? 'selected' : '' }}>
+                        {{ $size }}
+                      </option>
+                    @endforeach
+                    <option value="{{ $data->total() }}" {{ request('per_page') == $data->total() ? 'selected' : '' }}>
+                      Semua</option>
+                  </select>
+                  <span class="text-[11px] font-medium text-slate-400 whitespace-nowrap">
+                    dari <span class="font-bold text-slate-600">{{ number_format($data->total(), 0, ',', '.') }}</span> data
+                  </span>
+                </div>
+              </div>
+
+              <!-- Export Dropdown -->
+              <div class="flex sm:justify-end">
+                <div class="dropdown export-dropdown">
+                  <button type="button"
+                    class="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition-all cursor-pointer"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bx bx-file text-base text-emerald-600"></i>
+                    Export Excel
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end export-menu" style="min-width: 230px;">
+                    <li>
+                      <h6 class="dropdown-header">Export Semua Data</h6>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/semua">
+                        <i class="bx bx-download"></i>
+                        Semua Pelanggan
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/aktif">
+                        <i class="bx bx-check-circle"></i>
+                        Pelanggan Aktif
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/nonaktif">
+                        <i class="bx bx-x-circle"></i>
+                        Pelanggan Non-Aktif
+                      </a>
+                    </li>
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                      <h6 class="dropdown-header">Export Berdasarkan Paket</h6>
+                    </li>
+                    @php
+                      $pakets = \App\Models\Paket::orderBy('nama_paket')->get();
+                    @endphp
+                    @forelse($pakets as $paket)
+                      <li>
+                        <a class="dropdown-item" href="/paket/{{ $paket->id }}">
+                          <i class="bx bx-package"></i>
+                          {{ $paket->nama_paket }}
+                        </a>
+                      </li>
+                    @empty
+                      <li>
+                        <span class="dropdown-item text-muted">
+                          <i class="bx bx-info-circle"></i>
+                          Tidak ada paket tersedia
+                        </span>
+                      </li>
+                    @endforelse
+                    @if($pakets->count() > 0)
+                      <li>
+                        <hr class="dropdown-divider">
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/ringkasan-per-paket">
+                          <i class="bx bx-chart"></i>
+                          Ringkasan Per Paket
+                        </a>
+                      </li>
+                    @endif
+                    <li>
+                      <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                      <h6 class="dropdown-header">Export Berdasarkan Bulan</h6>
+                    </li>
+                    @php
+                      $months = [
+                        '01' => 'Januari',
+                        '02' => 'Februari',
+                        '03' => 'Maret',
+                        '04' => 'April',
+                        '05' => 'Mei',
+                        '06' => 'Juni',
+                        '07' => 'Juli',
+                        '08' => 'Agustus',
+                        '09' => 'September',
+                        '10' => 'Oktober',
+                        '11' => 'November',
+                        '12' => 'Desember'
+                      ];
+                      $currentYear = date('Y');
+                    @endphp
+
+                    @foreach($months as $num => $name)
+                      <li>
+                        <a class="dropdown-item"
+                          href="{{ route('export.bulan', ['month' => $num, 'year' => $currentYear]) }}">
+                          <i class="bx bx-calendar"></i>
+                          {{ $name }} {{ $currentYear }}
+                        </a>
+                      </li>
+                    @endforeach
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WebSocket Connection Status (hidden) -->
+        <div class="row mb-3" style="display: none">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Status Koneksi WebSocket</h5>
+                <div id="status" class="alert alert-info">Menghubungkan ke server WebSocket...</div>
+                <div id="messages" class="small text-muted" style="max-height: 150px; overflow-y: auto;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto mb-2 mt-4">
+          <table class="w-full min-w-[1080px] text-left border-collapse" id="customerTable">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <th class="py-3 px-4 w-12 text-center">No</th>
+                <th class="py-3 px-4 text-center w-40">Aksi</th>
+                <th class="py-3 px-4">Nama</th>
+                <th class="py-3 px-3">Telp.</th>
+                <th class="py-3 px-3 text-center">PIC</th>
+                <th class="py-3 px-3 text-center">ODP</th>
+                <th class="py-3 px-3 text-center">Paket</th>
+                <th class="py-3 px-3 text-center">Status</th>
+                <th class="py-3 px-3 text-center">Tanggal Installasi</th>
+                <th class="py-3 px-3 text-center">History Pembayaran</th>
+                <th class="py-3 px-3 text-center">Pembayaran Terakhir</th>
+                <th class="py-3 px-4 text-center">Remote IP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs text-slate-700" id="customerTableBody">
+              @foreach ($data as $item)
+                <tr class="customer-row table-hover-row transition-colors" data-id="{{ $item->id }}"
+                  data-tagihan="{{ $item->invoice->isNotEmpty() && $item->invoice->first()->status ? ($item->invoice->first()->status->nama_status == 'Sudah Bayar' ? '0' : $item->invoice->first()->tagihan ?? '0') : '0' }}"
+                  data-customer-id="{{ $item->id }}"
+                  data-invoice-id="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->id : '' }}"
+                  data-tagihan-tambahan="{{ $item->invoice->isNotEmpty() ? $item->invoice->first()->tambahan : '' }}">
+                  <td class="py-3 px-4 text-center font-medium text-slate-400">
+                    {{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}
+                  </td>
+
+                  <!-- Aksi -->
+                  <td class="py-3 px-4">
+                    <div class="flex flex-wrap items-center justify-center gap-1.5">
+                      @if (auth()->user()->roles_id == 1 || auth()->user()->roles_id == 2 || auth()->user()->roles_id == 4)
+                        <a href="/blokir/{{ $item->id }}"
+                          class="blokir-customer-btn w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-200 text-rose-600 flex items-center justify-center text-sm transition-colors"
+                          data-bs-toggle="tooltip" data-bs-placement="top" title="Blokir Pelanggan">
+                          <i class="bx bx-block"></i>
+                        </a>
+                        <a href="/unblokir/{{ $item->id }}"
+                          class="unblokir-customer-btn w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-200 text-amber-600 flex items-center justify-center text-sm transition-colors"
+                          data-bs-toggle="tooltip" data-bs-placement="top" title="Aktifkan Pelanggan">
+                          <i class="bx bx-check-circle"></i>
+                        </a>
+                      @endif
+                      <a href="/detail-pelanggan/{{ $item->id }}"
+                        class="detail-customer-btn w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-200 text-blue-600 flex items-center justify-center text-sm transition-colors"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="Detail Pelanggan">
+                        <i class="bx bx-show"></i>
+                      </a>
+                      <a href="/edit-pelanggan/{{ $item->id }}"
+                        class="detail-customer-btn w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 flex items-center justify-center text-sm transition-colors"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="Edit Pelanggan">
+                        <i class="bx bx-pencil"></i>
+                      </a>
+                    </div>
+                  </td>
+
+                  <!-- Nama -->
+                  <td class="py-3 px-4 customer-name">
+                    <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                    <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
+                  </td>
+
+                  <!-- Telp -->
+                  <td class="py-3 px-3 nomor-hp whitespace-nowrap text-slate-600">{{ $item->no_hp }}</td>
+
+                  <!-- PIC -->
+                  <td class="py-3 px-3 text-center font-semibold text-slate-700">{{ $item->agen->name ?? '-' }}</td>
+
+                  <!-- ODP -->
+                  <td class="py-3 px-3 text-center">
+                    @if($item->media_id == 3 && isset($item->odp))
+                      @php
+                        $gps = $item->odp->gps;
+                        $isLink = $gps && Str::startsWith($gps, ['http://', 'https://']);
+                        $url = $gps ? ($isLink ? $gps : 'https://www.google.com/maps?q=' . urlencode($gps)) : '#';
+                      @endphp
+                      <a href="{{ $url }}" {{ $url != '#' ? 'target=_blank' : '' }}
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 no-underline">
+                        <i class="bx bx-map-pin text-sm"></i>{{ $item->odp->nama_odp ?? '-' }}
+                      </a>
+                    @else
+                      <span class="text-slate-300 font-medium">-</span>
+                    @endif
+                  </td>
+
+                  <!-- Paket -->
+                  <td class="py-3 px-3 text-center nama-paket">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                      {{ $item->paket->nama_paket ?? '-' }}
+                    </span>
+                  </td>
+
+                  <!-- Status -->
+                  <td class="py-3 px-3 text-center">
+                    @if ($item->status_id == 3)
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap">
+                        <i class="bx bx-check-circle text-sm"></i> Aktif
+                      </span>
+                    @elseif($item->status_id == 9)
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60 whitespace-nowrap uppercase">
+                        <i class="bx bx-block text-sm"></i> Isolire Billing
+                      </span>
+                    @elseif($item->status_id == 4)
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/60 whitespace-nowrap uppercase">
+                        <i class="bx bx-wrench text-sm"></i> Maintenance
+                      </span>
+                    @else
+                      <span class="text-slate-300 font-medium">-</span>
+                    @endif
+                  </td>
+
+                  <!-- Tanggal Installasi -->
+                  <td class="py-3 px-3 text-center">
+                    @if($item->tanggal_selesai == null)
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                        <i class="bx bx-import text-sm"></i> Import data
+                      </span>
+                    @else
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                        {{ is_numeric($item->tanggal_selesai) ? '-' : (\Carbon\Carbon::parse($item->tanggal_selesai)->format('d-F-Y')) }}
+                      </span>
+                    @endif
+                  </td>
+
+                  <!-- History Pembayaran -->
+                  <td class="py-3 px-3 text-center">
+                    <a href="/riwayatPembayaran/{{ $item->id }}"
+                      class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-200 text-blue-600 inline-flex items-center justify-center text-sm transition-colors"
+                      data-bs-toggle="tooltip" title="History Pembayaran {{ $item->nama_customer }}"
+                      data-bs-placement="top">
+                      <i class="bx bx-history"></i>
+                    </a>
+                  </td>
+
+                  <!-- Pembayaran Terakhir -->
+                  <td class="py-3 px-3 text-center">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200/80 whitespace-nowrap">
+                      {{ $item->last_pembayaran ?? '-' }}
+                    </span>
+                  </td>
+
+                  <!-- Remote IP -->
+                  <td class="py-3 px-4">
+                    <div class="flex items-center justify-center gap-1.5">
+                      <a href="http://{{ $item->remote ?? '#' }}" target="_blank"
+                        class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-200 text-amber-600 flex items-center justify-center text-sm transition-colors"
+                        data-bs-toggle="tooltip" title="Akses Remote" data-bs-placement="bottom">
+                        <i class="bx bx-cloud"></i>
+                      </a>
+                      <a href="/traffic-pelanggan/{{ $item->id }}"
+                        class="w-7 h-7 rounded-lg border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-200 text-blue-600 flex items-center justify-center text-sm transition-colors"
+                        data-bs-toggle="tooltip" data-bs-placement="bottom" title="Traffic {{ $item->nama_customer }}">
+                        <i class="bx bx-chart"></i>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              @endforeach
+
+              <!-- Total Pendapatan -->
+              <tr class="bg-slate-50 border-t-2 border-slate-200">
+                <td colspan="12" class="py-3.5 px-4">
+                  <span class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <i class="bx bx-wallet text-emerald-600"></i> Total Pendapatan:
+                    <span class="font-black text-emerald-700">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          @if(empty($item))
+            <div class="d-flex flex-column align-items-center justify-content-center py-5" id="noDataMessage">
+              <div class="mb-3">
+                <i class="bx bx-user-x" style="font-size: 4rem; color: #94a3b8;"></i>
+              </div>
+              <h5 class="text-slate-500 font-semibold mb-2">Belum Ada Pelanggan</h5>
+              <p class="text-xs text-slate-400">Saat ini belum ada data pelanggan yang terdaftar.</p>
+            </div>
+          @endif
+          <div class="hidden text-center py-8" id="noResults">
+            <p class="m-0 text-sm text-slate-400">Tidak ada data pelanggan yang sesuai dengan pencarian.</p>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 border-t border-slate-100 text-xs text-slate-500" id="paginationContainer">
+          <div>
+            Menampilkan
+            <span class="font-bold text-slate-700">{{ $data->firstItem() ?? 0 }}</span> -
+            <span class="font-bold text-slate-700">{{ $data->lastItem() ?? 0 }}</span>
+            dari <span class="font-bold text-slate-700">{{ number_format($data->total(), 0, ',', '.') }}</span> data
+          </div>
+
+          @if($data->hasPages())
+            <div class="flex items-center gap-1">
+              @if($data->onFirstPage())
+                <span class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-300 flex items-center justify-center opacity-50">
+                  <i class="bx bx-chevron-left text-sm"></i>
+                </span>
+              @else
+                <a href="{{ $data->url($data->currentPage() - 1) }}" title="Halaman Sebelumnya"
+                  class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition flex items-center justify-center no-underline">
+                  <i class="bx bx-chevron-left text-sm"></i>
+                </a>
+              @endif
+
+              @foreach($paginationPages as $p)
+                @if($p === '...')
+                  <span class="w-6 text-center text-slate-400 text-xs font-mono select-none">...</span>
+                @elseif($p == $data->currentPage())
+                  <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-sm flex items-center justify-center">{{ $p }}</span>
+                @else
+                  <a href="{{ $data->url($p) }}"
+                    class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition flex items-center justify-center no-underline">{{ $p }}</a>
+                @endif
+              @endforeach
+
+              @if($data->hasMorePages())
+                <a href="{{ $data->url($data->currentPage() + 1) }}" title="Halaman Selanjutnya"
+                  class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition flex items-center justify-center no-underline">
+                  <i class="bx bx-chevron-right text-sm"></i>
+                </a>
+              @else
+                <span class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-300 flex items-center justify-center opacity-50">
+                  <i class="bx bx-chevron-right text-sm"></i>
+                </span>
+              @endif
+            </div>
+          @endif
+        </div>
+
       </div>
     </div>
 
   </div>
 
   {{-- Modal Antrian --}}
-  <div class="modal fade" id="antrian" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="antrian" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel4">Antrian Pelanggan hari ini</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+              <i class="bx bx-hourglass"></i>
+            </div>
+            <h5 class="modal-title">Antrian Pelanggan hari ini</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>Status</th>
-                  <th>Teknisi</th>
-                  <th>Tanggal Registrasi</th>
-                  <th>Tanggal Selesai</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                  <th class="py-2.5 px-3 text-center">Teknisi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Registrasi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Selesai</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($antrian as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
                     </td>
-                    <td>
+                    <td class="py-3 px-3 text-center">
                       @if ($item->status_id == 1)
-                        <span class="badge bg-warning bg-opacity-10 text-warning">Menunggu</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200/60">Menunggu</span>
                       @elseif($item->status_id == 2)
-                        <span class="badge bg-info bg-opacity-10 text-info">On Progress</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">On Progress</span>
                       @elseif($item->status_id == 5)
-                        <span class="badge bg-info bg-opacity-10 text-info">Assigment</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/60">Assigment</span>
                       @endif
                     </td>
-                    <td>{{$item->teknisi->name ?? '-'}}</td>
-                    <td>
-                      <span class="badge bg-label-info">
-                        {{ $item->created_at ?? '-'}}
+                    <td class="py-3 px-3 text-center font-semibold text-slate-700">{{ $item->teknisi->name ?? '-' }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                        {{ $item->created_at ?? '-' }}
                       </span>
                     </td>
-                    <td>
-                      <span class="badge bg-label-success">
-                        {{ $item->tanggal_selesai ?? '-'}}
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap">
+                        {{ $item->tanggal_selesai ?? '-' }}
                       </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="6">Tidak ada data</td>
+                    <td colspan="6" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-hourglass text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Tidak ada data antrian</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
@@ -1581,54 +966,60 @@
   </div>
 
   {{-- Modal Selesai --}}
-  <div class="modal fade" id="selesai" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="selesai" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel4">Installasi hari ini</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg">
+              <i class="bx bx-check-circle"></i>
+            </div>
+            <h5 class="modal-title">Installasi hari ini</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>Status</th>
-                  <th>Teknisi</th>
-                  <th>Tanggal Registrasi</th>
-                  <th>Tanggal Selesai</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                  <th class="py-2.5 px-3 text-center">Teknisi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Registrasi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Selesai</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($selesai as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
                     </td>
-                    <td>
-                      <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">Selesai</span>
                     </td>
-                    <td>{{$item->teknisi->name ?? '-'}}</td>
-                    <td>
-                      <span class="badge bg-label-info">
-                        {{$item->created_at ?? '-'}}
+                    <td class="py-3 px-3 text-center font-semibold text-slate-700">{{ $item->teknisi->name ?? '-' }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                        {{ $item->created_at ?? '-' }}
                       </span>
                     </td>
-                    <td>
-                      <span class="badge bg-label-success">
-                        {{$item->updated_at ?? '-'}}
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 whitespace-nowrap">
+                        {{ $item->updated_at ?? '-' }}
                       </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="6">Tidak ada data</td>
+                    <td colspan="6" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-check-circle text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Belum ada instalasi hari ini</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
@@ -1638,53 +1029,62 @@
       </div>
     </div>
   </div>
+
   {{-- Modal Bulanan --}}
-  <div class="modal fade" id="bulanan" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="bulanan" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel4">Instalasi Bulan ini</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+              <i class="bx bx-calendar"></i>
+            </div>
+            <h5 class="modal-title">Instalasi Bulan ini</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>Status</th>
-                  <th>Teknisi</th>
-                  <th>Tanggal Registrasi</th>
-                  <th>Tanggal Selesai</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
+                  <th class="py-2.5 px-3 text-center">Teknisi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Registrasi</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Selesai</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($installasiBulanan as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
                     </td>
-                    <td>
-                      <span class="badge bg-success bg-opacity-10 text-success">Selesai</span>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60">Selesai</span>
                     </td>
-                    <td>{{$item->teknisi->name ?? '-'}}</td>
-                    <td>
-                      <span
-                        class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') }}</span>
+                    <td class="py-3 px-3 text-center font-semibold text-slate-700">{{ $item->teknisi->name ?? '-' }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                        {{ \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y') }}
+                      </span>
                     </td>
-                    <td>
-                      <span
-                        class="badge bg-label-info">{{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}</span>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                        {{ \Carbon\Carbon::parse($item->tanggal_selesai)->locale('id')->translatedFormat('d F Y') }}
+                      </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="6">Tidak ada data</td>
+                    <td colspan="6" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-calendar text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Belum ada instalasi bulan ini</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
@@ -1696,46 +1096,56 @@
   </div>
 
   {{-- Pelanggan Blokir --}}
-  <div class="modal fade" id="blokir" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="blokir" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="exampleModalLabel4">Pelanggan Isolire Billing</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg">
+              <i class="bx bx-block"></i>
+            </div>
+            <h5 class="modal-title">Pelanggan Isolire Billing</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>No HP</th>
-                  <th>Paket</th>
-                  <th>Status</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">No HP</th>
+                  <th class="py-2.5 px-3 text-center">Paket</th>
+                  <th class="py-2.5 px-3 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($nonAktif as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
                     </td>
-                    <td>{{$item->no_hp}}</td>
-                    <td>
-                      <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                    <td class="py-3 px-3 text-center text-slate-600">{{ $item->no_hp }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                        {{ $item->paket->nama_paket }}
+                      </span>
                     </td>
-                    <td>
-                      <span class="badge bg-danger bg-opacity-10 text-danger">ISOLIRE BILLING</span>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60 uppercase">
+                        <i class="bx bx-block text-sm"></i> Isolire Billing
+                      </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="5">Tidak ada data</td>
+                    <td colspan="5" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-block text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Tidak ada pelanggan terisolir</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
@@ -1747,52 +1157,62 @@
   </div>
 
   {{-- Pelanggan Maintenance --}}
-  <div class="modal fade" id="maintenance" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="maintenance" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="exampleModalLabel4">List Tiket Open</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+              <i class="bx bx-wrench"></i>
+            </div>
+            <h5 class="modal-title">List Tiket Open</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>No HP</th>
-                  <th>Paket</th>
-                  <th>Status Tiket</th>
-                  <th>Kategori Tiket</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">No HP</th>
+                  <th class="py-2.5 px-3 text-center">Paket</th>
+                  <th class="py-2.5 px-3 text-center">Status Tiket</th>
+                  <th class="py-2.5 px-3 text-center">Kategori Tiket</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($maintenance as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->customer->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->customer->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->customer->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->customer->alamat }}</div>
                     </td>
-                    <td>{{$item->customer->no_hp}}</td>
-                    <td>
-                      <span class="badge bg-info">{{$item->customer->paket->nama_paket}}</span>
+                    <td class="py-3 px-3 text-center text-slate-600">{{ $item->customer->no_hp }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                        {{ $item->customer->paket->nama_paket }}
+                      </span>
                     </td>
-                    <td>
-                      <span class="badge bg-danger bg-opacity-10 text-danger">{{ $item->status->nama_status }}</span>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">
+                        {{ $item->status->nama_status }}
+                      </span>
                     </td>
-                    <td>
-                      <span class="badge bg-label-warning">
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80">
                         {{ $item->kategori->nama_kategori }}
                       </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="5">Tidak ada data</td>
+                    <td colspan="6" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-wrench text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Tidak ada tiket open</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
@@ -1804,48 +1224,56 @@
   </div>
 
   {{-- Pelanggan Dismantle --}}
-  <div class="modal fade" id="dismantle" tabindex="-1" aria-hidden="true">
+  <div class="modal fade app-modal" id="dismantle" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="exampleModalLabel4">Pelanggan Dismantle</h5>
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+              <i class="bx bx-archive-in"></i>
+            </div>
+            <h5 class="modal-title">Pelanggan Dismantle</h5>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-dark text-center">
-                <tr>
-                  <th>No</th>
-                  <th>Nama Pelanggan</th>
-                  <th>No HP</th>
-                  <th>Paket</th>
-                  <th>Tanggal Dismantle</th>
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <th class="py-2.5 px-4 text-center w-12">No</th>
+                  <th class="py-2.5 px-4">Nama Pelanggan</th>
+                  <th class="py-2.5 px-3 text-center">No HP</th>
+                  <th class="py-2.5 px-3 text-center">Paket</th>
+                  <th class="py-2.5 px-3 text-center">Tanggal Dismantle</th>
                 </tr>
               </thead>
-              <tbody class="text-center">
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700">
                 @forelse ($dismantleGet as $item)
-                  <tr>
-                    <td>{{ $loop->iteration }}</td>
-                    <td>
-                      <div>
-                        <div>{{$item->nama_customer}}</div>
-                        <small class="text-muted">{{ $item->alamat }}</small>
-                      </div>
+                  <tr class="table-hover-row transition-colors">
+                    <td class="py-3 px-4 text-center font-medium text-slate-400">{{ $loop->iteration }}</td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-slate-800">{{ $item->nama_customer }}</div>
+                      <div class="text-[10px] text-slate-400">{{ $item->alamat }}</div>
                     </td>
-                    <td>{{$item->no_hp}}</td>
-                    <td>
-                      <span class="badge bg-info">{{$item->paket->nama_paket}}</span>
+                    <td class="py-3 px-3 text-center text-slate-600">{{ $item->no_hp }}</td>
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                        {{ $item->paket->nama_paket }}
+                      </span>
                     </td>
-                    <td>
-                      <span class="badge bg-label-warning">
+                    <td class="py-3 px-3 text-center">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200/80 whitespace-nowrap">
                         {{ $item->deleted_at ? $item->deleted_at->translatedFormat('d F Y') : 'N/A' }}
                       </span>
                     </td>
                   </tr>
                 @empty
                   <tr>
-                    <td colspan="5">Tidak ada data</td>
+                    <td colspan="5" class="py-10 text-center text-slate-400">
+                      <i class="bx bx-archive-in text-3xl text-slate-300 block mb-2"></i>
+                      <div class="font-medium text-slate-600">Tidak ada pelanggan dismantle</div>
+                    </td>
                   </tr>
                 @endforelse
               </tbody>
