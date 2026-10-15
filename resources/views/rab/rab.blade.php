@@ -116,6 +116,31 @@
       color: #64748b;
     }
 
+    .dt-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 2px;
+    }
+
+    .dt-pagination .paginate_button i {
+      font-size: .95rem;
+      line-height: 1;
+    }
+
+    .dt-pagination .ellipsis {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 2rem;
+      color: #94a3b8;
+      font-size: .75rem;
+      font-weight: 700;
+      user-select: none;
+    }
+
     .dt-pagination .paginate_button {
       display: inline-flex;
       align-items: center;
@@ -192,6 +217,10 @@
       .dt-pagination {
         width: 100%;
         text-align: center;
+      }
+
+      .dt-pagination {
+        justify-content: center;
       }
 
       .dt-search input {
@@ -696,8 +725,13 @@
           }
         }
       ],
+      pagingType: 'full_numbers',
       drawCallback: function () {
         initTooltips();
+
+        // Sembunyikan kontrol pagination bila hanya ada satu halaman.
+        const api = this.api();
+        $(api.table().container()).find('.dt-pagination').toggle(api.page.info().pages > 1);
       },
       language: {
         search: "Cari:",
@@ -706,10 +740,18 @@
         infoEmpty: "Menampilkan 0 sampai 0 dari 0 entri",
         infoFiltered: "(disaring dari _MAX_ total entri)",
         paginate: {
-          first: "Pertama",
-          last: "Terakhir",
-          next: "Berikutnya",
-          previous: "Sebelumnya"
+          first: '<i class="bx bx-chevrons-left"></i>',
+          last: '<i class="bx bx-chevrons-right"></i>',
+          next: '<i class="bx bx-chevron-right"></i>',
+          previous: '<i class="bx bx-chevron-left"></i>'
+        },
+        aria: {
+          paginate: {
+            first: 'Halaman pertama',
+            last: 'Halaman terakhir',
+            next: 'Halaman berikutnya',
+            previous: 'Halaman sebelumnya'
+          }
         }
       }
     });
