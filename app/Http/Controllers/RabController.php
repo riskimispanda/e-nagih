@@ -110,53 +110,41 @@ class RabController extends Controller
  
         $data = $query->skip($start)->take($length)->get();
  
-        // Calculate totals for FILTERED data
-        $totalAnggaran = $totalQuery->sum('jumlah_anggaran');
-        $rabIds = $totalQuery->pluck('id');
- 
-        // Calculate total realized budget for filtered RABs
-        $totalTerealisasi = Pengeluaran::whereIn('rab_id', $rabIds)
-            ->where('status_id', 3)
+        // ====== Aggregate memakai subquery + rentang tanggal (sargable) ======
+
+        // Total anggaran untuk data terfilter.
+        $totalAnggaran = (clone $totalQuery)->sum('jumlah_anggaran');
+
+        // Subquery id RAB terfilter → penyaringan pengeluaran dilakukan di database
+        // (sebelumnya semua id ditarik ke memori lalu dikirim sebagai whereIn besar).
+        $filteredRabIds = (clone $totalQuery)->select('id');
+
+        $totalTerealisasi = Pengeluaran::where('status_id', 3)
+            ->whereIn('rab_id', $filteredRabIds)
             ->sum('jumlah_pengeluaran');
- 
+
         $sisaAnggaran = $totalAnggaran - $totalTerealisasi;
- 
-        // Calculate FILTERED SALDO (based on filtered period with corrected date fields and status_id)
-        $pembayaran = Pembayaran::where('status_id', 8)
-            ->when($request->filled('tahun'), function ($q) use ($request) {
-                $q->whereYear('tanggal_bayar', $request->tahun);
-            })
-            ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('tanggal_bayar', $request->bulan);
-            })
-            ->sum('jumlah_bayar');
- 
-        $pendapatanCorporate = Perusahaan::where('status_id', 3)
-            ->when($request->filled('tahun'), function ($q) use ($request) {
-                $q->whereYear('tanggal', $request->tahun);
-            })
-            ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('tanggal', $request->bulan);
-            })
-            ->sum('harga');
- 
-        $pendapatan = Pendapatan::when($request->filled('tahun'), function ($q) use ($request) {
-                $q->whereYear('tanggal', $request->tahun);
-            })
-            ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('tanggal', $request->bulan);
-            })
-            ->sum('jumlah_pendapatan');
- 
-        $pengeluaran = Pengeluaran::where('status_id', 3)
-            ->when($request->filled('tahun'), function ($q) use ($request) {
-                $q->whereYear('tanggal_pengeluaran', $request->tahun);
-            })
-            ->when($request->filled('bulan'), function ($q) use ($request) {
-                $q->whereMonth('tanggal_pengeluaran', $request->bulan);
-            })
-            ->sum('jumlah_pengeluaran');
- 
+
+        // ====== Saldo (pendapatan - pengeluaran) per periode terfilter ======
+        // Catatan: filter periode memakai rentang tanggal (whereBetween), bukan
+        // whereYear/whereMonth yang membungkus kolom dengan fungsi → index terpakai.
+
+        $pembayaranQuery = Pembayaran::where('status_id', 8);
+        $this->applyPeriodFilter($pembayaranQuery, 'tanggal_bayar', $request);
+        $pembayaran = $pembayaranQuery->sum('jumlah_bayar');
+
+        $perusahaanQuery = Perusahaan::where('status_id', 3);
+        $this->applyPeriodFilter($perusahaanQuery, 'tanggal', $request);
+        $pendapatanCorporate = $perusahaanQuery->sum('harga');
+
+        $pendapatanQuery = Pendapatan::query();
+        $this->applyPeriodFilter($pendapatanQuery, 'tanggal', $request);
+        $pendapatan = $pendapatanQuery->sum('jumlah_pendapatan');
+
+        $pengeluaranQuery = Pengeluaran::where('status_id', 3);
+        $this->applyPeriodFilter($pengeluaranQuery, 'tanggal_pengeluaran', $request);
+        $pengeluaran = $pengeluaranQuery->sum('jumlah_pengeluaran');
+
         $totalSaldo = $pembayaran + $pendapatanCorporate + $pendapatan - $pengeluaran;
  
         $namaBulan = [
@@ -198,6 +186,42 @@ class RabController extends Controller
             'sisa' => $sisaAnggaran,
             'saldo' => $totalSaldo,
         ]);
+    }
+
+    /**
+     * Terapkan filter periode (bulan/tahun) secara sargable.
+     *
+     * whereYear()/whereMonth() membungkus kolom dengan fungsi (YEAR()/MONTH())
+     * sehingga index pada kolom tanggal tidak bisa dipakai. Di sini dipakai
+     * rentang tanggal (whereBetween) agar index tetap terpakai.
+     *
+     * Catatan: kolom `pendapatan.tanggal` & `perusahaan.tanggal` bertipe varchar
+     * dengan format ISO (YYYY-MM-DD) — perbandingan rentang string tetap setara.
+     */
+    private function applyPeriodFilter($query, string $column, Request $request): void
+    {
+        $tahun = $request->filled('tahun') ? (int) $request->tahun : null;
+        $bulan = $request->filled('bulan') ? (int) $request->bulan : null;
+
+        if ($tahun && $bulan) {
+            $start = Carbon::create($tahun, $bulan, 1)->startOfMonth();
+            $query->whereBetween($column, [$start, $start->copy()->endOfMonth()]);
+
+            return;
+        }
+
+        if ($tahun) {
+            $start = Carbon::create($tahun, 1, 1)->startOfYear();
+            $query->whereBetween($column, [$start, $start->copy()->endOfYear()]);
+
+            return;
+        }
+
+        if ($bulan) {
+            // Bulan tanpa tahun (perilaku lama: semua tahun) tidak bisa diwakili
+            // satu rentang tanggal, jadi tetap memakai whereMonth.
+            $query->whereMonth($column, $bulan);
+        }
     }
 
     public function detail($id)
