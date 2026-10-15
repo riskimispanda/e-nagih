@@ -148,6 +148,60 @@ class Analytics extends Controller
       $q->whereNull('deleted_at');
     })->where('status_id', 3)->count();
 
+    // ===== Data chart: 6 bulan terakhir (read-only, agregasi per bulan) =====
+    $chartStart = Carbon::now()->subMonths(5)->startOfMonth();
+    $chartEnd = Carbon::now()->endOfMonth();
+
+    $chartMonths = collect(range(5, 0))
+      ->map(fn($i) => Carbon::now()->subMonths($i)->startOfMonth())
+      ->values();
+
+    $chartMonthLabels = $chartMonths
+      ->map(fn(Carbon $bulan) => $bulan->locale('id')->isoFormat('MMM Y'))
+      ->all();
+
+    $chartKeys = $chartMonths
+      ->map(fn(Carbon $bulan) => $bulan->format('Y-m'))
+      ->all();
+
+    $pembayaranPerBulan = Pembayaran::query()
+      ->selectRaw("DATE_FORMAT(tanggal_bayar, '%Y-%m') as bulan, SUM(jumlah_bayar) as total")
+      ->whereBetween('tanggal_bayar', [$chartStart, $chartEnd])
+      ->groupBy('bulan')
+      ->pluck('total', 'bulan');
+
+    $pendapatanLainPerBulan = Pendapatan::query()
+      ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as bulan, SUM(jumlah_pendapatan) as total")
+      ->whereBetween('tanggal', [$chartStart, $chartEnd])
+      ->groupBy('bulan')
+      ->pluck('total', 'bulan');
+
+    $pengeluaranPerBulan = Pengeluaran::query()
+      ->selectRaw("DATE_FORMAT(tanggal_pengeluaran, '%Y-%m') as bulan, SUM(jumlah_pengeluaran) as total")
+      ->where('status_id', 3)
+      ->whereBetween('tanggal_pengeluaran', [$chartStart, $chartEnd])
+      ->groupBy('bulan')
+      ->pluck('total', 'bulan');
+
+    $pelangganBaruPerBulan = Customer::query()
+      ->selectRaw("DATE_FORMAT(tanggal_selesai, '%Y-%m') as bulan, COUNT(*) as total")
+      ->whereNull('deleted_at')
+      ->whereBetween('tanggal_selesai', [$chartStart, $chartEnd])
+      ->groupBy('bulan')
+      ->pluck('total', 'bulan');
+
+    $chartPendapatan = collect($chartKeys)
+      ->map(fn($key) => (float) ($pembayaranPerBulan[$key] ?? 0) + (float) ($pendapatanLainPerBulan[$key] ?? 0))
+      ->all();
+
+    $chartPengeluaran = collect($chartKeys)
+      ->map(fn($key) => (float) ($pengeluaranPerBulan[$key] ?? 0))
+      ->all();
+
+    $chartPelangganBaru = collect($chartKeys)
+      ->map(fn($key) => (int) ($pelangganBaruPerBulan[$key] ?? 0))
+      ->all();
+
     return view("dashboard.dashboard", [
       "users" => auth()->user(),
       "roles" => Roles::find(auth()->user()->roles_id),
@@ -166,7 +220,11 @@ class Analytics extends Controller
       'closed' => $closed,
       'laba' => $labaRugi,
       'countInvoiceAllPaid' => $countPelangganLunas,
-      'countInvoiceAllUnPaid' => $countPelangganBelumLunas
+      'countInvoiceAllUnPaid' => $countPelangganBelumLunas,
+      'chartMonthLabels' => $chartMonthLabels,
+      'chartPendapatan' => $chartPendapatan,
+      'chartPengeluaran' => $chartPengeluaran,
+      'chartPelangganBaru' => $chartPelangganBaru
     ]);
   }
 
