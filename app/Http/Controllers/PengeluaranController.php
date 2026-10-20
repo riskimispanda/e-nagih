@@ -545,7 +545,7 @@ class PengeluaranController extends Controller
   /**
    * Export data pengeluaran berdasarkan bulan ke Excel dengan memory management
    */
-  public function exportByMonth($month, $year = null): BinaryFileResponse
+  public function exportByMonth(Request $request, $month, $year = null): BinaryFileResponse
   {
     // Increase memory limit and execution time
     ini_set('memory_limit', '256M');
@@ -553,6 +553,10 @@ class PengeluaranController extends Controller
 
     // Gunakan tahun yang diberikan atau tahun sekarang
     $year = $year ?? date('Y');
+
+    // Filter tambahan dari halaman (kategori & pencarian)
+    $kategori = $request->input('kategori');
+    $search = $request->input('search');
 
     $bulan = [
       '1' => 'Januari',
@@ -570,14 +574,21 @@ class PengeluaranController extends Controller
     ];
 
     $namaBulan = $bulan[$month] ?? 'Bulan';
-    $filename = 'pengeluaran-' . strtolower($namaBulan) . '-' . $year . '.xlsx';
+    $filename = 'pengeluaran-' . strtolower($namaBulan) . '-' . $year;
+
+    if ($kategori) {
+      $filename .= '-' . Str::slug($kategori);
+    }
+
+    $filename .= '.xlsx';
 
     // Log
     activity('Export Pengeluaran')
       ->causedBy(auth()->user())
-      ->log(auth()->user()->name . ' Melakukan export data pengeluaran bulan: ' . $namaBulan . ' tahun: ' . $year);
+      ->log(auth()->user()->name . ' Melakukan export data pengeluaran bulan: ' . $namaBulan . ' tahun: ' . $year
+        . ($kategori ? ', kategori: ' . $kategori : ''));
 
-    return Excel::download(new PengeluaranExport($month, $year), $filename, \Maatwebsite\Excel\Excel::XLSX, [
+    return Excel::download(new PengeluaranExport($month, $year, $kategori, $search), $filename, \Maatwebsite\Excel\Excel::XLSX, [
       'Cache-Control' => 'no-cache, no-store, must-revalidate',
       'Pragma' => 'no-cache',
       'Expires' => '0'

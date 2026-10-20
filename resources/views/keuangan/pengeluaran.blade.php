@@ -861,10 +861,18 @@
         e.preventDefault();
         const month = $('#monthFilter').val();
         const year = $('#yearFilter').val();
+        const kategori = $('#kategoriFilter').val();
+        const search = $('#searchInput').val();
 
         // Build export URL based on filters
         let exportUrl = '{{ route("pengeluaran.export.month", ["month" => ":month", "year" => ":year"]) }}';
         exportUrl = exportUrl.replace(':month', month).replace(':year', year);
+
+        // Sertakan filter kategori & pencarian agar hasil export sama dengan tabel
+        const params = new URLSearchParams();
+        if (kategori) params.append('kategori', kategori);
+        if (search) params.append('search', search);
+        if (params.toString()) exportUrl += '?' + params.toString();
 
         // Redirect to export URL
         window.location.href = exportUrl;

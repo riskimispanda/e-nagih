@@ -15,11 +15,15 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
 {
   protected $month;
   protected $year;
+  protected $kategori;
+  protected $search;
 
-  public function __construct($month = null, $year = null)
+  public function __construct($month = null, $year = null, $kategori = null, $search = null)
   {
     $this->month = $month;
     $this->year = $year ?? date('Y');
+    $this->kategori = $kategori;
+    $this->search = $search;
   }
 
   public function query()
@@ -32,6 +36,19 @@ class PengeluaranExport implements FromQuery, WithHeadings, WithMapping, WithSty
     } elseif ($this->year) {
       // Jika hanya tahun yang dipilih (tanpa bulan spesifik)
       $query->whereYear('tanggal_pengeluaran', $this->year);
+    }
+
+    // Filter kategori (sama seperti filter pada halaman /pengeluaran/global)
+    if ($this->kategori) {
+      $query->where('jenis_pengeluaran', 'like', '%' . $this->kategori . '%');
+    }
+
+    // Filter pencarian (sama seperti filter pada halaman /pengeluaran/global)
+    if ($this->search) {
+      $query->where(function ($q) {
+        $q->where('keterangan', 'like', '%' . $this->search . '%')
+          ->orWhere('jenis_pengeluaran', 'like', '%' . $this->search . '%');
+      });
     }
 
     return $query->orderBy('tanggal_pengeluaran', 'desc');
