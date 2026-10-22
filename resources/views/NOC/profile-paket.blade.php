@@ -1156,8 +1156,8 @@
         Swal.fire({
             icon: 'warning',
             title: 'Hapus Paket?',
-            html: `Paket <strong>${escapeHtml(namaPaket)}</strong> akan dihapus <strong>hanya dari database</strong>.<br>
-                   <span class="text-xs text-slate-500">Profile paket di Mikrotik tidak akan diubah.</span>`,
+            html: `Paket <strong>${escapeHtml(namaPaket)}</strong> akan dihapus <strong>hanya dari tabel paket</strong>.<br>
+                   <span class="text-xs text-slate-500">Data pelanggan, invoice, dan perusahaan tidak ikut dihapus, tetapi relasinya ke paket ini akan menjadi tidak valid. Profile di Mikrotik juga tidak diubah.</span>`,
             showCancelButton: true,
             confirmButtonText: 'Ya, Hapus',
             cancelButtonText: 'Batal',

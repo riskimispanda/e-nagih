@@ -271,71 +271,54 @@ class NocController extends Controller
 
     public function hapusPaket(Request $request, $id)
     {
+        $paket = Paket::find($id);
+
+        if (!$paket) {
+            $message = 'Paket tidak ditemukan atau sudah dihapus.';
+
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $message], 404)
+                : redirect()->back()->with('error', $message);
+        }
+
         try {
-            // Cek relasi + hapus dilakukan dalam satu transaksi agar tidak ada
-            // invoice baru yang masuk di antara proses pengecekan dan penghapusan.
-            $result = DB::transaction(function () use ($id) {
-                $paket = Paket::whereKey($id)->lockForUpdate()->first();
+            $namaPaket = $paket->nama_paket;
+            $connection = DB::connection();
+            $driver = $connection->getDriverName();
+            $bypassForeignKeys = in_array($driver, ['mysql', 'mariadb'], true);
 
-                if (!$paket) {
-                    return [
-                        'status' => 404,
-                        'message' => 'Paket tidak ditemukan atau sudah dihapus.',
-                    ];
-                }
-
-                // Gunakan query builder langsung supaya pengecekan tidak
-                // terpengaruh global scope pada model.
-                $customerCount = DB::table('customer')->where('paket_id', $paket->id)->count();
-                $invoiceCount = DB::table('invoice')->where('paket_id', $paket->id)->count();
-                $perusahaanCount = DB::table('perusahaan')->where('paket_id', $paket->id)->count();
-
-                if ($customerCount > 0 || $invoiceCount > 0 || $perusahaanCount > 0) {
-                    $dependencies = [];
-                    if ($customerCount > 0) {
-                        $dependencies[] = $customerCount . ' pelanggan';
-                    }
-                    if ($invoiceCount > 0) {
-                        $dependencies[] = $invoiceCount . ' invoice';
-                    }
-                    if ($perusahaanCount > 0) {
-                        $dependencies[] = $perusahaanCount . ' perusahaan';
-                    }
-
-                    return [
-                        'status' => 422,
-                        'message' => 'Paket "' . $paket->nama_paket . '" tidak dapat dihapus karena masih digunakan oleh '
-                            . implode(', ', $dependencies)
-                            . '. Pindahkan atau hapus data terkait terlebih dahulu.',
-                        'dependencies' => [
-                            'customers' => $customerCount,
-                            'invoices' => $invoiceCount,
-                            'perusahaan' => $perusahaanCount,
-                        ],
-                    ];
-                }
-
-                // Hapus hanya dari database, tanpa menyentuh profile paket di Mikrotik.
-                $namaPaket = $paket->nama_paket;
-                $paket->delete();
-
-                return [
-                    'status' => 200,
-                    'message' => 'Paket "' . $namaPaket . '" berhasil dihapus dari database.',
-                ];
-            }, 3);
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => $result['status'] === 200,
-                    'message' => $result['message'],
-                    'dependencies' => $result['dependencies'] ?? null,
-                ], $result['status']);
+            // Hapus HANYA baris di tabel paket. Foreign key sementara dinonaktifkan
+            // agar data pelanggan/invoice/perusahaan tidak ikut terhapus.
+            if ($bypassForeignKeys) {
+                $connection->statement('SET FOREIGN_KEY_CHECKS=0');
             }
 
-            return $result['status'] === 200
-                ? redirect()->back()->with('success', $result['message'])
-                : redirect()->back()->with('error', $result['message']);
+            try {
+                $paket->delete();
+            } finally {
+                if ($bypassForeignKeys) {
+                    try {
+                        $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+                    } catch (\Throwable $restoreError) {
+                        Log::error('Gagal mengaktifkan kembali FOREIGN_KEY_CHECKS', [
+                            'error' => $restoreError->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            Log::info('Paket dihapus dari database tanpa menghapus relasi', [
+                'paket_id' => $id,
+                'nama_paket' => $namaPaket,
+                'user_id' => auth()->id(),
+            ]);
+
+            $message = 'Paket "' . $namaPaket . '" berhasil dihapus dari database. '
+                . 'Data pelanggan, invoice, dan perusahaan tidak diubah.';
+
+            return $request->expectsJson()
+                ? response()->json(['success' => true, 'message' => $message], 200)
+                : redirect()->back()->with('success', $message);
         } catch (\Throwable $e) {
             Log::error('Gagal menghapus paket dari database', [
                 'paket_id' => $id,
@@ -343,11 +326,10 @@ class NocController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            $message = 'Paket gagal dihapus karena masih direferensikan oleh data lain. '
-                . 'Pindahkan atau hapus data terkait terlebih dahulu.';
+            $message = 'Paket gagal dihapus dari database. Silakan coba lagi.';
 
             return $request->expectsJson()
-                ? response()->json(['success' => false, 'message' => $message], 409)
+                ? response()->json(['success' => false, 'message' => $message], 500)
                 : redirect()->back()->with('error', $message);
         }
     }
