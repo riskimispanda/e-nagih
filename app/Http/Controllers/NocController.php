@@ -10,6 +10,7 @@ use App\Models\Router;
 use App\Services\MikrotikServices;
 use App\Models\Perusahaan;
 use App\Models\Paket;
+use Illuminate\Support\Facades\DB;
 use App\Models\Server;
 use App\Models\Lokasi;
 use App\Models\ODC;
@@ -268,12 +269,87 @@ class NocController extends Controller
         return redirect()->back()->with('success', 'Paket berhasil ditambahkan');
     }
 
-    public function hapusPaket($id)
+    public function hapusPaket(Request $request, $id)
     {
-        $paket = Paket::findOrFail($id);
-        $paket->delete();
+        try {
+            // Cek relasi + hapus dilakukan dalam satu transaksi agar tidak ada
+            // invoice baru yang masuk di antara proses pengecekan dan penghapusan.
+            $result = DB::transaction(function () use ($id) {
+                $paket = Paket::whereKey($id)->lockForUpdate()->first();
 
-        return redirect()->back()->with('success', 'Paket berhasil dihapus');
+                if (!$paket) {
+                    return [
+                        'status' => 404,
+                        'message' => 'Paket tidak ditemukan atau sudah dihapus.',
+                    ];
+                }
+
+                // Gunakan query builder langsung supaya pengecekan tidak
+                // terpengaruh global scope pada model.
+                $customerCount = DB::table('customer')->where('paket_id', $paket->id)->count();
+                $invoiceCount = DB::table('invoice')->where('paket_id', $paket->id)->count();
+                $perusahaanCount = DB::table('perusahaan')->where('paket_id', $paket->id)->count();
+
+                if ($customerCount > 0 || $invoiceCount > 0 || $perusahaanCount > 0) {
+                    $dependencies = [];
+                    if ($customerCount > 0) {
+                        $dependencies[] = $customerCount . ' pelanggan';
+                    }
+                    if ($invoiceCount > 0) {
+                        $dependencies[] = $invoiceCount . ' invoice';
+                    }
+                    if ($perusahaanCount > 0) {
+                        $dependencies[] = $perusahaanCount . ' perusahaan';
+                    }
+
+                    return [
+                        'status' => 422,
+                        'message' => 'Paket "' . $paket->nama_paket . '" tidak dapat dihapus karena masih digunakan oleh '
+                            . implode(', ', $dependencies)
+                            . '. Pindahkan atau hapus data terkait terlebih dahulu.',
+                        'dependencies' => [
+                            'customers' => $customerCount,
+                            'invoices' => $invoiceCount,
+                            'perusahaan' => $perusahaanCount,
+                        ],
+                    ];
+                }
+
+                // Hapus hanya dari database, tanpa menyentuh profile paket di Mikrotik.
+                $namaPaket = $paket->nama_paket;
+                $paket->delete();
+
+                return [
+                    'status' => 200,
+                    'message' => 'Paket "' . $namaPaket . '" berhasil dihapus dari database.',
+                ];
+            }, 3);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => $result['status'] === 200,
+                    'message' => $result['message'],
+                    'dependencies' => $result['dependencies'] ?? null,
+                ], $result['status']);
+            }
+
+            return $result['status'] === 200
+                ? redirect()->back()->with('success', $result['message'])
+                : redirect()->back()->with('error', $result['message']);
+        } catch (\Throwable $e) {
+            Log::error('Gagal menghapus paket dari database', [
+                'paket_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $message = 'Paket gagal dihapus karena masih direferensikan oleh data lain. '
+                . 'Pindahkan atau hapus data terkait terlebih dahulu.';
+
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $message], 409)
+                : redirect()->back()->with('error', $message);
+        }
     }
 
     public function tambahRouter(Request $request)

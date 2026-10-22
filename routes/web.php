@@ -822,7 +822,7 @@ Route::middleware(['auth'])->group(function () {
     ->middleware('auth', 'roles:Super Admin,NOC,Admin Keuangan')
     ->name('profile.paket');
   Route::post('/tambah/paket', [NocController::class, 'tambahPaket']);
-  Route::get('/hapus/paket/{id}', [NocController::class, 'hapusPaket']);
+  Route::delete('/hapus/paket/{id}', [NocController::class, 'hapusPaket']);
   Route::get('/laporan', [KeuanganController::class, 'laporan'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('laporan');
