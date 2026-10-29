@@ -461,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 inp.removeAttribute('readonly');
             });
             clone.classList.remove('is-terpakai', 'is-maintenance', 'border-blue-300', 'bg-blue-50/60');
+            clone.classList.add('is-new-unit');
             var statusSpan = clone.querySelector('.unit-terpakai-badge');
             if (statusSpan) statusSpan.remove();
             var custInfo = clone.querySelector('.customer-info-box');
@@ -546,6 +547,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('btnUpdate').addEventListener('click', function () {
+        // Cegah baris unit baru yang masih kosong ikut hilang tanpa pesan.
+        var blankNewUnit = null;
+        document.querySelectorAll('#editDeviceUnits .device-unit.is-new-unit').forEach(function (unit) {
+            var snInput = unit.querySelector('input[name="edit_serial_number[]"]');
+            if (snInput && snInput.value.trim() === '') {
+                blankNewUnit = snInput;
+            }
+        });
+
+        if (blankNewUnit) {
+            Swal.fire({
+                title: 'Serial Number belum diisi',
+                text: 'Isi Serial Number pada baris unit baru, atau hapus baris tersebut sebelum menyimpan.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                topLayer: true
+            }).then(function () {
+                blankNewUnit.focus();
+                blankNewUnit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+            return;
+        }
+
         Swal.fire({
             title: 'Apakah Anda yakin?',
             text: "Data Perangkat akan diperbarui!",

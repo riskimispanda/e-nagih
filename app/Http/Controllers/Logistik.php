@@ -466,6 +466,10 @@ class Logistik extends Controller
             }
 
             DB::commit();
+        } catch (\InvalidArgumentException $e) {
+            DB::rollBack();
+
+            return redirect('/edit-logistik/'.$id)->with('toast_error', $e->getMessage());
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Gagal update logistik: '.$e->getMessage(), ['perangkat_id' => $id]);
@@ -508,6 +512,16 @@ class Logistik extends Controller
         $isRusakArr = is_array($isRusakArr) ? array_values($isRusakArr) : [];
         $detailIds = is_array($detailIds) ? array_values($detailIds) : [];
 
+        // Kalau form mengirim ID unit, baris tanpa ID berarti unit BARU dan harus dibuat.
+        // Fallback pencocokan SN hanya dipakai untuk form lama yang sama sekali tanpa ID.
+        $hasSubmittedDetailIds = false;
+        foreach ($detailIds as $submittedId) {
+            if (!empty($submittedId)) {
+                $hasSubmittedDetailIds = true;
+                break;
+            }
+        }
+
         foreach ($serials as $i => $serial) {
             $sn = trim((string) $serial);
             $mac = trim((string) ($macs[$i] ?? ''));
@@ -521,9 +535,9 @@ class Logistik extends Controller
                 $detail = ModemDetail::where('logistik_id', $perangkat->id)->find($detailId);
             }
 
-            // Fallback kalau halaman masih memakai form lama tanpa edit_detail_id:
-            // cocokkan lewat SN supaya tidak membuat duplikat / menambah stok.
-            if (!$detail && $sn !== '') {
+            // Fallback khusus form lama tanpa edit_detail_id: cocokkan lewat SN
+            // supaya tidak membuat duplikat / menambah stok.
+            if (!$detail && $sn !== '' && !$hasSubmittedDetailIds) {
                 $detail = ModemDetail::where('logistik_id', $perangkat->id)
                     ->where('serial_number', $sn)
                     ->first();
@@ -558,6 +572,16 @@ class Logistik extends Controller
             }
 
             // Unit baru: hormati flag rusak dari form.
+            if ($hasSubmittedDetailIds) {
+                $duplicate = ModemDetail::where('logistik_id', $perangkat->id)
+                    ->where('serial_number', $sn)
+                    ->exists();
+
+                if ($duplicate) {
+                    throw new \InvalidArgumentException('SN '.$sn.' sudah terdaftar di perangkat ini.');
+                }
+            }
+
             ModemDetail::create([
                 'logistik_id' => $perangkat->id,
                 'serial_number' => $sn,
