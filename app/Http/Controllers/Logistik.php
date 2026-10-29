@@ -484,10 +484,13 @@ class Logistik extends Controller
      * - Unit yang TIDAK ada di form tidak pernah dihapus. Unit bisa saja baru ditambahkan
      *   oleh proses lain (penerimaan pengadaan, instalasi teknisi) saat form masih terbuka.
      * - Status Terpakai & Maintenance dipertahankan kecuali user menandainya rusak.
-     * - Jumlah stok selalu dihitung ulang dari jumlah unit fisik, bukan dari input form.
+     * - Jumlah stok hanya berubah saat ada unit benar-benar ditambah/dihapus;
+     *   menandai rusak tidak menambah total stok.
      */
     private function syncSerializedUnits(Request $request, Perangkat $perangkat, string $kategoriNama): void
     {
+        $initialUnitCount = ModemDetail::where('logistik_id', $perangkat->id)->count();
+
         $isSplitter = $kategoriNama === 'splitter';
         $rasio = $request->input('rasio');
 
@@ -516,6 +519,14 @@ class Logistik extends Controller
             if (!empty($detailId)) {
                 // Scope ke perangkat ini supaya ID nyasar tidak mengubah perangkat lain.
                 $detail = ModemDetail::where('logistik_id', $perangkat->id)->find($detailId);
+            }
+
+            // Fallback kalau halaman masih memakai form lama tanpa edit_detail_id:
+            // cocokkan lewat SN supaya tidak membuat duplikat / menambah stok.
+            if (!$detail && $sn !== '') {
+                $detail = ModemDetail::where('logistik_id', $perangkat->id)
+                    ->where('serial_number', $sn)
+                    ->first();
             }
 
             // Baris lama tanpa SN (mis. unit splitter) dibiarkan apa adanya.
@@ -556,10 +567,16 @@ class Logistik extends Controller
             ]);
         }
 
-        // Total stok = jumlah unit fisik (termasuk terpakai/maintenance/rusak).
-        $perangkat->update([
-            'jumlah_stok' => ModemDetail::where('logistik_id', $perangkat->id)->count(),
-        ]);
+        // Total stok hanya berubah kalau ada unit yang benar-benar ditambah/dihapus.
+        // Menandai rusak TIDAK boleh menambah total stok.
+        $currentUnitCount = ModemDetail::where('logistik_id', $perangkat->id)->count();
+        $delta = $currentUnitCount - $initialUnitCount;
+
+        if ($delta > 0) {
+            $perangkat->increment('jumlah_stok', $delta);
+        } elseif ($delta < 0) {
+            $perangkat->decrement('jumlah_stok', min(abs($delta), (int) $perangkat->jumlah_stok));
+        }
     }
 
     /**

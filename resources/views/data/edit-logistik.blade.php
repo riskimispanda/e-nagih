@@ -268,6 +268,13 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                         </div>
                         @endforelse
                     </div>
+                    @if ($isSerial && (int) $log->jumlah_stok !== (int) $totalUnit)
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-800 leading-relaxed">
+                        <i class="bx bx-error-circle mr-1"></i>
+                        Total stok tercatat <strong>{{ (int) $log->jumlah_stok }}</strong> unit, sedangkan jumlah unit fisik <strong>{{ (int) $totalUnit }}</strong>.
+                        Gunakan tombol <strong>Sync Stok</strong> di halaman Data Logistik agar stok tersedia dihitung akurat.
+                    </div>
+                    @endif
                     <p class="text-[11px] text-slate-400 mb-0">Serial Number {{ $isNoMac ? '' : 'dan MAC Address' }} per unit perangkat</p>
                 </div>
 
@@ -331,7 +338,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function syncEditSummary() {
         var units = document.querySelectorAll('#editDeviceUnits .device-unit');
-        var total = units.length;
         var rusak = 0;
         var maintenance = 0;
         var terpakai = 0;
@@ -344,7 +350,9 @@ document.addEventListener('DOMContentLoaded', function () {
             if (statusBtn && statusBtn.dataset.status === 'rusak') rusak++;
         });
 
-        var tersedia = Math.max(0, total - rusak - maintenance - terpakai);
+        // Samakan dengan perhitungan server: total - terpakai - maintenance - rusak.
+        var totalStok = jumlahStok ? (parseInt(jumlahStok.value, 10) || 0) : units.length;
+        var tersedia = Math.max(0, totalStok - rusak - maintenance - terpakai);
 
         var elTersedia = document.getElementById('editStockTersedia');
         var elRusak = document.getElementById('editStockRusak');
@@ -410,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isSplitter) {
                 serialFields.style.display = '';
                 if (jumlahStok) {
-                    jumlahStok.value = document.querySelectorAll('#editDeviceUnits .device-unit').length || 1;
+                    syncEditStok();
                     jumlahStok.readOnly = true;
                 }
                 if (jumlahRusakWrap) jumlahRusakWrap.style.display = 'none';
@@ -421,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (isSerial) {
                 serialFields.style.display = '';
                 if (jumlahStok) {
-                    jumlahStok.value = document.querySelectorAll('#editDeviceUnits .device-unit').length || 1;
+                    syncEditStok();
                     jumlahStok.readOnly = true;
                 }
                 if (jumlahRusakWrap) jumlahRusakWrap.style.display = 'none';
@@ -521,7 +529,19 @@ document.addEventListener('DOMContentLoaded', function () {
         var selected = kategoriSelect.options[kategoriSelect.selectedIndex];
         var nama = (selected && selected.dataset.nama || '').toLowerCase();
         if (SERIALIZED.includes(nama) && jumlahStok) {
-            jumlahStok.value = document.querySelectorAll('#editDeviceUnits .device-unit').length;
+            var rows = document.querySelectorAll('#editDeviceUnits .device-unit').length;
+
+            // Simpan nilai awal dari DB. Total hanya berubah sesuai jumlah baris yang
+            // ditambah/dihapus, supaya menandai rusak tidak menambah stok.
+            if (jumlahStok.dataset.initialRows === undefined) {
+                jumlahStok.dataset.initialRows = String(rows);
+                jumlahStok.dataset.initialStok = String(parseInt(jumlahStok.value, 10) || 0);
+            }
+
+            var initialRows = parseInt(jumlahStok.dataset.initialRows, 10);
+            var initialStok = parseInt(jumlahStok.dataset.initialStok, 10);
+            jumlahStok.value = Math.max(0, initialStok + (rows - initialRows));
+            syncEditSummary();
         }
     }
 
