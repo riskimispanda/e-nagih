@@ -573,12 +573,35 @@ class Logistik extends Controller
 
             // Unit baru: hormati flag rusak dari form.
             if ($hasSubmittedDetailIds) {
-                $duplicate = ModemDetail::where('logistik_id', $perangkat->id)
-                    ->where('serial_number', $sn)
-                    ->exists();
+                // Bandingkan persis (case-sensitive, abaikan spasi di ujung).
+                // Kolasi MySQL utf8mb4_unicode_ci bersifat case-insensitive, sehingga
+                // "ABC123" dan "abc123" sebelumnya dianggap SN yang sama.
+                $existingUnit = ModemDetail::where('logistik_id', $perangkat->id)
+                    ->whereRaw('BINARY TRIM(serial_number) = ?', [$sn])
+                    ->first();
 
-                if ($duplicate) {
-                    throw new \InvalidArgumentException('SN '.$sn.' sudah terdaftar di perangkat ini.');
+                if ($existingUnit) {
+                    $statusLabel = [
+                        LogistikStatus::TERPAKAI => 'Terpakai',
+                        LogistikStatus::TERSEIDA => 'Tersedia',
+                        LogistikStatus::RUSAK => 'Rusak',
+                        LogistikStatus::MAINTENANCE => 'Maintenance',
+                    ][(int) $existingUnit->status_id] ?? 'Status '.$existingUnit->status_id;
+
+                    Log::warning('SN duplikat saat tambah unit logistik', [
+                        'perangkat_id' => $perangkat->id,
+                        'submitted_sn' => $sn,
+                        'existing_id' => $existingUnit->id,
+                        'existing_sn' => $existingUnit->serial_number,
+                        'existing_status' => $existingUnit->status_id,
+                    ]);
+
+                    $storedSn = (string) $existingUnit->serial_number;
+                    $snHint = $storedSn !== $sn ? ' SN tersimpan: "'.$storedSn.'".' : '';
+
+                    throw new \InvalidArgumentException(
+                        'SN '.$sn.' sudah terdaftar di perangkat ini (unit #'.$existingUnit->id.', status '.$statusLabel.').'.$snHint
+                    );
                 }
             }
 

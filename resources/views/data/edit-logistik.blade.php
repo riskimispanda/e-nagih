@@ -547,6 +547,36 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.getElementById('btnUpdate').addEventListener('click', function () {
+        // Cegah SN baru yang sama dengan baris lain (mis. salah ketik di baris lama).
+        var duplicateNewSn = null;
+        var allSnInputs = Array.prototype.slice.call(document.querySelectorAll('#editDeviceUnits input[name="edit_serial_number[]"]'));
+        document.querySelectorAll('#editDeviceUnits .device-unit.is-new-unit').forEach(function (unit) {
+            var input = unit.querySelector('input[name="edit_serial_number[]"]');
+            if (!input) return;
+            var sn = input.value.trim();
+            if (sn === '') return;
+
+            var clash = allSnInputs.some(function (other) {
+                return other !== input && other.value.trim() === sn;
+            });
+
+            if (clash) duplicateNewSn = input;
+        });
+
+        if (duplicateNewSn) {
+            Swal.fire({
+                title: 'SN sudah dipakai baris lain',
+                text: 'Serial Number "' + duplicateNewSn.value.trim() + '" juga diisi di baris lain. Periksa kembali baris unit baru.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                topLayer: true
+            }).then(function () {
+                duplicateNewSn.focus();
+                duplicateNewSn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+            return;
+        }
+
         // Cegah baris unit baru yang masih kosong ikut hilang tanpa pesan.
         var blankNewUnit = null;
         document.querySelectorAll('#editDeviceUnits .device-unit.is-new-unit').forEach(function (unit) {
