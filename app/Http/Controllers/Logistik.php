@@ -441,121 +441,125 @@ class Logistik extends Controller
     public function updateLogistik(Request $request, $id)
     {
         $perangkat = Perangkat::findOrFail($id);
-        $perangkat->update([
-            'nama_perangkat' => $request->nama_perangkat,
-            'jumlah_stok' => $request->stok,
-            'harga' => $request->harga,
-            'kategori_id' => $request->kategori,
-        ]);
 
-        // Update ModemDetail
-        $kategoriNama = strtolower($perangkat->kategori->nama_logistik ?? '');
+        $harga = (int) str_replace(['Rp', '.', ' '], '', (string) $request->input('harga'));
 
-        if (!LogistikStatus::isSerialized($kategoriNama)) {
-            $perangkat->jumlah_rusak = min((int) $request->jumlah_rusak, (int) $request->stok);
-            $perangkat->save();
-        }
+        DB::beginTransaction();
 
-        if ($kategoriNama === 'splitter') {
-            // Splitter: perbarui rasio pada semua unit
-            $rasio = $request->input('rasio');
-            ModemDetail::where('logistik_id', $perangkat->id)->update(['rasio' => $rasio]);
+        try {
+            $perangkat->update([
+                'nama_perangkat' => $request->nama_perangkat,
+                'harga' => $harga,
+                'kategori_id' => $request->filled('kategori') ? $request->kategori : $perangkat->kategori_id,
+            ]);
 
-            // Perbarui / tambah SN per unit
-            $submittedIds = [];
-            $editIsRusak = $request->input('edit_is_rusak', []);
-            if ($request->has('edit_serial_number') && is_array($request->edit_serial_number)) {
-                foreach ($request->edit_serial_number as $i => $sn) {
-                    $sn = trim($sn);
-                    $detailId = $request->edit_detail_id[$i] ?? null;
-                    if (empty($sn)) continue;
+            $kategoriNama = strtolower($perangkat->kategori->nama_logistik ?? '');
 
-                    if ($detailId) {
-                        $md = ModemDetail::find($detailId);
-                        if ($md) {
-                            if (!empty($editIsRusak[$i] ?? null)) {
-                                $statusId = LogistikStatus::RUSAK;
-                            } elseif ((int) $md->status_id === LogistikStatus::TERPAKAI) {
-                                $statusId = LogistikStatus::TERPAKAI;
-                            } else {
-                                $statusId = LogistikStatus::TERSEIDA;
-                            }
-                            $md->update([
-                                'serial_number' => $sn,
-                                'status_id' => $statusId,
-                            ]);
-                            $submittedIds[] = $md->id;
-                        }
-                    } else {
-                        $md = ModemDetail::create([
-                            'logistik_id'   => $perangkat->id,
-                            'serial_number' => $sn,
-                            'mac_address'   => null,
-                            'rasio'         => $rasio,
-                            'status_id'     => LogistikStatus::TERSEIDA,
-                        ]);
-                        $submittedIds[] = $md->id;
-                    }
-                }
-            }
-
-            // Selaraskan jumlah unit tersedia (tidak menghapus unit terpakai)
-            $existing = ModemDetail::where('logistik_id', $perangkat->id)->count();
-            $target = (int) $request->stok;
-            for ($i = $existing; $i < $target; $i++) {
-                ModemDetail::create([
-                    'logistik_id'   => $perangkat->id,
-                    'serial_number' => null,
-                    'mac_address'   => null,
-                    'rasio'         => $rasio,
-                    'status_id'     => LogistikStatus::TERSEIDA,
+            if (LogistikStatus::isSerialized($kategoriNama)) {
+                $this->syncSerializedUnits($request, $perangkat, $kategoriNama);
+            } else {
+                $stok = max(0, (int) $request->input('stok', 0));
+                $perangkat->update([
+                    'jumlah_stok' => $stok,
+                    'jumlah_rusak' => min(max(0, (int) $request->input('jumlah_rusak', 0)), $stok),
                 ]);
             }
-        } elseif ($request->has('edit_serial_number') && is_array($request->edit_serial_number)) {
-            $submittedIds = [];
-            $editIsRusak = $request->input('edit_is_rusak', []);
-            foreach ($request->edit_serial_number as $i => $sn) {
-                $sn = trim($sn);
-                $mac = trim($request->edit_mac_address[$i] ?? '');
-                $detailId = $request->edit_detail_id[$i] ?? null;
-                if (empty($sn)) continue;
 
-                if ($detailId) {
-                    $md = ModemDetail::find($detailId);
-                    if ($md) {
-                        if (!empty($editIsRusak[$i] ?? null)) {
-                            $statusId = LogistikStatus::RUSAK;
-                        } elseif ((int) $md->status_id === LogistikStatus::TERPAKAI) {
-                            $statusId = LogistikStatus::TERPAKAI;
-                        } else {
-                            $statusId = LogistikStatus::TERSEIDA;
-                        }
-                        $md->update([
-                            'serial_number' => $sn,
-                            'mac_address' => $mac,
-                            'status_id' => $statusId,
-                        ]);
-                        $submittedIds[] = $md->id;
-                    }
-                } else {
-                    $md = ModemDetail::create([
-                        'logistik_id' => $perangkat->id,
-                        'serial_number' => $sn,
-                        'mac_address' => $mac,
-                        'status_id' => LogistikStatus::TERSEIDA,
-                    ]);
-                    $submittedIds[] = $md->id;
-                }
-            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Gagal update logistik: '.$e->getMessage(), ['perangkat_id' => $id]);
 
-            // Hapus ModemDetail yang statusnya Tersedia tapi tidak dikirim ulang
-            ModemDetail::where('logistik_id', $perangkat->id)
-                ->where('status_id', LogistikStatus::TERSEIDA)
-                ->whereNotIn('id', $submittedIds)
-                ->delete();
+            return redirect('/edit-logistik/'.$id)
+                ->with('toast_error', 'Gagal memperbarui logistik. Silakan coba lagi.');
         }
 
         return redirect('/data/logistik')->with('toast_success', 'Data Berhasil diperbarui');
+    }
+
+    /**
+     * Sinkronkan unit serial (modem/tenda/olt/odp/odc/htb/splitter) dengan data yang dikirim form.
+     *
+     * Catatan penting:
+     * - Unit yang TIDAK ada di form tidak pernah dihapus. Unit bisa saja baru ditambahkan
+     *   oleh proses lain (penerimaan pengadaan, instalasi teknisi) saat form masih terbuka.
+     * - Status Terpakai & Maintenance dipertahankan kecuali user menandainya rusak.
+     * - Jumlah stok selalu dihitung ulang dari jumlah unit fisik, bukan dari input form.
+     */
+    private function syncSerializedUnits(Request $request, Perangkat $perangkat, string $kategoriNama): void
+    {
+        $isSplitter = $kategoriNama === 'splitter';
+        $rasio = $request->input('rasio');
+
+        if ($isSplitter && $rasio !== null) {
+            ModemDetail::where('logistik_id', $perangkat->id)->update(['rasio' => $rasio]);
+        }
+
+        $serials = $request->input('edit_serial_number', []);
+        $macs = $request->input('edit_mac_address', []);
+        $isRusakArr = $request->input('edit_is_rusak', []);
+        $detailIds = $request->input('edit_detail_id', []);
+
+        $serials = is_array($serials) ? array_values($serials) : [];
+        $macs = is_array($macs) ? array_values($macs) : [];
+        $isRusakArr = is_array($isRusakArr) ? array_values($isRusakArr) : [];
+        $detailIds = is_array($detailIds) ? array_values($detailIds) : [];
+
+        foreach ($serials as $i => $serial) {
+            $sn = trim((string) $serial);
+            $mac = trim((string) ($macs[$i] ?? ''));
+            $detailId = $detailIds[$i] ?? null;
+            $markRusak = !empty($isRusakArr[$i]);
+
+            $detail = null;
+
+            if (!empty($detailId)) {
+                // Scope ke perangkat ini supaya ID nyasar tidak mengubah perangkat lain.
+                $detail = ModemDetail::where('logistik_id', $perangkat->id)->find($detailId);
+            }
+
+            // Baris lama tanpa SN (mis. unit splitter) dibiarkan apa adanya.
+            if (!$detail && $sn === '') {
+                continue;
+            }
+
+            if ($detail) {
+                // Jangan menimpa SN lama dengan kosong.
+                if ($sn === '') {
+                    continue;
+                }
+
+                $statusId = (int) $detail->status_id;
+
+                if ($markRusak) {
+                    $statusId = LogistikStatus::RUSAK;
+                } elseif ($statusId !== LogistikStatus::TERPAKAI && $statusId !== LogistikStatus::MAINTENANCE) {
+                    $statusId = LogistikStatus::TERSEIDA;
+                }
+
+                $detail->update([
+                    'serial_number' => $sn,
+                    'mac_address' => $mac !== '' ? $mac : null,
+                    'status_id' => $statusId,
+                ]);
+
+                continue;
+            }
+
+            // Unit baru: hormati flag rusak dari form.
+            ModemDetail::create([
+                'logistik_id' => $perangkat->id,
+                'serial_number' => $sn,
+                'mac_address' => $mac !== '' ? $mac : null,
+                'rasio' => $isSplitter ? $rasio : null,
+                'status_id' => $markRusak ? LogistikStatus::RUSAK : LogistikStatus::TERSEIDA,
+            ]);
+        }
+
+        // Total stok = jumlah unit fisik (termasuk terpakai/maintenance/rusak).
+        $perangkat->update([
+            'jumlah_stok' => ModemDetail::where('logistik_id', $perangkat->id)->count(),
+        ]);
     }
 
     /**

@@ -102,9 +102,10 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                         </div>
                         <div class="space-y-1">
                             <label class="block text-xs font-semibold text-slate-700" for="edit_jumlah_stok">
-                                <i class="bx bx-package text-blue-600 mr-1"></i>Jumlah Stok
+                                <i class="bx bx-package text-blue-600 mr-1"></i>Jumlah Stok / Total Unit
                             </label>
                             <input type="number" class="form-input-custom" name="stok" id="edit_jumlah_stok" value="{{ $log->jumlah_stok }}" min="1" placeholder="Jumlah unit / meter">
+                            <span class="block text-[10.5px] text-slate-400">Total unit fisik termasuk yang rusak/terpakai. Stok tersedia dihitung otomatis.</span>
                         </div>
                         <div class="space-y-1" id="editJumlahRusakWrap" style="{{ $isSerial ? 'display:none;' : '' }}">
                             <label class="block text-xs font-semibold text-rose-700" for="edit_jumlah_rusak">
@@ -160,9 +161,14 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                                 <p class="text-[11px] text-slate-400 mb-0">Ditampilkan saat closing instalasi</p>
                             </div>
                         </div>
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            <i class="bx bx-hash"></i><span id="editUnitCount">{{ $totalUnit }}</span> unit
-                        </span>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <i class="bx bx-hash"></i><span id="editUnitCount">{{ $totalUnit }}</span> unit
+                            </span>
+                            <span id="editStockTersedia" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Stok tersedia = total - terpakai - maintenance - rusak">Tersedia 0</span>
+                            <span id="editStockRusak" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Rusak 0</span>
+                            <span id="editStockMaintenance" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Maintenance 0</span>
+                        </div>
                     </div>
 
                     <div id="editUnitsHeader" class="hidden grid grid-cols-12 gap-3" style="{{ $isSerial ? '' : 'display:grid;' }}">
@@ -177,8 +183,9 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                         $mdStatus = (int) $md->status_id;
                         $mdRusak = ($mdStatus === \App\Helpers\LogistikStatus::RUSAK);
                         $mdTerpakai = ($mdStatus === \App\Helpers\LogistikStatus::TERPAKAI);
+                        $mdMaintenance = ($mdStatus === \App\Helpers\LogistikStatus::MAINTENANCE);
                         @endphp
-                        <div class="device-unit grid grid-cols-12 gap-3 items-center bg-slate-50/60 border border-slate-200 rounded-xl p-2.5 {{ $mdTerpakai ? 'is-terpakai border-blue-300 bg-blue-50/60' : '' }}">
+                        <div class="device-unit grid grid-cols-12 gap-3 items-center bg-slate-50/60 border border-slate-200 rounded-xl p-2.5 {{ $mdTerpakai ? 'is-terpakai border-blue-300 bg-blue-50/60' : '' }} {{ $mdMaintenance ? 'is-maintenance' : '' }}">
                             <div class="col-span-5 sn-col">
                                 <input type="text" class="form-input-custom" name="edit_serial_number[]" value="{{ $md->serial_number }}" placeholder="Serial Number" {{ $mdTerpakai ? 'readonly' : '' }}>
                             </div>
@@ -193,8 +200,8 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                                 </span>
                                 @else
                                 <input type="hidden" name="edit_is_rusak[]" value="{{ $mdRusak ? '1' : '0' }}">
-                                <button type="button" class="unit-rstatus w-9 h-9 rounded-lg border flex items-center justify-center transition-all cursor-pointer {{ $mdRusak ? 'bg-rose-100 border-rose-300 text-rose-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700' }}" data-status="{{ $mdRusak ? 'rusak' : 'ok' }}" title="{{ $mdRusak ? 'Unit rusak (afkir). Klik untuk kembalikan ke OK.' : 'Unit normal. Klik untuk menandai rusak.' }}">
-                                    <i class="bx {{ $mdRusak ? 'bx-x-circle' : 'bx-check-circle' }} text-base"></i>
+                                <button type="button" class="unit-rstatus w-9 h-9 rounded-lg border flex items-center justify-center transition-all cursor-pointer {{ $mdRusak ? 'bg-rose-100 border-rose-300 text-rose-700' : ($mdMaintenance ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700') }}" data-status="{{ $mdRusak ? 'rusak' : 'ok' }}" title="{{ $mdRusak ? 'Unit rusak (afkir). Klik untuk kembalikan ke OK.' : ($mdMaintenance ? 'Unit sedang maintenance. Klik untuk menandai rusak.' : 'Unit normal. Klik untuk menandai rusak.') }}">
+                                    <i class="bx {{ $mdRusak ? 'bx-x-circle' : ($mdMaintenance ? 'bx-wrench' : 'bx-check-circle') }} text-base"></i>
                                 </button>
                                 @endif
                                 <button type="button" class="w-9 h-9 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center transition-all add-unit cursor-pointer" title="Tambah unit"><i class="bx bx-plus text-lg"></i></button>
@@ -319,6 +326,33 @@ document.addEventListener('DOMContentLoaded', function () {
         if (badge) {
             badge.textContent = document.querySelectorAll('#editDeviceUnits .device-unit').length;
         }
+        syncEditSummary();
+    }
+
+    function syncEditSummary() {
+        var units = document.querySelectorAll('#editDeviceUnits .device-unit');
+        var total = units.length;
+        var rusak = 0;
+        var maintenance = 0;
+        var terpakai = 0;
+
+        units.forEach(function (unit) {
+            if (unit.classList.contains('is-terpakai')) terpakai++;
+            if (unit.classList.contains('is-maintenance')) maintenance++;
+
+            var statusBtn = unit.querySelector('.unit-rstatus');
+            if (statusBtn && statusBtn.dataset.status === 'rusak') rusak++;
+        });
+
+        var tersedia = Math.max(0, total - rusak - maintenance - terpakai);
+
+        var elTersedia = document.getElementById('editStockTersedia');
+        var elRusak = document.getElementById('editStockRusak');
+        var elMaintenance = document.getElementById('editStockMaintenance');
+
+        if (elTersedia) elTersedia.textContent = 'Tersedia ' + tersedia;
+        if (elRusak) elRusak.textContent = 'Rusak ' + rusak;
+        if (elMaintenance) elMaintenance.textContent = 'Maintenance ' + maintenance;
     }
 
     function applyEditMacVisibility() {
@@ -403,6 +437,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     applyEditMacVisibility();
+    syncEditStok();
 
     document.getElementById('editDeviceUnits').addEventListener('click', function (e) {
         if (e.target.closest('.add-unit')) {
@@ -410,9 +445,14 @@ document.addEventListener('DOMContentLoaded', function () {
             var template = document.querySelector('#editDeviceUnits .device-unit:not(.is-terpakai)');
             var first = template || document.querySelector('#editDeviceUnits .device-unit');
             var clone = first.cloneNode(true);
-            clone.querySelectorAll('input').forEach(function (inp) { inp.value = ''; });
-            clone.querySelectorAll('input').forEach(function (inp) { inp.removeAttribute('readonly'); });
-            clone.classList.remove('is-terpakai', 'border-blue-300', 'bg-blue-50/60');
+            // Bersihkan nilai + atribut value supaya baris baru tidak pernah membawa data/ID lama.
+            clone.querySelectorAll('input').forEach(function (inp) {
+                inp.value = '';
+                inp.defaultValue = '';
+                inp.removeAttribute('value');
+                inp.removeAttribute('readonly');
+            });
+            clone.classList.remove('is-terpakai', 'is-maintenance', 'border-blue-300', 'bg-blue-50/60');
             var statusSpan = clone.querySelector('.unit-terpakai-badge');
             if (statusSpan) statusSpan.remove();
             var custInfo = clone.querySelector('.customer-info-box');
@@ -425,7 +465,17 @@ document.addEventListener('DOMContentLoaded', function () {
             if (rBtn) setEditUnitStatus(rBtn, 'ok');
             var rh = clone.querySelector('input[name="edit_is_rusak[]"]');
             if (rh) rh.value = '0';
+            var detailIdInput = clone.querySelector('input[name="edit_detail_id[]"]');
+            if (detailIdInput) detailIdInput.value = '';
             first.parentNode.appendChild(clone);
+
+            // Arahkan user ke baris yang baru supaya tidak salah ketik ke baris modem lama.
+            var newSnInput = clone.querySelector('input[name="edit_serial_number[]"]');
+            if (newSnInput) {
+                newSnInput.focus({ preventScroll: true });
+            }
+            clone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             applyEditMacVisibility();
             syncEditStok();
         }
@@ -434,6 +484,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (units.length > 1) {
                 e.target.closest('.device-unit').remove();
                 syncEditStok();
+                syncEditUnitCount();
             }
         }
         var statusBtn = e.target.closest('.unit-rstatus');
@@ -446,13 +497,24 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.dataset.status = status;
         var rusak = status === 'rusak';
         var unit = btn.closest('.device-unit');
+        var maintenance = !!(unit && unit.classList.contains('is-maintenance'));
         var rh = unit ? unit.querySelector('input[name="edit_is_rusak[]"]') : null;
         if (rh) rh.value = rusak ? '1' : '0';
-        btn.className = rusak
-            ? 'unit-rstatus w-9 h-9 rounded-lg border bg-rose-100 border-rose-300 text-rose-700 flex items-center justify-center transition-all cursor-pointer'
-            : 'unit-rstatus w-9 h-9 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-700 flex items-center justify-center transition-all cursor-pointer';
-        btn.innerHTML = '<i class="bx ' + (rusak ? 'bx-x-circle' : 'bx-check-circle') + ' text-base"></i>';
-        btn.title = rusak ? 'Unit rusak (afkir). Klik untuk kembalikan ke OK.' : 'Unit normal. Klik untuk menandai rusak.';
+
+        if (rusak) {
+            btn.className = 'unit-rstatus w-9 h-9 rounded-lg border bg-rose-100 border-rose-300 text-rose-700 flex items-center justify-center transition-all cursor-pointer';
+        } else if (maintenance) {
+            btn.className = 'unit-rstatus w-9 h-9 rounded-lg border bg-amber-50 border-amber-200 text-amber-700 flex items-center justify-center transition-all cursor-pointer';
+        } else {
+            btn.className = 'unit-rstatus w-9 h-9 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-700 flex items-center justify-center transition-all cursor-pointer';
+        }
+
+        var icon = rusak ? 'bx-x-circle' : (maintenance ? 'bx-wrench' : 'bx-check-circle');
+        btn.innerHTML = '<i class="bx ' + icon + ' text-base"></i>';
+        btn.title = rusak
+            ? 'Unit rusak (afkir). Klik untuk kembalikan ke OK.'
+            : (maintenance ? 'Unit sedang maintenance. Klik untuk menandai rusak.' : 'Unit normal. Klik untuk menandai rusak.');
+        syncEditSummary();
     }
 
     function syncEditStok() {
