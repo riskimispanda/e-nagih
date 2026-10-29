@@ -66,7 +66,7 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
 
     {{-- Form Card --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <form action="/update-logistik/{{ $log->id }}" method="POST" id="editDeviceForm">
+        <form action="/update-logistik/{{ $log->id }}" method="POST" id="editDeviceForm" autocomplete="off">
             @csrf
 
             <div class="p-5 sm:p-6 space-y-6">
@@ -187,10 +187,10 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                         @endphp
                         <div class="device-unit grid grid-cols-12 gap-3 items-center bg-slate-50/60 border border-slate-200 rounded-xl p-2.5 {{ $mdTerpakai ? 'is-terpakai border-blue-300 bg-blue-50/60' : '' }} {{ $mdMaintenance ? 'is-maintenance' : '' }}">
                             <div class="col-span-5 sn-col">
-                                <input type="text" class="form-input-custom" name="edit_serial_number[]" value="{{ $md->serial_number }}" placeholder="Serial Number" {{ $mdTerpakai ? 'readonly' : '' }}>
+                                <input type="text" class="form-input-custom" name="edit_serial_number[]" value="{{ $md->serial_number }}" placeholder="Serial Number" autocomplete="off" spellcheck="false" {{ $mdTerpakai ? 'readonly' : '' }}>
                             </div>
                             <div class="col-span-5 mac-col" style="{{ $isNoMac ? 'display:none;' : '' }}">
-                                <input type="text" class="form-input-custom" name="edit_mac_address[]" value="{{ $md->mac_address }}" placeholder="MAC Address" {{ $mdTerpakai ? 'readonly' : '' }}>
+                                <input type="text" class="form-input-custom" name="edit_mac_address[]" value="{{ $md->mac_address }}" placeholder="MAC Address" autocomplete="off" spellcheck="false" {{ $mdTerpakai ? 'readonly' : '' }}>
                             </div>
                             <div class="col-span-2 flex items-center justify-end gap-1">
                                 @if ($mdTerpakai)
@@ -252,10 +252,10 @@ $currentRasio = $isSplitter ? ($modemDetails->first()->rasio ?? '') : '';
                         @empty
                         <div class="device-unit grid grid-cols-12 gap-3 items-center bg-slate-50/60 border border-slate-200 rounded-xl p-2.5">
                             <div class="col-span-5 sn-col">
-                                <input type="text" class="form-input-custom" name="edit_serial_number[]" placeholder="Serial Number">
+                                <input type="text" class="form-input-custom" name="edit_serial_number[]" placeholder="Serial Number" autocomplete="off" spellcheck="false">
                             </div>
                             <div class="col-span-5 mac-col" style="{{ $isNoMac ? 'display:none;' : '' }}">
-                                <input type="text" class="form-input-custom" name="edit_mac_address[]" placeholder="MAC Address">
+                                <input type="text" class="form-input-custom" name="edit_mac_address[]" placeholder="MAC Address" autocomplete="off" spellcheck="false">
                             </div>
                             <div class="col-span-2 flex items-center justify-end gap-1">
                                 <input type="hidden" name="edit_is_rusak[]" value="0">
@@ -460,8 +460,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 inp.removeAttribute('value');
                 inp.removeAttribute('readonly');
             });
-            clone.classList.remove('is-terpakai', 'is-maintenance', 'border-blue-300', 'bg-blue-50/60');
-            clone.classList.add('is-new-unit');
+            clone.classList.remove('is-terpakai', 'is-maintenance', 'border-slate-200', 'border-blue-300', 'bg-blue-50/60');
+            clone.classList.add('is-new-unit', 'border-amber-300', 'ring-2', 'ring-amber-200');
             var statusSpan = clone.querySelector('.unit-terpakai-badge');
             if (statusSpan) statusSpan.remove();
             var custInfo = clone.querySelector('.customer-info-box');
@@ -481,6 +481,10 @@ document.addEventListener('DOMContentLoaded', function () {
             // Arahkan user ke baris yang baru supaya tidak salah ketik ke baris modem lama.
             var newSnInput = clone.querySelector('input[name="edit_serial_number[]"]');
             if (newSnInput) {
+                // Pastikan lagi nilai SN kosong (sebagian browser bisa restore value dari atribut).
+                newSnInput.value = '';
+                newSnInput.defaultValue = '';
+                newSnInput.setAttribute('value', '');
                 newSnInput.focus({ preventScroll: true });
             }
             clone.scrollIntoView({ behavior: 'smooth', block: 'center' });

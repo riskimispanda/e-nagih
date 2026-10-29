@@ -512,6 +512,14 @@ class Logistik extends Controller
         $isRusakArr = is_array($isRusakArr) ? array_values($isRusakArr) : [];
         $detailIds = is_array($detailIds) ? array_values($detailIds) : [];
 
+        $submittedRows = [];
+        foreach ($serials as $rowIndex => $rowSn) {
+            $submittedRows[] = [
+                'sn' => trim((string) $rowSn),
+                'detail_id' => $detailIds[$rowIndex] ?? null,
+            ];
+        }
+
         // Kalau form mengirim ID unit, baris tanpa ID berarti unit BARU dan harus dibuat.
         // Fallback pencocokan SN hanya dipakai untuk form lama yang sama sekali tanpa ID.
         $hasSubmittedDetailIds = false;
@@ -588,19 +596,28 @@ class Logistik extends Controller
                         LogistikStatus::MAINTENANCE => 'Maintenance',
                     ][(int) $existingUnit->status_id] ?? 'Status '.$existingUnit->status_id;
 
+                    $customerName = null;
+                    if ((int) $existingUnit->status_id === LogistikStatus::TERPAKAI && $existingUnit->customer_id) {
+                        $customerName = optional(Customer::withTrashed()->find($existingUnit->customer_id))->nama_customer;
+                    }
+
                     Log::warning('SN duplikat saat tambah unit logistik', [
                         'perangkat_id' => $perangkat->id,
                         'submitted_sn' => $sn,
                         'existing_id' => $existingUnit->id,
                         'existing_sn' => $existingUnit->serial_number,
                         'existing_status' => $existingUnit->status_id,
+                        'existing_customer_id' => $existingUnit->customer_id,
+                        'existing_customer' => $customerName,
+                        'submitted_rows' => $submittedRows,
                     ]);
 
                     $storedSn = (string) $existingUnit->serial_number;
                     $snHint = $storedSn !== $sn ? ' SN tersimpan: "'.$storedSn.'".' : '';
+                    $customerHint = $customerName ? ' Sedang terpakai oleh pelanggan: '.$customerName.'.' : '';
 
                     throw new \InvalidArgumentException(
-                        'SN '.$sn.' sudah terdaftar di perangkat ini (unit #'.$existingUnit->id.', status '.$statusLabel.').'.$snHint
+                        'SN '.$sn.' sudah terdaftar di perangkat ini (unit #'.$existingUnit->id.', status '.$statusLabel.').'.$snHint.$customerHint
                     );
                 }
             }
