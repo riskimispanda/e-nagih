@@ -15,6 +15,14 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 class ExportControllers extends Controller
 {
+    public function __construct()
+    {
+        // Export pelanggan memuat ribuan baris. Naikkan batas memori dan waktu
+        // hanya untuk request export, tanpa mengubah php.ini global.
+        @ini_set('memory_limit', '256M');
+        @set_time_limit(180);
+    }
+
     public function exportSemua()
     {
         activity('Export')

@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Conditional;
 use Carbon\Carbon;
 
 class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyles, WithEvents, WithTitle, WithChunkReading
@@ -79,7 +80,6 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                 'koneksi',
                 'perangkat',
                 'media',
-                'invoice.pembayaran',
             ])
             ->select('customer.*')
             ->selectRaw('(
@@ -96,7 +96,8 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                 ORDER BY pembayaran.tanggal_bayar DESC
                 LIMIT 1
             ) as periode_pembayaran')
-            ->whereNull('customer.deleted_at');
+            ->whereNull('customer.deleted_at')
+            ->orderBy('customer.id');
 
         switch ($this->type) {
             case 'aktif':
@@ -288,7 +289,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                     $headings = ['Nama Paket', 'Jumlah Pelanggan'];
                     $maxColumn = $this->getColumnLetter($totalColumns - 1); // B
                 } else {
-                    $totalColumns = 31; // 31 kolom (A sampai AD)
+                    $totalColumns = 31; // 31 kolom (A sampai AE)
                     $headings = [
                         'ID',
                         'Nama Pelanggan',
@@ -322,7 +323,7 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                         'Pembayaran Terakhir', // **KOLOM BARU**
                         'Periode Terakhir Bayar',
                     ];
-                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AC
+                    $maxColumn = $this->getColumnLetter($totalColumns - 1); // AE
                 }
 
                 // Hapus heading otomatis yang sudah di-generate
@@ -385,10 +386,22 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                 $sheet->getRowDimension(3)->setRowHeight(20);
                 $sheet->getRowDimension(4)->setRowHeight(25); // Header
 
-                // Auto size columns
-                for ($col = 0; $col < $totalColumns; $col++) {
-                    $columnLetter = $this->getColumnLetter($col);
-                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
+                // Lebar kolom tetap. Auto-size memindai seluruh sel dan
+                // memakan banyak memori untuk export ribuan baris.
+                $columnWidths = $this->type === 'ringkasan'
+                    ? ['A' => 30, 'B' => 20]
+                    : [
+                        'A' => 8, 'B' => 30, 'C' => 40, 'D' => 16, 'E' => 26,
+                        'F' => 16, 'G' => 18, 'H' => 22, 'I' => 20, 'J' => 20,
+                        'K' => 18, 'L' => 18, 'M' => 20, 'N' => 20, 'O' => 20,
+                        'P' => 18, 'Q' => 22, 'R' => 16, 'S' => 16, 'T' => 16,
+                        'U' => 16, 'V' => 18, 'W' => 18, 'X' => 14, 'Y' => 14,
+                        'Z' => 20, 'AA' => 16, 'AB' => 20, 'AC' => 20, 'AD' => 20,
+                        'AE' => 22,
+                    ];
+
+                foreach ($columnWidths as $column => $width) {
+                    $sheet->getColumnDimension($column)->setWidth($width);
                 }
 
                 // Style untuk header kolom (row 4)
@@ -415,70 +428,35 @@ class ExportPelanggan implements FromQuery, WithHeadings, WithMapping, WithStyle
                     ],
                 ]);
 
-                // Style untuk data (row 5 dan seterusnya)
+                // Style data memakai conditional formatting agar tidak membuat
+                // objek style baru untuk setiap sel (penyebab memory exhausted).
                 $lastRow = $sheet->getHighestRow();
                 if ($lastRow > 4) {
-                    $dataRange = "A5:{$maxColumn}{$lastRow}";
-
-                    // Border untuk data
-                    $sheet->getStyle($dataRange)->applyFromArray([
-                        'borders' => [
-                            'allBorders' => [
-                                'borderStyle' => Border::BORDER_THIN,
-                                'color' => ['rgb' => 'DDDDDD'],
-                            ],
-                        ],
-                        'alignment' => [
-                            'vertical' => Alignment::VERTICAL_CENTER,
-                        ],
-                    ]);
+                    $zebra = new Conditional();
+                    $zebra->setConditionType(Conditional::CONDITION_EXPRESSION);
+                    $zebra->setConditions(['MOD(ROW(),2)=0']);
+                    $zebra->getStyle()->getFill()
+                        ->setFillType(Fill::FILL_SOLID)
+                        ->getStartColor()
+                        ->setARGB('FFF8F9FA');
+                    $sheet->getStyle("A5:{$maxColumn}{$lastRow}")
+                        ->setConditionalStyles([$zebra]);
 
                     if ($this->type !== 'ringkasan') {
-                        // Center alignment untuk kolom tertentu
-                        $centerColumns = [0, 4, 5, 6, 7, 27, 28, 29, 30]; // ID, Status, Status Customer, Paket, Pembayaran Terakhir, Tanggal, Periode Terakhir Bayar
-                        foreach ($centerColumns as $colIndex) {
-                            $columnLetter = $this->getColumnLetter($colIndex);
-                            $sheet->getStyle("{$columnLetter}5:{$columnLetter}{$lastRow}")
-                                ->getAlignment()
-                                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        }
-
-                        // Left alignment untuk teks panjang
-                        $leftColumns = [1, 2, 3]; // Nama, No HP, Email
-                        foreach ($leftColumns as $colIndex) {
-                            $columnLetter = $this->getColumnLetter($colIndex);
-                            $sheet->getStyle("{$columnLetter}5:{$columnLetter}{$lastRow}")
-                                ->getAlignment()
-                                ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                        }
-
-                        // Conditional formatting untuk Status Customer
-                        for ($row = 5; $row <= $lastRow; $row++) {
-                            $statusValue = $sheet->getCell($this->getColumnLetter(5) . $row)->getValue();
-                            if ($statusValue === 'Deaktivasi') {
-                                $sheet->getStyle($this->getColumnLetter(5) . $row)->applyFromArray([
-                                    'font' => [
-                                        'color' => ['argb' => Color::COLOR_RED],
-                                        'bold' => true,
-                                    ],
-                                    'fill' => [
-                                        'fillType' => Fill::FILL_SOLID,
-                                        'startColor' => ['argb' => 'FEE2E2'],
-                                    ],
-                                ]);
-                            }
-                        }
-                    }
-
-                    // Alternating row colors
-                    for ($row = 5; $row <= $lastRow; $row++) {
-                        if ($row % 2 == 0) {
-                            $sheet->getStyle("A{$row}:{$maxColumn}{$row}")
-                                ->getFill()
-                                ->setFillType(Fill::FILL_SOLID)
-                                ->getStartColor()
-                                ->setARGB('F8F9FA');
-                        }
+                        $statusColumn = $this->getColumnLetter(6); // Status Customer
+                        $deaktivasi = new Conditional();
+                        $deaktivasi->setConditionType(Conditional::CONDITION_CONTAINSTEXT);
+                        $deaktivasi->setOperatorType(Conditional::OPERATOR_CONTAINSTEXT);
+                        $deaktivasi->setText('Deaktivasi');
+                        $deaktivasi->getStyle()->getFont()
+                            ->setBold(true)
+                            ->getColor()->setARGB(Color::COLOR_RED);
+                        $deaktivasi->getStyle()->getFill()
+                            ->setFillType(Fill::FILL_SOLID)
+                            ->getStartColor()
+                            ->setARGB('FFFEE2E2');
+                        $sheet->getStyle("{$statusColumn}5:{$statusColumn}{$lastRow}")
+                            ->setConditionalStyles([$deaktivasi]);
                     }
                 }
 
