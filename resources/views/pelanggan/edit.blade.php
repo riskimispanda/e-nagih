@@ -87,6 +87,23 @@
         @csrf
         @method('PUT')
 
+        @php
+            // Cari unit ModemDetail yang saat ini terpasang pada pelanggan.
+            // Nilai ini dipakai juga oleh role non-teknis agar modem_detail_id
+            // tidak kosong saat form disubmit.
+            $selectedSeriId = null;
+            $selectedSeriMac = $pelanggan->mac_address;
+            $selectedSeriSn = $pelanggan->seri_perangkat;
+            foreach ($logistikSerial as $ls) {
+                if ($ls['logistik_id'] == $pelanggan->perangkat_id && $ls['serial_number'] == $pelanggan->seri_perangkat) {
+                    $selectedSeriId = $ls['id'];
+                    $selectedSeriMac = $ls['mac_address'] ?? $pelanggan->mac_address;
+                    $selectedSeriSn = $ls['serial_number'];
+                    break;
+                }
+            }
+        @endphp
+
         {{-- Header Card --}}
         <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-lg shadow-slate-900/10 overflow-hidden mb-6">
             <div class="relative px-5 sm:px-8 py-6 sm:py-7">
@@ -555,24 +572,15 @@
                             {{-- Serial Number (dari logistik) --}}
                             <div>
                                 <label class="flex items-center gap-1 text-xs font-semibold text-slate-700 mb-1.5" for="modem_detail_id">Serial Number</label>
-                                @php
-                                    $selectedSeriId = null;
-                                    $selectedSeriMac = $pelanggan->mac_address;
-                                    $selectedSeriSn = $pelanggan->seri_perangkat;
-                                    foreach ($logistikSerial as $ls) {
-                                        if ($ls['logistik_id'] == $pelanggan->perangkat_id && $ls['serial_number'] == $pelanggan->seri_perangkat) {
-                                            $selectedSeriId = $ls['id'];
-                                            $selectedSeriMac = $ls['mac_address'] ?? $pelanggan->mac_address;
-                                            $selectedSeriSn = $ls['serial_number'];
-                                            break;
-                                        }
-                                    }
-                                @endphp
                                 <input type="hidden" name="seri" id="seri_input" value="{{ old('seri', $selectedSeriSn) }}">
                                 <select name="modem_detail_id" id="modem_detail_id" class="form-control-custom">
-                                    <option value="" data-sn="{{ $selectedSeriSn }}" data-mac="{{ $selectedSeriMac }}" data-logistik="{{ $pelanggan->perangkat_id }}">
-                                        {{ $selectedSeriSn ? $selectedSeriSn . ' (SN saat ini)' : 'Pilih Serial Number' }}
-                                    </option>
+                                    @if(!$selectedSeriId)
+                                        {{-- Unit saat ini tidak ada di daftar (mis. status rusak / data lama).
+                                             Biarkan kosong; controller akan mencari berdasarkan SN di hidden input. --}}
+                                        <option value="" data-sn="{{ $selectedSeriSn }}" data-mac="{{ $selectedSeriMac }}" data-logistik="{{ $pelanggan->perangkat_id }}">
+                                            {{ $selectedSeriSn ? $selectedSeriSn . ' (SN saat ini)' : 'Pilih Serial Number' }}
+                                        </option>
+                                    @endif
                                     @foreach ($logistikSerial as $ls)
                                         <option value="{{ $ls['id'] }}" data-sn="{{ $ls['serial_number'] }}" data-mac="{{ $ls['mac_address'] }}" data-logistik="{{ $ls['logistik_id'] }}" {{ $selectedSeriId == $ls['id'] ? 'selected' : '' }}>
                                             {{ $ls['serial_number'] }}
@@ -721,10 +729,11 @@ document.addEventListener('DOMContentLoaded', function () {
             tsModem.clear();
             tsModem.clearOptions();
 
-            // Tambahkan opsi fallback SN saat ini jika tipe perangkat cocok
-            if (initialSeriSn && (String(initialPerangkatId) === String(selectedPerangkatId) || !selectedPerangkatId)) {
+            // Tambahkan opsi fallback SN saat ini hanya jika unit tersebut
+            // belum punya ID ModemDetail (mis. status rusak / data lama).
+            if (!initialModemDetailId && initialSeriSn && (String(initialPerangkatId) === String(selectedPerangkatId) || !selectedPerangkatId)) {
                 tsModem.addOption({
-                    value: initialModemDetailId ? String(initialModemDetailId) : '',
+                    value: '',
                     text: initialSeriSn + ' (SN saat ini)'
                 });
             }

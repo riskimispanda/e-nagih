@@ -824,99 +824,10 @@ class DataController extends Controller
       Log::info('Success update profile Pelanggan di Mikrotik: ' . $usersecret . '-' . $targetProfile . ($isIsolir ? ' (Status: Isolir)' : ''));
 
       // 📡 Sinkronisasi Data Modem & Serial Number
-      $perangkatId = $request->filled('perangkat') ? $request->perangkat : $pelanggan->perangkat_id;
-      $seriPerangkat = $pelanggan->seri_perangkat;
-      $macAddress = $request->filled('mac') ? $request->mac : $pelanggan->mac_address;
-
-      $modemDetailId = $request->input('modem_detail_id');
-
-      if (!empty($modemDetailId)) {
-        $selectedModem = ModemDetail::find($modemDetailId);
-        if ($selectedModem) {
-          $seriPerangkat = $selectedModem->serial_number ?: $seriPerangkat;
-          $macAddress = $selectedModem->mac_address ?: $macAddress;
-          $perangkatId = $selectedModem->logistik_id ?: $perangkatId;
-
-          // Lepas modem lama milik customer ini jika sebelumnya memakai unit berbeda
-          ModemDetail::where('customer_id', $pelanggan->id)
-            ->where('id', '!=', $selectedModem->id)
-            ->update([
-              'customer_id' => null,
-              'status_id' => LogistikStatus::TERSEIDA,
-            ]);
-
-          // Pasang unit modem terpilih ke pelanggan
-          $selectedModem->update([
-            'customer_id' => $pelanggan->id,
-            'status_id' => LogistikStatus::TERPAKAI,
-            'tanggal_terpakai' => $selectedModem->tanggal_terpakai ?: now(),
-          ]);
-        }
-      } elseif ($request->filled('seri')) {
-        $inputSeri = trim($request->seri);
-        // Cek apakah input berupa ID ModemDetail yang valid
-        $matchedById = is_numeric($inputSeri) ? ModemDetail::find($inputSeri) : null;
-        if ($matchedById) {
-          $seriPerangkat = $matchedById->serial_number ?: $seriPerangkat;
-          $macAddress = $matchedById->mac_address ?: $macAddress;
-          $perangkatId = $matchedById->logistik_id ?: $perangkatId;
-
-          ModemDetail::where('customer_id', $pelanggan->id)
-            ->where('id', '!=', $matchedById->id)
-            ->update([
-              'customer_id' => null,
-              'status_id' => LogistikStatus::TERSEIDA,
-            ]);
-
-          $matchedById->update([
-            'customer_id' => $pelanggan->id,
-            'status_id' => LogistikStatus::TERPAKAI,
-            'tanggal_terpakai' => $matchedById->tanggal_terpakai ?: now(),
-          ]);
-        } else {
-          // Input adalah nomor seri string manual
-          $seriPerangkat = $inputSeri;
-          $matchedBySn = ModemDetail::where('serial_number', $seriPerangkat)
-            ->where('logistik_id', $perangkatId)
-            ->first();
-
-          if ($matchedBySn) {
-            ModemDetail::where('customer_id', $pelanggan->id)
-              ->where('id', '!=', $matchedBySn->id)
-              ->update([
-                'customer_id' => null,
-                'status_id' => LogistikStatus::TERSEIDA,
-              ]);
-
-            $matchedBySn->update([
-              'customer_id' => $pelanggan->id,
-              'status_id' => LogistikStatus::TERPAKAI,
-              'tanggal_terpakai' => $matchedBySn->tanggal_terpakai ?: now(),
-            ]);
-            $macAddress = $matchedBySn->mac_address ?: $macAddress;
-          } else {
-            // Update atau buat catatan modem jika belum ada di logistik
-            ModemDetail::updateOrCreate(
-              ['customer_id' => $pelanggan->id],
-              [
-                'logistik_id' => $perangkatId,
-                'serial_number' => $seriPerangkat,
-                'mac_address' => $macAddress,
-                'status_id' => LogistikStatus::TERPAKAI,
-              ]
-            );
-          }
-        }
-      } else {
-        // Jika modem_detail_id kosong dan seri kosong, pastikan unit modem yang sudah terpasang tetap terjaga
-        if ($pelanggan->perangkat_id && $pelanggan->seri_perangkat) {
-          ModemDetail::where('customer_id', $pelanggan->id)
-            ->update([
-              'logistik_id' => $perangkatId,
-              'mac_address' => $macAddress,
-            ]);
-        }
-      }
+      // Melepas unit lama dan memasang unit baru pada ModemDetail. Stok logistik
+      // (stok tersedia) dihitung dari status unit, jadi perubahan status di sini
+      // otomatis memperbarui stok tanpa mengurangi jumlah_stok (total fisik).
+      [$perangkatId, $seriPerangkat, $macAddress] = $this->syncModemPelanggan($pelanggan, $request);
 
       // 🔥 BARU UPDATE DATABASE (setelah Mikrotik sukses)
       $data = [
@@ -1051,6 +962,193 @@ class DataController extends Controller
       'jatuh_tempo' => $jatuhTempo,
     ]);
     dd('Customer: ' . $customer . 'Invoice: ' . $invoice);
+  }
+
+  /**
+   * Sinkronkan unit modem pelanggan.
+   *
+   * Aturan:
+   * - Unit yang dipilih lewat modem_detail_id (atau SN yang cocok) diikat ke pelanggan.
+   * - Unit aktif lama dilepas ke status Tersedia, bukan ditimpa SN-nya.
+   * - Kalau modem tidak berubah, status/stok tidak diubah.
+   * - SN baru yang belum terdaftar dibuatkan baris baru; baris lama tidak ditimpa.
+   *
+   * @return array{0: int|null, 1: string|null, 2: string|null}
+   */
+  private function syncModemPelanggan(Customer $pelanggan, Request $request): array
+  {
+    $perangkatId = $request->filled('perangkat') ? (int) $request->perangkat : $pelanggan->perangkat_id;
+    $seriPerangkat = $pelanggan->seri_perangkat;
+    $macAddress = $request->filled('mac') ? $request->mac : $pelanggan->mac_address;
+
+    $modemDetailId = trim((string) $request->input('modem_detail_id', ''));
+    $inputSeri = trim((string) $request->input('seri', ''));
+    $currentSerial = trim((string) $pelanggan->seri_perangkat);
+    $explicitSelection = $modemDetailId !== '';
+
+    // Hanya unit kategori modem yang boleh dilepas/dipasang dari form ini.
+    $modemCategory = fn ($q) => $q->whereRaw('LOWER(nama_logistik) LIKE ?', ['%modem%']);
+
+    $target = null;
+    if ($explicitSelection) {
+      $target = ModemDetail::with('perangkat.kategori')
+        ->lockForUpdate()
+        ->find($modemDetailId);
+
+      if (!$target) {
+        throw new \Exception('Serial number yang dipilih tidak ditemukan di logistik.');
+      }
+    } elseif ($inputSeri !== '') {
+      $target = ModemDetail::with('perangkat.kategori')
+        ->where('serial_number', $inputSeri)
+        ->when($perangkatId, fn ($q) => $q->where('logistik_id', $perangkatId))
+        ->lockForUpdate()
+        ->first();
+
+      if (!$target) {
+        $target = ModemDetail::with('perangkat.kategori')
+          ->where('serial_number', $inputSeri)
+          ->lockForUpdate()
+          ->first();
+      }
+    }
+
+    $current = ModemDetail::where('customer_id', $pelanggan->id)
+      ->where('status_id', LogistikStatus::TERPAKAI)
+      ->whereHas('perangkat.kategori', $modemCategory)
+      ->lockForUpdate()
+      ->first();
+
+    // Tidak ada unit yang dipilih dan tidak ada SN baru: pertahankan unit lama.
+    if (!$target && $inputSeri === '') {
+      if ($current) {
+        $current->update([
+          'logistik_id' => $perangkatId ?: $current->logistik_id,
+          'mac_address' => $macAddress ?: $current->mac_address,
+        ]);
+
+        $perangkatId = $current->logistik_id ?: $perangkatId;
+        $seriPerangkat = $current->serial_number ?: $seriPerangkat;
+        $macAddress = $current->mac_address ?: $macAddress;
+      }
+
+      return [$perangkatId, $seriPerangkat, $macAddress];
+    }
+
+    // Unit yang dipilih sama dengan unit aktif: edit data tidak boleh mengubah stok.
+    if ($current && $target && (int) $current->id === (int) $target->id) {
+      $current->update([
+        'logistik_id' => $perangkatId ?: $current->logistik_id,
+        'mac_address' => $macAddress ?: $current->mac_address,
+        'tanggal_terpakai' => $current->tanggal_terpakai ?: now(),
+      ]);
+
+      return [
+        $current->logistik_id ?: $perangkatId,
+        $current->serial_number ?: $seriPerangkat,
+        $current->mac_address ?: $macAddress,
+      ];
+    }
+
+    if ($target) {
+      $targetCustomerId = $target->customer_id ? (int) $target->customer_id : null;
+
+      if ($targetCustomerId && $targetCustomerId !== (int) $pelanggan->id) {
+        throw new \Exception('Serial number ' . ($target->serial_number ?: $target->id) . ' sedang dipakai pelanggan lain.');
+      }
+
+      $kategori = strtolower($target->perangkat?->kategori?->nama_logistik ?? '');
+      if (!str_contains($kategori, 'modem')) {
+        throw new \Exception('Unit yang dipilih bukan perangkat modem.');
+      }
+
+      $isCurrentCustomerUnit = $targetCustomerId === (int) $pelanggan->id
+        && $inputSeri !== ''
+        && $inputSeri === $currentSerial;
+
+      // Jangan ubah status unit maintenance/rusak hanya karena edit data.
+      if ($isCurrentCustomerUnit && !$explicitSelection
+        && in_array((int) $target->status_id, [LogistikStatus::MAINTENANCE, LogistikStatus::RUSAK], true)) {
+        return [
+          $target->logistik_id ?: $perangkatId,
+          $target->serial_number ?: $seriPerangkat,
+          $target->mac_address ?: $macAddress,
+        ];
+      }
+
+      if ((int) $target->status_id === LogistikStatus::RUSAK) {
+        throw new \Exception('Serial number ' . ($target->serial_number ?: $target->id) . ' berstatus rusak dan tidak dapat dipasang.');
+      }
+
+      Log::info('Sinkronisasi modem pelanggan', [
+        'customer_id' => $pelanggan->id,
+        'old_modem_id' => $current?->id,
+        'old_serial_number' => $current?->serial_number,
+        'new_modem_id' => $target->id,
+        'new_serial_number' => $target->serial_number,
+      ]);
+
+      // Lepas unit aktif lama customer ini.
+      ModemDetail::where('customer_id', $pelanggan->id)
+        ->where('status_id', LogistikStatus::TERPAKAI)
+        ->where('id', '!=', $target->id)
+        ->whereHas('perangkat.kategori', $modemCategory)
+        ->update([
+          'customer_id' => null,
+          'status_id' => LogistikStatus::TERSEIDA,
+        ]);
+
+      // Pasang unit terpilih.
+      $target->update([
+        'customer_id' => $pelanggan->id,
+        'status_id' => LogistikStatus::TERPAKAI,
+        'tanggal_terpakai' => $target->tanggal_terpakai ?: now(),
+      ]);
+
+      return [
+        $target->logistik_id ?: $perangkatId,
+        $target->serial_number ?: $seriPerangkat,
+        $target->mac_address ?: $macAddress,
+      ];
+    }
+
+    // SN baru belum terdaftar di ModemDetail. Jangan menimpa baris lama:
+    // lepas unit aktif lama, lalu buat baris baru untuk SN tersebut.
+    if (!$perangkatId) {
+      throw new \Exception('Perangkat modem belum dipilih.');
+    }
+
+    $perangkat = Perangkat::with('kategori')->find($perangkatId);
+    $kategori = strtolower($perangkat?->kategori?->nama_logistik ?? '');
+    if (!$perangkat || !str_contains($kategori, 'modem')) {
+      throw new \Exception('Perangkat modem yang dipilih tidak valid.');
+    }
+
+    ModemDetail::where('customer_id', $pelanggan->id)
+      ->where('status_id', LogistikStatus::TERPAKAI)
+      ->whereHas('perangkat.kategori', $modemCategory)
+      ->update([
+        'customer_id' => null,
+        'status_id' => LogistikStatus::TERSEIDA,
+      ]);
+
+    $newModem = ModemDetail::create([
+      'logistik_id' => $perangkatId,
+      'serial_number' => $inputSeri,
+      'mac_address' => $macAddress,
+      'status_id' => LogistikStatus::TERPAKAI,
+      'customer_id' => $pelanggan->id,
+      'tanggal_terpakai' => now(),
+    ]);
+
+    Log::warning('ModemDetail baru dibuat saat edit pelanggan karena SN belum terdaftar', [
+      'customer_id' => $pelanggan->id,
+      'modem_detail_id' => $newModem->id,
+      'serial_number' => $inputSeri,
+      'logistik_id' => $perangkatId,
+    ]);
+
+    return [$perangkatId, $inputSeri, $macAddress];
   }
 
   private function calculateProrate($hargaPaket, $tanggalInstalasi)
