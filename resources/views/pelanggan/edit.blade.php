@@ -798,26 +798,27 @@ document.addEventListener('DOMContentLoaded', function () {
             if (modemValue === '') missingFields.push('Modem');
             if (serialValue === '') missingFields.push('Serial Number');
 
-            const adaYangKosong = missingFields.length > 0;
-            const pesanKosong = missingFields.length === 2
-                ? 'Modem dan Serial Number belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa modem dan SN?'
-                : `${missingFields[0]} belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa ${missingFields[0].toLowerCase()}?`;
+            let confirmation = {
+                title: 'Konfirmasi Data',
+                text: 'Apakah data pelanggan sudah benar? Perubahan akan disimpan dan disinkronkan.',
+                icon: 'question',
+                confirmButtonColor: '#2563eb',
+                confirmButtonText: 'Ya, Simpan'
+            };
 
-            const confirmation = adaYangKosong
-                ? {
+            if (missingFields.length > 0) {
+                const pesanKosong = missingFields.length === 2
+                    ? 'Modem dan Serial Number belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa modem dan SN?'
+                    : `${missingFields[0]} belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa ${missingFields[0].toLowerCase()}?`;
+
+                confirmation = {
                     title: missingFields.length === 2 ? 'Modem & SN Kosong' : `${missingFields[0]} Kosong`,
                     text: pesanKosong,
                     icon: 'warning',
                     confirmButtonColor: '#d97706',
                     confirmButtonText: 'Ya, Tetap Simpan'
-                }
-                : {
-                    title: 'Konfirmasi Data',
-                    text: 'Apakah data pelanggan sudah benar? Perubahan akan disimpan dan disinkronkan.',
-                    icon: 'question',
-                    confirmButtonColor: '#2563eb',
-                    confirmButtonText: 'Ya, Simpan'
                 };
+            }
 
             Swal.fire({
                 ...confirmation,
