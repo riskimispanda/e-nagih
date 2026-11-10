@@ -94,6 +94,7 @@
             $selectedSeriId = null;
             $selectedSeriMac = $pelanggan->mac_address;
             $selectedSeriSn = $pelanggan->seri_perangkat;
+            $selectedPerangkat = old('perangkat', $pelanggan->perangkat_id);
             foreach ($logistikSerial as $ls) {
                 if ($ls['logistik_id'] == $pelanggan->perangkat_id && $ls['serial_number'] == $pelanggan->seri_perangkat) {
                     $selectedSeriId = $ls['id'];
@@ -563,8 +564,9 @@
                             <div>
                                 <label class="flex items-center gap-1 text-xs font-semibold text-slate-700 mb-1.5" for="perangkat">Modem</label>
                                 <select name="perangkat" id="perangkat" class="form-control-custom">
+                                    <option value="" {{ $selectedPerangkat === null || $selectedPerangkat === '' ? 'selected' : '' }}>Pilih Modem</option>
                                     @foreach ($perangkat as $item)
-                                        <option value="{{ $item->id }}" {{ old('perangkat', $pelanggan->perangkat_id) == $item->id ? 'selected' : '' }}>{{ $item->nama_perangkat }}</option>
+                                        <option value="{{ $item->id }}" {{ $selectedPerangkat == $item->id ? 'selected' : '' }}>{{ $item->nama_perangkat }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -574,13 +576,9 @@
                                 <label class="flex items-center gap-1 text-xs font-semibold text-slate-700 mb-1.5" for="modem_detail_id">Serial Number</label>
                                 <input type="hidden" name="seri" id="seri_input" value="{{ old('seri', $selectedSeriSn) }}">
                                 <select name="modem_detail_id" id="modem_detail_id" class="form-control-custom">
-                                    @if(!$selectedSeriId)
-                                        {{-- Unit saat ini tidak ada di daftar (mis. status rusak / data lama).
-                                             Biarkan kosong; controller akan mencari berdasarkan SN di hidden input. --}}
-                                        <option value="" data-sn="{{ $selectedSeriSn }}" data-mac="{{ $selectedSeriMac }}" data-logistik="{{ $pelanggan->perangkat_id }}">
-                                            {{ $selectedSeriSn ? $selectedSeriSn . ' (SN saat ini)' : 'Pilih Serial Number' }}
-                                        </option>
-                                    @endif
+                                    <option value="" data-sn="{{ $selectedSeriSn }}" data-mac="{{ $selectedSeriMac }}" data-logistik="{{ $pelanggan->perangkat_id }}" {{ $selectedSeriId ? '' : 'selected' }}>
+                                        {{ $selectedSeriSn && !$selectedSeriId ? $selectedSeriSn . ' (SN saat ini)' : 'Pilih Serial Number' }}
+                                    </option>
                                     @foreach ($logistikSerial as $ls)
                                         <option value="{{ $ls['id'] }}" data-sn="{{ $ls['serial_number'] }}" data-mac="{{ $ls['mac_address'] }}" data-logistik="{{ $ls['logistik_id'] }}" {{ $selectedSeriId == $ls['id'] ? 'selected' : '' }}>
                                             {{ $ls['serial_number'] }}
@@ -668,7 +666,11 @@ document.addEventListener('DOMContentLoaded', function () {
     selectConfigs.forEach(selector => {
         const el = document.querySelector(selector);
         if (el && !el.tomselect) {
-            const ts = new TomSelect(el, { create: false, sortField: { field: "text", direction: "asc" } });
+            const ts = new TomSelect(el, {
+                create: false,
+                allowEmptyOption: selector === '#perangkat',
+                sortField: { field: "text", direction: "asc" }
+            });
             tsInstances[selector] = ts;
             ts.on('dropdown_open', function() {
                 const section = el.closest('.animate-section');
@@ -688,15 +690,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const modemDetailSelect = document.getElementById('modem_detail_id');
 
     const logistikSerialData = @json($logistikSerial);
-    const initialPerangkatId = "{{ $pelanggan->perangkat_id }}";
-    const initialModemDetailId = "{{ $selectedSeriId ?? '' }}";
-    const initialSeriSn = "{{ $selectedSeriSn ?? '' }}";
-    const initialMac = "{{ $selectedSeriMac ?? '' }}";
+    const initialPerangkatId = @json((string) ($selectedPerangkat ?? ''));
+    const initialModemDetailId = @json((string) ($selectedSeriId ?? ''));
+    const initialSeriSn = @json((string) old('seri', $selectedSeriSn));
+    const initialMac = @json((string) ($selectedSeriMac ?? ''));
 
     let tsModem = null;
     if (modemDetailSelect) {
         tsModem = new TomSelect(modemDetailSelect, {
             create: false,
+            allowEmptyOption: true,
             sortField: { field: "text", direction: "asc" }
         });
         tsInstances['#modem_detail_id'] = tsModem;
@@ -729,14 +732,15 @@ document.addEventListener('DOMContentLoaded', function () {
             tsModem.clear();
             tsModem.clearOptions();
 
-            // Tambahkan opsi fallback SN saat ini hanya jika unit tersebut
-            // belum punya ID ModemDetail (mis. status rusak / data lama).
-            if (!initialModemDetailId && initialSeriSn && (String(initialPerangkatId) === String(selectedPerangkatId) || !selectedPerangkatId)) {
-                tsModem.addOption({
-                    value: '',
-                    text: initialSeriSn + ' (SN saat ini)'
-                });
-            }
+            // SN saat ini bisa tidak punya ID ModemDetail (mis. status rusak /
+            // data lama). Opsi kosong tetap disediakan agar SN bisa dikosongkan.
+            const hasFallbackSerial = !initialModemDetailId && initialSeriSn
+                && (String(initialPerangkatId) === String(selectedPerangkatId) || !selectedPerangkatId);
+
+            tsModem.addOption({
+                value: '',
+                text: hasFallbackSerial ? initialSeriSn + ' (SN saat ini)' : 'Pilih Serial Number'
+            });
 
             // Tambahkan serial number yang sesuai perangkat dari logistik
             logistikSerialData.forEach(item => {
@@ -755,13 +759,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 tsModem.setValue(String(currentSelected));
             } else if (initialModemDetailId && tsModem.options[String(initialModemDetailId)]) {
                 tsModem.setValue(String(initialModemDetailId));
-            } else if (initialSeriSn && tsModem.options['']) {
+            } else if (hasFallbackSerial && tsModem.options['']) {
                 tsModem.setValue('');
             } else {
-                const keys = Object.keys(tsModem.options);
-                if (keys.length > 0) {
-                    tsModem.setValue(keys[0]);
-                }
+                const firstSerialKey = Object.keys(tsModem.options).find(key => key !== '');
+                tsModem.setValue(firstSerialKey || '');
             }
         }
 
@@ -785,17 +787,45 @@ document.addEventListener('DOMContentLoaded', function () {
     if (form) {
         form.addEventListener('submit', function (e) {
             e.preventDefault();
+
+            // Modem dan SN boleh kosong, tetapi beri peringatan sebelum menyimpan.
+            const modemField = form.querySelector('[name="perangkat"]');
+            const serialField = form.querySelector('[name="seri"]');
+            const modemValue = modemField ? String(modemField.value).trim() : '';
+            const serialValue = serialField ? String(serialField.value).trim() : '';
+            const missingFields = [];
+
+            if (modemValue === '') missingFields.push('Modem');
+            if (serialValue === '') missingFields.push('Serial Number');
+
+            const adaYangKosong = missingFields.length > 0;
+            const pesanKosong = missingFields.length === 2
+                ? 'Modem dan Serial Number belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa modem dan SN?'
+                : `${missingFields[0]} belum diisi. Apakah Anda yakin ingin menyimpan data pelanggan tanpa ${missingFields[0].toLowerCase()}?`;
+
+            const confirmation = adaYangKosong
+                ? {
+                    title: missingFields.length === 2 ? 'Modem & SN Kosong' : `${missingFields[0]} Kosong`,
+                    text: pesanKosong,
+                    icon: 'warning',
+                    confirmButtonColor: '#d97706',
+                    confirmButtonText: 'Ya, Tetap Simpan'
+                }
+                : {
+                    title: 'Konfirmasi Data',
+                    text: 'Apakah data pelanggan sudah benar? Perubahan akan disimpan dan disinkronkan.',
+                    icon: 'question',
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Ya, Simpan'
+                };
+
             Swal.fire({
-                title: 'Konfirmasi Data',
-                text: "Apakah data pelanggan sudah benar? Perubahan akan disimpan dan disinkronkan.",
-                icon: 'question',
+                ...confirmation,
                 showCancelButton: true,
-                confirmButtonColor: '#2563eb',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Ya, Simpan',
                 cancelButtonText: 'Batal'
             }).then((result) => {
-                if (result.isConfirmed) this.submit();
+                if (result.isConfirmed) form.submit();
             });
         });
     }
