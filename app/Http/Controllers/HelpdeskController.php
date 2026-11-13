@@ -13,6 +13,8 @@ use App\Models\Perusahaan;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use App\Models\ODP;
 use Carbon\Carbon;
 
@@ -108,6 +110,8 @@ class HelpdeskController extends Controller
   {
     // dd($request->file('identitas_file'));
     try {
+      $currentUser = auth()->user();
+      $isAgen = $currentUser->roles_id == 6;
       $jenis = $request->input('jenis_pelanggan');
       $rules = ['jenis_pelanggan' => 'required'];
 
@@ -122,6 +126,15 @@ class HelpdeskController extends Controller
           'paket_id' => 'required',
           'tanggal_reg' => 'required|date'
         ]);
+
+        // Agen hanya boleh membuat antrian untuk dirinya sendiri.
+        // Role lain wajib memilih agen tujuan.
+        if (!$isAgen) {
+          $rules['agen'] = [
+            'required',
+            Rule::exists('users', 'id')->where('roles_id', 6),
+          ];
+        }
       } elseif ($jenis == 'Perusahaan') {
         $rules = array_merge($rules, [
           'nama_perusahaan' => 'required',
@@ -136,7 +149,10 @@ class HelpdeskController extends Controller
         ]);
       }
 
-      $request->validate($rules);
+      $request->validate($rules, [
+        'agen.required' => 'Agen wajib dipilih.',
+        'agen.exists' => 'Agen yang dipilih tidak valid.',
+      ]);
       $nomor = preg_replace('/[^0-9]/', '', $request->no_hp);
       $nomor = preg_replace('/^0/', '62', $nomor);
 
@@ -201,6 +217,8 @@ class HelpdeskController extends Controller
         $email = preg_replace('/@.*$/', '', $email) . '@niscala.net';
       }
 
+      $agenId = $isAgen ? $currentUser->id : (int) $request->input('agen');
+
       $data = Customer::create([
         'nama_customer' => $request->nama_customer,
         'no_hp' => $nomor,
@@ -208,7 +226,7 @@ class HelpdeskController extends Controller
         'gps' => $request->gps,
         'paket_id' => $request->paket_id,
         'status_id' => 1,
-        'agen_id' => $request->agen ?? auth()->id() ?? 1,
+        'agen_id' => $agenId,
         'no_identitas' => $request->no_identitas,
         'email' => $email,
         'teknisi_id' => null,
@@ -242,6 +260,8 @@ class HelpdeskController extends Controller
       // }
 
       return redirect()->back()->with('success', 'Antrian berhasil ditambahkan');
+    } catch (ValidationException $e) {
+      return redirect()->back()->withInput()->with('error', $e->validator->errors()->first());
     } catch (\Throwable $e) {
       Log::error('Gagal tambah antrian: ' . $e->getMessage(), [
         'trace' => $e->getTraceAsString(),
@@ -273,11 +293,30 @@ class HelpdeskController extends Controller
    */
   public function updateAntrian(Request $request, $id)
   {
-    $request->validate([
+    $currentUser = auth()->user();
+    $isAgen = $currentUser->roles_id == 6;
+
+    $rules = [
       'nama_customer' => 'required',
       'no_hp' => 'required',
       'alamat' => 'required',
-    ]);
+    ];
+
+    if (!$isAgen) {
+      $rules['agen_id'] = [
+        'required',
+        Rule::exists('users', 'id')->where('roles_id', 6),
+      ];
+    }
+
+    try {
+      $request->validate($rules, [
+        'agen_id.required' => 'Agen wajib dipilih.',
+        'agen_id.exists' => 'Agen yang dipilih tidak valid.',
+      ]);
+    } catch (ValidationException $e) {
+      return redirect()->back()->withInput()->with('error', $e->validator->errors()->first());
+    }
 
     $customer = Customer::findOrFail($id);
 
@@ -289,7 +328,7 @@ class HelpdeskController extends Controller
       $email = preg_replace('/@.*$/', '', $email) . '@niscala.net';
     }
 
-    $customer->update([
+    $data = [
       'nama_customer' => $request->nama_customer,
       'email' => $email,
       'no_hp' => $nomor,
@@ -297,8 +336,14 @@ class HelpdeskController extends Controller
       'gps' => $request->gps ?? null,
       'no_identitas' => $request->no_identitas,
       'paket_id' => $request->paket_id,
-      'agen_id' => $request->agen_id,
-    ]);
+    ];
+
+    // Agen tidak boleh memindahkan antrian ke user lain.
+    if (!$isAgen) {
+      $data['agen_id'] = $request->integer('agen_id');
+    }
+
+    $customer->update($data);
 
     // Update the associated user if email has changed
     if ($email && $customer->email != $email) {

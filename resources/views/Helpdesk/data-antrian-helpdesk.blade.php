@@ -792,9 +792,9 @@
                   </select>
                 </div>
               </div>
-              @if(auth()->user()->roles_id == 7)
+              @if(auth()->user()->roles_id != 6)
                 <div class="col-md-6 form-group">
-                  <label class="form-label">Agen</label>
+                  <label class="form-label">Agen <span class="text-danger">*</span></label>
                   <div class="input-group">
                     <span class="input-group-text"><i class="bx bx-user"></i></span>
                     <select id="agen" name="agen" class="form-select">
@@ -804,7 +804,7 @@
                       @endforeach
                     </select>
                   </div>
-                  <small class="form-text">Boleh kosong</small>
+                  <small class="form-text">Wajib dipilih</small>
                 </div>
               @endif
               <div class="col-md-12 form-group">
@@ -1130,6 +1130,27 @@
           });
         }
       }
+
+      // Agen wajib dipilih sebelum menyimpan antrian.
+      // TomSelect menyembunyikan select asli, jadi validasi dilakukan di sini.
+      const addAntrianForm = document.querySelector('#modalAdd form');
+      if (addAntrianForm) {
+        addAntrianForm.addEventListener('submit', function (e) {
+          const jenis = document.getElementById('jenis');
+          const agenSelect = document.getElementById('agen');
+
+          // Agen hanya wajib untuk pelanggan Personal.
+          if (jenis && jenis.value === 'Personal' && agenSelect && !agenSelect.value) {
+            e.preventDefault();
+            Swal.fire({
+              icon: 'warning',
+              title: 'Agen wajib dipilih',
+              text: 'Silakan pilih agen sebelum menyimpan antrian.',
+              confirmButtonText: 'OK'
+            });
+          }
+        });
+      }
     });
 
     // Format Rupiah
@@ -1155,21 +1176,25 @@
 
   </script>
   <script>
-    new TomSelect("#agen", {
-      create: false,
-      sortField: {
-        field: "text",
-        direction: "asc"
-      }
-    });
+    if (document.getElementById('agen')) {
+      new TomSelect("#agen", {
+        create: false,
+        sortField: {
+          field: "text",
+          direction: "asc"
+        }
+      });
+    }
     // Odp
-    new TomSelect("#select_odp", {
-      create: false,
-      sortField: {
-        field: "text",
-        direction: "asc"
-      }
-    });
+    if (document.getElementById('select_odp')) {
+      new TomSelect("#select_odp", {
+        create: false,
+        sortField: {
+          field: "text",
+          direction: "asc"
+        }
+      });
+    }
   </script>
   <script>
     function formatToLocalNumber(number) {

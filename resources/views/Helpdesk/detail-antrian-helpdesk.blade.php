@@ -892,11 +892,11 @@
                                 @endforeach
                             </select>
                         </div>
-                        @if(auth()->user()->roles_id == 7)
+                        @if(auth()->user()->roles_id != 6)
                         <div class="col-md-6">
-                            <label class="form-label">Agen</label>
-                            <select id="edit_status" name="agen_id" class="form-select">
-                                <option value="">Pilih Agen</option>
+                            <label class="form-label">Agen <span class="text-danger">*</span></label>
+                            <select id="edit_agen_id" name="agen_id" class="form-select" required>
+                                <option value="">-- Pilih Agen --</option>
                                 @foreach ($agen ?? [] as $a)
                                 <option value="{{ $a->id }}"
                                     {{ $customer->agen_id == $a->id ? 'selected' : '' }}>
@@ -908,10 +908,9 @@
                         @elseif(auth()->user()->roles_id == 6)
                         <div class="col-sm-6">
                             <label class="form-label">Agen</label>
-                            <select id="edit_status" name="agen_id" class="form-select">
-                                <option value="" disabled>Pilih Agen</option>
-                                <option value="{{ auth()->user()->id }}" selected>{{ auth()->user()->name }}</option>
-                            </select>
+                            <input type="text" class="form-control"
+                                value="{{ $customer->agen->name ?? '-' }}" disabled>
+                            <small class="form-text">Agen tidak dapat diubah oleh agen.</small>
                         </div>
                         @endif
                     </div>

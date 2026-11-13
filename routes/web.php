@@ -1055,11 +1055,15 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/helpdesk/data-antrian', [HelpdeskController::class, 'antrian'])
     ->middleware('auth', 'roles:Helpdesk,Agen,Super Admin,Teknisi')
     ->name('antrian-helpdesk');
-  Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])->name('helpdesk.detail-antrian');
-  Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])->name(
-    'update-antrian-helpdesk'
-  );
-  Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])->name('helpdesk.store');
+  Route::get('/helpdesk/detail-antrian/{id}', [HelpdeskController::class, 'detailAntrian'])
+    ->middleware('roles:Helpdesk,Agen,Super Admin,Teknisi')
+    ->name('helpdesk.detail-antrian');
+  Route::put('/helpdesk/update-antrian/{id}', [HelpdeskController::class, 'updateAntrian'])
+    ->middleware('roles:Helpdesk,Agen,Super Admin,Teknisi')
+    ->name('update-antrian-helpdesk');
+  Route::post('/helpdesk/store', [HelpdeskController::class, 'addAntrian'])
+    ->middleware('roles:Helpdesk,Agen,Super Admin,Teknisi')
+    ->name('helpdesk.store');
   // Preview queue (dummy data) for UI demonstration
   Route::get('/helpdesk/preview-queue', [\App\Http\Controllers\HelpdeskPreviewController::class, 'show'])->name('helpdesk.preview.queue');
   // CSV export for preview queue (dummy data)

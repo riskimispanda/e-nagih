@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfTokens as Middleware;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken as Middleware;
 
 class VerifyCsrfTokens extends Middleware
 {
