@@ -875,6 +875,9 @@ Route::middleware(['auth'])->group(function () {
   Route::get('/data/pendapatan/ajax', [KeuanganController::class, 'getAjaxData'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('pendapatan.ajax');
+  Route::post('/data/pendapatan/broadcast-reminder', [KeuanganController::class, 'broadcastReminder'])
+    ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
+    ->name('pendapatan.broadcast-reminder');
   Route::get('/data/pembayaran', [KeuanganController::class, 'pembayaran'])
     ->middleware('auth', 'roles:Super Admin,Admin Keuangan')
     ->name('pembayaran');

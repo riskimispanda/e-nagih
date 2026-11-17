@@ -824,6 +824,138 @@ class QontakServices
   }
 
   /**
+   * Ambil metadata template WhatsApp dari Qontak dengan cache singkat
+   * agar pengiriman broadcast massal tidak memukul endpoint template berulang kali.
+   */
+  public function resolveTemplateByName(string $name, int $cacheSeconds = 300): ?array
+  {
+    $cacheKey = 'qontak_template_' . $name;
+    $cached = Cache::get($cacheKey);
+
+    if (is_array($cached) && !empty($cached['id'])) {
+      return $cached;
+    }
+
+    $template = $this->getTemplateByName($name);
+
+    if (is_array($template) && !empty($template['id'])) {
+      Cache::put($cacheKey, $template, $cacheSeconds);
+      return $template;
+    }
+
+    return null;
+  }
+
+  /**
+   * Bersihkan teks parameter template WhatsApp dari newline/tab dan spasi berlebih.
+   */
+  private function sanitizeTemplateText(?string $value, string $fallback = '-'): string
+  {
+    $cleaned = str_replace(["\r", "\n", "\t"], ' ', (string) $value);
+    $cleaned = trim((string) preg_replace('/\s+/u', ' ', $cleaned));
+
+    return $cleaned !== '' ? $cleaned : $fallback;
+  }
+
+  /**
+   * Kirim broadcast reminder pembayaran menggunakan template 'reminder_pembayaran'.
+   * Parameter body template Qontak: {{1}} nama, {{2}} alamat, {{3}} tagihan, {{4}} link.
+   */
+  public function reminderPembayaran(
+    $to,
+    $customer,
+    float $totalTagihan,
+    string $paymentUrl,
+    ?array $resolvedTemplate = null
+  ): array {
+    try {
+      $digitsOnly = preg_replace('/[^0-9]/', '', (string) $to);
+      if (empty($digitsOnly) || strlen($digitsOnly) < 10) {
+        throw new Exception('Nomor WhatsApp pelanggan tidak valid atau kurang dari 10 digit');
+      }
+
+      $template = $resolvedTemplate ?? $this->resolveTemplateByName('reminder_pembayaran');
+      if (!$template || !is_array($template) || empty($template['id'])) {
+        throw new Exception("Template 'reminder_pembayaran' tidak ditemukan atau format tidak valid");
+      }
+
+      $namaCustomer = $this->sanitizeTemplateText($customer->nama_customer ?? null, 'Pelanggan');
+      $alamatCustomer = $this->sanitizeTemplateText($customer->alamat ?? null, '-');
+      $formattedTagihan = number_format(max($totalTagihan, 0), 0, ',', '.');
+      $cleanUrl = trim($paymentUrl);
+
+      if ($cleanUrl === '') {
+        throw new Exception('Link pembayaran tidak boleh kosong');
+      }
+
+      $templateParams = [
+        [
+          'key' => '1',
+          'value' => 'nama',
+          'value_text' => $namaCustomer
+        ],
+        [
+          'key' => '2',
+          'value' => 'alamat',
+          'value_text' => $alamatCustomer
+        ],
+        [
+          'key' => '3',
+          'value' => 'tagihan',
+          'value_text' => $formattedTagihan
+        ],
+        [
+          'key' => '4',
+          'value' => 'link',
+          'value_text' => $cleanUrl
+        ]
+      ];
+
+      $formattedPhone = $this->formatNomor($to);
+
+      $messageData = [
+        'to_number' => $formattedPhone,
+        'to_name' => $namaCustomer,
+        'message_template_id' => $template['id'],
+        'channel_integration_id' => $this->channelId,
+        'language' => [
+          'code' => is_array($template['language'] ?? null)
+            ? ($template['language']['code'] ?? 'id')
+            : ($template['language'] ?? 'id')
+        ],
+        'parameters' => [
+          'body' => $templateParams
+        ]
+      ];
+
+      $result = $this->makeRequest(
+        'POST',
+        '/qontak/chat/v1/broadcasts/whatsapp/direct',
+        $messageData
+      );
+
+      if (!$result['success']) {
+        throw new Exception($result['message'] ?? 'Gagal mengirim reminder pembayaran');
+      }
+
+      $responseData = is_array($result['data']) ? $result['data'] : [];
+
+      return [
+        'success' => true,
+        'message_id' => $responseData['id'] ?? null,
+        'status' => $responseData['execute_status'] ?? 'pending'
+      ];
+    } catch (Exception $e) {
+      Log::error('Error reminder pembayaran: ' . $e->getMessage());
+
+      return [
+        'success' => false,
+        'error' => $e->getMessage()
+      ];
+    }
+  }
+
+  /**
    * Format nomor telepon ke format internasional (62) dengan validasi
    */
   private function formatNomor($phoneNumber)

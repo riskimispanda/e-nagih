@@ -3461,4 +3461,246 @@ class KeuanganController extends Controller
       ], 500);
     }
   }
+
+  /**
+   * Terapkan filter invoice belum bayar yang konsisten dengan halaman /data/pendapatan.
+   */
+  private function applyReminderInvoiceFilters($invoiceQuery, ?int $bulan, ?int $tahun, ?string $search): void
+  {
+    $invoiceQuery->where('status_id', 7)
+      ->where('paket_id', '!=', 11);
+
+    $this->applyInvoiceSearch($invoiceQuery, $search);
+
+    if ($bulan !== null) {
+      $invoiceQuery->whereMonth('jatuh_tempo', $bulan);
+    }
+
+    if ($tahun !== null) {
+      $invoiceQuery->whereYear('jatuh_tempo', $tahun);
+    }
+  }
+
+  /**
+   * Bangun query pelanggan aktif yang berhak menerima broadcast reminder pembayaran.
+   */
+  private function buildReminderCustomerQuery(?int $bulan, ?int $tahun, ?int $agenId, ?string $search)
+  {
+    $query = Customer::query()
+      ->whereNull('deleted_at')
+      ->whereIn('status_id', [3, 4, 9])
+      ->whereNotNull('no_hp')
+      ->where('no_hp', '!=', '')
+      ->whereHas('invoice', function ($q) use ($bulan, $tahun, $search) {
+        $this->applyReminderInvoiceFilters($q, $bulan, $tahun, $search);
+      });
+
+    if ($agenId !== null) {
+      $query->where('agen_id', $agenId);
+    }
+
+    return $query;
+  }
+
+  /**
+   * Kirim broadcast WhatsApp reminder pembayaran (template: reminder_pembayaran)
+   * secara bertahap (batching) mengikuti filter aktif pada halaman /data/pendapatan.
+   */
+  public function broadcastReminder(Request $request, QontakServices $qontakService)
+  {
+    $validated = $request->validate([
+      'mode' => 'required|in:count,process',
+      'bulan' => 'nullable|integer|min:1|max:12',
+      'tahun' => 'nullable|integer|min:2000|max:2100',
+      'agen_id' => 'nullable|integer',
+      'search' => 'nullable|string|max:' . self::SEARCH_MAX_LENGTH,
+      'offset' => 'nullable|integer|min:0',
+      'limit' => 'nullable|integer|min:1|max:25',
+    ]);
+
+    $mode = $validated['mode'];
+    $bulan = isset($validated['bulan']) ? (int) $validated['bulan'] : null;
+    $tahun = isset($validated['tahun']) ? (int) $validated['tahun'] : null;
+    $agenId = isset($validated['agen_id']) ? (int) $validated['agen_id'] : null;
+    $search = $validated['search'] ?? null;
+    $offset = (int) ($validated['offset'] ?? 0);
+    $limit = (int) ($validated['limit'] ?? 10);
+
+    $today = Carbon::today();
+    $activeStatuses = ['sent', 'pending', 'todo', 'delivered', 'read'];
+
+    $eligibleCustomerQuery = $this->buildReminderCustomerQuery($bulan, $tahun, $agenId, $search);
+
+    if ($mode === 'count') {
+      $total = (clone $eligibleCustomerQuery)->count();
+
+      $alreadySentToday = 0;
+      if ($total > 0) {
+        $eligibleCustomerIdsSubquery = (clone $eligibleCustomerQuery)->select('id');
+        $alreadySentToday = DB::table('whats_log')
+          ->whereIn('customer_id', $eligibleCustomerIdsSubquery)
+          ->where('jenis_pesan', 'reminder_pembayaran')
+          ->whereDate('created_at', $today->toDateString())
+          ->whereIn('status_pengiriman', $activeStatuses)
+          ->distinct('customer_id')
+          ->count('customer_id');
+      }
+
+      return response()->json([
+        'status' => 'success',
+        'total' => $total,
+        'already_sent_today' => $alreadySentToday,
+        'to_send' => max($total - $alreadySentToday, 0),
+      ]);
+    }
+
+    try {
+      $template = $qontakService->resolveTemplateByName('reminder_pembayaran');
+    } catch (\Exception $e) {
+      Log::error('Gagal mengambil template reminder_pembayaran: ' . $e->getMessage());
+
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Gagal menghubungi Mekari Qontak: ' . $e->getMessage(),
+      ], 500);
+    }
+
+    if (!$template || empty($template['id'])) {
+      return response()->json([
+        'status' => 'error',
+        'message' => "Template 'reminder_pembayaran' tidak ditemukan di Mekari Qontak.",
+      ], 422);
+    }
+
+    $customersBatch = (clone $eligibleCustomerQuery)
+      ->orderBy('id', 'asc')
+      ->skip($offset)
+      ->take($limit)
+      ->get();
+
+    if ($customersBatch->isEmpty()) {
+      return response()->json([
+        'status' => 'success',
+        'processed' => 0,
+        'sent' => 0,
+        'skipped' => 0,
+        'failed' => 0,
+        'offset_next' => $offset,
+      ]);
+    }
+
+    $batchCustomerIds = $customersBatch->pluck('id')->all();
+
+    $alreadySentMap = DB::table('whats_log')
+      ->whereIn('customer_id', $batchCustomerIds)
+      ->where('jenis_pesan', 'reminder_pembayaran')
+      ->whereDate('created_at', $today->toDateString())
+      ->whereIn('status_pengiriman', $activeStatuses)
+      ->pluck('customer_id')
+      ->flip();
+
+    $invoicesByCustomer = Invoice::query()
+      ->whereIn('customer_id', $batchCustomerIds)
+      ->tap(function ($q) use ($bulan, $tahun, $search) {
+        $this->applyReminderInvoiceFilters($q, $bulan, $tahun, $search);
+      })
+      ->orderBy('jatuh_tempo', 'desc')
+      ->get()
+      ->groupBy('customer_id');
+
+    $periodeParts = [];
+    if ($bulan !== null) {
+      $periodeParts[] = Carbon::create()->month($bulan)->locale('id')->translatedFormat('F');
+    }
+    if ($tahun !== null) {
+      $periodeParts[] = (string) $tahun;
+    }
+    $periodeLabel = !empty($periodeParts) ? implode(' ', $periodeParts) : 'Semua Periode';
+
+    $sentCount = 0;
+    $skippedCount = 0;
+    $failedCount = 0;
+
+    foreach ($customersBatch as $customer) {
+      if ($alreadySentMap->has($customer->id)) {
+        $skippedCount++;
+        continue;
+      }
+
+      $invoiceGroup = $invoicesByCustomer->get($customer->id);
+      if (!$invoiceGroup || $invoiceGroup->isEmpty()) {
+        $skippedCount++;
+        continue;
+      }
+
+      $totalTagihan = (float) $invoiceGroup->sum(function ($inv) {
+        return max(
+          (float) ($inv->tagihan ?? 0)
+            + (float) ($inv->tambahan ?? 0)
+            + (float) ($inv->tunggakan ?? 0)
+            - (float) ($inv->saldo ?? 0),
+          0
+        );
+      });
+
+      $latestInvoice = $invoiceGroup->first();
+      $paymentUrl = url('/payment/invoice/' . encrypt($customer->id) . '?invoice_id=' . $latestInvoice->id);
+
+      $hasil = $qontakService->reminderPembayaran(
+        $customer->no_hp,
+        $customer,
+        $totalTagihan,
+        $paymentUrl,
+        $template
+      );
+
+      $status = 'pending';
+      $errorMessage = null;
+
+      if (isset($hasil['success']) && $hasil['success'] === false) {
+        $status = 'failed';
+        $errorMessage = is_string($hasil['error'] ?? null)
+          ? $hasil['error']
+          : 'Gagal mengirim reminder pembayaran';
+        $failedCount++;
+      } elseif (isset($hasil['status']) && in_array(strtolower((string) $hasil['status']), ['failed', 'error'], true)) {
+        $status = 'failed';
+        $errorMessage = $hasil['error']['message'] ?? $hasil['message'] ?? 'Message rejected';
+        $failedCount++;
+      } else {
+        $status = $hasil['status'] ?? 'pending';
+        $sentCount++;
+      }
+
+      DB::table('whats_log')->insert([
+        'customer_id' => $customer->id,
+        'jenis_pesan' => 'reminder_pembayaran',
+        'pesan' => "Reminder Pembayaran ({$periodeLabel}) - Tagihan Rp " . number_format($totalTagihan, 0, ',', '.'),
+        'qontak_broadcast_id' => $hasil['message_id'] ?? null,
+        'status_pengiriman' => $status,
+        'no_tujuan' => $customer->no_hp,
+        'error_message' => $errorMessage,
+        'created_at' => Carbon::now(),
+        'updated_at' => Carbon::now(),
+      ]);
+
+      // Jeda 100ms untuk menghindari rate limit Mekari Qontak API
+      usleep(100000);
+    }
+
+    if ($offset === 0) {
+      activity('Broadcast Reminder')
+        ->causedBy(auth()->user())
+        ->log(auth()->user()->name . " Memulai broadcast reminder pembayaran ({$periodeLabel})");
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'processed' => $customersBatch->count(),
+      'sent' => $sentCount,
+      'skipped' => $skippedCount,
+      'failed' => $failedCount,
+      'offset_next' => $offset + $customersBatch->count(),
+    ]);
+  }
 }

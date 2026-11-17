@@ -170,6 +170,533 @@
       justify-content: center;
       font-size: 1rem;
     }
+
+    /* Native modal Broadcast Reminder: dial ENERGY 1 / RHYTHM 2 / MOTION 1 */
+    .reminder-dialog {
+      margin: auto;
+      padding: 0;
+      border: 1px solid #CBD5E1;
+      border-radius: 14px;
+      width: min(540px, calc(100vw - 24px));
+      max-width: 100%;
+      max-height: calc(100dvh - 32px);
+      background: #FFFFFF;
+      color: #1E293B;
+      box-shadow: 0 20px 44px -16px rgba(15, 23, 42, 0.24);
+      overflow: hidden;
+    }
+
+    .reminder-dialog[open] {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .reminder-dialog:modal {
+      overscroll-behavior: contain;
+    }
+
+    .reminder-dialog::backdrop {
+      background: rgba(15, 23, 42, 0.52);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+
+    .reminder-dialog__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid #E2E8F0;
+      background: #FFFFFF;
+    }
+
+    .reminder-dialog__title-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .reminder-dialog__icon {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      border-radius: 10px;
+      background: #F0FDFA;
+      border: 1px solid #99F6E4;
+      color: #0F766E;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .reminder-dialog__title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #1E293B;
+    }
+
+    .reminder-dialog__subtitle {
+      margin: 2px 0 0;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: #475569;
+    }
+
+    .reminder-dialog__close {
+      min-width: 44px;
+      min-height: 44px;
+      margin: -6px -8px -6px 0;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .reminder-dialog__close:hover {
+      background: #F1F5F9;
+      color: #1E293B;
+    }
+
+    .reminder-dialog__close[aria-disabled="true"] {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .reminder-dialog__body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      flex: 1 1 auto;
+    }
+
+    .reminder-dialog__footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 14px 20px;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+    }
+
+    .reminder-dialog :is(button, a, summary):focus-visible {
+      outline: 3px solid #0F766E;
+      outline-offset: 2px;
+    }
+
+    .reminder-btn {
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .reminder-btn--primary {
+      background: #0F766E;
+      border: 1px solid #0F766E;
+      color: #FFFFFF;
+    }
+
+    .reminder-btn--primary:hover {
+      background: #115E59;
+      border-color: #115E59;
+      color: #FFFFFF;
+    }
+
+    .reminder-btn--secondary {
+      background: #FFFFFF;
+      border: 1px solid #64748B;
+      color: #1E293B;
+    }
+
+    .reminder-btn--secondary:hover {
+      background: #F1F5F9;
+      color: #1E293B;
+    }
+
+    .reminder-btn--ghost {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #1E293B;
+    }
+
+    .reminder-btn--ghost:hover {
+      background: #E2E8F0;
+      color: #1E293B;
+    }
+
+    .reminder-hero-stat {
+      padding: 16px 18px;
+      border-radius: 10px;
+      background: #F0FDFA;
+      border: 1px solid #99F6E4;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+
+    .reminder-hero-stat__label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #0F766E;
+      margin-bottom: 2px;
+    }
+
+    .reminder-hero-stat__value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #1E293B;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reminder-hero-stat__meta {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #0F766E;
+      background: #FFFFFF;
+      border: 1px solid #99F6E4;
+      border-radius: 6px;
+      padding: 6px 10px;
+      white-space: nowrap;
+    }
+
+    .reminder-substats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .reminder-substat {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+    }
+
+    .reminder-substat__label {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-bottom: 2px;
+    }
+
+    .reminder-substat__value {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1E293B;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reminder-ledger {
+      margin: 0 0 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .reminder-ledger__row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      font-size: 0.8125rem;
+    }
+
+    .reminder-ledger__row dt {
+      font-weight: 500;
+      color: #475569;
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .reminder-ledger__row dd {
+      font-weight: 600;
+      color: #1E293B;
+      margin: 0;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .reminder-preview {
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      background: #FFFFFF;
+    }
+
+    .reminder-preview summary {
+      padding: 10px 14px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1E293B;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 44px;
+    }
+
+    .reminder-preview summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .reminder-preview summary::after {
+      content: '\ea4a';
+      font-family: 'boxicons';
+      font-size: 1.1rem;
+      color: #475569;
+      transition: transform 0.15s ease;
+    }
+
+    .reminder-preview[open] summary::after {
+      transform: rotate(180deg);
+    }
+
+    .reminder-preview__body {
+      padding: 12px 14px;
+      border-top: 1px solid #E2E8F0;
+      background: #F8FAFC;
+      font-size: 0.8125rem;
+      line-height: 1.55;
+      color: #1E293B;
+    }
+
+    .reminder-preview__vars {
+      color: #0F766E;
+      font-weight: 600;
+    }
+
+    .reminder-state-panel {
+      text-align: center;
+      padding: 16px 8px;
+    }
+
+    .reminder-state-panel__badge {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .reminder-state-panel__badge--info {
+      background: #F1F5F9;
+      color: #1E293B;
+    }
+
+    .reminder-state-panel__badge--error {
+      background: #FEF2F2;
+      color: #B91C1C;
+    }
+
+    .reminder-state-panel__badge--success {
+      background: #F0FDF4;
+      color: #15803D;
+    }
+
+    .reminder-state-panel__badge--warning {
+      background: #FFFBEB;
+      color: #92400E;
+    }
+
+    .reminder-state-panel__heading {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin: 0 0 6px;
+    }
+
+    .reminder-state-panel__desc {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #475569;
+      margin: 0 auto;
+      max-width: 42ch;
+    }
+
+    .reminder-spinner {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 14px;
+      border: 3px solid #E2E8F0;
+      border-top-color: #0F766E;
+      border-radius: 50%;
+      animation: reminder-spin 0.8s linear infinite;
+    }
+
+    @keyframes reminder-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .reminder-progress-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+      color: #1E293B;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reminder-progress-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #E2E8F0;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .reminder-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: #0F766E;
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+
+    .reminder-metrics-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .reminder-metric-pill {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      text-align: left;
+    }
+
+    .reminder-metric-pill--sent {
+      background: #F0FDF4;
+      border-color: #BBF7D0;
+      color: #15803D;
+    }
+
+    .reminder-metric-pill--skipped {
+      background: #FFFBEB;
+      border-color: #FDE68A;
+      color: #92400E;
+    }
+
+    .reminder-metric-pill--failed {
+      background: #FEF2F2;
+      border-color: #FECACA;
+      color: #B91C1C;
+    }
+
+    .reminder-metric-pill__label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .reminder-metric-pill__val {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reminder-notice {
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      font-size: 0.8125rem;
+      color: #475569;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    @media (max-width: 576px) {
+      #btnBroadcastReminder {
+        min-height: 44px;
+      }
+
+      .reminder-dialog {
+        width: calc(100vw - 16px);
+        max-height: calc(100dvh - 20px);
+      }
+
+      .reminder-dialog__header,
+      .reminder-dialog__body,
+      .reminder-dialog__footer {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .reminder-hero-stat {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .reminder-substats,
+      .reminder-metrics-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .reminder-dialog__footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .reminder-btn {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reminder-spinner {
+        animation: none;
+      }
+
+      .reminder-progress-fill,
+      .reminder-preview summary::after,
+      .reminder-btn,
+      .reminder-dialog__close {
+        transition: none;
+      }
+    }
   </style>
 @endsection
 
@@ -379,6 +906,10 @@
         <button class="btn btn-outline-warning btn-sm" id="btnKirimGlobal" data-bs-toggle="tooltip"
           data-bs-placement="bottom" title="Kirim Manual Invoice Global">
           <i class="bx bx-message"></i> Kirim WhatsApp
+        </button>
+        <button type="button" class="btn btn-outline-info btn-sm" id="btnBroadcastReminder" data-bs-toggle="tooltip"
+          data-bs-placement="bottom" title="Kirim Broadcast Reminder Pembayaran">
+          <i class="bx bx-bell me-1" aria-hidden="true"></i> Broadcast Reminder
         </button>
         <button type="button" class="btn btn-sm btn-primary" id="btn-tutorial-wa" data-bs-toggle="tooltip"
           data-bs-placement="bottom" title="Panduan Kirim Whatsapp">
@@ -974,6 +1505,179 @@
   @endforeach
 
   <div id="ajaxModalsContainer"></div>
+
+  {{-- Native Dialog: Broadcast Reminder Pembayaran --}}
+  <dialog id="broadcastReminderDialog" class="reminder-dialog" aria-labelledby="reminderDialogTitle">
+    <div class="reminder-dialog__header">
+      <div class="reminder-dialog__title-wrap">
+        <span class="reminder-dialog__icon" aria-hidden="true">
+          <i class="bx bx-bell"></i>
+        </span>
+        <div>
+          <h2 id="reminderDialogTitle" class="reminder-dialog__title">Broadcast Reminder Pembayaran</h2>
+          <p id="reminderDialogSubtitle" class="reminder-dialog__subtitle">
+            Kirim pengingat tagihan WhatsApp via Mekari Qontak
+          </p>
+        </div>
+      </div>
+      <button type="button" id="reminderCloseBtn" class="reminder-dialog__close" aria-label="Tutup dialog">
+        <i class="bx bx-x" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="reminder-dialog__body">
+      {{-- State 1: Loading --}}
+      <div id="reminderStateLoading" class="reminder-state-panel" hidden>
+        <div class="reminder-spinner" aria-hidden="true"></div>
+        <h3 class="reminder-state-panel__heading">Menghitung penerima broadcast</h3>
+        <p class="reminder-state-panel__desc">
+          Memeriksa pelanggan aktif yang belum bayar dan riwayat reminder hari ini sesuai filter Anda.
+        </p>
+      </div>
+
+      {{-- State 2: Empty / Already Sent --}}
+      <div id="reminderStateEmpty" class="reminder-state-panel" hidden>
+        <div class="reminder-state-panel__badge reminder-state-panel__badge--info" aria-hidden="true">
+          <i class="bx bx-info-circle"></i>
+        </div>
+        <h3 id="reminderEmptyTitle" class="reminder-state-panel__heading">Tidak Ada Penerima</h3>
+        <p id="reminderEmptyDesc" class="reminder-state-panel__desc"></p>
+      </div>
+
+      {{-- State 3: Error --}}
+      <div id="reminderStateError" class="reminder-state-panel" hidden>
+        <div class="reminder-state-panel__badge reminder-state-panel__badge--error" aria-hidden="true">
+          <i class="bx bx-error-circle"></i>
+        </div>
+        <h3 id="reminderErrorTitle" class="reminder-state-panel__heading">Gagal Memuat Antrean</h3>
+        <p id="reminderErrorDesc" class="reminder-state-panel__desc"></p>
+      </div>
+
+      {{-- State 4: Confirm --}}
+      <div id="reminderStateConfirm" hidden>
+        <div class="reminder-hero-stat">
+          <div>
+            <div class="reminder-hero-stat__label">Siap Dikirim Sekarang</div>
+            <div class="reminder-hero-stat__value">
+              <span id="reminderToSendCount">0</span> Pelanggan
+            </div>
+          </div>
+          <div class="reminder-hero-stat__meta">
+            Template: reminder_pembayaran
+          </div>
+        </div>
+
+        <div class="reminder-substats">
+          <div class="reminder-substat">
+            <div class="reminder-substat__label">Total cocok filter</div>
+            <div class="reminder-substat__value"><span id="reminderTotalCount">0</span> pelanggan</div>
+          </div>
+          <div class="reminder-substat">
+            <div class="reminder-substat__label">Dilewati (terkirim hari ini)</div>
+            <div class="reminder-substat__value"><span id="reminderSkippedTodayCount">0</span> pelanggan</div>
+          </div>
+        </div>
+
+        <dl class="reminder-ledger">
+          <div class="reminder-ledger__row">
+            <dt>Periode</dt>
+            <dd id="reminderFilterPeriode">-</dd>
+          </div>
+          <div class="reminder-ledger__row">
+            <dt>Agen</dt>
+            <dd id="reminderFilterAgen">Semua Agen</dd>
+          </div>
+          <div class="reminder-ledger__row" id="reminderFilterSearchRow" hidden>
+            <dt>Pencarian</dt>
+            <dd id="reminderFilterSearch">-</dd>
+          </div>
+        </dl>
+
+        <details class="reminder-preview">
+          <summary>Lihat isi pesan template reminder_pembayaran</summary>
+          <div class="reminder-preview__body">
+            Yth. Bapak/Ibu <strong>Pelanggan Niscala Media Network</strong>,<br><br>
+            Kami ingin mengingatkan tagihan internet bulan ini yang belum tercatat pembayarannya.<br><br>
+            <strong>Detail Layanan:</strong><br>
+            Nama: <span class="reminder-preview__vars">@{{Nama Pelanggan}}</span><br>
+            Alamat: <span class="reminder-preview__vars">@{{Alamat}}</span><br>
+            Tagihan: <strong>Rp <span class="reminder-preview__vars">@{{Nominal}}</span>/bulan</strong><br>
+            Link Pembayaran: <span class="reminder-preview__vars">@{{Link Invoice}}</span>
+          </div>
+        </details>
+      </div>
+
+      {{-- State 5: Progress --}}
+      <div id="reminderStateProgress" hidden>
+        <div class="reminder-progress-head">
+          <span id="reminderProgressText">Memproses <strong>0</strong> dari <strong>0</strong> pelanggan</span>
+          <strong id="reminderProgressPercent">0%</strong>
+        </div>
+        <div class="reminder-progress-track">
+          <div id="reminderProgressBar" class="reminder-progress-fill" role="progressbar"
+            aria-labelledby="reminderProgressText" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <div class="reminder-metrics-3">
+          <div class="reminder-metric-pill reminder-metric-pill--sent">
+            <div class="reminder-metric-pill__label"><i class="bx bx-check-circle" aria-hidden="true"></i> Terkirim</div>
+            <div id="reminderSentCount" class="reminder-metric-pill__val">0</div>
+          </div>
+          <div class="reminder-metric-pill reminder-metric-pill--skipped">
+            <div class="reminder-metric-pill__label"><i class="bx bx-skip-next-circle" aria-hidden="true"></i> Dilewati</div>
+            <div id="reminderSkippedCount" class="reminder-metric-pill__val">0</div>
+          </div>
+          <div class="reminder-metric-pill reminder-metric-pill--failed">
+            <div class="reminder-metric-pill__label"><i class="bx bx-error-circle" aria-hidden="true"></i> Gagal</div>
+            <div id="reminderFailedCount" class="reminder-metric-pill__val">0</div>
+          </div>
+        </div>
+
+        <p class="reminder-notice">
+          <i class="bx bx-info-circle mt-1" aria-hidden="true"></i>
+          <span>Pengiriman berlangsung bertahap per 10 pelanggan. Jangan menutup halaman sampai selesai.</span>
+        </p>
+      </div>
+
+      {{-- State 6: Done --}}
+      <div id="reminderStateDone" hidden>
+        <div class="reminder-state-panel">
+          <div id="reminderDoneBadge" class="reminder-state-panel__badge reminder-state-panel__badge--success" aria-hidden="true">
+            <i id="reminderDoneIcon" class="bx bx-check-circle"></i>
+          </div>
+          <h3 id="reminderDoneTitle" class="reminder-state-panel__heading">Broadcast Reminder Selesai</h3>
+          <p id="reminderDoneDesc" class="reminder-state-panel__desc"></p>
+        </div>
+
+        <div class="reminder-metrics-3">
+          <div class="reminder-metric-pill reminder-metric-pill--sent">
+            <div class="reminder-metric-pill__label"><i class="bx bx-check-circle" aria-hidden="true"></i> Terkirim</div>
+            <div id="reminderDoneSent" class="reminder-metric-pill__val">0</div>
+          </div>
+          <div class="reminder-metric-pill reminder-metric-pill--skipped">
+            <div class="reminder-metric-pill__label"><i class="bx bx-skip-next-circle" aria-hidden="true"></i> Dilewati</div>
+            <div id="reminderDoneSkipped" class="reminder-metric-pill__val">0</div>
+          </div>
+          <div class="reminder-metric-pill reminder-metric-pill--failed">
+            <div class="reminder-metric-pill__label"><i class="bx bx-error-circle" aria-hidden="true"></i> Gagal</div>
+            <div id="reminderDoneFailed" class="reminder-metric-pill__val">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="reminderDialogFooter" class="reminder-dialog__footer" hidden>
+      <button type="button" id="reminderCancelBtn" class="reminder-btn reminder-btn--secondary" autofocus>Batal</button>
+      <button type="button" id="reminderRetryBtn" class="reminder-btn reminder-btn--primary" hidden>Coba Lagi</button>
+      <a href="{{ route('qontak.whats-log') }}" id="reminderLogsLink" class="reminder-btn reminder-btn--ghost" hidden>
+        Lihat Log WhatsApp
+      </a>
+      <button type="button" id="reminderConfirmSendBtn" class="reminder-btn reminder-btn--primary" hidden>
+        <i class="bx bx-send" aria-hidden="true"></i>
+        <span id="reminderConfirmBtnLabel">Kirim Reminder</span>
+      </button>
+    </div>
+  </dialog>
 
 
   {{-- Javascript --}}
@@ -2040,6 +2744,351 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const btnBroadcastReminder = document.getElementById('btnBroadcastReminder');
+      const dialog = document.getElementById('broadcastReminderDialog');
+      if (!btnBroadcastReminder || !dialog) return;
+
+      const reminderEndpoint = @json(route('pendapatan.broadcast-reminder'));
+      const closeBtn = document.getElementById('reminderCloseBtn');
+      const cancelBtn = document.getElementById('reminderCancelBtn');
+      const retryBtn = document.getElementById('reminderRetryBtn');
+      const logsLink = document.getElementById('reminderLogsLink');
+      const confirmSendBtn = document.getElementById('reminderConfirmSendBtn');
+      const confirmBtnLabel = document.getElementById('reminderConfirmBtnLabel');
+      const dialogFooter = document.getElementById('reminderDialogFooter');
+
+      const statePanels = {
+        loading: document.getElementById('reminderStateLoading'),
+        empty: document.getElementById('reminderStateEmpty'),
+        error: document.getElementById('reminderStateError'),
+        confirm: document.getElementById('reminderStateConfirm'),
+        progress: document.getElementById('reminderStateProgress'),
+        done: document.getElementById('reminderStateDone'),
+      };
+
+      let isBroadcastingReminder = false;
+      let isSendingBatch = false;
+      let currentSession = null;
+
+      function setTriggerBusy(busy) {
+        isBroadcastingReminder = busy;
+        // Gunakan aria-disabled agar tombol toolbar tetap focusable oleh keyboard/screen reader.
+        if (busy) {
+          btnBroadcastReminder.setAttribute('aria-disabled', 'true');
+          btnBroadcastReminder.classList.add('opacity-50');
+        } else {
+          btnBroadcastReminder.removeAttribute('aria-disabled');
+          btnBroadcastReminder.classList.remove('opacity-50');
+        }
+      }
+
+      function setCloseControlsLocked(locked) {
+        isSendingBatch = locked;
+        if (locked) {
+          closeBtn.setAttribute('aria-disabled', 'true');
+        } else {
+          closeBtn.removeAttribute('aria-disabled');
+        }
+      }
+
+      function showDialogState(stateName) {
+        Object.entries(statePanels).forEach(([key, panel]) => {
+          if (panel) panel.hidden = key !== stateName;
+        });
+
+        retryBtn.hidden = true;
+        logsLink.hidden = true;
+        confirmSendBtn.hidden = true;
+        cancelBtn.hidden = false;
+
+        if (stateName === 'loading' || stateName === 'progress') {
+          dialogFooter.hidden = true;
+        } else if (stateName === 'empty') {
+          dialogFooter.hidden = false;
+          cancelBtn.textContent = 'Tutup';
+        } else if (stateName === 'error') {
+          dialogFooter.hidden = false;
+          cancelBtn.textContent = 'Tutup';
+          retryBtn.hidden = false;
+        } else if (stateName === 'confirm') {
+          dialogFooter.hidden = false;
+          cancelBtn.textContent = 'Batal';
+          confirmSendBtn.hidden = false;
+        } else if (stateName === 'done') {
+          dialogFooter.hidden = false;
+          cancelBtn.textContent = 'Selesai';
+          logsLink.hidden = false;
+        }
+      }
+
+      function getActiveFilters() {
+        const bulanSelect = document.getElementById('bulan');
+        const tahunSelect = document.getElementById('tahun');
+        const agenSelect = document.getElementById('agen_id');
+        const searchInput = document.getElementById('searchInput');
+
+        const bulan = bulanSelect ? bulanSelect.value : '';
+        const tahun = tahunSelect ? tahunSelect.value : '';
+        const agenId = typeof tsAgen !== 'undefined' && tsAgen
+          ? tsAgen.getValue()
+          : (agenSelect ? agenSelect.value : '');
+        const search = searchInput ? searchInput.value.trim() : '';
+
+        const bulanText = bulanSelect && bulanSelect.selectedIndex >= 0
+          ? bulanSelect.options[bulanSelect.selectedIndex].text
+          : 'Semua Bulan';
+        const tahunText = tahunSelect && tahunSelect.selectedIndex >= 0
+          ? tahunSelect.options[tahunSelect.selectedIndex].text
+          : 'Semua Tahun';
+        const agenText = agenSelect && agenSelect.selectedIndex >= 0
+          ? agenSelect.options[agenSelect.selectedIndex].text
+          : 'Semua Agen';
+
+        return {
+          payload: {
+            bulan: bulan !== '' ? bulan : null,
+            tahun: tahun !== '' ? tahun : null,
+            agen_id: agenId !== '' ? agenId : null,
+            search: search !== '' ? search : null,
+          },
+          labels: {
+            periode: `${bulanText} / ${tahunText}`,
+            agen: agenId !== '' ? agenText : 'Semua Agen',
+            search,
+          },
+        };
+      }
+
+      async function postBroadcastReminder(bodyPayload) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const response = await fetch(reminderEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: JSON.stringify(bodyPayload),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.status !== 'success') {
+          throw new Error(data.message || `Gagal memproses permintaan (HTTP ${response.status}).`);
+        }
+        return data;
+      }
+
+      function updateProgressUI(offset, total, sent, skipped, failed) {
+        const progress = total > 0 ? Math.min(100, Math.round((offset / total) * 100)) : 0;
+        const bar = document.getElementById('reminderProgressBar');
+        const percentEl = document.getElementById('reminderProgressPercent');
+        const textEl = document.getElementById('reminderProgressText');
+
+        if (bar) {
+          bar.style.width = `${progress}%`;
+          bar.setAttribute('aria-valuenow', String(progress));
+        }
+        if (percentEl) percentEl.textContent = `${progress}%`;
+        if (textEl) textEl.innerHTML = `Memproses <strong>${offset}</strong> dari <strong>${total}</strong> pelanggan`;
+
+        document.getElementById('reminderSentCount').textContent = String(sent);
+        document.getElementById('reminderSkippedCount').textContent = String(skipped);
+        document.getElementById('reminderFailedCount').textContent = String(failed);
+      }
+
+      function renderDoneUI(total, sent, skipped, failed) {
+        const badge = document.getElementById('reminderDoneBadge');
+        const icon = document.getElementById('reminderDoneIcon');
+        const title = document.getElementById('reminderDoneTitle');
+        const desc = document.getElementById('reminderDoneDesc');
+
+        const hasPartialFailure = failed > 0 && sent === 0;
+        badge.className = `reminder-state-panel__badge ${hasPartialFailure ? 'reminder-state-panel__badge--warning' : 'reminder-state-panel__badge--success'}`;
+        icon.className = `bx ${hasPartialFailure ? 'bx-error' : 'bx-check-circle'}`;
+        title.textContent = hasPartialFailure ? 'Broadcast Selesai dengan Kendala' : 'Broadcast Reminder Selesai';
+        desc.textContent = `Sebanyak ${total} pelanggan pada antrean telah diperiksa.`;
+
+        document.getElementById('reminderDoneSent').textContent = String(sent);
+        document.getElementById('reminderDoneSkipped').textContent = String(skipped);
+        document.getElementById('reminderDoneFailed').textContent = String(failed);
+
+        setCloseControlsLocked(false);
+        setTriggerBusy(false);
+        showDialogState('done');
+        cancelBtn.focus();
+      }
+
+      async function runReminderBatch(filterPayload, offset, total, totalSent, totalSkipped, totalFailed) {
+        if (offset === 0) {
+          setCloseControlsLocked(true);
+          showDialogState('progress');
+        }
+        updateProgressUI(offset, total, totalSent, totalSkipped, totalFailed);
+
+        try {
+          const data = await postBroadcastReminder({
+            ...filterPayload,
+            mode: 'process',
+            offset,
+            limit: 10,
+          });
+
+          const newSent = totalSent + (data.sent || 0);
+          const newSkipped = totalSkipped + (data.skipped || 0);
+          const newFailed = totalFailed + (data.failed || 0);
+          const nextOffset = data.offset_next ?? (offset + (data.processed || 0));
+
+          if (nextOffset < total && (data.processed || 0) > 0) {
+            updateProgressUI(nextOffset, total, newSent, newSkipped, newFailed);
+            setTimeout(() => {
+              runReminderBatch(filterPayload, nextOffset, total, newSent, newSkipped, newFailed);
+            }, 1000);
+          } else {
+            updateProgressUI(total, total, newSent, newSkipped, newFailed);
+            setTimeout(() => {
+              renderDoneUI(total, newSent, newSkipped, newFailed);
+            }, 350);
+          }
+        } catch (err) {
+          setCloseControlsLocked(false);
+          setTriggerBusy(false);
+          document.getElementById('reminderErrorTitle').textContent = 'Pengiriman Terhenti';
+          document.getElementById('reminderErrorDesc').textContent =
+            err.message || 'Terjadi gangguan saat mengirim reminder. Silakan coba lagi untuk melanjutkan sisa antrean.';
+          showDialogState('error');
+          cancelBtn.focus();
+        }
+      }
+
+      async function loadQueueSummary() {
+        const { payload, labels } = getActiveFilters();
+        currentSession = { payload, labels, total: 0 };
+
+        const previewEl = dialog.querySelector('.reminder-preview');
+        if (previewEl) previewEl.open = false;
+
+        setTriggerBusy(true);
+        setCloseControlsLocked(false);
+        showDialogState('loading');
+        if (!dialog.open) {
+          dialog.showModal();
+        }
+
+        try {
+          const countData = await postBroadcastReminder({
+            ...payload,
+            mode: 'count',
+          });
+
+          const total = countData.total || 0;
+          const alreadySentToday = countData.already_sent_today || 0;
+          const toSend = countData.to_send || 0;
+
+          if (total === 0) {
+            setTriggerBusy(false);
+            document.getElementById('reminderEmptyTitle').textContent = 'Tidak Ada Penerima';
+            document.getElementById('reminderEmptyDesc').textContent =
+              'Tidak ada pelanggan aktif berstatus Belum Bayar yang sesuai dengan filter saat ini.';
+            showDialogState('empty');
+            cancelBtn.focus();
+            return;
+          }
+
+          if (toSend === 0) {
+            setTriggerBusy(false);
+            document.getElementById('reminderEmptyTitle').textContent = 'Sudah Terkirim Hari Ini';
+            document.getElementById('reminderEmptyDesc').textContent =
+              `Seluruh ${total} pelanggan yang cocok dengan filter sudah dikirimi reminder pembayaran hari ini.`;
+            showDialogState('empty');
+            cancelBtn.focus();
+            return;
+          }
+
+          currentSession.total = total;
+          document.getElementById('reminderToSendCount').textContent = String(toSend);
+          document.getElementById('reminderTotalCount').textContent = String(total);
+          document.getElementById('reminderSkippedTodayCount').textContent = String(alreadySentToday);
+          document.getElementById('reminderFilterPeriode').textContent = labels.periode;
+          document.getElementById('reminderFilterAgen').textContent = labels.agen;
+
+          const searchRow = document.getElementById('reminderFilterSearchRow');
+          if (labels.search) {
+            document.getElementById('reminderFilterSearch').textContent = labels.search;
+            searchRow.hidden = false;
+          } else {
+            searchRow.hidden = true;
+          }
+
+          confirmBtnLabel.textContent = `Kirim ke ${toSend} Pelanggan`;
+          showDialogState('confirm');
+          cancelBtn.focus();
+        } catch (err) {
+          setTriggerBusy(false);
+          document.getElementById('reminderErrorTitle').textContent = 'Gagal Memuat Antrean';
+          document.getElementById('reminderErrorDesc').textContent =
+            err.message || 'Gagal menghitung data penerima broadcast reminder.';
+          showDialogState('error');
+          cancelBtn.focus();
+        }
+      }
+
+      btnBroadcastReminder.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isBroadcastingReminder || btnBroadcastReminder.getAttribute('aria-disabled') === 'true') {
+          return;
+        }
+        loadQueueSummary();
+      });
+
+      confirmSendBtn.addEventListener('click', function () {
+        if (!currentSession || isSendingBatch) return;
+        runReminderBatch(currentSession.payload, 0, currentSession.total, 0, 0, 0);
+      });
+
+      retryBtn.addEventListener('click', function () {
+        if (isSendingBatch) return;
+        loadQueueSummary();
+      });
+
+      function requestDialogClose() {
+        if (isSendingBatch) return;
+        dialog.close();
+      }
+
+      closeBtn.addEventListener('click', requestDialogClose);
+      cancelBtn.addEventListener('click', requestDialogClose);
+
+      dialog.addEventListener('cancel', function (e) {
+        if (isSendingBatch) {
+          e.preventDefault();
+        }
+      });
+
+      dialog.addEventListener('close', function () {
+        if (!isSendingBatch) {
+          setTriggerBusy(false);
+        }
+      });
+
+      // Light-dismiss klik di luar dialog (pointerdown + pointerup agar drag seleksi teks tidak menutup dialog).
+      const isOutsideDialog = (e) => {
+        const rect = dialog.getBoundingClientRect();
+        return e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom;
+      };
+      let pressedOutside = false;
+      dialog.addEventListener('pointerdown', (e) => {
+        pressedOutside = isOutsideDialog(e);
+      });
+      dialog.addEventListener('pointerup', (e) => {
+        if (!isSendingBatch && pressedOutside && isOutsideDialog(e)) {
+          dialog.close();
+        }
+      });
+    });
+  </script>
+  <script>
     // GANTI kode event listener SweetAlert yang lama dengan ini:
 
     // Event delegation untuk handle tombol konfirmasi
@@ -2233,9 +3282,10 @@
           prevBtnText: '&larr; Kembali',
           doneBtnText: 'Selesai',
           steps: [
-            { element: '#tutorial-wa-container', popover: { title: 'Fitur Kirim WhatsApp', description: 'Gunakan fitur ini untuk mengirimkan pengingat tagihan/invoice secara global ke semua pelanggan yang berstatus "Belum Bayar" pada periode terpilih.', side: "bottom", align: 'start' } },
-            { element: '#btnKirimGlobal', popover: { title: 'Kirim Pesan', description: 'Klik tombol ini. Harap beri waktu pada sistem karena ia akan mengirimkan pesan satu per satu melalui server WhatsApp (Mekari Qontak). Jangan menutup halaman sebelum proses selesai.', side: "bottom", align: 'start' } },
-            { element: '#filterForm', popover: { title: 'Filter Bulan/Tahun', description: 'Pesan WhatsApp hanya akan dikirimkan kepada tagihan pada Bulan dan Tahun yang sedang Anda filter di atas ini.', side: "bottom", align: 'start' } },
+            { element: '#tutorial-wa-container', popover: { title: 'Fitur Kirim WhatsApp', description: 'Gunakan fitur ini untuk mengirimkan tagihan atau reminder pembayaran ke pelanggan yang berstatus "Belum Bayar" pada filter terpilih.', side: "bottom", align: 'start' } },
+            { element: '#btnKirimGlobal', popover: { title: 'Kirim Invoice Global', description: 'Klik tombol ini untuk mengirim invoice massal satu per satu melalui Mekari Qontak (template payment_invoice). Jangan menutup halaman sebelum proses selesai.', side: "bottom", align: 'start' } },
+            { element: '#btnBroadcastReminder', popover: { title: 'Broadcast Reminder Pembayaran', description: 'Klik tombol ini untuk mengirim pengingat pembayaran (template reminder_pembayaran) sesuai filter Bulan, Tahun, Agen, dan Pencarian aktif. Maksimal 1x per hari per pelanggan.', side: "bottom", align: 'start' } },
+            { element: '#filterForm', popover: { title: 'Filter Data', description: 'Pesan WhatsApp akan dikirimkan kepada pelanggan pada filter Bulan, Tahun, Agen, dan Pencarian yang sedang Anda pilih di atas ini.', side: "bottom", align: 'start' } },
           ]
         });
 
