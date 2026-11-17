@@ -179,6 +179,9 @@ Route::middleware(['auth'])->group(function () {
 
   // Pelanggan Dismantle
   Route::get('/pelanggan-dismantle', [PelangganController::class, 'pelangganDismantle']);
+  Route::post('/pelanggan-dismantle/restore/{id}', [PelangganController::class, 'restoreCustomer'])
+    ->middleware('roles:Super Admin,Admin Keuangan,Admin Logistik,NOC,Teknisi,Helpdesk')
+    ->name('pelanggan.restore');
 
 
   // Corporate

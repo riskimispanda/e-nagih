@@ -47,6 +47,11 @@
         color: #d1d5db;
         margin-bottom: 12px;
     }
+
+    .btn-restore-customer[aria-disabled="true"] {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
 </style>
 
 @section('content')
@@ -177,10 +182,14 @@
                   @endif
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <button onclick="restoreCustomer({{ $item->id }})"
-                    class="inline-flex items-center justify-center w-8 h-8 rounded border text-white bg-red-500 hover:bg-red-500 transition-colors duration-150"
+                  <button type="button"
+                    onclick="restoreCustomer({{ $item->id }}, this)"
+                    data-id="{{ $item->id }}"
+                    data-name="{{ $item->nama_customer ?? 'Pelanggan' }}"
+                    class="btn-restore-customer inline-flex items-center justify-center min-w-9 min-h-9 px-2.5 py-1.5 rounded border border-emerald-700 text-white bg-emerald-700 hover:bg-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 cursor-pointer transition-colors duration-150"
+                    aria-label="Restore pelanggan {{ $item->nama_customer ?? 'ini' }}"
                     title="Kembalikan data pelanggan ini">
-                    <i class="bx bx-undo text-sm"></i>
+                    <i class="bx bx-undo text-base" aria-hidden="true"></i>
                   </button>
                 </td>
               </tr>
@@ -255,6 +264,8 @@ function renderTable() {
     var end = Math.min(start + pageSize, total);
     for (var i = start; i < end; i++) {
         filteredData[i].el.style.display = '';
+        var numCell = filteredData[i].el.querySelector('td:first-child');
+        if (numCell) numCell.textContent = String(i + 1);
     }
 
     document.getElementById('tableInfo').textContent =
@@ -297,5 +308,107 @@ function goToPage(page) {
     if (page < 1 || page > totalPages) return;
     currentPage = page;
     renderTable();
+}
+
+var restoreUrlTemplate = @json(route('pelanggan.restore', ['id' => '__ID__']));
+
+async function restoreCustomer(id, triggerBtn) {
+    var button = triggerBtn || document.querySelector('.btn-restore-customer[data-id="' + id + '"]');
+    if (button && button.getAttribute('aria-disabled') === 'true') {
+        return;
+    }
+
+    var customerName = button && button.dataset && button.dataset.name
+        ? button.dataset.name
+        : 'Pelanggan';
+
+    var confirmation = await Swal.fire({
+        title: 'Restore Pelanggan?',
+        text: 'Kembalikan pelanggan "' + customerName + '" ke daftar pelanggan aktif? Perangkat modem sebelumnya akan dikaitkan kembali jika masih tersedia.',
+        icon: 'question',
+        showCancelButton: true,
+        focusCancel: true,
+        confirmButtonColor: '#047857',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Restore',
+        cancelButtonText: 'Batal',
+        topLayer: true
+    });
+
+    if (!confirmation.isConfirmed) {
+        return;
+    }
+
+    if (button) {
+        button.setAttribute('aria-disabled', 'true');
+    }
+
+    Swal.fire({
+        title: 'Memproses Restore...',
+        text: 'Mengembalikan data pelanggan "' + customerName + '"...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        topLayer: true,
+        didOpen: function () {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        var url = restoreUrlTemplate.replace('__ID__', encodeURIComponent(id));
+
+        var response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        var data = await response.json().catch(function () { return {}; });
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal melakukan restore pelanggan.');
+        }
+
+        var row = button ? button.closest('tr') : null;
+        if (row) {
+            tableData = tableData.filter(function (entry) { return entry.el !== row; });
+            filteredData = filteredData.filter(function (entry) { return entry.el !== row; });
+            row.remove();
+        }
+
+        if (tableData.length === 0) {
+            var tbody = document.querySelector('#dismantleTable tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="bx bx-box"></i><p class="text-gray-400 mb-0">Tidak ada data dismantle</p></div></td></tr>';
+            }
+            document.getElementById('tableInfo').textContent = 'Menampilkan 0 - 0 dari 0 data';
+            document.getElementById('pagination').innerHTML = '';
+        } else {
+            renderTable();
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: data.message || 'Pelanggan berhasil di-restore.',
+            timer: 2500,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            topLayer: true
+        });
+    } catch (err) {
+        if (button) {
+            button.removeAttribute('aria-disabled');
+        }
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Restore',
+            text: err.message || 'Terjadi kesalahan saat melakukan restore pelanggan.',
+            topLayer: true
+        });
+    }
 }
 </script>
